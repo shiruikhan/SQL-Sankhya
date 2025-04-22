@@ -1,0 +1,24 @@
+create or replace PROCEDURE STP_REGRA_VALID_AVISTA_SPARK (P_NUNOTA INT, P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2, P_CODUSULIB OUT NUMERIC) IS
+	CURSOR c_DTVENC IS
+        SELECT DTVENC, CODTIPTIT
+        FROM TGFFIN
+        WHERE NUNOTA = P_NUNOTA;
+
+    v_DTVENC TGFFIN.DTVENC%TYPE;
+    v_CODTIPTIT TGFFIN.CODTIPTIT%TYPE;
+    v_valido BOOLEAN := TRUE;
+BEGIN
+	FOR rec IN c_DTVENC LOOP
+        IF TRUNC(rec.DTVENC) = TRUNC(SYSDATE) AND rec.CODTIPTIT NOT IN (34,35,36) THEN 
+            v_valido := FALSE;
+            EXIT;
+        END IF;
+    END LOOP;
+	
+	IF v_valido THEN
+        P_SUCESSO := 'S';
+    ELSE
+		P_MENSAGEM := 'É necessária confirmação do recebimento pelo financeiro';
+        P_SUCESSO := 'N';
+    END IF;
+END STP_REGRA_VALID_AVISTA_SPARK;
