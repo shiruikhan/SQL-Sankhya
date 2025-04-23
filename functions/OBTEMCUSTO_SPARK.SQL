@@ -1,3 +1,15 @@
+CREATE OR REPLACE FUNCTION OBTEMCUSTO_SPARK (
+    P_CODPROD        IN NUMBER,
+    P_POREMP         IN CHAR,
+    P_CODEMP         IN NUMBER,
+    P_PORLOCAL       IN CHAR,
+    P_CODLOCAL       IN NUMBER,
+    P_PORCONTROLE    IN CHAR,
+    P_CONTROLE       IN VARCHAR2,
+    P_DATA           IN DATE,
+    P_TIPO           IN NUMBER
+)
+RETURN FLOAT
 /*==============================================================================
   Nome do Script : OBTEMCUSTO_SPARK
   Descrição      : Retorna o custo de um produto conforme critérios de controle,
@@ -18,19 +30,6 @@
       5 = Entrada sem ICMS
       6 = Entrada com ICMS
 ==============================================================================*/
-
-CREATE OR REPLACE FUNCTION OBTEMCUSTO_SPARK (
-    P_CODPROD        IN NUMBER,
-    P_POREMP         IN CHAR,
-    P_CODEMP         IN NUMBER,
-    P_PORLOCAL       IN CHAR,
-    P_CODLOCAL       IN NUMBER,
-    P_PORCONTROLE    IN CHAR,
-    P_CONTROLE       IN VARCHAR2,
-    P_DATA           IN DATE,
-    P_TIPO           IN NUMBER
-)
-RETURN FLOAT
 IS
     -- Variáveis para armazenar os custos
     V_CUSREP           TGFCUS.CUSREP%TYPE := 0;

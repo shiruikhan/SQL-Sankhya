@@ -1,3 +1,5 @@
+CREATE OR REPLACE FUNCTION FC_TEMMETA_SPARK(P_CODPROD IN NUMBER)
+RETURN VARCHAR2
 /*==============================================================================
   Nome do Script : FC_TEMMETA_SPARK
   Descrição      : Verifica se determinado produto possui a meta de código 3
@@ -11,9 +13,6 @@
   - Retorna 'S' se houver meta cadastrada para o produto informado (CODMETA = 3)
   - Retorna 'N' caso contrário
 ==============================================================================*/
-
-CREATE OR REPLACE FUNCTION FC_TEMMETA_SPARK(P_CODPROD IN NUMBER)
-RETURN VARCHAR2
 AS
     -- Contador de registros com meta para o produto
     V_COUNT INTEGER;
