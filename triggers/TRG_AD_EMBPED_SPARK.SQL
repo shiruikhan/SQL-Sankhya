@@ -1,0 +1,34 @@
+create or replace TRIGGER TRG_AD_EMBPED_SPARK
+BEFORE DELETE ON AD_EMBPED
+FOR EACH ROW
+DECLARE 
+
+PRAGMA AUTONOMOUS_TRANSACTION;
+
+BEGIN
+
+                   UPDATE TGFCAB 
+        SET QTDVOL = (
+                SELECT COUNT(DISTINCT IDCAIXA)
+                FROM AD_EMBPED 
+                WHERE NUNOTA = :OLD.NUNOTA
+                AND SEQ <> :OLD.SEQ),
+           PESO = (                
+SELECT SUM(PESOEMB) FROM(
+SELECT 
+COUNT(DISTINCT IDCAIXA)*SUM(DISTINCT PRO.PESOBRUTO) AS PESOEMB
+                FROM AD_EMBPED EMB INNER JOIN TGFPRO PRO ON (EMB.CODPRODEMB = PRO.CODPROD)
+                WHERE NUNOTA = :OLD.NUNOTA
+                AND SEQ <> :OLD.SEQ
+                GROUP BY CODPRODEMB
+                UNION
+SELECT SUM(EMB.PESOBRUTO) AS PESOEMB
+                FROM AD_EMBPED EMB
+                WHERE NUNOTA = :OLD.NUNOTA 
+                AND SEQ <> :OLD.SEQ
+                ))             
+        WHERE NUNOTA = :OLD.NUNOTA ;
+        
+        COMMIT;
+
+END; 
