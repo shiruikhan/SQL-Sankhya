@@ -16,7 +16,7 @@ create or replace PROCEDURE STP_CALCULAPROPORCAO_SPARK AS
 
   Observações:
 * - Considera apenas empresas com CODEMP = 1.
-* - Exclui notas com CODTIPOPER = 1114 E PRODUTOS 311801 E 311801.
+* - Exclui notas com CODTIPOPER = 1114.
 * - O cálculo é feito por: (SUM(BASEICMS) / (SUM(VLRNOTA) + SUM(BASEICMS))) * 100.
 * - O ID do novo lançamento é obtido como MAX(IDIMP) + 1 da tabela AD_TGFPIM.
 ==============================================================================*/
@@ -27,7 +27,7 @@ BEGIN
     FROM (SELECT V.CODCFO,
                 SUM(CASE WHEN CODCFO IN (7101,6109,7949) THEN V.VLRNOTA ELSE 0 END) AS VLRNOTA,
                 SUM(CASE WHEN CODCFO IN (5101,5116,5151,5401,5910,6101,6107,6116,6118,6401,6910) THEN V.BASEICMS ELSE 0 END) AS BASEICMS  
-            FROM (SELECT (SELECT MAX(I.CODCFO) FROM TGFITE I WHERE I.NUNOTA = CAB.NUNOTA AND CODPROD NOT IN (351801,311801)) AS CODCFO,
+            FROM (SELECT (SELECT MAX(I.CODCFO) FROM TGFITE I WHERE I.NUNOTA = CAB.NUNOTA /*AND CODPROD NOT IN (351801,311801)*/) AS CODCFO,
                             CAB.BASEICMS AS BASEICMS,
                             CAB.VLRNOTA AS VLRNOTA
                         FROM TGFCAB CAB
