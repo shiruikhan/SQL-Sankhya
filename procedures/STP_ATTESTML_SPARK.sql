@@ -1,46 +1,39 @@
 CREATE OR REPLACE PROCEDURE STP_ATTESTML_SPARK AS
+/*==============================================================================
+  Nome do Script : STP_ATTESTML_SPARK
+  Descrição      : Atualiza a quantidade disponível de produtos no marketplace Mercado Livre
+                   com base no estoque disponível na tabela VGF_ESTOQUEMELI_SPARK.
+  Revisor        : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 22/05/2025
+  Última Revisão : 28/05/2025 - Padronização e melhorias de legibilidade
+==============================================================================*/
     CURSOR C_PRODUTOS IS
-        SELECT CODPROD, DISPESTOQUE, LOCAL, IDANUNCIO, AVAILABLE_QUANTITY
-        FROM AD_MKTPMELI
-        WHERE ACTIVE = 'active';
-
-    V_CODPROD         AD_MKTPMELI.CODPROD%TYPE;
-    V_DISPESTOQUE     AD_MKTPMELI.DISPESTOQUE%TYPE;
-    V_LOCAL           AD_MKTPMELI.LOCAL%TYPE;
-    V_IDANUNCIO       AD_MKTPMELI.IDANUNCIO%TYPE;
-    V_ESTOQUE         NUMBER := 0;
+        SELECT M.CODPROD,
+               NVL(M.DISPESTOQUE, 0) AS DISPESTOQUE,
+               M.LOCAL,
+               M.IDANUNCIO,
+               M.AVAILABLE_QUANTITY,
+               NVL(E.ESTOQUE, 0) AS ESTOQUE
+        FROM AD_MKTPMELI M
+        LEFT JOIN VGF_ESTOQUEMELI_SPARK E
+               ON E.CODPROD = M.CODPROD AND E.CODLOCAL = M.LOCAL
+        WHERE M.ACTIVE = 'active';
     V_ESTOQUE_FINAL   NUMBER := 0;
-    V_ESTOQUE_ATUAL   AD_MKTPMELI.AVAILABLE_QUANTITY%TYPE;
 BEGIN
     FOR REG IN C_PRODUTOS LOOP
-        V_CODPROD        := REG.CODPROD;
-        V_DISPESTOQUE    := REG.DISPESTOQUE;
-        V_LOCAL          := REG.LOCAL;
-        V_IDANUNCIO      := REG.IDANUNCIO;
-        V_ESTOQUE_ATUAL  := REG.AVAILABLE_QUANTITY;
-
-        -- Consulta o estoque atualizado da view
-        BEGIN
-            SELECT ESTOQUE
-            INTO V_ESTOQUE
-            FROM VGF_ESTOQUEMELI_SPARK
-            WHERE CODPROD = V_CODPROD
-              AND LOCAL = V_LOCAL;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                V_ESTOQUE := 0;
-        END;
-
+        
         -- Calcula o percentual do estoque
-        V_ESTOQUE_FINAL := TRUNC(V_ESTOQUE * (V_DISPESTOQUE / 100));
+        V_ESTOQUE_FINAL := NVL(TRUNC(REG.ESTOQUE * (REG.DISPESTOQUE  / 100)),0);
 
         -- Atualiza apenas se a quantidade mudou
-        IF V_ESTOQUE_FINAL <> V_ESTOQUE_ATUAL THEN
+        IF NVL(V_ESTOQUE_FINAL,0) <> NVL(REG.AVAILABLE_QUANTITY,0) THEN
             UPDATE AD_MKTPMELI
             SET AVAILABLE_QUANTITY = V_ESTOQUE_FINAL, ENVSTK = 'S'
-            WHERE CODPROD = V_CODPROD
-              AND LOCAL = V_LOCAL
-              AND IDANUNCIO = V_IDANUNCIO;
+            WHERE CODPROD = REG.CODPROD
+                AND LOCAL = REG.LOCAL
+                AND IDANUNCIO = REG.IDANUNCIO;
         END IF;
     END LOOP;
 
