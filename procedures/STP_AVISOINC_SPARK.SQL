@@ -11,8 +11,9 @@ CREATE OR REPLACE PROCEDURE STP_AVISOINC_SPARK (
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 14/02/2025
-  Última Revisão : 29/04/2025
-  Melhorias      : Padronização, tratamento de exceções, legibilidade e lógica
+  Última Revisão : 06/06/2025
+  Melhorias      : Inclusão do email fiscal01@usinaspark.com.br para receber os 
+  e-mails de inclusão de produtos.
 ==============================================================================*/
 
     -- Constantes de evento
@@ -95,6 +96,14 @@ BEGIN
 
         STP_GRAVA_FILA_BI2(
             v_MaxFila + 1,
+            v_Assunto,
+            v_Mensagem,
+            'fiscal01@usinaspark.com.br',
+            NULL
+        );
+
+        STP_GRAVA_FILA_BI2(
+            v_MaxFila + 2,
             v_Assunto,
             v_Mensagem,
             'desenvolvimento01@usinaspark.com.br',
