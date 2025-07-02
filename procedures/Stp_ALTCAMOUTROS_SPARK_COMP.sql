@@ -1,25 +1,47 @@
-create or replace PROCEDURE Stp_ALTCAMOUTROS_SPARK_COMP(P_NUNOTA INT, P_SEQUENCIA INT, P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2, P_CODUSULIB OUT NUMBER)
-AS
+CREATE OR REPLACE PROCEDURE STP_ALTCAMOUTROS_SPARK_COMP (
+    P_NUNOTA     INT,            -- Número da nota fiscal
+    P_SEQUENCIA  INT,            -- Sequência da linha (não utilizado atualmente)
+    P_SUCESSO    OUT VARCHAR,    -- Indicador de sucesso ('S' ou 'N')
+    P_MENSAGEM   OUT VARCHAR2,   -- Mensagem para exibição ao usuário
+    P_CODUSULIB  OUT NUMBER      -- Código do usuário que liberou (não utilizado atualmente)
+) AS
+/*==============================================================================
+  Nome do Script : Stp_ALTCAMOUTROS_SPARK_COMP
+  Descrição      : Atualiza o campo VLROUTROS da tabela TGFCAB com a soma do
+                   campo AD_VLROUTROSCOMP dos itens da nota na TGFITE.
+  Revisor        : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 23/08/2022
+  Última Revisão : 02/07/2025
+  Melhorias      : Estrutura padronizada, comentários explicativos, tratamento limpo.
+==============================================================================*/
+
+    P_VLROUTROS NUMBER;
+
 BEGIN
-DECLARE
-P_VLROUTROS     FLOAT;
-BEGIN
- --DA MESMA FORMA QUE NA ANTERIOR, AQUI TERIA A ROTINA EM SI...
- P_SUCESSO := 'S';
+    -- Inicializa como sucesso
+    P_SUCESSO := 'S';
 
- SELECT NVL(SUM(AD_VLROUTROSCOMP),0) INTO P_VLROUTROS
-   FROM TGFITE 
-  WHERE NUNOTA = P_NUNOTA;
+    -- Calcula a soma de valores adicionais dos itens da nota
+    SELECT NVL(SUM(AD_VLROUTROSCOMP), 0)
+      INTO P_VLROUTROS
+      FROM TGFITE
+     WHERE NUNOTA = P_NUNOTA;
 
-IF P_VLROUTROS >= 0 THEN
+    -- Atualiza o campo VLROUTROS no cabeçalho da nota
+    IF P_VLROUTROS >= 0 THEN
+        UPDATE TGFCAB
+           SET VLROUTROS = P_VLROUTROS
+         WHERE NUNOTA = P_NUNOTA;
+    END IF;
 
-  UPDATE TGFCAB SET VLROUTROS = P_VLROUTROS
-  WHERE NUNOTA = P_NUNOTA;
+    -- (opcional) valores de mensagem ou controle podem ser atribuídos aqui
+    -- P_MENSAGEM := 'Atualização realizada com sucesso.';
+    -- P_CODUSULIB := 0;
 
-END IF;
--- P_MENSAGEM := 'A REGRA FALHOU DE PROPÓSITO, SÓ PARA TESTAR.';
-
--- P_CODUSULIB := 0;
-
-END;
+EXCEPTION
+    WHEN OTHERS THEN
+        P_SUCESSO := 'N';
+        P_MENSAGEM := 'Erro ao atualizar valor de VLROUTROS: ' || SQLERRM;
 END;
