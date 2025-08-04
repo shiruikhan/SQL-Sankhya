@@ -1,0 +1,8 @@
+CREATE OR REPLACE TRIGGER TRG_BLOQUEIA_DELETE_SC
+BEFORE DELETE ON AD_TGSSCP
+FOR EACH ROW
+BEGIN
+  IF :OLD.STATUS IN ('A', 'C', 'CR') THEN
+    RAISE_APPLICATION_ERROR(-20011, 'Solicitações aprovadas, canceladas ou realizadas não podem ser excluídas.');
+  END IF;
+END;
