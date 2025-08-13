@@ -1,22 +1,37 @@
-
 # 🗃️ Repositório de Scripts Oracle para Integrações com Sankhya
 
-Este repositório armazena procedures, triggers e functions desenvolvidas em PL/SQL para integrações, automações e personalizações do sistema Sankhya.  
-Tem como objetivo centralizar, versionar e documentar todas as rotinas implementadas no ambiente Oracle.
+![Oracle](https://img.shields.io/badge/Oracle-PL%2FSQL-red)
+![Sankhya](https://img.shields.io/badge/Sankhya-ERP-blue)
+![Git](https://img.shields.io/badge/Git-Versionamento-orange)
+![Status](https://img.shields.io/badge/Status-Ativo-success)
+
+Este repositório contém **procedures**, **triggers** e **functions** desenvolvidas em **PL/SQL** para integrações, automações e personalizações do sistema **Sankhya ERP**.  
+O objetivo é **centralizar, versionar e documentar** todas as rotinas implementadas no ambiente **Oracle**, garantindo maior controle e rastreabilidade.
 
 ---
 
-## 📁 Estrutura Esperada
+## 📑 Sumário
+1. [📂 Estrutura do Repositório](#-estrutura-do-repositório)
+2. [🔧 Tecnologias Utilizadas](#-tecnologias-utilizadas)
+3. [📌 Boas Práticas](#-boas-práticas)
+4. [🚀 Como Utilizar](#-como-utilizar)
+5. [🎯 Objetivos do Repositório](#-objetivos-do-repositório)
 
-Os arquivos serão organizados em subpastas conforme a funcionalidade ou módulo relacionado. Exemplos:
+---
+
+## 📂 Estrutura do Repositório
+
+Os arquivos estão organizados em pastas conforme a funcionalidade ou módulo relacionado:
 
 ```
-📂 procedures/
-   ├── stp_exemplo_processamento.sql
-📂 triggers/
-   ├── trg_auditoria_usuarios.sql
-📂 functions/
-   ├── fnc_calculo_desconto.sql
+📂 componentes BI/   → Scripts relacionados a Business Intelligence
+📂 functions/        → Funções PL/SQL
+📂 inativos/         → Scripts descontinuados
+📂 procedures/       → Procedures de processamento e automação
+📂 reports/          → Relatórios personalizados
+📂 triggers/         → Gatilhos de auditoria e automação
+📂 view/             → Views para consultas específicas
+README.md            → Este arquivo
 ```
 
 ---
@@ -25,38 +40,42 @@ Os arquivos serão organizados em subpastas conforme a funcionalidade ou módulo
 
 - **Oracle Database (PL/SQL)**
 - **Sankhya ERP**
-- **GitHub** para versionamento e rastreamento de alterações
+- **Git** para versionamento e rastreamento de alterações
 
 ---
 
 ## 📌 Boas Práticas
 
-- Nomear os arquivos com prefixos claros (`stp_`, `trg_`, `fnc_`)
-- Comentar cabeçalhos com:
+- Nomear arquivos com prefixos claros:  
+  - `stp_` → Stored Procedures  
+  - `trg_` → Triggers  
+  - `fnc_` → Functions  
+- Incluir cabeçalho nos scripts com:
   - Objetivo
-  - Responsável
+  - Autor/Responsável
   - Data de criação
   - Histórico de alterações
 - Utilizar transações de forma segura
-- Evitar código hardcoded e preferir uso de parâmetros
+- Evitar valores hardcoded — prefira parâmetros
+- Sempre testar em **homologação** antes de aplicar em **produção**
 
 ---
 
-## 🚀 Utilização
+## 🚀 Como Utilizar
 
-Estes scripts são aplicados diretamente no banco de dados Oracle vinculado ao ambiente Sankhya. Recomenda-se:
-
-1. Testar os scripts em ambiente de homologação antes de produção.
-2. Validar impactos em processos automatizados.
-3. Utilizar controle de versão para rollback em caso de falhas.
-
----
-
-## 🧠 Objetivo do Repositório
-
-✅ Centralização dos scripts  
-✅ Controle de versão das alterações  
-✅ Melhoria na governança técnica  
-✅ Facilidade de auditoria e colaboração
+1. Clone o repositório:
+   ```bash
+   git clone <URL_DO_REPOSITORIO>
+   ```
+2. Localize o script desejado na pasta correspondente.
+3. Execute-o no ambiente de **homologação**.
+4. Valide os impactos e, se aprovado, aplique em **produção**.
 
 ---
+
+## 🎯 Objetivos do Repositório
+
+- ✅ **Centralização** dos scripts  
+- ✅ **Controle de versão** das alterações  
+- ✅ **Governança técnica** aprimorada  
+- ✅ **Facilidade de auditoria e colaboração**  
