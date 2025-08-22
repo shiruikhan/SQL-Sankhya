@@ -8,6 +8,12 @@ DECLARE
     V_NOME_USU     VARCHAR2(100);
     V_EMAIL_USU    VARCHAR2(100);
     V_DTPREVENT    DATE;
+    V_PRODUTOS     VARCHAR2(4000);
+    CURSOR C_PRODUTOS IS
+        SELECT CODPROD
+        FROM AD_TGSISCP
+        WHERE NUSOL = :NEW.NUSOL
+        ORDER BY CODPROD;
 BEGIN
     -- Busca nome e e-mail do solicitante
     SELECT NOMEUSU, EMAIL INTO V_NOME_USU, V_EMAIL_USU
@@ -84,6 +90,15 @@ BEGIN
     -- 4. Compra realizada (preenchimento de NUNOTA e STATUS = CR)
     -------------------------------------------------------------------
     IF UPDATING AND :OLD.NUNOTA IS NULL AND :NEW.NUNOTA IS NOT NULL AND :NEW.STATUS = 'CR' THEN
+        -- Concatena todos os códigos de produtos
+        V_PRODUTOS := '';
+        FOR R_PRODUTO IN C_PRODUTOS LOOP
+            IF V_PRODUTOS IS NOT NULL AND V_PRODUTOS != '' THEN
+                V_PRODUTOS := V_PRODUTOS || ', ';
+            END IF;
+            V_PRODUTOS := V_PRODUTOS || R_PRODUTO.CODPROD;
+        END LOOP;
+
         SELECT NVL(MAX(CODFILA), 0) + 1 INTO V_CODFILA FROM TMDFMG;
 
         SELECT DTPREVENT INTO V_DTPREVENT FROM TGFCAB WHERE NUNOTA = :NEW.NUNOTA;
@@ -93,10 +108,11 @@ BEGIN
             <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #ddd; max-width: 700px; margin: auto;">
             <h2 style="color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">' || V_TITULO || '</h2>
             <p><strong>Solicitante:</strong> ' || V_NOME_USU || '</p>
-            <p><strong>ID da Solicitação:</strong> ' || :NEW.NUSOL || '</p>' ||            
+            <p><strong>ID da Solicitação:</strong> ' || :NEW.NUSOL || '</p>' ||
             '<p><strong>Status:</strong> Compra Realizada</p>
-            <p><strong>Número Único da Nota:</strong> ' || :NEW.NUNOTA || '</p>' || 
-            '<p><strong>Data da Previsão de Entrega:</strong> ' || TO_CHAR(V_DTPREVENT, 'DD/MM/YYYY') || '</p>
+            <p><strong>Número Único da Nota:</strong> ' || :NEW.NUNOTA || '</p>' ||
+            '<p><strong>Data da Previsão de Entrega:</strong> ' || TO_CHAR(V_DTPREVENT, 'DD/MM/YYYY') || '</p>' ||
+            '<p><strong>Códigos dos Produtos:</strong> ' || V_PRODUTOS || '</p>
             <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;" />
             <p style="font-size: 12px; color: #777;">Mensagem automática gerada pelo sistema Sankhya - Spark Eletrônica</p>
             </div>';
