@@ -1,0 +1,160 @@
+/*==============================================================================
+  Nome do Script : TRG_SPKCAE_INC_SPARK
+  Descrição      : Trigger que, no BEFORE INSERT de AD_SPKCAE, preenche os campos
+                    T_CODPROD, T_DESCRPROD, T_RFINTERNA, T_DESCRPARVENDA,
+                    T_DTVENDA, T_DTFABRICACAO, T_TIPO e T_LOTE com base na série
+                    (SNENTRADA) consultando a view VGFSERIES.
+  Revisor        : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 28/08/2025
+  Última Revisão : 28/08/2025 - Padronização de cabeçalho, renomeação da trigger,
+                   correção do preenchimento de T_DESCRPROD, tratamento de exceções
+                   e melhoria de legibilidade
+==============================================================================*/
+
+CREATE OR REPLACE TRIGGER TRG_SPKCAE_INC_SPARK 
+BEFORE INSERT ON AD_SPKCAE
+FOR EACH ROW
+DECLARE
+	P_CODPROD INTEGER;
+	P_DESCRPROD VARCHAR2(200);
+	P_RFINTERNA VARCHAR2(60);
+	P_DESCRPARVENDA VARCHAR2(200);
+	P_DTVENDA DATE;
+	P_DTFABRICACAO DATE;
+	P_TIPO VARCHAR2(25);
+	P_LOTE VARCHAR2(25);
+	
+	P_NUMOS INTEGER;
+    P_SNENTRADA VARCHAR2(30);
+	MAX_DTVENDA DATE;
+	
+	-- Exception handling
+	NO_DATA_FOUND_EXCEPTION EXCEPTION;
+	
+BEGIN	
+	-- Inicialização das variáveis
+	P_NUMOS := :NEW.NUMOS;
+	P_SNENTRADA := :NEW.SNENTRADA;
+    
+    -- Busca a data máxima de venda para a série
+    BEGIN
+		SELECT MAX(DTVENDA) INTO MAX_DTVENDA
+		FROM VGFSERIES
+		WHERE SERIE = P_SNENTRADA;
+	EXCEPTION
+		WHEN NO_DATA_FOUND THEN
+			MAX_DTVENDA := NULL;
+	END;
+
+	IF MAX_DTVENDA IS NULL THEN
+        -- Define valores padrão se não houver DTVENDA correspondente
+        P_CODPROD := NULL;
+        P_DESCRPROD := 'PRODUTO NÃO ENCONTRADO';
+        P_RFINTERNA := 'N/A';
+        P_DESCRPARVENDA := 'VAZIO';
+        P_DTVENDA := NULL;
+        P_DTFABRICACAO := NULL;
+        P_TIPO := 'NÃO ENCONTRADO';
+        P_LOTE := 'NÃO ENCONTRADO';
+	ELSE	
+		BEGIN
+			-- GRAVAÇÃO DOS DADOS DO PRODUTO COM UMA QUERY OTIMIZADA
+			-- Corrigido: incluído MOVIMENTO = 'SAÍDA' para DESCRPROD (era a causa do problema)
+			SELECT 
+				MAX(CODPROD) AS CODPROD,
+				MAX(DESCRPROD) AS DESCRPROD,
+				MAX(RFINTERNA) AS RFINTERNA
+			INTO 
+				P_CODPROD,
+				P_DESCRPROD,
+				P_RFINTERNA
+			FROM (
+				SELECT DISTINCT CODPROD, DESCRPROD, RFINTERNA, DTVENDA 
+				FROM VGFSERIES 
+				WHERE SERIE = P_SNENTRADA 
+					AND (MOVIMENTO = 'SAÍDA' OR TOP = 800)
+				UNION ALL
+				SELECT DISTINCT CODPROD, DESCRPROD, RFINTERNA, DTVENDA 
+				FROM VGFSERIES 
+				WHERE SERIE = P_SNENTRADA 
+					AND TIPO = 'ANDES'
+			) V
+			WHERE V.DTVENDA = MAX_DTVENDA;
+			
+		EXCEPTION
+			WHEN NO_DATA_FOUND THEN
+				P_CODPROD := NULL;
+				P_DESCRPROD := 'PRODUTO NÃO ENCONTRADO';
+				P_RFINTERNA := 'N/A';
+		END;
+		
+		BEGIN
+			-- GRAVAÇÃO DO PARCEIRO DE VENDA
+			SELECT COALESCE(DESCRPARVENDA, 'VAZIO') INTO P_DESCRPARVENDA
+			FROM (
+				SELECT DESCRPARVENDA 
+				FROM VGFSERIES 
+				WHERE SERIE = P_SNENTRADA 
+					AND (MOVIMENTO = 'SAÍDA' OR TIPO = 'ANDES') 
+					AND DTVENDA = MAX_DTVENDA
+					AND ROWNUM = 1
+			);
+		EXCEPTION
+			WHEN NO_DATA_FOUND THEN
+				P_DESCRPARVENDA := 'VAZIO';
+		END;
+		
+		-- GRAVAÇÃO DA DATA DE VENDA
+		P_DTVENDA := MAX_DTVENDA;
+		
+		BEGIN
+			-- GRAVAÇÃO DA DATA DE FABRICAÇÃO (ENTRADA)
+			SELECT NVL(MIN(DTVENDA), TO_DATE('01/01/1900', 'DD/MM/YYYY')) INTO P_DTFABRICACAO
+			FROM VGFSERIES 
+			WHERE SERIE = P_SNENTRADA
+				AND MOVIMENTO = 'ENTRADA';
+		EXCEPTION
+			WHEN NO_DATA_FOUND THEN
+				P_DTFABRICACAO := TO_DATE('01/01/1900', 'DD/MM/YYYY');
+		END;
+		
+		BEGIN
+			-- GRAVAÇÃO DO TIPO (ANDES OU SANKHYA)
+			SELECT NVL(MAX(TIPO), 'ANDES') INTO P_TIPO
+			FROM VGFSERIES 
+			WHERE SERIE = P_SNENTRADA 
+				AND (TOP = 800 OR TIPO = 'ANDES');
+		EXCEPTION
+			WHEN NO_DATA_FOUND THEN
+				P_TIPO := 'ANDES';
+		END;
+		
+		BEGIN
+			-- GRAVAÇÃO DO LOTE
+			SELECT NVL(MAX(LOTE), 'ANDES') INTO P_LOTE
+			FROM VGFSERIES 
+			WHERE SERIE = P_SNENTRADA 
+				AND MOVIMENTO = 'ENTRADA';
+		EXCEPTION
+			WHEN NO_DATA_FOUND THEN
+				P_LOTE := 'ANDES';
+		END;
+	END IF;
+
+	-- Atribuição dos valores aos campos da tabela
+	:NEW.T_CODPROD := P_CODPROD;
+	:NEW.T_DESCRPROD := P_DESCRPROD;
+    :NEW.T_RFINTERNA := P_RFINTERNA;
+	:NEW.T_DESCRPARVENDA := P_DESCRPARVENDA;
+	:NEW.T_DTVENDA := P_DTVENDA;
+	:NEW.T_DTFABRICACAO := P_DTFABRICACAO;
+	:NEW.T_TIPO := P_TIPO;
+	:NEW.T_LOTE := P_LOTE;
+	
+EXCEPTION
+	WHEN OTHERS THEN
+		-- Log do erro (se necessário, pode ser implementado um sistema de log)
+		RAISE_APPLICATION_ERROR(-20001, 'Erro na trigger TRG_SPKCAE_INC_SPARK: ' || SQLERRM);
+END;

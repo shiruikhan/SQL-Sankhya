@@ -1,0 +1,729 @@
+create or replace TRIGGER TRG_UPT_TGFITE
+BEFORE UPDATE ON TGFITE FOR EACH ROW
+DECLARE
+    P_VALEST               TGFGRU.VALEST%TYPE;
+    P_ACEITAFATACIMA       CHAR;
+    P_TIPRES               CHAR;
+    P_TIPMOV               CHAR;
+    P_CODEMPCAB            TGFCAB.CODEMP%TYPE;
+    P_CODEMPNEGOC          TGFCAB.CODEMPNEGOC%TYPE;
+    P_CODTIPOPER           INT;
+    P_DHTIPOPER            DATE;
+    P_TIPSUBST_D           CHAR;
+    P_TIPSUBST             CHAR;
+    P_AGRUPMIN             FLOAT;
+    P_TEMIPICOMPRA         CHAR;
+    P_TEMIPIVENDA          CHAR;
+    P_RESERVADO_TOP        CHAR;
+    P_ATUALESTOQUE_TOP     NUMBER(05);
+    P_ATUALESTOQUEMP_TOP   NUMBER(05);
+    P_COUNT                INT:= 0;
+    P_ATUALTRANSF          CHAR;
+    P_ALES                 CHAR;
+    P_VALIDAAGRUPMIN       CHAR;
+    P_TIPCONTEST           CHAR;
+    P_PENDENTE_TOP         CHAR;
+    P_CFOSAIDA             TGFTOP.CODCFO_SAIDA%TYPE;
+    P_CFOENTRADA           TGFTOP.CODCFO_ENTRADA%TYPE;
+    P_CFOSAIDA_FORA        TGFTOP.CODCFO_SAIDA%TYPE;
+    P_CFOENTRADA_FORA      TGFTOP.CODCFO_ENTRADA%TYPE;
+    P_CFO                  TGFTOP.CODCFO_ENTRADA%TYPE;
+    P_INTCFOPOSITIVO       NUMBER(05);
+    P_INTCFONEGATIVO       NUMBER(05);
+    P_QTDESTD              TGFITE.QTDNEG%TYPE;
+    P_QTDEST               TGFITE.QTDNEG%TYPE;
+    P_ALTERARESTOQUE       CHAR;
+    P_INICIOCONTEST        INT;
+    P_ATUALIZOU            CHAR;
+    P_ATUALESTOQUE_D       TGFITE.ATUALESTOQUE%TYPE;
+    ERROR                  EXCEPTION;
+    ERRMSG                 VARCHAR2(255);
+    P_VALIDAR              BOOLEAN;
+    P_CODPARC              TGFCAB.CODPARC%TYPE;
+    P_SINAL                NUMBER(5);
+    P_TIPO                 CHAR(1);
+    P_STATUSNOTA           TGFCAB.STATUSNOTA%TYPE;  
+    P_NUREM                TGFCAB.NUREM%TYPE;
+    P_QTDTCEVAR            FLOAT;
+    P_HABFLV               CHAR(1);    
+    P_TEMFLV               CHAR(1);
+    P_ADIARATUALEST        CHAR(1);  
+    P_CUPOMFISCAL          CHAR(1);  
+    P_VALIDAVAREJO         INT;  
+    P_CSTIPI               TGFITE.CSTIPI%TYPE;  
+    P_CODENQIPI            TGFITE.CODENQIPI%TYPE; 
+    P_CODMODDOC            TGFTOP.CODMODDOC%TYPE; 
+	P_PROGRAMNAME			 VARCHAR2(40);
+	P_VALIDA_EST_RESERVAR  TGFTOP.VALEST%TYPE;
+	P_ADIARATUALIZACAOESTOQUE  CHAR(1);
+BEGIN
+
+  /* CAMPOS DA CAB */
+  SELECT C.TIPMOV, C.CODTIPOPER, C.DHTIPOPER, C.CODPARC, C.STATUSNOTA, C.CODEMP, C.CODEMPNEGOC, NVL(C.NUREM,0) 
+  INTO P_TIPMOV, P_CODTIPOPER, P_DHTIPOPER, P_CODPARC, P_STATUSNOTA, P_CODEMPCAB, P_CODEMPNEGOC, P_NUREM 
+  FROM TGFCAB C
+  WHERE C.NUNOTA = :NEW.NUNOTA;
+  
+  /* CAMPOS DA TOP */
+  SELECT T.PENDENTE, T.CODCFO_ENTRADA, T.CODCFO_SAIDA, T.CODCFO_ENTRADA_FORA, T.CODCFO_SAIDA_FORA,
+         ATUALEST, ATUALESTMP, VALIDAAGRUPMIN, ADIARATUALEST, ACEITAFATACIMA, CUPOMFISCAL, CODMODDOC, VALEST
+  INTO P_PENDENTE_TOP, P_CFOENTRADA, P_CFOSAIDA, P_CFOENTRADA_FORA, P_CFOSAIDA_FORA,
+       P_ALES, P_ATUALESTOQUEMP_TOP, P_VALIDAAGRUPMIN, P_ADIARATUALEST, P_ACEITAFATACIMA, P_CUPOMFISCAL, P_CODMODDOC, P_VALIDA_EST_RESERVAR
+  FROM TGFTOP T
+  WHERE CODTIPOPER = P_CODTIPOPER
+    AND DHALTER = P_DHTIPOPER;
+
+  IF STP_GET_ATUALIZANDO THEN
+    RETURN;
+  END IF;
+  
+  P_VALIDAR := Fpodevalidar('TGFITE'); -- sincronizac?o de dados
+
+  P_ADIARATUALIZACAOESTOQUE := NVL(VARIAVEIS_PKG.V_ADIARATUALIZACAOESTOQUE, 'N');
+
+/*   RETIRADO SEGUNDO OS 1109392
+  IF (:OLD.SEQUENCIAFISCAL IS NOT NULL) AND (P_CODMODDOC = 65) THEN 
+    IF ((:OLD.CODEMP <> :NEW.CODEMP) OR (:OLD.CODPROD <> :NEW.CODPROD) OR (:OLD.CODCFO <> :NEW.CODCFO) OR
+        (:OLD.QTDNEG <> :NEW.QTDNEG) OR (:OLD.VLRUNIT <> :NEW.VLRUNIT) OR (:OLD.VLRTOT <> :NEW.VLRTOT) OR
+        (:OLD.CODVOL <> :NEW.CODVOL) OR (:OLD.CODTRIB <> :NEW.CODTRIB) OR 
+        (:OLD.SEQUENCIAFISCAL <> :NEW.SEQUENCIAFISCAL)) THEN
+      ERRMSG := 'Item de CUPOM FISCAL já enviado ao ECF. Não pode ser alterado pois gera divergências no SPED.';
+      RAISE ERROR;
+    END IF;      
+  END IF; 
+ */
+ 
+  IF VARIAVEIS_PKG.V_DESMEMBRANDOBEM = 'N' AND :OLD.STATUSNOTA = 'L' AND ((:OLD.CODEMP <> :NEW.CODEMP) OR (:OLD.CODPROD <> :NEW.CODPROD) OR (:OLD.CODCFO <> :NEW.CODCFO)
+      OR (:OLD.QTDNEG <> :NEW.QTDNEG) OR (:OLD.VLRUNIT <> :NEW.VLRUNIT) OR (:OLD.VLRTOT <> :NEW.VLRTOT) OR (:OLD.BASEIPI <> :NEW.BASEIPI)
+       OR (:OLD.VLRIPI <> :NEW.VLRIPI) OR (:OLD.BASEICMS <> :NEW.BASEICMS) OR (:OLD.VLRICMS <> :NEW.VLRICMS) OR (:OLD.VLRDESC <> :NEW.VLRDESC) 
+       OR (:OLD.BASESUBSTIT <> :NEW.BASESUBSTIT) OR (:OLD.VLRSUBST <> :NEW.VLRSUBST) OR (:OLD.CODVOL <> :NEW.CODVOL) OR (:OLD.CODTRIB <> :NEW.CODTRIB) 
+       OR (:OLD.ATUALESTOQUE <> :NEW.ATUALESTOQUE) OR (:OLD.VLRREPRED <> :NEW.VLRREPRED) OR (:OLD.CODTRIBISS <> :NEW.CODTRIBISS) OR (:OLD.CODCFPS <> :NEW.CODCFPS)
+       OR (:OLD.ALIQISS <> :NEW.ALIQISS) OR (:OLD.ATUALESTTERC <> :NEW.ATUALESTTERC) OR (:OLD.CSTIPI <> :NEW.CSTIPI) OR (:OLD.PRODUTONFE <> :NEW.PRODUTONFE)
+       OR (:OLD.GTINNFE <> :NEW.GTINNFE) OR (:OLD.GTINTRIBNFE <> :NEW.GTINTRIBNFE) OR (:OLD.CSOSN <> :NEW.CSOSN) OR (:OLD.VLRISS <> :NEW.VLRISS) 
+       OR (:OLD.BASEISS <> :NEW.BASEISS) OR (:OLD.SEQUENCIAFISCAL <> :NEW.SEQUENCIAFISCAL) OR (:OLD.ORIGPROD <> :NEW.ORIGPROD) OR (:OLD.IDALIQICMS  <> :NEW.IDALIQICMS ))
+  THEN
+
+    SELECT COUNT(1) 
+    INTO P_COUNT 
+    FROM  TCBINT C 
+    WHERE  C.NUNICO = :OLD.NUNOTA 
+    AND C.ORIGEM = 'E';
+    IF P_COUNT <> 0 THEN
+      ERRMSG := 'Nota já foi contabilizada, não pode ser alterada.';
+      RAISE ERROR;
+    END IF;
+
+    SELECT COUNT(1) 
+    INTO P_COUNT
+    FROM TGFLIV
+    WHERE NUNOTA = :OLD.NUNOTA
+    AND ORIGEM IN ('A', 'D', 'E');
+    IF P_COUNT <> 0 THEN
+      ERRMSG := 'Nota já foi gerada no Livro Fiscal de ICMS/IPI, não pode ser alterada. Nota de Nro único: '|| TO_CHAR(:OLD.NUNOTA) ||'';
+      RAISE ERROR;
+    END IF;
+  
+    SELECT COUNT(1) 
+    INTO P_COUNT
+    FROM TGFLIS
+    WHERE NUNOTA = :OLD.NUNOTA
+    AND ORIGEM = 'E';
+    IF P_COUNT <> 0 THEN
+      ERRMSG := 'Nota já foi gerada no Livro Fiscal de ISS, não pode ser alterada. Nota de Nro único: '|| TO_CHAR(:OLD.NUNOTA) ||'';
+      RAISE ERROR;
+    END IF;
+  END IF;
+  
+  P_CODENQIPI := :NEW.CODENQIPI;
+  P_CSTIPI := :NEW.CSTIPI;
+  
+  IF (:NEW.CSTIPI <> :OLD.CSTIPI OR :NEW.CODENQIPI <> :OLD.CODENQIPI) THEN
+    STP_VALIDA_ENQUADRAMENTO_IPI(P_CSTIPI, P_CODENQIPI);
+  END IF;    
+  
+  /* QDO SUBSTITUINDO PRODUTO, NÃO VALIDAR ESTOQUE */ 
+  IF (VARIAVEIS_PKG.V_SBPRODUTO) THEN
+    RETURN;
+  END IF;
+  
+  SELECT COUNT(1) INTO P_COUNT
+  FROM TSIPAR
+  WHERE CHAVE = 'SBPRODUTO';
+  
+  IF (P_COUNT <> 0) THEN
+    RETURN;
+  END IF;    
+
+  IF UPDATING('QTDNEG') THEN
+     SELECT COUNT(1)
+     INTO P_COUNT
+     FROM TGFCCX
+     WHERE NUNOTA = :OLD.NUNOTA;
+     IF P_COUNT <> 0 THEN
+       ERRMSG := 'Item não pode ser alterado, existe referencia na TGFCCX-Tabela de Coletor';
+     RAISE ERROR;
+     END IF;
+   IF :NEW.QTDNEG < :OLD.QTDNEG THEN
+     BEGIN
+       SELECT SUM(QTDATENDIDA) INTO P_QTDTCEVAR
+       FROM TCEVAR
+       WHERE NUNOTAORIG = :NEW.NUNOTA
+         AND SEQUENCIAORIG = :NEW.SEQUENCIA;
+     EXCEPTION WHEN NO_DATA_FOUND THEN
+       P_QTDTCEVAR := 0;
+     END;
+     IF :NEW.QTDNEG > 0 AND NVL(P_QTDTCEVAR, 0) > :NEW.QTDNEG THEN
+       ERRMSG := 'A QTDNEG não pode ser menor que a quantidade('||TO_CHAR(P_QTDTCEVAR)||') utilizada no processo de importação.';
+       RAISE ERROR;
+     END IF;      
+   END IF;
+  END IF;
+
+  IF (:OLD.CODPROD <> :NEW.CODPROD) OR (:OLD.CODLOCALORIG <> :NEW.CODLOCALORIG) OR (:OLD.CODEMP <> :NEW.CODEMP) THEN
+  
+     SELECT
+    COUNT(1) INTO  P_COUNT
+   FROM TGFSER SER
+   WHERE SER.NUNOTA = :NEW.NUNOTA
+     AND SER.SEQUENCIA = :NEW.SEQUENCIA
+     AND (SER.ATUALESTOQUE <> 0 OR GET_TSIPAR_LOGICO('USACBGLOBAL') = 'S');
+     IF (P_COUNT<>0) THEN
+       ERRMSG := 'Produto ja possui Serie lancada, não pode ser alterado.';
+     RAISE ERROR;
+     END IF;
+  END IF;
+
+  IF (:NEW.PENDENTE = 'S' AND ABS(:NEW.QTDNEG) <= ABS(:NEW.QTDENTREGUE)) THEN
+    :NEW.PENDENTE := 'N';
+  ELSE
+    IF (P_PENDENTE_TOP = 'N') THEN
+      IF (:NEW.PENDENTE <> 'N') THEN
+        :NEW.PENDENTE := 'N';
+      END IF;
+    ELSIF (:NEW.PENDENTE = 'N') AND
+          (ABS(:NEW.QTDNEG) > ABS(:NEW.QTDENTREGUE)) AND
+          (:OLD.QTDNEG IS NULL OR (:NEW.QTDNEG <> :OLD.QTDNEG) OR (:NEW.QTDENTREGUE <> :OLD.QTDENTREGUE)) THEN
+      :NEW.PENDENTE := 'S';
+    END IF;
+  END IF;
+  /* */
+  IF (P_NUREM>0) AND NOT ((:OLD.STATUSNOTA=:NEW.STATUSNOTA) OR (:OLD.QTDENTREGUE=:NEW.QTDENTREGUE)) THEN
+  ERRMSG := 'Atencao ! movimento de remessa nao pode ser modificado, movimento de origem : ' || TO_CHAR(P_NUREM, '99999999') || 'QTD OLD ' || TO_CHAR(:OLD.QTDENTREGUE, '999999999') || ' NEW ' || TO_CHAR(:NEW.QTDENTREGUE, '9999999') ;
+  RAISE ERROR;
+  END IF;
+
+  IF (LENGTH(TRIM(TRANSLATE(:NEW.SERIEINICIAL, ' +-.0123456789',' '))) IS NOT NULL) THEN
+   ERRMSG := 'A coluna "SERIEINICIAL" deve conter somente numerais.';
+   RAISE ERROR;
+  END IF;
+  
+  IF (LENGTH(TRIM(TRANSLATE(:NEW.SERIEFINAL, ' +-.0123456789',' '))) IS NOT NULL) THEN
+   ERRMSG := 'A coluna "SERIEFINAL" deve conter somente numerais.';
+   RAISE ERROR;
+  END IF;    
+  
+  IF (:OLD.STATUSNOTA <> :NEW.STATUSNOTA) AND (:NEW.STATUSNOTA = 'P') THEN
+       ERRMSG := 'Não podemos mudar o Status da Nota para "P".';
+     RAISE ERROR;
+  END IF;
+  IF :NEW.NUNOTA <> :OLD.NUNOTA THEN
+       ERRMSG := 'A coluna NUNOTA não pode ser alterada.';
+     RAISE ERROR;
+  END IF;
+  IF :OLD.CODVEND <> :NEW.CODVEND THEN
+     SELECT COUNT(1) INTO P_COUNT
+       FROM TGFVEN
+      WHERE ATIVO = 'S'
+        AND CODVEND = :NEW.CODVEND;
+     IF (P_COUNT = 0 ) THEN
+       ERRMSG := Erros_Pkg.ERRO_VENDEDOR_NAOATIVO;
+     RAISE ERROR;
+     END IF;
+  END IF;
+  IF :OLD.CODEMP <> :NEW.CODEMP THEN
+     SELECT COUNT(1) INTO P_COUNT
+       FROM TGFEMP
+      WHERE CODEMP = :NEW.CODEMP
+        AND ATIVO = 'S';
+     IF  ( P_COUNT = 0) THEN
+       ERRMSG := 'Empresa não esta ativa. ';
+     RAISE ERROR;
+     END IF;
+  END IF;
+  
+  IF (:NEW.RESERVA = 'S') AND (:NEW.ATUALESTOQUE <> 1) AND (:NEW.ATUALESTOQUE <> 0) THEN
+       ERRMSG := 'Para reserva ser igual a S o AtualEstoque deve ser 1.';
+     RAISE ERROR;
+  END IF;
+  
+  IF (:OLD.CODLOCALORIG <> :NEW.CODLOCALORIG) THEN
+     SELECT COUNT(1)  INTO P_COUNT
+       FROM TGFLOC L
+      WHERE L.CODLOCAL = :NEW.CODLOCALORIG
+        AND L.ATIVO = 'S'
+        AND L.ANALITICO = 'S';
+     IF ( P_COUNT = 0) THEN
+       Stp_Popula_Msg('TGFLOC');
+     END IF;
+  END IF;
+
+  IF :OLD.CODPROD <> :NEW.CODPROD THEN
+    SELECT COUNT(1) INTO P_COUNT
+      FROM TGFPRO P
+     WHERE P.CODPROD = :NEW.CODPROD
+       AND P.ATIVO = 'S';
+    IF ( P_COUNT = 0)  THEN
+       ERRMSG := Erros_Pkg.ERRO_PRODUTO_NAOATIVO;
+     RAISE ERROR;
+    END IF;
+
+    SELECT COUNT(1) INTO P_COUNT
+      FROM TCIIBE T
+     WHERE T.NUNOTA = :OLD.NUNOTA
+       AND T.SEQUENCIA = :OLD.SEQUENCIA;
+    IF ( P_COUNT <> 0)  THEN
+     ERRMSG := 'Para alterar o produto, voce deve excluir os bens lancados para o mesmo. ';
+     RAISE ERROR;
+    END IF;
+
+    /* validacao do item pendente se o cabecalho n?o estiver, feita no after */
+    /* se mudar o produto verifica se ele pode ser usado com a Top que esta no cabecalho */
+    SELECT MIN(R.TIPREST) INTO P_TIPRES
+    FROM TGFREP R, TGFCAB C, TGFPRO P
+    WHERE ( (R.TIPREST = 'G' AND R.CODCOLREST = P.CODGRUPOPROD) OR
+           (R.TIPREST = 'P' AND R.CODCOLREST = :NEW.CODPROD) )
+      AND R.CODTIPOPER = C.CODTIPOPER
+      AND C.NUNOTA = :NEW.NUNOTA
+      AND P.CODPROD = :NEW.CODPROD
+      AND R.RESTRICAO = 'N';
+    IF (P_TIPRES IS NOT NULL) THEN
+      IF (P_TIPRES = 'G') THEN
+      ERRMSG := 'Este grupo de produtos não pode ser usado com esta TOP.';
+      RAISE ERROR;
+      ELSIF (P_TIPRES = 'P') THEN
+      ERRMSG := 'Este produto não pode ser usado com esta TOP.';
+      RAISE ERROR;
+      END IF;
+    END IF;
+
+    /* não se pode atualizar o CODPROD, CODLOCALORIG, CODEMP OU CONTROLE de um item que ja
+     tem uma referencia na Var, pois o estoque ja foi baixado  */
+    SELECT COUNT(1) INTO P_COUNT
+    FROM TGFVAR
+    WHERE NUNOTA <> NUNOTAORIG
+    AND ((NUNOTA = :NEW.NUNOTA AND SEQUENCIA = :NEW.SEQUENCIA)
+          OR  (NUNOTAORIG = :NEW.NUNOTA AND SEQUENCIAORIG = :NEW.SEQUENCIA));
+    IF (P_COUNT <> 0) THEN
+       SELECT COUNT(1) INTO P_COUNT
+       FROM TSIPAR
+       WHERE CHAVE = 'SBPRODUTO';
+       IF (P_COUNT = 0) AND NOT (VARIAVEIS_PKG.V_SBPRODUTO)THEN
+         SELECT COUNT(1) INTO P_COUNT
+         FROM TGFPAL
+         WHERE (CODPROD = :NEW.CODPROD AND CODPRODALT = :OLD.CODPROD)
+         OR (CODPROD = :OLD.CODPROD AND CODPRODALT = :NEW.CODPROD);
+         IF (P_COUNT = 0 ) THEN
+           ERRMSG := 'O produto referenciado por este pedido ou nota ja esta associado a outro pedido ou nota, não se pode atualiza-lo.';
+           RAISE ERROR;
+          END IF;
+       END IF;
+    END IF;
+  END IF;
+
+  SELECT P.TIPSUBST, NVL(P.AGRUPMIN, 1)
+   , CASE WHEN PEM.TEMIPIVENDA IS NULL OR PEM.TEMIPIVENDA = 'C' THEN P.TEMIPIVENDA ELSE PEM.TEMIPIVENDA END 
+   , CASE WHEN PEM.TEMIPICOMPRA IS NULL OR PEM.TEMIPICOMPRA = 'C' THEN P.TEMIPICOMPRA ELSE PEM.TEMIPICOMPRA END 
+  , CASE WHEN PEM.TIPCONTEST IS NOT NULL THEN PEM.TIPCONTEST ELSE P.TIPCONTEST END, G.VALEST, G.TEMFLV
+  INTO   P_TIPSUBST ,   P_AGRUPMIN ,  P_TEMIPIVENDA, P_TEMIPICOMPRA ,  P_TIPCONTEST, P_VALEST, P_TEMFLV
+  FROM TGFPRO P LEFT JOIN TGFPEM PEM ON (P.CODPROD = PEM.CODPROD AND :NEW.CODEMP = PEM.CODEMP) , TGFGRU G 
+  WHERE P.CODPROD = :NEW.CODPROD
+  AND P.CODGRUPOPROD = G.CODGRUPOPROD; 
+
+  IF UPDATING('CODPROD') THEN
+    SELECT P.TIPSUBST INTO P_TIPSUBST_D
+    FROM TGFPRO P
+    WHERE P.CODPROD = :OLD.CODPROD;
+  ELSE
+    P_TIPSUBST_D := P_TIPSUBST;
+  END IF;
+
+  IF UPDATING('VLRTROCA')  AND (NVL(:NEW.VLRTROCA, 0) <> NVL(:OLD.VLRTROCA, 0)) AND (P_STATUSNOTA = 'L') THEN
+    ERRMSG := 'Não e possivel alterar o valor de troca em nota confirmada.';
+    RAISE ERROR;    
+  END IF;  
+   
+  IF (:OLD.RESERVA <> :NEW.RESERVA) OR (:OLD.PENDENTE <> :NEW.PENDENTE) OR
+     (:OLD.QTDENTREGUE <> :NEW.QTDENTREGUE) OR (:OLD.USOPROD <> :NEW.USOPROD) OR
+     (:OLD.ATUALESTOQUE <> :NEW.ATUALESTOQUE) OR (:OLD.STATUSNOTA <> :NEW.STATUSNOTA AND :OLD.STATUSNOTA = 'P') THEN
+
+     IF (P_TIPMOV = 'T') THEN
+       IF (:NEW.RESERVA = 'S') THEN
+           ERRMSG := 'Tranferencia não pode reservar o estoque.';
+           RAISE ERROR;
+       END IF;
+       /*IF (:NEW.PENDENTE = 'S')  THEN
+          ERRMSG := 'Tranferencia não pode estar pendente.';
+          RAISE ERROR;
+       END IF;OS 494434*/
+       /*IF (:NEW.QTDENTREGUE <> 0) THEN -- 506095
+         ERRMSG := 'Transferencia não pode ter quantidade entregue diferente de zero.';
+         RAISE ERROR;
+       END IF;*/
+       IF (:NEW.USOPROD = 'S') THEN
+         ERRMSG := 'Transferencia no pode conter itens que são servico.';
+         RAISE ERROR;
+       END IF;
+     /*
+       ELSIF (P_TIPMOV = 'F') AND (:NEW.RESERVA = 'S') THEN
+         RAISE_APPLICATION_ERROR(-20101, 'Produção n?o pode reservar.');
+     */
+     END IF;
+   IF (:NEW.STATUSNOTA <> 'P') THEN
+      IF (P_ALES = 'N') THEN
+        P_RESERVADO_TOP    := 'N';
+        P_ATUALESTOQUE_TOP := 0;
+      ELSIF (P_ALES = 'E') THEN
+        P_RESERVADO_TOP    := 'N';
+        P_ATUALESTOQUE_TOP := 1 ;
+      ELSIF (P_ALES = 'B') THEN
+         P_RESERVADO_TOP     := 'N';
+         P_ATUALESTOQUE_TOP  := -1;
+      ELSIF (P_ALES = 'R') THEN
+        P_RESERVADO_TOP    := 'S';
+        P_ATUALESTOQUE_TOP := 1;
+      END IF;
+
+      IF (P_TIPMOV <> 'F') THEN
+          IF (:NEW.SEQUENCIA < 0) THEN
+             P_ATUALESTOQUEMP_TOP := P_ATUALESTOQUEMP_TOP * -1;
+             P_ATUALESTOQUE_TOP := P_ATUALESTOQUE_TOP * -1;
+          END IF;
+          
+          IF (P_RESERVADO_TOP <> :NEW.RESERVA) AND
+             ((:NEW.USOPROD <> 'D') OR (:NEW.RESERVA <> 'N')) THEN
+             SELECT LOGICO INTO P_HABFLV
+            FROM TSIPAR
+            WHERE CHAVE = 'HABFLV';
+            
+            --Quando P_HABFLV = 'S' and :NEW.USOPROD <> 'M' and P_TEMFLV = 'S' pode passar
+            IF NOT UPDATING('PRODUTONFE') THEN
+              IF (P_HABFLV <> 'S' OR :NEW.USOPROD = 'M' OR P_TEMFLV <> 'S') THEN             
+                ERRMSG := 'Reserva diferente da definicao na TOP.';
+                RAISE ERROR;
+              END IF;
+            END IF;
+          END IF;
+          
+          IF (:NEW.USOPROD = 'M') AND (:NEW.RESERVA = 'N') THEN
+             IF (P_ATUALESTOQUEMP_TOP <> :NEW.ATUALESTOQUE) AND NOT (P_ADIARATUALEST = 'S' AND :NEW.ATUALESTOQUE = 0 AND :NEW.STATUSNOTA <> 'L') THEN
+               ERRMSG := 'Atualizacao de estoque de Mat.Prima diferente da definicao na TOP.';
+               RAISE ERROR;
+             END IF;             
+          ELSIF (P_ATUALESTOQUE_TOP <> :NEW.ATUALESTOQUE) AND (:NEW.USOPROD <> 'D') THEN
+            IF (P_ADIARATUALEST = 'S') AND (:NEW.STATUSNOTA = 'L') THEN 
+              ERRMSG := 'Atualizacao de estoque diferente da definicao na TOP.';
+              RAISE ERROR;
+            END IF;
+          ELSIF (:NEW.USOPROD = 'D') AND
+             (P_ATUALESTOQUE_TOP <> :NEW.ATUALESTOQUE) AND
+             (P_ATUALESTOQUEMP_TOP <> :NEW.ATUALESTOQUE) AND
+                 (:NEW.ATUALESTOQUE <> 0) THEN
+            ERRMSG := 'Atualizacao de estoque diferente da definicao na TOP.';
+            RAISE ERROR;
+          END IF;
+       END IF;
+
+     END IF;
+  END IF;
+
+  IF (ABS(:NEW.QTDENTREGUE) > ABS(:NEW.QTDNEG)) AND (:NEW.QTDENTREGUE <> 0) AND
+         ((ROUND(:OLD.QTDNEG,9) <> ROUND(:NEW.QTDNEG,9)) OR (:OLD.QTDENTREGUE <> :NEW.QTDENTREGUE)) THEN    
+    IF (P_ACEITAFATACIMA = 'N') THEN
+      ERRMSG := 'A quantidade entregue não pode ser maior que a quantidade negociada. Nota = ' || :NEW.NUNOTA ||
+                ' Produto = ' || :NEW.CODPROD ||
+                ' Qtd Entregue = ' || :NEW.QTDENTREGUE ||
+                ' Qtd Neg = ' || :NEW.QTDNEG;
+      RAISE ERROR;
+    END IF;
+  END IF;
+ /* ===== Testa se o IPI e ou não obrigatorio ===== */
+  IF ( ( (UPDATING('BASEIPI') OR UPDATING('VLRIPI')) AND (P_TEMIPIVENDA = 'N') AND (P_TIPMOV IN ('P', 'V')) ) OR
+       ( (UPDATING('BASEIPI') OR UPDATING('VLRIPI')) AND (P_TEMIPICOMPRA = 'N') AND (P_TIPMOV IN ('O', 'C', 'E')) ) ) AND
+    ((NVL(:NEW.BASEIPI,0) <> 0) OR (NVL(:NEW.VLRIPI,0) <> 0)) THEN
+      ERRMSG := 'A base e o valor do IPI devem ser zero (0). Produto = ' || :NEW.CODPROD;
+      RAISE ERROR;
+  END IF;
+
+  /* ===== Teste do agrupamento minimo ===== */
+  IF (P_AGRUPMIN <> 0) AND (P_AGRUPMIN <> 1) AND UPDATING('QTDNEG') THEN
+     IF (P_VALIDAAGRUPMIN = 'S') THEN
+        IF MOD(:NEW.QTDNEG, P_AGRUPMIN) <> 0 THEN
+           ERRMSG := 'Quantidade negociada invalida, pois não e multiplo do agrupamento minimo deste produto.';
+           RAISE ERROR;
+        END  IF;
+     END IF;
+  END IF;
+  
+  IF ((:NEW.ATUALESTOQUE <> 0) AND (:NEW.RESERVA <> 'S') AND (:NEW.CONTROLE = ' ') AND NOT UPDATING('QTDCONFERIDA') AND NOT UPDATING('QTDENTREGUE')) THEN
+    IF (P_TIPCONTEST = 'L') THEN
+      ERRMSG := 'Lote deve ser informado.';
+      RAISE ERROR;
+    END IF;
+  END IF; 
+
+  IF (P_TIPMOV = 'T' AND :NEW.SEQUENCIA > 0) AND
+     (UPDATING('CODPROD') OR UPDATING('QTDNEG') OR UPDATING('QTDCONFERIDA') OR
+      UPDATING('VLRUNIT') OR UPDATING('VLRCUS') OR UPDATING('BASEIPI') OR  UPDATING('VLRIPI') OR
+      UPDATING('BASEICMS') OR UPDATING('VLRDESC') OR  UPDATING('BASESUBSTIT') OR UPDATING('VLRSUBST') OR
+      UPDATING('CODVOL') OR  UPDATING('CODTRIB') OR UPDATING('CODCFO') OR UPDATING('OBSERVACAO') OR
+      UPDATING('CODEMP') OR UPDATING('VLRICMS') OR UPDATING('ALIQICMS') OR UPDATING('QTDENTREGUE') OR
+      UPDATING('ATUALESTOQUE') OR UPDATING('STATUSNOTA') OR UPDATING('NUTAB')) THEN
+    P_ATUALTRANSF := 'S';
+  ELSE
+    P_ATUALTRANSF := 'N';
+  END IF;
+
+  IF (P_TIPMOV <> 'Z')  AND
+      ((:OLD.QTDNEG       <> :NEW.QTDNEG) OR
+       (:OLD.ATUALESTOQUE <> :NEW.ATUALESTOQUE) OR
+       (:OLD.RESERVA      <> :NEW.RESERVA) OR
+       (:OLD.CODPROD      <> :NEW.CODPROD) OR
+       (:OLD.CODLOCALORIG <> :NEW.CODLOCALORIG) OR
+       (:OLD.CONTROLE     <> :NEW.CONTROLE) OR
+       (:OLD.STATUSLOTE   <> :NEW.STATUSLOTE) OR
+       (:OLD.CODEMP       <> :NEW.CODEMP) OR
+       (:OLD.PENDENTE     <> :NEW.PENDENTE) OR
+       (:OLD.QTDENTREGUE  <> :NEW.QTDENTREGUE)) THEN
+    P_ALTERARESTOQUE := 'S';
+  ELSE
+    P_ALTERARESTOQUE := 'N';
+  END IF;
+
+  IF (P_TIPCONTEST = 'E') THEN
+    IF (:OLD.CODPROD <> :NEW.CODPROD) THEN
+      SELECT COUNT(1)
+        INTO P_COUNT
+      FROM TGFSER
+      WHERE NUNOTA = :OLD.NUNOTA
+        AND SEQUENCIA = :OLD.SEQUENCIA;
+      
+      IF P_COUNT > 0 THEN
+        UPDATE TGFSER SET
+          CODPROD = :NEW.CODPROD
+        WHERE NUNOTA = :OLD.NUNOTA
+          AND SEQUENCIA = :OLD.SEQUENCIA;
+      END IF;
+        
+  END IF;
+  
+  IF (:OLD.ATUALESTOQUE <> :NEW.ATUALESTOQUE) THEN
+    SELECT COUNT(1)
+      INTO P_COUNT
+    FROM TGFSER
+    WHERE NUNOTA = :OLD.NUNOTA
+      AND SEQUENCIA = :OLD.SEQUENCIA;
+    
+    IF (P_COUNT > 0) AND (:NEW.RESERVA = 'N') THEN
+      UPDATE TGFSER SET
+        ATUALESTOQUE = :NEW.ATUALESTOQUE
+      WHERE NUNOTA = :OLD.NUNOTA
+        AND SEQUENCIA = :OLD.SEQUENCIA;
+    END IF;
+    
+  END IF;
+  END IF;
+  
+  IF (P_ALTERARESTOQUE = 'S') OR
+     (P_ATUALTRANSF = 'S') OR
+     ((:NEW.SEQUENCIA > 0) AND
+      (P_TIPMOV <> 'F') AND
+      (:OLD.CODPROD <> :NEW.CODPROD OR
+       :OLD.CODLOCALORIG <> :NEW.CODLOCALORIG OR
+       :OLD.CONTROLE <> :NEW.CONTROLE)) THEN
+
+     IF P_ALTERARESTOQUE = 'S' THEN
+        BEGIN
+          SELECT INTEIRO INTO P_INICIOCONTEST FROM TSIPAR WHERE CHAVE = 'INICIOCONTEST';
+        EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              P_INICIOCONTEST := 0;
+        END;
+
+        IF (:NEW.NUNOTA >= P_INICIOCONTEST) THEN
+          IF (:OLD.ATUALESTOQUE <> 0) AND ((:OLD.RESERVA = 'N') OR (:OLD.PENDENTE = 'S') OR (P_TIPMOV = 'F')) THEN
+            IF :OLD.RESERVA = 'S' THEN
+              P_QTDESTD := :OLD.QTDNEG - :OLD.QTDENTREGUE;
+            ELSE
+              P_QTDESTD := :OLD.QTDNEG;
+            END IF;
+          ELSE
+            P_QTDESTD := 0;
+          END IF;
+          IF (:NEW.ATUALESTOQUE <> 0) AND ((:NEW.RESERVA = 'N') OR (:NEW.PENDENTE = 'S') OR (P_TIPMOV = 'F')) THEN
+            IF :NEW.RESERVA = 'S' THEN
+              P_QTDEST := :NEW.QTDNEG - :NEW.QTDENTREGUE;
+            ELSE
+              P_QTDEST := :NEW.QTDNEG;
+            END IF;
+          ELSE
+            P_QTDEST := 0;
+          END IF;
+
+          IF (:OLD.RESERVA <> :NEW.RESERVA) OR
+             (:OLD.ATUALESTOQUE <> :NEW.ATUALESTOQUE) OR
+             (:OLD.CODEMP <> :NEW.CODEMP) OR
+             (:OLD.CODPROD <> :NEW.CODPROD) OR
+             (:OLD.CONTROLE <> :NEW.CONTROLE) OR
+             (:OLD.CODLOCALORIG <> :NEW.CODLOCALORIG) OR
+             (:OLD.STATUSLOTE <> :NEW.STATUSLOTE) OR
+             (P_QTDESTD <> P_QTDEST) THEN
+            Estoque_Pkg.V_TRANSF := 'N';
+
+			
+			SELECT UPPER(PROGRAM)
+			  INTO P_PROGRAMNAME
+			  FROM V$SESSION
+			 WHERE AUDSID = USERENV('SESSIONID')
+			   AND ROWNUM = 1;
+
+			-- MANOEL OS 823336
+			IF P_VALEST <> 'N' AND P_PROGRAMNAME = 'FSTECF.EXE' THEN
+				
+				SELECT INTEIRO
+				  INTO P_VALIDAVAREJO
+				  FROM TSIPAR
+				 WHERE CHAVE = 'VALIDAVAREJO' ;
+				
+				IF MOD(P_VALIDAVAREJO, 2) = 0 THEN
+					Estoque_Pkg.V_TRANSF := 'S';
+				END IF;
+			END IF;
+			
+            IF P_TIPMOV = 'T' AND P_VALEST IN ('G','S') THEN
+              IF P_CODEMPCAB = P_CODEMPNEGOC OR P_VALEST = 'G' THEN       
+                Estoque_Pkg.V_TRANSF := 'S';
+              ELSIF P_VALEST = 'S' THEN
+                SELECT COUNT( DISTINCT NVL(EMPSOMA, CODEMP) )
+                INTO P_COUNT
+                FROM TGFEMP
+                WHERE CODEMP IN (P_CODEMPCAB, P_CODEMPNEGOC);
+                IF P_COUNT = 1 THEN
+                  Estoque_Pkg.V_TRANSF := 'S';
+                END IF;
+              END IF;
+            END IF;
+
+            IF ((:NEW.ATUALESTOQUE = 1) AND (:NEW.RESERVA = 'N')) THEN
+                IF (P_QTDEST <> 0) AND (:NEW.ATUALESTOQUE <> 0) AND P_ADIARATUALIZACAOESTOQUE <> 'S' AND ((:NEW.RESERVA = 'N') OR (:NEW.PENDENTE = 'S')) THEN
+                    Stp_Atualiza_Tgfest(:NEW.RESERVA, :NEW.ATUALESTOQUE, :NEW.CODEMP, :NEW.CODPROD, :NEW.CONTROLE, :NEW.CODLOCALORIG, P_QTDEST, :NEW.STATUSLOTE, P_ATUALIZOU);
+                    IF P_ATUALIZOU = 'N' THEN
+                       ERRMSG := '(001) Falha na atualização do estoque do produto: '||TO_CHAR(:OLD.CODPROD, '999999');
+                       RAISE ERROR;
+                    END IF;
+                END IF;
+                IF (P_QTDESTD <> 0) AND (:OLD.ATUALESTOQUE <> 0) AND P_ADIARATUALIZACAOESTOQUE <> 'S' AND ((:OLD.RESERVA = 'N') OR (:OLD.PENDENTE = 'S')) THEN
+                    P_ATUALESTOQUE_D := :OLD.ATUALESTOQUE * (-1);
+                    Stp_Atualiza_Tgfest( :OLD.RESERVA, P_ATUALESTOQUE_D, :OLD.CODEMP, :OLD.CODPROD, :OLD.CONTROLE, :OLD.CODLOCALORIG, P_QTDESTD, :NEW.STATUSLOTE, P_ATUALIZOU);
+                    IF P_ATUALIZOU = 'N' THEN
+                      ERRMSG := '(002) Falha na atualização do estoque do produto: ' || TO_CHAR(:OLD.CODPROD, '999999');
+                      RAISE ERROR;
+                    END IF;
+                END IF;
+            ELSE
+            
+            	VARIAVEIS_PKG.V_VALIDA_EST_RESERVAR := P_VALIDA_EST_RESERVAR = 'S' AND Get_Tsipar_Logico('REVALIDAESTRES') = 'S';
+            	
+                IF (P_QTDESTD <> 0) AND (:OLD.ATUALESTOQUE <> 0) AND P_ADIARATUALIZACAOESTOQUE <> 'S' AND ((:OLD.RESERVA = 'N') OR (:OLD.PENDENTE = 'S') OR (P_TIPMOV = 'F')) THEN
+                    P_ATUALESTOQUE_D := :OLD.ATUALESTOQUE * (-1);
+                    Stp_Atualiza_Tgfest( :OLD.RESERVA, P_ATUALESTOQUE_D, :OLD.CODEMP, :OLD.CODPROD, :OLD.CONTROLE, :OLD.CODLOCALORIG, P_QTDESTD, :NEW.STATUSLOTE, P_ATUALIZOU);
+                    IF P_ATUALIZOU = 'N' THEN
+                      ERRMSG := '(003) Falha na atualização do estoque do produto: ' || TO_CHAR(:OLD.CODPROD, '999999');
+                      RAISE ERROR;
+                    END IF;
+                END IF;
+                IF (P_QTDEST <> 0) AND (:NEW.ATUALESTOQUE <> 0) AND P_ADIARATUALIZACAOESTOQUE <> 'S' AND ((:NEW.RESERVA = 'N') OR (:NEW.PENDENTE = 'S') OR (P_TIPMOV = 'F')) THEN
+                    Stp_Atualiza_Tgfest(:NEW.RESERVA, :NEW.ATUALESTOQUE, :NEW.CODEMP, :NEW.CODPROD, :NEW.CONTROLE, :NEW.CODLOCALORIG, P_QTDEST, :NEW.STATUSLOTE, P_ATUALIZOU );
+                    IF P_ATUALIZOU = 'N' THEN
+                       ERRMSG := '(004) Falha na atualização do estoque do produto: '||TO_CHAR(:OLD.CODPROD, '999999');
+                       RAISE ERROR;
+                    END IF;
+                END IF;
+            END IF;
+            Estoque_Pkg.V_TRANSF := 'N';
+          END IF;
+        END IF;
+     END IF;     
+
+     IF :NEW.CODCFO = P_CFOENTRADA THEN
+        P_CFO := P_CFOSAIDA;
+     ELSIF :NEW.CODCFO = P_CFOSAIDA THEN
+        P_CFO := P_CFOENTRADA;
+     ELSIF :NEW.CODCFO = P_CFOENTRADA_FORA THEN
+        P_CFO := P_CFOSAIDA_FORA;
+     ELSIF :NEW.CODCFO = P_CFOSAIDA_FORA THEN
+        P_CFO := P_CFOENTRADA_FORA;
+     ELSIF :NEW.CODCFO BETWEEN 1000 AND 3000 THEN
+        P_CFO := :NEW.CODCFO + 4000;
+     ELSIF :NEW.CODCFO BETWEEN 5000 AND 7000 THEN
+        P_CFO := :NEW.CODCFO - 4000;
+        IF SUBSTR(P_CFO,2,4) BETWEEN 654 AND 656 THEN
+           P_CFO := P_CFO - 3;
+        END IF;
+     ELSE
+        P_CFO := :NEW.CODCFO;
+     END IF;
+
+     INSERT INTO TGFITE_UPD (NUNOTA, SEQUENCIA, RESERVA_D, RESERVA,
+          ATUALESTOQUE_D, ATUALESTOQUE, CODEMP_D, CODEMP, CODPROD_D, CODPROD,
+          CONTROLE_D, CONTROLE, CODLOCAL_D, CODLOCAL, QTDNEG_D, QTDNEG,
+          QTDENTREGUE_D, QTDENTREGUE, QTDCONFERIDA, VLRUNIT, VLRCUS,
+          BASEIPI, VLRIPI, BASEICMS, VLRDESC, BASESUBSTIT, VLRSUBST,
+          CODVOL, CODTRIB, CODCFO, OBSERVACAO, VLRICMS, ALIQICMS,
+          STATUSNOTA, NUTAB, ATUALTRANSF, PENDENTE_D, PENDENTE, USOPROD, VLRTOT,
+       CSTIPI, PERCCOM, VLRCOM, ALTPRECO, QTDFIXADA, 
+        PERCCOMGER, VLRCOMGER, QTDWMS, BASICMMOD, 
+       BASICMSTMOD, QTDFAT, BASESTUFDEST, VLRICMSUFDEST,
+       BASESTANT,GRUPOTRANSG, ATUALESTTERC, TERCEIROS, 
+       PERCPUREZA, PERCGERMIN, STATUSLOTE
+       )
+     VALUES (:NEW.NUNOTA, :NEW.SEQUENCIA, :OLD.RESERVA, :NEW.RESERVA,
+          :OLD.ATUALESTOQUE, :NEW.ATUALESTOQUE, :OLD.CODEMP, :NEW.CODEMP, :OLD.CODPROD, :NEW.CODPROD,
+          :OLD.CONTROLE, :NEW.CONTROLE, :OLD.CODLOCALORIG, :NEW.CODLOCALORIG, :OLD.QTDNEG, :NEW.QTDNEG,
+          :OLD.QTDENTREGUE, :NEW.QTDENTREGUE, :NEW.QTDCONFERIDA, :NEW.VLRUNIT, :NEW.VLRCUS,
+          :NEW.BASEIPI, :NEW.VLRIPI, :NEW.BASEICMS, :NEW.VLRDESC, :NEW.BASESUBSTIT, :NEW.VLRSUBST,
+          :NEW.CODVOL, :NEW.CODTRIB, P_CFO, :NEW.OBSERVACAO, :NEW.VLRICMS, :NEW.ALIQICMS,
+          :NEW.STATUSNOTA, :NEW.NUTAB, P_ATUALTRANSF, :OLD.PENDENTE, :NEW.PENDENTE, :NEW.USOPROD, :NEW.VLRTOT,
+          :NEW.CSTIPI, :NEW.PERCCOM, :NEW.VLRCOM, :NEW.ALTPRECO, :NEW.QTDFIXADA, 
+       :NEW.PERCCOMGER, :NEW.VLRCOMGER, :NEW.QTDWMS, :NEW.BASICMMOD, 
+       :NEW.BASICMSTMOD, :NEW.QTDFAT, :NEW.BASESTUFDEST, :NEW.VLRICMSUFDEST,
+       :NEW.BASESTANT,:NEW.GRUPOTRANSG, :NEW.ATUALESTTERC, :NEW.TERCEIROS,
+       :NEW.PERCPUREZA, :NEW.PERCGERMIN, :NEW.STATUSLOTE
+       );
+  END IF;
+
+  -- OS 717072
+  -- OS 748512 SOLICITOU MANTER COM ARGUMENTO 9(10 estoura o tamanho do tipo de dados)
+  IF (:NEW.QTDNEG <> NVL(:OLD.QTDNEG,0)) THEN 
+    :NEW.QTDNEG := ROUND(:NEW.QTDNEG,9);
+  END IF;
+  
+  --756293
+  IF (:NEW.QTDENTREGUE <> NVL(:OLD.QTDENTREGUE,0)) THEN 
+    :NEW.QTDENTREGUE := ROUND(:NEW.QTDENTREGUE,9);
+  END IF;      
+
+  RETURN;  
+EXCEPTION
+  WHEN OTHERS THEN
+    /* 
+    Sincronizac?o de dados n?o faz validac?es
+    */
+    Estoque_Pkg.V_TRANSF := 'N';
+	VARIAVEIS_PKG.V_VALIDA_EST_RESERVAR := false;
+     IF (P_VALIDAR) THEN
+       IF SQLCODE <> 1 THEN
+         ERRMSG := ERRMSG || '  ' || SQLERRM;
+       END IF;
+       RAISE_APPLICATION_ERROR(-20101, ERRMSG);       
+     END IF;
+END;
