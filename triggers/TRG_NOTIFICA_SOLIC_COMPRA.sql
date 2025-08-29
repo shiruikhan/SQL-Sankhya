@@ -90,14 +90,19 @@ BEGIN
     -- 4. Compra realizada (preenchimento de NUNOTA e STATUS = CR)
     -------------------------------------------------------------------
     IF UPDATING AND :OLD.NUNOTA IS NULL AND :NEW.NUNOTA IS NOT NULL AND :NEW.STATUS = 'CR' THEN
-        -- Concatena todos os códigos de produtos
+        -- Concatena todos os códigos de produtos com formatação melhorada
         V_PRODUTOS := '';
         FOR R_PRODUTO IN C_PRODUTOS LOOP
-            IF V_PRODUTOS IS NOT NULL AND V_PRODUTOS != '' THEN
+            IF V_PRODUTOS IS NOT NULL AND LENGTH(V_PRODUTOS) > 0 THEN
                 V_PRODUTOS := V_PRODUTOS || ', ';
             END IF;
             V_PRODUTOS := V_PRODUTOS || R_PRODUTO.CODPROD;
         END LOOP;
+        
+        -- Se não encontrou produtos, define mensagem padrão
+        IF V_PRODUTOS IS NULL OR LENGTH(V_PRODUTOS) = 0 THEN
+            V_PRODUTOS := 'Nenhum produto encontrado';
+        END IF;
 
         SELECT NVL(MAX(CODFILA), 0) + 1 INTO V_CODFILA FROM TMDFMG;
 
@@ -112,7 +117,8 @@ BEGIN
             '<p><strong>Status:</strong> Compra Realizada</p>
             <p><strong>Número Único da Nota:</strong> ' || :NEW.NUNOTA || '</p>' ||
             '<p><strong>Data da Previsão de Entrega:</strong> ' || TO_CHAR(V_DTPREVENT, 'DD/MM/YYYY') || '</p>' ||
-            '<p><strong>Códigos dos Produtos:</strong> ' || V_PRODUTOS || '</p>
+            '<p><strong>Códigos dos Produtos:</strong></p>
+            <div style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #0056b3; margin: 10px 0;">' || V_PRODUTOS || '</div>
             <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;" />
             <p style="font-size: 12px; color: #777;">Mensagem automática gerada pelo sistema Sankhya - Spark Eletrônica</p>
             </div>';
