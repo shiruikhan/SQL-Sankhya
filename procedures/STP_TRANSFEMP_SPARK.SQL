@@ -12,8 +12,9 @@ CREATE OR REPLACE PROCEDURE STP_TRANSFEMP_SPARK (
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 20/03/2023
-  Última Revisão : 29/04/2025
-  Melhorias      : Padronização, tratamento de exceções, legibilidade e lógica
+  Última Revisão : 07/10/2025
+  Melhorias      : Padronização; tratamento robusto de exceções (SAVEPOINT e EXCEPTION_INIT para TRG_INC_TGFITE);
+                   correção de PK em TGFITE (SEQUENCIA com ROW_NUMBER); melhoria de legibilidade e lógica
 ==============================================================================*/
 
     -- Parâmetros de datas
@@ -27,8 +28,15 @@ CREATE OR REPLACE PROCEDURE STP_TRANSFEMP_SPARK (
     P_MAXNUNOTA      NUMBER;
     P_NUMNOTATOP     NUMBER;
     P_DHTIPOPER      DATE;
+    -- Exceção específica levantada pelo trigger TRG_INC_TGFITE
+    e_trigger_tgfite EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_trigger_tgfite, -20101);
+    -- Contexto atual da execução para mensagens detalhadas
+    v_context        VARCHAR2(100);
 
 BEGIN
+    SAVEPOINT sp_transfemp;
+    v_context := 'Recupera parâmetros de data';
     -- Recupera parâmetros de data
     PARAM_DTTRANSF  := ACT_DTA_PARAM(P_IDSESSAO, 'DTTRANSF');
     PARAM_DTBALANCO := ACT_DTA_PARAM(P_IDSESSAO, 'DTBALANCO');
@@ -47,9 +55,10 @@ BEGIN
     -- Recupera data/hora de alteração da operação
     SELECT MAX(DHALTER)
       INTO P_DHTIPOPER
-      FROM TGFTOP
+     FROM TGFTOP
      WHERE CODTIPOPER = P_CODTIPOPER;
 
+    v_context := 'Insere cabeçalho da nota';
     -- Insere cabeçalho da nota
     INSERT INTO TGFCAB (
 		NUNOTA, CODEMP, CODCENCUS, NUMNOTA, DTNEG, CODEMPNEGOC, CODPARC,
@@ -74,6 +83,7 @@ BEGIN
 		'TRANSFERENCIA ENTRE EMPRESAS REALIZADA PELO DASH TRANSFERENCIA ENTRE EMPRESAS',
 		P_CODUSU, P_CODUSU, 101);
 
+    v_context := 'Insere itens da nota';
     -- Insere itens da nota conforme saldo negativo
     INSERT INTO TGFITE (
         NUNOTA, SEQUENCIA, CODEMP, CODPROD, CODLOCALORIG, CODCFO, QTDNEG,
@@ -84,7 +94,7 @@ BEGIN
     )
     SELECT
         P_MAXNUNOTA,
-        RANK() OVER (ORDER BY CTE.CODPROD DESC),
+        ROW_NUMBER() OVER (ORDER BY CTE.CODPROD DESC),
         P_CODEMPSAI,
         CTE.CODPROD,
         101,
@@ -133,6 +143,7 @@ BEGIN
                AND E.DTCONTAGEM = PARAM_DTBALANCO
         ) > 0;
 
+    v_context := 'Atualiza numerador da TOP';
     -- Atualiza numerador da TOP
     UPDATE TGFNUM
        SET ULTCOD = P_NUMNOTATOP
@@ -146,7 +157,17 @@ BEGIN
     END IF;
 
 EXCEPTION
+    WHEN e_trigger_tgfite THEN
+        ROLLBACK TO sp_transfemp;
+        P_MENSAGEM := 'Falha na validação de item (TRG_INC_TGFITE): ' || SUBSTR(SQLERRM, 1, 3500);
+    WHEN NO_DATA_FOUND THEN
+        ROLLBACK TO sp_transfemp;
+        P_MENSAGEM := 'Dados não encontrados durante ' || NVL(v_context, 'execução') || '. Detalhe: ' || SUBSTR(SQLERRM, 1, 3500);
+    WHEN DUP_VAL_ON_INDEX THEN
+        ROLLBACK TO sp_transfemp;
+        P_MENSAGEM := 'Conflito de numeração/índice durante ' || NVL(v_context, 'execução') || '. Detalhe: ' || SUBSTR(SQLERRM, 1, 3500);
     WHEN OTHERS THEN
-        P_MENSAGEM := 'Erro: ' || SQLERRM;
+        ROLLBACK TO sp_transfemp;
+        P_MENSAGEM := 'Erro inesperado (' || TO_CHAR(SQLCODE) || ') durante ' || NVL(v_context, 'execução') || '. Detalhe: ' || SUBSTR(SQLERRM, 1, 3500);
 
 END STP_TRANSFEMP_SPARK;

@@ -7,6 +7,8 @@ DECLARE
   V_DOCDEST TGFPAR.CGC_CPF%TYPE;
   V_CEPORIG TSIEMP.CEP%TYPE;
   V_CEPDEST TGFPAR.CEP%TYPE;
+  V_NUNOTASIT AD_TGSCTF.NUNOTASIT%TYPE;
+  V_CNT NUMBER;
 
 BEGIN  
   IF INSERTING THEN
@@ -34,6 +36,16 @@ BEGIN
                 V_DOCDEST := NULL;
         END;
 
+        -- Calcula o status NUNOTASIT com base em TGFVAR (EXISTS para melhor desempenho)
+        BEGIN
+            SELECT CASE WHEN EXISTS (SELECT 1 FROM TGFVAR WHERE NUNOTAORIG = :NEW.NUNOTA)
+                        THEN 'F' ELSE 'A' END
+              INTO V_NUNOTASIT
+              FROM DUAL;
+        EXCEPTION
+            WHEN OTHERS THEN V_NUNOTASIT := 'A';
+        END;
+
       INSERT INTO AD_TGSCTF (
           NUCTF,
           DOCORIG,
@@ -47,7 +59,8 @@ BEGIN
           VLRTOT,
           PESOTOT,
           VOLTOT,
-          NUNOTA
+          NUNOTA,
+          NUNOTASIT
       ) VALUES (
           V_NUCTF,
           V_DOCORIG,
@@ -61,7 +74,8 @@ BEGIN
           :NEW.VLRNOTA,
           :NEW.PESOBRUTO,
           NVL(:NEW.QTDVOL, 0),
-          :NEW.NUNOTA
+          :NEW.NUNOTA,
+          V_NUNOTASIT
       );
     END IF;
   ELSIF UPDATING THEN
@@ -98,6 +112,16 @@ BEGIN
                 V_DOCDEST := NULL;
         END;
 
+        -- Calcula o status NUNOTASIT com base em TGFVAR (EXISTS para melhor desempenho)
+        BEGIN
+            SELECT CASE WHEN EXISTS (SELECT 1 FROM TGFVAR WHERE NUNOTAORIG = :NEW.NUNOTA)
+                        THEN 'F' ELSE 'A' END
+              INTO V_NUNOTASIT
+              FROM DUAL;
+        EXCEPTION
+            WHEN OTHERS THEN V_NUNOTASIT := 'A';
+        END;
+
         INSERT INTO AD_TGSCTF (
             NUCTF,
             DOCORIG,
@@ -111,7 +135,8 @@ BEGIN
             VLRTOT,
             PESOTOT,
             VOLTOT,
-            NUNOTA
+            NUNOTA,
+            NUNOTASIT
         ) VALUES (
             V_NUCTF,
             V_DOCORIG,
@@ -125,7 +150,8 @@ BEGIN
             :NEW.VLRNOTA,
             :NEW.PESOBRUTO,
             NVL(:NEW.QTDVOL, 0),
-            :NEW.NUNOTA
+            :NEW.NUNOTA,
+            V_NUNOTASIT
         );
       -- Caso o NOVO registro não esteja dentro do filtro, mas o ANTIGO estava, limpa o antigo para evitar dados obsoletos
       ELSIF :OLD.TIPMOV = 'P' AND :OLD.STATUSNOTA = 'L' AND :OLD.CODPARCDEST IS NULL AND :OLD.CIF_FOB = 'C' THEN
