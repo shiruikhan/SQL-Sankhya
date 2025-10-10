@@ -1,0 +1,78 @@
+create or replace TRIGGER TRG_COTAFRETE_EMB_SPARK
+BEFORE INSERT OR UPDATE ON AD_TGSCTF
+FOR EACH ROW
+DECLARE
+    -- Cursor: codprodemb e quantidade de caixas distintas para a nota
+    CURSOR C_EMB IS
+        SELECT CODPRODEMB,
+               COUNT(DISTINCT IDCAIXA) AS QTD_CAIXAS
+          FROM AD_EMBPED
+         WHERE NUNOTA = :NEW.NUNOTA
+         GROUP BY CODPRODEMB;
+
+    -- Dimensões obtidas de TGFPRO
+    V_ESPESSURA TGFPRO.ESPESSURA%TYPE;
+    V_ALTURA    TGFPRO.ALTURA%TYPE;
+    V_LARGURA   TGFPRO.LARGURA%TYPE;
+
+    -- Controle de índice incremental de embalagem
+    V_NEXT_IDEMB NUMBER;
+    -- Verificador de existência de registros em AD_EMBPED
+    V_EXISTS NUMBER;
+
+BEGIN
+    -- Não insere nada caso não haja informações em AD_EMBPED para a nota
+    BEGIN
+        SELECT 1 INTO V_EXISTS
+          FROM AD_EMBPED
+         WHERE NUNOTA = :NEW.NUNOTA
+           AND ROWNUM = 1;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN; -- Sai do trigger sem inserir
+    END;
+
+    -- Define o próximo índice incremental (por NUCTF)
+    SELECT NVL(MAX(IDEMB), 0) + 1
+      INTO V_NEXT_IDEMB
+      FROM AD_TGSLCB
+     WHERE NUCTF = :NEW.NUCTF;
+
+    -- Percorre produtos de embalagem da nota
+    FOR R IN C_EMB LOOP
+        -- Busca dimensões no cadastro de produtos
+        BEGIN
+            SELECT ALTURA, LARGURA, ESPESSURA
+              INTO V_ALTURA, V_LARGURA, V_ESPESSURA
+              FROM TGFPRO
+             WHERE CODPROD = R.CODPRODEMB;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                V_ALTURA := NULL;
+                V_LARGURA := NULL;
+                V_ESPESSURA := NULL;
+        END;
+
+        -- Insere uma linha por caixa distinta
+        FOR I IN 1..R.QTD_CAIXAS LOOP
+            INSERT INTO AD_TGSLCB (
+                NUCTF,
+                IDEMB,
+                COMPRIMENTO,
+                ALTURA,
+                LARGURA,
+                VOLTOT
+            ) VALUES (
+                :NEW.NUCTF,
+                V_NEXT_IDEMB,
+                V_ESPESSURA,
+                V_ALTURA,
+                V_LARGURA,
+                R.QTD_CAIXAS
+            );
+
+            -- Incrementa o índice de embalagem
+            V_NEXT_IDEMB := V_NEXT_IDEMB + 1;
+        END LOOP;
+    END LOOP;
+END;

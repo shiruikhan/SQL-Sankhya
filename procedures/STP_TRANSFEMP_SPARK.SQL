@@ -86,7 +86,7 @@ BEGIN
     v_context := 'Insere itens da nota';
     -- Insere itens da nota conforme saldo negativo
     INSERT INTO TGFITE (
-        NUNOTA, SEQUENCIA, CODEMP, CODPROD, CODLOCALORIG, CODCFO, QTDNEG,
+        NUNOTA, SEQUENCIA, CODEMP, CODPROD, CONTROLE, CODLOCALORIG, CODCFO, QTDNEG,
         QTDENTREGUE, QTDCONFERIDA, VLRUNIT, VLRCUS, BASEIPI, VLRIPI,
         BASEICMS, VLRICMS, VLRDESC, BASESUBSTIT, VLRSUBST, PENDENTE,
         CODVOL, ATUALESTOQUE, RESERVA, STATUSNOTA, CODVEND, CODEXEC,
@@ -94,9 +94,10 @@ BEGIN
     )
     SELECT
         P_MAXNUNOTA,
-        ROW_NUMBER() OVER (ORDER BY CTE.CODPROD DESC),
+        ROW_NUMBER() OVER (ORDER BY CTE.CODPROD DESC, CTE.CONTROLE DESC),
         P_CODEMPSAI,
         CTE.CODPROD,
+        CTE.CONTROLE,
         101,
         0,
         CASE 
@@ -107,6 +108,7 @@ BEGIN
                    AND E.CODEMP = 501
                    AND E.QTDEST > 0
                    AND E.CODLOCAL = 101
+                   AND NVL(E.CONTROLE, ' ') = NVL(CTE.CONTROLE, ' ')
                    AND E.DTCONTAGEM = PARAM_DTBALANCO
             ) THEN -CTE.QTDEST
             ELSE (
@@ -118,6 +120,7 @@ BEGIN
                            AND E.CODEMP = 501
                            AND E.QTDEST > 0
                            AND E.CODLOCAL = 101
+                           AND NVL(E.CONTROLE, ' ') = NVL(CTE.CONTROLE, ' ')
                            AND E.DTCONTAGEM = PARAM_DTBALANCO
                     )
                 )
@@ -140,6 +143,7 @@ BEGIN
              WHERE E.CODPROD = CTE.CODPROD
                AND E.CODEMP = 501
                AND E.CODLOCAL = 101
+               AND NVL(E.CONTROLE, ' ') = NVL(CTE.CONTROLE, ' ')
                AND E.DTCONTAGEM = PARAM_DTBALANCO
         ) > 0;
 
