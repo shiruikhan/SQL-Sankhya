@@ -12,27 +12,39 @@ O objetivo é **centralizar, versionar e documentar** todas as rotinas implement
 
 ## 📑 Sumário
 1. [📂 Estrutura do Repositório](#-estrutura-do-repositório)
-2. [🔧 Tecnologias Utilizadas](#-tecnologias-utilizadas)
-3. [📌 Boas Práticas](#-boas-práticas)
-4. [🚀 Como Utilizar](#-como-utilizar)
-5. [🎯 Objetivos do Repositório](#-objetivos-do-repositório)
+2. [🧩 Funções Disponíveis](#-funções-disponíveis)
+3. [🔧 Tecnologias Utilizadas](#-tecnologias-utilizadas)
+4. [📌 Boas Práticas](#-boas-práticas)
+5. [🚀 Como Utilizar](#-como-utilizar)
+6. [🎯 Objetivos do Repositório](#-objetivos-do-repositório)
 
 ---
 
 ## 📂 Estrutura do Repositório
 
-Os arquivos estão organizados em pastas conforme a funcionalidade ou módulo relacionado:
+Estrutura resumida para consulta rápida:
 
 ```
-📂 componentes BI/   → Scripts relacionados a Business Intelligence
-📂 functions/        → Funções PL/SQL
-📂 inativos/         → Scripts descontinuados
-📂 procedures/       → Procedures de processamento e automação
-📂 reports/          → Relatórios personalizados
-📂 triggers/         → Gatilhos de auditoria e automação
-📂 view/             → Views para consultas específicas
-README.md            → Este arquivo
+componentes BI/   → Scripts de Business Intelligence (painéis e análises)
+functions/        → Funções PL/SQL reutilizáveis
+procedures/       → Procedures para automação e processamento
+triggers/         → Gatilhos de auditoria e regras de negócio
+reports/          → Relatórios SQL/Jasper
+formulas/         → Fórmulas e parâmetros
+java/             → Integrações e utilitários Java
+inativos/         → Scripts descontinuados/legados
+view/             → Views para consultas específicas
+README.md         → Documentação do repositório
 ```
+
+---
+
+## 🧩 Funções Disponíveis
+
+Funções PL/SQL presentes em `functions/`:
+
+- `FC_TEMMETA_SPARK` → Verifica se o produto possui meta `CODMETA = 3` (retorna `S`/`N`).
+- `OBTEMCUSTO_SPARK` → Retorna custo do produto conforme filtros e tipo (`0–6`).
 
 ---
 
@@ -49,7 +61,7 @@ README.md            → Este arquivo
 - Nomear arquivos com prefixos claros:  
   - `stp_` → Stored Procedures  
   - `trg_` → Triggers  
-  - `fnc_` → Functions  
+  - `fc_`  → Functions  
 - Incluir cabeçalho nos scripts com:
   - Objetivo
   - Autor/Responsável
@@ -78,4 +90,4 @@ README.md            → Este arquivo
 - ✅ **Centralização** dos scripts  
 - ✅ **Controle de versão** das alterações  
 - ✅ **Governança técnica** aprimorada  
-- ✅ **Facilidade de auditoria e colaboração**  
+- ✅ **Facilidade de auditoria e colaboração**
