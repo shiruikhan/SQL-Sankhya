@@ -59,8 +59,8 @@ BEGIN
                 V_ESPESSURA := NULL;
         END;
 
-        -- Insere uma linha por caixa distinta
-        FOR I IN 1..R.QTD_CAIXAS LOOP
+        -- Insere apenas uma linha por CODPRODEMB com total de caixas
+        IF V_ALTURA IS NOT NULL AND V_LARGURA IS NOT NULL AND V_ESPESSURA IS NOT NULL THEN
             INSERT INTO AD_TGSLCB (
                 NUCTF,
                 IDEMB,
@@ -77,8 +77,8 @@ BEGIN
                 R.QTD_CAIXAS
             );
 
-            -- Incrementa o índice de embalagem
+            -- Incrementa o índice de embalagem para o próximo CODPRODEMB
             V_NEXT_IDEMB := V_NEXT_IDEMB + 1;
-        END LOOP;
+        END IF;
     END LOOP;
 END;
