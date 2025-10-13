@@ -32,6 +32,12 @@ BEGIN
             RETURN; -- Sai do trigger sem inserir
     END;
 
+    -- Em caso de UPDATE, limpa embalagem existente para evitar duplicatas
+    IF UPDATING THEN
+        DELETE FROM AD_TGSLCB
+         WHERE NUCTF = :NEW.NUCTF;
+    END IF;
+
     -- Define o próximo índice incremental (por NUCTF)
     SELECT NVL(MAX(IDEMB), 0) + 1
       INTO V_NEXT_IDEMB

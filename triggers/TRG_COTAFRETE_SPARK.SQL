@@ -140,7 +140,8 @@ BEGIN
             PESOTOT,
             VOLTOT,
             NUNOTA,
-            NUNOTASIT
+            NUNOTASIT,
+            VLRFRETEPED
         ) VALUES (
             V_NUCTF,
             V_DOCORIG,
@@ -155,7 +156,8 @@ BEGIN
             :NEW.PESOBRUTO,
             NVL(:NEW.QTDVOL, 0),
             :NEW.NUNOTA,
-            V_NUNOTASIT
+            V_NUNOTASIT,
+            :NEW.VLRFRETE
         );
       -- Caso o NOVO registro não esteja dentro do filtro, mas o ANTIGO estava, limpa o antigo para evitar dados obsoletos
       ELSIF :OLD.TIPMOV = 'P' AND :OLD.STATUSNOTA = 'A' AND :OLD.CODPARCDEST = 0 AND :OLD.CIF_FOB = 'C' AND :OLD.CODPARC = 1085 THEN       
