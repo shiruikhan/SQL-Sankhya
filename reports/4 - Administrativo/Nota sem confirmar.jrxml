@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Nota sem confirmar" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="1.9487171000000019"/>
+	<property name="ireport.x" value="19"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["./"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT DADOS.*, CASE WHEN MOD(ROWNUM,2) =0  THEN '#DCDCDC' ELSE '#FFDAB9' END  AS BKCOLOR FROM (
+SELECT C.NUNOTA,
+C.NUMNOTA,
+C.VLRNOTA,
+C.CODPARC,
+CASE WHEN P.NOMEPARC = '<SEM PARCEIRO>' THEN 'PEDIDO' ELSE P.NOMEPARC END AS PARCEIRO,
+C.DTENTSAI ,
+C.DTALTER,
+trunc(sysdate) - C.DTENTSAI DIASSEMCONFIRMAR,
+CASE WHEN C.TIPMOV = 'O' THEN 'PEDIDO COMPRA' WHEN C.TIPMOV = 'P' THEN 'PEDIDO VENDA' WHEN C.TIPMOV = 'J' THEN 'PEDIDO' WHEN C.TIPMOV = 'Q' THEN 'BAIXA' WHEN C.TIPMOV = 'V' THEN 'VENDA' WHEN C.TIPMOV = 'C' THEN 'COMPRA' WHEN C.TIPMOV = 'T' THEN 'TRANSF.' WHEN C.TIPMOV = 'F' THEN 'PRODUÇÃO' ELSE 'OUTROS' END AS TIPMOV,
+U.NOMEUSU,
+TPO.DESCROPER
+FROM TGFCAB C INNER JOIN TGFPAR P ON (C.CODPARC = P.CODPARC)
+INNER JOIN TSIUSU U ON (C.CODUSUINC = U.CODUSU)
+INNER JOIN TGFTOP TPO ON (C.CODTIPOPER = TPO.CODTIPOPER AND C.DHTIPOPER = TPO.DHALTER)
+WHERE C.STATUSNOTA <> 'L'  AND C.TIPMOV <> 'Z'
+ORDER BY  10,11 ASC, C.DTNEG ASC) DADOS]]>
+	</queryString>
+	<field name="NUNOTA" class="java.math.BigDecimal"/>
+	<field name="NUMNOTA" class="java.math.BigDecimal"/>
+	<field name="VLRNOTA" class="java.lang.Double"/>
+	<field name="CODPARC" class="java.math.BigDecimal"/>
+	<field name="PARCEIRO" class="java.lang.String"/>
+	<field name="DTENTSAI" class="java.sql.Timestamp"/>
+	<field name="DTALTER" class="java.sql.Timestamp"/>
+	<field name="DIASSEMCONFIRMAR" class="java.math.BigDecimal"/>
+	<field name="TIPMOV" class="java.lang.String"/>
+	<field name="NOMEUSU" class="java.lang.String"/>
+	<field name="DESCROPER" class="java.lang.String"/>
+	<field name="BKCOLOR" class="java.lang.String"/>
+	<title>
+		<band height="128" splitType="Stretch">
+			<staticText>
+				<reportElement x="95" y="0" width="460" height="46"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="16"/>
+				</textElement>
+				<text><![CDATA[NOTAS/PEDIDOS/REQUISIÇÕES SEM CONFIRMAÇÃO]]></text>
+			</staticText>
+			<image hAlign="Center" isUsingCache="true" isLazy="true">
+				<reportElement x="0" y="0" width="95" height="46"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="0" y="51" width="555" height="70" forecolor="#FF0000"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<text><![CDATA[Atenção: A existência de notas não confirmadas acarretam problemas operacionais como:
+1 - Cálculo da sugestão de compra, ou seja corre o risco de deixar de comprar algo em função de não ter confirmado o documento (pedido/nota);
+2 - Não é contabilizado o lançamento, causando distorções nos fechamentos fiscal/contábil;
+3 - Atrasos, o usuário que tentar dar a sequencia no processo como por exemplo tentar faturar um pedido em nota, se o pedido não tiver sido confirmado vai precisar aguardar a confirmação para conseguir executar a sua rotina;]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="23" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="553" height="23" backcolor="#CCCCCC"/>
+				<graphicElement>
+					<pen lineColor="#CCCCCC"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="0" width="58" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nº ÚNICO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="59" y="0" width="77" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[$ VALOR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="136" y="0" width="159" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PARCEIRO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="295" y="0" width="62" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DIAS S/ CONF.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="358" y="0" width="62" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[MOVIMENTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="0" width="62" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[USUÁRIO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="482" y="0" width="72" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESCRIÇÃO]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="58" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUNOTA}]]></textFieldExpression>
+			</textField>
+			<textField pattern="¤ #,##0.00">
+				<reportElement x="59" y="0" width="77" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.lang.Double"><![CDATA[$F{VLRNOTA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="136" y="0" width="159" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PARCEIRO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="295" y="0" width="62" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{DIASSEMCONFIRMAR}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="358" y="0" width="62" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TIPMOV}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="420" y="0" width="62" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{NOMEUSU}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="482" y="0" width="72" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCROPER}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="14" width="555" height="2" forecolor="#999999"/>
+			</line>
+		</band>
+	</detail>
+</jasperReport>

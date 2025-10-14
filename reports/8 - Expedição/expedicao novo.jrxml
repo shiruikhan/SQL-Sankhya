@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="expedicao_novo" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="NUNOTA" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["logo-sk.gif"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PK_NUNOTA" class="java.math.BigDecimal" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:\\Users\\Joao\\Desktop\\"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+CAB.CODTIPOPER,
+TPO.DESCROPER AS DESCTOP,
+CAB.DTNEG,
+CAB.NUMNOTA AS NumeroPedido,
+EMP.RAZAOSOCIAL AS RazaoEmpresa,
+EMPEDN.NOMEEND AS EnderecoEmpresa,
+EMPBAI.NOMEBAI AS BairroEmpresa,
+EMPCID.NOMECID AS CidadeEmpresa,
+EMP.NUMEND || ', ' || EMP.COMPLEMENTO AS NroEndEmpresa,
+EMP.TELEFONE AS TelEmpresa,
+EMP.CGC AS CGCEmpresa,
+EMP.INSCESTAD InscEmpresa,
+EMPUFS.UF AS UFEmpresa,
+EMP.CEP AS CepEmpresa,
+PAR.CODPARC || ' - ' ||PAR.NOMEPARC AS NomeParceiro,
+PARBAI.NOMEBAI AS BairroParceiro,
+PAREDN.NOMEEND AS EndercoParceiro,
+PARCID.NOMECID AS CidadeParceiro,
+PAR.NUMEND NroEndParceiro,
+PAR.TELEFONE AS TelParceiro,
+PAR.CGC_CPF AS CGCParceio,
+PAR.IDENTINSCESTAD AS InscParceiro,
+PARUFS.UF AS UfParceiro,
+PAR.CEP AS CepParceiro,
+CAB.DTNEG AS DtNegociacao,
+CAB.DTFATUR AS DtFaturamento,
+CAB.VLRNOTA AS TotalLiquido,
+CASE WHEN PARTRANS.CODPARC > 0 THEN PARTRANS.NOMEPARC ELSE ' ' END AS NomeTransportadora,
+CAB.AD_OBSINTERNA AS Observacao,
+USU.NOMEUSU AS USUARIO,
+CAB.NUNOTA,
+CAB.DTPREVENT
+FROM TGFCAB CAB,
+     TSIEMP EMP,
+	 TGFPAR PAR,
+	 TSIEND EMPEDN,
+	 TSIBAI EMPBAI,
+	 TSICID EMPCID,
+	 TSIUFS EMPUFS,
+	 TSIEND PAREDN,
+	 TSIBAI PARBAI,
+	 TSICID PARCID,
+	 TSIUFS PARUFS,
+	 TGFTOP TPO,
+	 VGFCAB VCAB,
+           TGFPAR PARTRANS,
+	 TSIUSU USU
+WHERE CAB.CODEMP = EMP.CODEMP
+  AND PAR.CODPARC = CAB.CODPARC
+  AND EMP.CODCID = EMPCID.CODCID
+  AND EMP.CODBAI = EMPBAI.CODBAI
+  AND EMP.CODEND = EMPEDN.CODEND
+  AND EMPCID.UF = EMPUFS.CODUF
+  AND PAR.CODEND = PAREDN.CODEND
+  AND PAR.CODBAI = PARBAI.CODBAI
+  AND PAR.CODCID = PARCID.CODCID
+  AND PARCID.UF = PARUFS.CODUF
+  AND TPO.CODTIPOPER = CAB.CODTIPOPER
+  AND TPO.DHALTER = CAB.DHTIPOPER
+  AND VCAB.NUNOTA = CAB.NUNOTA
+  AND PARTRANS.CODPARC = CAB.CODPARCTRANSP
+  AND USU.CODUSU = CAB.CODUSUINC
+  AND CAB.NUNOTA = $P{NUNOTA}
+  ORDER BY CAB.NUNOTA]]>
+	</queryString>
+	<field name="CODTIPOPER" class="java.math.BigDecimal"/>
+	<field name="DESCTOP" class="java.lang.String"/>
+	<field name="DTNEG" class="java.sql.Timestamp"/>
+	<field name="NUMEROPEDIDO" class="java.math.BigDecimal"/>
+	<field name="RAZAOEMPRESA" class="java.lang.String"/>
+	<field name="ENDERECOEMPRESA" class="java.lang.String"/>
+	<field name="BAIRROEMPRESA" class="java.lang.String"/>
+	<field name="CIDADEEMPRESA" class="java.lang.String"/>
+	<field name="NROENDEMPRESA" class="java.lang.String"/>
+	<field name="TELEMPRESA" class="java.lang.String"/>
+	<field name="CGCEMPRESA" class="java.lang.String"/>
+	<field name="INSCEMPRESA" class="java.lang.String"/>
+	<field name="UFEMPRESA" class="java.lang.String"/>
+	<field name="CEPEMPRESA" class="java.lang.String"/>
+	<field name="NOMEPARCEIRO" class="java.lang.String"/>
+	<field name="BAIRROPARCEIRO" class="java.lang.String"/>
+	<field name="ENDERCOPARCEIRO" class="java.lang.String"/>
+	<field name="CIDADEPARCEIRO" class="java.lang.String"/>
+	<field name="NROENDPARCEIRO" class="java.lang.String"/>
+	<field name="TELPARCEIRO" class="java.lang.String"/>
+	<field name="CGCPARCEIO" class="java.lang.String"/>
+	<field name="INSCPARCEIRO" class="java.lang.String"/>
+	<field name="UFPARCEIRO" class="java.lang.String"/>
+	<field name="CEPPARCEIRO" class="java.lang.String"/>
+	<field name="DTNEGOCIACAO" class="java.sql.Timestamp"/>
+	<field name="DTFATURAMENTO" class="java.sql.Timestamp"/>
+	<field name="TOTALLIQUIDO" class="java.lang.Double"/>
+	<field name="NOMETRANSPORTADORA" class="java.lang.String"/>
+	<field name="OBSERVACAO" class="java.lang.String"/>
+	<field name="USUARIO" class="java.lang.String"/>
+	<field name="NUNOTA" class="java.math.BigDecimal"/>
+	<field name="DTPREVENT" class="java.sql.Timestamp"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="154" splitType="Stretch">
+			<image>
+				<reportElement x="16" y="13" width="100" height="50"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="145" y="12" width="395" height="35"/>
+				<textElement textAlignment="Right">
+					<font size="24" isBold="true"/>
+				</textElement>
+				<text><![CDATA[E X P E D I Ç Ã O]]></text>
+			</staticText>
+			<line>
+				<reportElement x="16" y="73" width="524" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement mode="Opaque" x="17" y="75" width="258" height="28" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[SPARK ELETRÔNICA LTDA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="16" y="104" width="55" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cliente:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="16" y="119" width="55" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CNPJ:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="16" y="134" width="55" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Insc.Est.:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="71" y="104" width="204" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{NOMEPARCEIRO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="71" y="119" width="204" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CGCPARCEIO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="71" y="134" width="204" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{INSCPARCEIRO}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="16" y="152" width="524" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="282" y="104" width="95" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nº Único Ped.:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="282" y="119" width="95" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Emissão:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="282" y="134" width="95" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Entrega:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="282" y="75" width="258" height="28" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[INFORMAÇÕES - PEDIDO]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="377" y="104" width="163" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUNOTA}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="377" y="119" width="163" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DTNEG}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="278" y="75" width="1" height="75"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="377" y="134" width="163" height="15"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DTPREVENT}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20">
+			<staticText>
+				<reportElement mode="Opaque" x="17" y="0" width="523" height="20" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[ITENS]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="46" splitType="Stretch">
+			<subreport>
+				<reportElement key="expedicao_ite" x="17" y="0" width="523" height="46"/>
+				<subreportParameter name="NUNOTA">
+					<subreportParameterExpression><![CDATA[$F{NUNOTA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "expedicao_ite.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<summary>
+		<band height="143" splitType="Stretch">
+			<rectangle>
+				<reportElement x="16" y="2" width="524" height="20" backcolor="#CCCCCC"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="16" y="2" width="524" height="20"/>
+				<box rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[TRANSPORTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="16" y="22" width="82" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transportador:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="98" y="22" width="267" height="20"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{NOMETRANSPORTADORA}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="16" y="42" width="524" height="20"/>
+				<box rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Observações]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="16" y="62" width="524" height="49"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{OBSERVACAO}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="17" y="41" width="524" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<subreport>
+				<reportElement key="conferencia_2" x="17" y="111" width="523" height="32"/>
+				<subreportParameter name="NUNOTA">
+					<subreportParameterExpression><![CDATA[$F{NUNOTA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="PK_NUNOTA">
+					<subreportParameterExpression><![CDATA[$P{PK_NUNOTA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "conferencia_2.jasper"]]></subreportExpression>
+			</subreport>
+			<line>
+				<reportElement x="17" y="110" width="523" height="1"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

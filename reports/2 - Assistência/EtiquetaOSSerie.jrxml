@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="EtiquetaSerie" language="groovy" columnCount="2" printOrder="Horizontal" pageWidth="303" pageHeight="42" orientation="Landscape" columnWidth="142" columnSpacing="8" leftMargin="8" rightMargin="2" topMargin="5" bottomMargin="1">
+	<property name="ireport.zoom" value="4.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="NUMOSINI" class="java.math.BigDecimal">
+		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
+	</parameter>
+	<parameter name="NUMOSFIN" class="java.math.BigDecimal">
+		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT ASS.NUMOS,
+	ASS.SNENTRADA,
+	ASS.T_CODPROD,
+	PRO.AD_REFINTERNA,
+	PRO.AD_ETIQUETAPROD,
+	PRO.REFERENCIA
+FROM AD_TGFASS ASS
+	INNER JOIN TGFPRO PRO ON ASS.T_CODPROD = PRO.CODPROD
+WHERE ASS.NUMOS >= $P{NUMOSINI}
+	AND ASS.NUMOS <= $P{NUMOSFIN}
+ORDER BY ASS.NUMOS]]>
+	</queryString>
+	<field name="NUMOS" class="java.math.BigDecimal"/>
+	<field name="SNENTRADA" class="java.lang.String"/>
+	<field name="T_CODPROD" class="java.math.BigDecimal"/>
+	<field name="AD_REFINTERNA" class="java.lang.String"/>
+	<field name="AD_ETIQUETAPROD" class="java.lang.String"/>
+	<field name="REFERENCIA" class="java.lang.String"/>
+	<detail>
+		<band height="36" splitType="Stretch">
+			<componentElement>
+				<reportElement mode="Opaque" x="-5" y="2" width="133" height="19"/>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="false" checksumRequired="true" barWidth="20" barHeight="400">
+					<jr:codeExpression><![CDATA[$F{SNENTRADA}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<textField>
+				<reportElement x="0" y="21" width="104" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SNENTRADA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="112" y="23" width="26" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUMOS}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

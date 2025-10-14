@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="EtiquetaSerie" language="groovy" columnCount="2" printOrder="Horizontal" pageWidth="303" pageHeight="42" orientation="Landscape" columnWidth="142" columnSpacing="8" leftMargin="8" rightMargin="2" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="7.794868400000005"/>
+	<property name="ireport.x" value="351"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="PK_IDIPROC" class="java.math.BigDecimal" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT IPA.IDIPROC,
+CAST(IPA.QTDPRODUZIR AS varchar(10)) AS QTDPRODUZIR,
+       PRO.CODPROD,
+       PRO.DESCRPROD,
+       NVL(PRO.COMPLDESC,PRO.REFERENCIA) AS REFERENCIA,
+       OP.NROLOTE,
+       IPA.DTVAL,
+       IPA.DTFAB,
+       CAST(rownum AS varchar(10)) AS SEQ
+  FROM TPRIPROC OP INNER JOIN TPRIPA IPA ON (OP.IDIPROC = IPA.IDIPROC)
+                   INNER JOIN TGFPRO PRO ON (PRO.CODPROD = IPA.CODPRODPA)
+                   INNER JOIN TGFTOP ON (1=1)
+ WHERE OP.IDIPROC = $P{PK_IDIPROC}
+ AND  rownum<=IPA.QTDPRODUZIR]]>
+	</queryString>
+	<field name="IDIPROC" class="java.math.BigDecimal"/>
+	<field name="QTDPRODUZIR" class="java.lang.String"/>
+	<field name="CODPROD" class="java.math.BigDecimal"/>
+	<field name="DESCRPROD" class="java.lang.String"/>
+	<field name="REFERENCIA" class="java.lang.String"/>
+	<field name="NROLOTE" class="java.lang.String"/>
+	<field name="DTVAL" class="java.sql.Timestamp"/>
+	<field name="DTFAB" class="java.sql.Timestamp"/>
+	<field name="SEQ" class="java.lang.String"/>
+	<detail>
+		<band height="32" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="-2" width="141" height="16"/>
+				<textElement verticalAlignment="Top">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{REFERENCIA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="14" width="65" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{NROLOTE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="67" y="14" width="73" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SEQ}+"/"+$F{QTDPRODUZIR}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="65" y="24" width="2" height="1"/>
+				<graphicElement>
+					<pen lineWidth="1.25"/>
+				</graphicElement>
+			</line>
+		</band>
+	</detail>
+</jasperReport>

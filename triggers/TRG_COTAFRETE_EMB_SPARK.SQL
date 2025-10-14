@@ -1,5 +1,5 @@
 create or replace TRIGGER TRG_COTAFRETE_EMB_SPARK
-BEFORE INSERT OR UPDATE ON AD_TGSCTF
+AFTER INSERT OR UPDATE ON AD_TGSCTF
 FOR EACH ROW
 DECLARE
     -- Cursor: codprodemb e quantidade de caixas distintas para a nota
