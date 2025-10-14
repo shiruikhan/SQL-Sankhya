@@ -1,8 +1,6 @@
 package botaoAcao;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -30,11 +28,8 @@ import br.com.sankhya.modelcore.util.EntityFacadeFactory;
  */
 public class CotaFrete implements AcaoRotinaJava {
 
-    private static final String BRASPRESS_URL = "https://api.braspress.com/v1/cotacao/calcular/json";
     private static final Pattern TOTAL_FRETE_PATTERN = Pattern.compile("\"totalFrete\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
-    // Credenciais embutidas e utilizadas apenas nesta funcionalidade
-    private static final String BRASPRESS_USER = "11849626000193_PRD";
-    private static final String BRASPRESS_PASS = "vHQ7hBBdk1Olxjv9";
+    // Credenciais e endpoint devem ser lidos exclusivamente da tabela AD_TGSAPI
 
     @Override
     public void doAction(ContextoAcao contexto) throws Exception {
@@ -45,10 +40,15 @@ public class CotaFrete implements AcaoRotinaJava {
             JdbcWrapper jdbc = entityFacade.getJdbcWrapper();
             NativeSql nativeSql = new NativeSql(jdbc);
 
-            String authHeader = buildAuthorization();
-            if (authHeader == null) {
-                throw new Exception("Credenciais da Braspress não encontradas. Configure USUARIO/SENHA em variáveis de ambiente ou arquivo .env.");
+            ApiConfig cfg = loadApiConfig(contexto);
+            if (cfg == null || cfg.endpoint == null || cfg.endpoint.trim().isEmpty()) {
+                throw new Exception("Endpoint da Braspress não encontrado. Preencha AD_TGSAPI com API='Braspress' e AMBIENTE='P'.");
             }
+            String authHeader = buildAuthorization(cfg);
+            if (authHeader == null) {
+                throw new Exception("Credenciais da Braspress não encontradas. Preencha USUARIO e PASSWORD em AD_TGSAPI.");
+            }
+            String targetUrl = cfg.endpoint;
 
             Registro[] linhas = contexto.getLinhas();
             if (linhas == null || linhas.length == 0) {
@@ -158,7 +158,7 @@ public class CotaFrete implements AcaoRotinaJava {
                 String responseStr = null;
                 HttpURLConnection conn = null;
                 try {
-                    URL url = new URL(BRASPRESS_URL);
+                    URL url = new URL(targetUrl);
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     conn.setDoOutput(true);
@@ -251,9 +251,39 @@ public class CotaFrete implements AcaoRotinaJava {
         return null;
     }
 
-    private static String buildAuthorization() {
-        // Monta o header Basic a partir das credenciais embutidas
-        String basic = BRASPRESS_USER + ":" + BRASPRESS_PASS;
+    private static class ApiConfig {
+        String endpoint;
+        String user;
+        String pass;
+    }
+
+    private static ApiConfig loadApiConfig(ContextoAcao contexto) {
+        ApiConfig cfg = new ApiConfig();
+        try {
+            QueryExecutor qCred = contexto.getQuery();
+            qCred.nativeSelect(
+                "SELECT ENDPOINT, USUARIO, PASSWORD FROM AD_TGSAPI " +
+                "WHERE API = 'Braspress' AND AMBIENTE = 'P' AND ROWNUM = 1"
+            );
+            if (qCred.next()) {
+                cfg.endpoint = qCred.getString("ENDPOINT");
+                cfg.user = qCred.getString("USUARIO");
+                cfg.pass = qCred.getString("PASSWORD");
+            }
+            qCred.close();
+        } catch (Exception ignored) {
+            // Caso tabela não exista ou erro de leitura, seguirá com fallback
+        }
+        return cfg;
+    }
+
+    private static String buildAuthorization(ApiConfig cfg) {
+        String user = (cfg != null) ? cfg.user : null;
+        String pass = (cfg != null) ? cfg.pass : null;
+        if (user == null || user.trim().isEmpty() || pass == null || pass.trim().isEmpty()) {
+            return null;
+        }
+        String basic = user + ":" + pass;
         String b64 = Base64.getEncoder().encodeToString(basic.getBytes(StandardCharsets.UTF_8));
         return "Basic " + b64;
     }
