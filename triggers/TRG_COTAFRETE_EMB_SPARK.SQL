@@ -48,7 +48,7 @@ BEGIN
     FOR R IN C_EMB LOOP
         -- Busca dimensões no cadastro de produtos
         BEGIN
-            SELECT ALTURA, LARGURA, ESPESSURA
+            SELECT ALTURA / 100, LARGURA / 100, ESPESSURA / 100
               INTO V_ALTURA, V_LARGURA, V_ESPESSURA
               FROM TGFPRO
              WHERE CODPROD = R.CODPRODEMB;

@@ -33,7 +33,7 @@ BEGIN
     v_key := g_nunotaorig_set.FIRST;
     WHILE v_key IS NOT NULL LOOP
         BEGIN
-            SELECT CASE WHEN EXISTS (SELECT 1 FROM TGFVAR WHERE NUNOTAORIG = v_key)
+            SELECT CASE WHEN EXISTS (SELECT 1 FROM TGFVAR WHERE NUNOTAORIG = v_key AND STATUSNOTA = 'L')
                         THEN 'F' ELSE 'A' END
               INTO v_status
               FROM DUAL;
@@ -48,7 +48,7 @@ BEGIN
         UPDATE TGFCAB
            SET AD_NUNOTASIT = v_status
          WHERE NUNOTA = v_key
-            ANT TIPMOV = 'P';
+            AND TIPMOV = 'P';
 
         v_key := g_nunotaorig_set.NEXT(v_key);
     END LOOP;
