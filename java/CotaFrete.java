@@ -20,16 +20,12 @@ import br.com.sankhya.jape.core.JapeSession;
 import br.com.sankhya.jape.core.JapeSession.SessionHandle;
 import br.com.sankhya.jape.dao.JdbcWrapper;
 import br.com.sankhya.jape.sql.NativeSql;
+
 import br.com.sankhya.modelcore.util.EntityFacadeFactory;
 
-/**
- * Botão Java: Cotação de frete via API Braspress.
- * Lê AD_TGSCTF/AD_TGSLCB, consulta API e grava VLRFRETE em AD_TGSCTF.
- */
 public class CotaFrete implements AcaoRotinaJava {
 
     private static final Pattern TOTAL_FRETE_PATTERN = Pattern.compile("\"totalFrete\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
-    // Credenciais e endpoint devem ser lidos exclusivamente da tabela AD_TGSAPI
 
     @Override
     public void doAction(ContextoAcao contexto) throws Exception {
@@ -59,21 +55,20 @@ public class CotaFrete implements AcaoRotinaJava {
                 BigDecimal nuctf = getBigDecimalSafe(linha, "NUCTF");
                 BigDecimal nunota = getBigDecimalSafe(linha, "NUNOTA");
 
-                if (isNullOrZero(nuctf) && !isNullOrZero(nunota)) {
+                if (isNullOrZero(nunota) && !isNullOrZero(nuctf)) {
                     QueryExecutor qFind = contexto.getQuery();
-                    qFind.nativeSelect("SELECT NUCTF FROM AD_TGSCTF WHERE NUNOTA = " + nunota.toPlainString());
+                    qFind.nativeSelect("SELECT NUNOTA FROM AD_TGSCTF WHERE NUCTF = " + nuctf.toPlainString());
                     if (qFind.next()) {
-                        nuctf = qFind.getBigDecimal("NUCTF");
+                        nuctf = qFind.getBigDecimal("NUNOTA");
                     }
                     qFind.close();
                 }
 
                 if (isNullOrZero(nuctf)) {
-                    appendMsg(retorno, "Linha ignorada: sem NUCTF/NUNOTA válido.");
+                    appendMsg(retorno, "Linha ignorada: sem NUCTF válido.");
                     continue;
                 }
 
-                // Carrega dados principais da AD_TGSCTF
                 String docOrig;
                 String docDest;
                 String modal;
@@ -104,56 +99,101 @@ public class CotaFrete implements AcaoRotinaJava {
                 String statusVar = qCab.getString("NUNOTASIT");
                 qCab.close();
 
-                // Validação: somente cotar quando NUNOTASIT = 'A'
                 if (statusVar == null || !"A".equalsIgnoreCase(statusVar.trim())) {
-                    appendMsg(retorno, "NUCTF " + nuctf + ": cotação não permitida. NUNOTASIT='" + statusVar + "'.");
                     continue;
                 }
 
-                // Monta cubagem a partir de AD_TGSLCB (comprimento/largura/altura em metros)
+                if (docOrig == null || onlyDigits(docOrig).length() != 14) {
+                    continue;
+                }
+
+                if (docDest == null || docDest.trim().isEmpty()) {
+                    continue;
+                }
+                String cnpjDestDigits = onlyDigits(docDest);
+                if (cnpjDestDigits.length() != 14 && cnpjDestDigits.length() != 11) {
+                    continue;
+                }
+
+                if (modal == null || modal.trim().isEmpty()) {
+                    modal = "R";
+                } else if (!"R".equalsIgnoreCase(modal.trim()) && !"A".equalsIgnoreCase(modal.trim())) {
+                    continue;
+                }
+
+                if (tipoFrete == null || tipoFrete.intValue() < 1 || tipoFrete.intValue() > 3) {
+                    continue;
+                }
+
+                if (cepOrigem == null || onlyDigits(cepOrigem).length() != 8) {
+                    continue;
+                }
+
+                if (cepDestino == null || onlyDigits(cepDestino).length() != 8) {
+                    continue;
+                }
+
+                if (isNullOrZero(vlrMercadoria)) {
+                    continue;
+                }
+
+                if (isNullOrZero(peso)) {
+                    continue;
+                }
+
+                if (volumes == null || volumes.intValue() <= 0) {
+                    continue;
+                }
+
                 StringBuilder cubagemJson = new StringBuilder();
                 cubagemJson.append("[");
                 boolean firstCub = true;
                 QueryExecutor qDim = contexto.getQuery();
-                qDim.nativeSelect("SELECT COMPRIMENTO, LARGURA, ALTURA FROM AD_TGSLCB WHERE NUCTF = " + nuctf.toPlainString() + " ORDER BY IDEMB");
+                qDim.nativeSelect("SELECT COMPRIMENTO, LARGURA, ALTURA, VOLTOT FROM AD_TGSLCB WHERE NUCTF = " + nuctf.toPlainString() + " ORDER BY IDEMB");
                 while (qDim.next()) {
                     BigDecimal comprimento = qDim.getBigDecimal("COMPRIMENTO");
                     BigDecimal largura = qDim.getBigDecimal("LARGURA");
                     BigDecimal altura = qDim.getBigDecimal("ALTURA");
-                    if (comprimento != null && largura != null && altura != null) {
+                    BigDecimal voltot = qDim.getBigDecimal("VOLTOT");
+
+                    if (comprimento != null && largura != null && altura != null &&
+                        comprimento.compareTo(BigDecimal.ZERO) > 0 &&
+                        largura.compareTo(BigDecimal.ZERO) > 0 &&
+                        altura.compareTo(BigDecimal.ZERO) > 0) {
+                        
                         if (!firstCub) cubagemJson.append(",");
                         cubagemJson.append("{")
-                                   .append("\"comprimento\":").append(toPlain(comprimento))
-                                   .append(",\"largura\":").append(toPlain(largura))
-                                   .append(",\"altura\":").append(toPlain(altura))
-                                   .append("}");
+                                   .append("\"comprimento\":").append(formatDecimal(comprimento)).append(",")
+                                   .append("\"largura\":").append(formatDecimal(largura)).append(",")
+                                   .append("\"altura\":").append(formatDecimal(altura)).append(",");
+                        
+                        if (voltot != null && voltot.compareTo(BigDecimal.ZERO) > 0) {
+                            cubagemJson.append("\"volumes\":").append(voltot.intValue());
+                        } else {
+                            cubagemJson.append("\"volumes\":1");
+                        }
+                        
+                        cubagemJson.append("}");
                         firstCub = false;
                     }
                 }
                 qDim.close();
                 cubagemJson.append("]");
 
-                // Monta payload conforme documentação Braspress
                 StringBuilder payload = new StringBuilder();
                 payload.append("{")
                        .append("\"cnpjRemetente\":\"").append(onlyDigits(docOrig)).append("\",")
+                       .append("\"cnpjDestinatario\":\"").append(onlyDigits(docDest)).append("\",")
                        .append("\"modal\":\"").append((modal != null && !modal.isEmpty()) ? modal : "R").append("\",")
                        .append("\"tipoFrete\":").append(tipoFrete != null ? tipoFrete.intValue() : 1).append(",")
                        .append("\"cepOrigem\":\"").append(onlyDigits(cepOrigem)).append("\",")
                        .append("\"cepDestino\":\"").append(onlyDigits(cepDestino)).append("\",")
-                       .append("\"vlrMercadoria\":").append(toPlain(vlrMercadoria)).append(",")
-                       .append("\"peso\":").append(toPlain(peso)).append(",")
-                       .append("\"volumes\":").append(volumes != null ? volumes.intValue() : 0);
-                if (docDest != null && !docDest.trim().isEmpty()) {
-                    payload.append(",\"cnpjDestinatario\":\"").append(onlyDigits(docDest)).append("\"");
-                }
-                // inclui cubagem somente se houver itens
-                if (cubagemJson.indexOf("{") > -1) {
-                    payload.append(",\"cubagem\":").append(cubagemJson);
-                }
-                payload.append("}");
+                       .append("\"vlrMercadoria\":").append(formatDecimal(vlrMercadoria)).append(",")
+                       .append("\"peso\":").append(formatDecimal(peso)).append(",")
+                       .append("\"volumes\":").append(volumes != null ? volumes.intValue() : 0).append(",")
+                       .append("\"cubagem\":").append(cubagemJson)
+                       .append("}");
 
-                // Chamada HTTP
                 BigDecimal valorFrete = null;
                 String responseStr = null;
                 HttpURLConnection conn = null;
@@ -182,7 +222,6 @@ public class CotaFrete implements AcaoRotinaJava {
                     }
                     responseStr = sbResp.toString();
                     if (code < 200 || code >= 300) {
-                        appendMsg(retorno, "NUCTF " + nuctf + ": falha na API (HTTP " + code + ") " + responseStr);
                         continue;
                     }
 
@@ -194,21 +233,16 @@ public class CotaFrete implements AcaoRotinaJava {
                 }
 
                 if (valorFrete == null) {
-                    appendMsg(retorno, "NUCTF " + nuctf + ": resposta sem totalFrete. Resp=" + responseStr);
                     continue;
                 }
 
-                // Atualiza VLRFRETE em AD_TGSCTF
                 nativeSql.executeUpdate("UPDATE AD_TGSCTF SET VLRFRETE = " + valorFrete.toPlainString() + " WHERE NUCTF = " + nuctf.toPlainString());
-                appendMsg(retorno, "NUCTF " + nuctf + ": VLRFRETE atualizado para " + valorFrete.toPlainString());
+                appendMsg(retorno, "Valor do frete: R$ " + valorFrete.toPlainString());
             }
 
             contexto.setMensagemRetorno(retorno.toString());
         } catch (Exception e) {
-            contexto.setMensagemRetorno("Erro na cotação: " + e.getMessage());
             throw e;
-        } finally {
-            JapeSession.close(hnd);
         }
     }
 
@@ -232,6 +266,14 @@ public class CotaFrete implements AcaoRotinaJava {
 
     private static String toPlain(BigDecimal v) {
         return v != null ? v.toPlainString() : "0";
+    }
+
+    private static String formatDecimal(BigDecimal v) {
+        if (v == null) return "0.00";
+
+        String result = v.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString();
+
+        return result.replace(',', '.');
     }
 
     private static void appendMsg(StringBuilder sb, String msg) {
@@ -272,7 +314,7 @@ public class CotaFrete implements AcaoRotinaJava {
             }
             qCred.close();
         } catch (Exception ignored) {
-            // Caso tabela não exista ou erro de leitura, seguirá com fallback
+
         }
         return cfg;
     }
