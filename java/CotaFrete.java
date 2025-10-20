@@ -55,17 +55,17 @@ public class CotaFrete implements AcaoRotinaJava {
                 BigDecimal nuctf = getBigDecimalSafe(linha, "NUCTF");
                 BigDecimal nunota = getBigDecimalSafe(linha, "NUNOTA");
 
-                if (isNullOrZero(nunota) && !isNullOrZero(nuctf)) {
+                if (isNullOrZero(nuctf) && !isNullOrZero(nunota)) {
                     QueryExecutor qFind = contexto.getQuery();
-                    qFind.nativeSelect("SELECT NUNOTA FROM AD_TGSCTF WHERE NUCTF = " + nuctf.toPlainString());
+                    qFind.nativeSelect("SELECT NUCTF FROM AD_TGSCTF WHERE NUNOTA = " + nunota.toPlainString());
                     if (qFind.next()) {
-                        nuctf = qFind.getBigDecimal("NUNOTA");
+                        nuctf = qFind.getBigDecimal("NUCTF");
                     }
                     qFind.close();
                 }
 
                 if (isNullOrZero(nuctf)) {
-                    appendMsg(retorno, "Linha ignorada: sem NUCTF válido.");
+                    appendMsg(retorno, "Linha ignorada: sem NUCTF/NUNOTA válido.");
                     continue;
                 }
 
