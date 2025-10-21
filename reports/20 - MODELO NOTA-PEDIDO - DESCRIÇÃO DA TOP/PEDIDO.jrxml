@@ -42,6 +42,7 @@
 , CAB.VLRDESCSERV
 , CAB.VLRDESCTOT
 , CAB.VLRDESCTOTITEM
+, CAB.CODTIPOPER
 , UPPER(TOP.DESCROPER) DESCROPER
 FROM TGFCAB CAB
 , TGFTOP TOP
@@ -90,6 +91,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 	<field name="VLRDESCSERV" class="java.lang.Double"/>
 	<field name="VLRDESCTOT" class="java.lang.Double"/>
 	<field name="VLRDESCTOTITEM" class="java.lang.Double"/>
+	<field name="CODTIPOPER" class="java.math.BigDecimal"/>
 	<field name="DESCROPER" class="java.lang.String"/>
 	<variable name="TOTAL_SERVICO" class="java.math.BigDecimal" calculation="Sum"/>
 	<variable name="TOTAL_PRODUTO" class="java.math.BigDecimal" calculation="Sum"/>
@@ -694,6 +696,9 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<reportElement key="FINAN" x="0" y="79" width="562" height="0" isRemoveLineWhenBlank="true"/>
 				<subreportParameter name="NUNOTA">
 					<subreportParameterExpression><![CDATA[$P{NUNOTA}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CODTIPOPER">
+					<subreportParameterExpression><![CDATA[$F{CODTIPOPER}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "FINAN.jasper"]]></subreportExpression>

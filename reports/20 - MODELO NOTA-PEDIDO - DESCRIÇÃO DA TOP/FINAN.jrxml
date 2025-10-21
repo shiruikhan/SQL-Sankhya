@@ -10,6 +10,7 @@
 	<import value="java.util.*"/>
 	<import value="net.sf.jasperreports.engine.data.*"/>
 	<parameter name="NUNOTA" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="CODTIPOPER" class="java.math.BigDecimal" isForPrompting="false"/>
 	<queryString>
 		<![CDATA[SELECT FIN.DESDOBRAMENTO
 , FIN.DTVENC
@@ -26,7 +27,7 @@ ORDER BY FIN.DESDOBRAMENTO]]>
 		<band splitType="Stretch"/>
 	</background>
 	<title>
-		<band height="20" splitType="Stretch">
+		<band height="35" splitType="Stretch">
 			<rectangle radius="0">
 				<reportElement key="element-2" mode="Opaque" x="0" y="0" width="562" height="20" forecolor="#000000" backcolor="#999999"/>
 			</rectangle>
@@ -36,6 +37,15 @@ ORDER BY FIN.DESDOBRAMENTO]]>
 					<font size="12" isBold="true" pdfFontName="Helvetica-Bold"/>
 				</textElement>
 				<text><![CDATA[PAGAMENTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-info" x="4" y="22" width="554" height="13">
+					<printWhenExpression><![CDATA[$P{CODTIPOPER} != null && $P{CODTIPOPER}.intValue() == 900]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[Após aceite do Orçamento o Pedido passará por análise e aprovação financeira.]]></text>
 			</staticText>
 		</band>
 	</title>
