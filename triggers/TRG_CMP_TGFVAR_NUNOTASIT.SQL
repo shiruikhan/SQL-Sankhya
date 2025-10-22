@@ -48,7 +48,8 @@ BEGIN
         UPDATE TGFCAB
            SET AD_NUNOTASIT = v_status
          WHERE NUNOTA = v_key
-            AND TIPMOV = 'P';
+            AND TIPMOV = 'P'
+            AND CODTIPOPER <> 900;
 
         v_key := g_nunotaorig_set.NEXT(v_key);
     END LOOP;
