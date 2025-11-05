@@ -9,11 +9,14 @@ create or replace PROCEDURE STP_INTEGRAPEDIDO_AGENDADA AS
     P_VLRTOT         NUMBER;
     P_VLRDESC        NUMBER;
     P_CODPARC        NUMBER;
+    P_TIPPESSOA      VARCHAR2(1);
     P_MAXFILA        NUMBER;
     P_OBSERVACAO     VARCHAR2(200);
+    P_VLRFRETE       NUMBER;
+    P_CODPARCTRANSP  NUMBER;
 
     CURSOR CUR_PEDIDOS IS
-        SELECT NUPED, OBSERVACAO
+        SELECT NUPED, OBSERVACAO, VLRFRETE, NVL(CODPARCTRANSP,0)
         FROM AD_TGSCAB
         WHERE NUNOTA IS NULL;
 
@@ -34,7 +37,7 @@ create or replace PROCEDURE STP_INTEGRAPEDIDO_AGENDADA AS
 BEGIN
     OPEN CUR_PEDIDOS;
     LOOP
-        FETCH CUR_PEDIDOS INTO FIELD_NUPED, P_OBSERVACAO;
+        FETCH CUR_PEDIDOS INTO FIELD_NUPED, P_OBSERVACAO, P_VLRFRETE, P_CODPARCTRANSP;
         EXIT WHEN CUR_PEDIDOS%NOTFOUND;
 
         -- Recupera dados necessários
@@ -42,7 +45,13 @@ BEGIN
         SELECT NVL(MAX(ULTCOD) + 1, 0) INTO P_NUMNOTATOP FROM TGFNUM WHERE ARQUIVO LIKE '%1006%';
         SELECT MAX(DHALTER) INTO P_DHTIPOPER FROM TGFTOP WHERE CODTIPOPER = P_CODTIPOPER;
         SELECT NVL(SUM(VLRDESC * QTDNEG),0), NVL(SUM(VLRTOT),0) INTO P_VLRDESC, P_VLRTOT FROM AD_TGSITE WHERE NUPED = FIELD_NUPED;
-        SELECT CODPARC INTO P_CODPARC FROM AD_TGSPAR WHERE ID = (SELECT ID FROM AD_TGSCAB WHERE NUPED = FIELD_NUPED);
+        SELECT CODPARC, SUBSTR(TIPPESSOA, 1, 1) INTO P_CODPARC, P_TIPPESSOA FROM AD_TGSPAR WHERE ID = (SELECT ID FROM AD_TGSCAB WHERE NUPED = FIELD_NUPED);
+        -- Define CODEMP dinamicamente conforme o tipo de pessoa
+        IF P_TIPPESSOA = 'F' THEN
+            P_CODEMP := 2;
+        ELSE
+            P_CODEMP := 1;
+        END IF;
 
         -- Inserção no TGFCAB
         INSERT INTO TGFCAB (NUNOTA, CODEMP, CODCENCUS, NUMNOTA, DTNEG,DTMOV, CODEMPNEGOC, CODPARC, RATEADO, CODVEICULO,
@@ -53,10 +62,10 @@ BEGIN
             VLRIRF, DTALTER, CODPARCDEST, VLRSUBST, BASESUBSTIT, CODPROJ, NUMCONTRATO, BASEINSS, VLRINSS, VLRREPREDTOT,
             PERCDESC, CODPARCREMETENTE, CODPARCCONSIGNATARIO, CODPARCREDESPACHO, CODNAT, TROCO, CODUSUCOMPRADOR, CIF_FOB,
             OBSERVACAO, CODUSU, CODUSUINC,  AD_CODLOCALDEST) 
-        VALUES (P_MAXNUNOTA, P_CODEMP, 30100, P_NUMNOTATOP, SYSDATE,SYSDATE, P_CODEMP, P_CODPARC, 'N', 0, P_CODTIPOPER,
+        VALUES (P_MAXNUNOTA, P_CODEMP, 30100, P_NUMNOTATOP, TRUNC(SYSDATE),TRUNC(SYSDATE), P_CODEMP, P_CODPARC, 'N', 0, P_CODTIPOPER,
             P_DHTIPOPER, 'P', 128, (SELECT MAX(DHALTER) FROM TGFTPV WHERE CODTIPVENDA = 128), 6, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 'N', 0, P_VLRDESC, 0, 0, 0, 'N', P_VLRTOT, 0,0, 'S', 0, 0, 0, 0, 'N',  0, 0, 'N', 'A', 'S', 0, SYSDATE,
-            0, 0, 0, 0, 0 ,0, 0, 0, 0, 0, 0, 0, 101001, 0, 0, 'S', 'VENDA REALIZADA DURANTE AUTOMEC E INTEGRADA VIA SITE ' || P_OBSERVACAO,
+            0, 0, 0, 0, 'N', 0, P_VLRDESC, P_VLRFRETE, 0, 0, 'S', P_VLRTOT, P_CODPARCTRANSP,0, 'S', 0, 0, 0, 0, 'N',  0, 0, 'N', 'A', 'S', 0, SYSDATE,
+            0, 0, 0, 0, 0 ,0, 0, 0, 0, 0, 0, 0, 101001, 0, 0, 'C', 'VENDA REALIZADA DURANTE A EXPO MOTOR HOME 2025 E INTEGRADA VIA SITE ' || P_OBSERVACAO,
             5, 5, NULL);
 
         -- Atualiza tabela AD_TGSCAB
@@ -82,10 +91,10 @@ BEGIN
         CLOSE CURSOR_ITENS;
         SELECT MAX(CODFILA)+1 INTO P_MAXFILA FROM TMDFMG;
         STP_GRAVA_FILA_BI2(P_MAXFILA,
-                'Inclusão de novo pedido AUTOMEC ',
+                'Inclusão de novo pedido EXPO MOTOR HOME 2025 ',
                 '<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; line-height: 1.5;">
                 <h2 style="color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">Novo pedido criado</h2>            
-                <p>Um novo pedido vindo foi criado no portal de vendas. Esse pedido foi realizado na AUTOMEC e tem como número único ' || P_MAXNUNOTA || '</p>            
+                <p>Um novo pedido vindo foi criado no portal de vendas. Esse pedido foi realizado na EXPO MOTOR HOME 2025 e tem como número único ' || P_MAXNUNOTA || '</p>            
                 <p><strong>Data de Criação:</strong> ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI:SS') || '</p>            
                 </div>',
                 'ti@usinaspark.com.br',
