@@ -59,7 +59,7 @@ BEGIN
                 V_ESPESSURA := NULL;
         END;
 
-        -- Insere apenas uma linha por CODPRODEMB com total de caixas
+        -- Caso a embalagem (CODPRODEMB) tenha medidas, insere uma linha por embalagem
         IF V_ALTURA IS NOT NULL AND V_LARGURA IS NOT NULL AND V_ESPESSURA IS NOT NULL THEN
             INSERT INTO AD_TGSLCB (
                 NUCTF,
@@ -79,6 +79,49 @@ BEGIN
 
             -- Incrementa o índice de embalagem para o próximo CODPRODEMB
             V_NEXT_IDEMB := V_NEXT_IDEMB + 1;
+        ELSE
+            -- Fallback: usar medidas do produto (CODPROD) quando CODPRODEMB não tiver medidas
+            FOR P IN (
+                SELECT CODPROD,
+                       COUNT(DISTINCT IDCAIXA) AS QTD_CAIXAS
+                  FROM AD_EMBPED
+                 WHERE NUNOTA = :NEW.NUNOTA
+                   AND (CODPRODEMB = R.CODPRODEMB OR R.CODPRODEMB IS NULL)
+                 GROUP BY CODPROD
+            ) LOOP
+                BEGIN
+                    SELECT ALTURA / 100, LARGURA / 100, ESPESSURA / 100
+                      INTO V_ALTURA, V_LARGURA, V_ESPESSURA
+                      FROM TGFPRO
+                     WHERE CODPROD = P.CODPROD;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        V_ALTURA := NULL;
+                        V_LARGURA := NULL;
+                        V_ESPESSURA := NULL;
+                END;
+
+                IF V_ALTURA IS NOT NULL AND V_LARGURA IS NOT NULL AND V_ESPESSURA IS NOT NULL THEN
+                    INSERT INTO AD_TGSLCB (
+                        NUCTF,
+                        IDEMB,
+                        COMPRIMENTO,
+                        ALTURA,
+                        LARGURA,
+                        VOLTOT
+                    ) VALUES (
+                        :NEW.NUCTF,
+                        V_NEXT_IDEMB,
+                        V_ESPESSURA,
+                        V_ALTURA,
+                        V_LARGURA,
+                        P.QTD_CAIXAS
+                    );
+
+                    -- Incrementa o índice para cada produto distinto
+                    V_NEXT_IDEMB := V_NEXT_IDEMB + 1;
+                END IF;
+            END LOOP;
         END IF;
     END LOOP;
 END;

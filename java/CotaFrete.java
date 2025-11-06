@@ -80,7 +80,7 @@ public class CotaFrete implements AcaoRotinaJava {
                 BigDecimal volumes;
 
                 QueryExecutor qCab = contexto.getQuery();
-                qCab.nativeSelect("SELECT DOCORIG, DOCDEST, MODAL, TIPFRETE, CEPORIG, CEPDEST, VLRTOT, PESOTOT, VOLTOT, NUNOTASIT " +
+                qCab.nativeSelect("SELECT DOCORIG, DOCDEST, MODAL, TIPFRETE, CEPORIG, CEPDEST, VLRTOT, PESOTOT, VOLTOT, NUNOTASIT, NUNOTA " +
                         "FROM AD_TGSCTF WHERE NUCTF = " + nuctf.toPlainString());
                 if (!qCab.next()) {
                     qCab.close();
@@ -97,7 +97,13 @@ public class CotaFrete implements AcaoRotinaJava {
                 peso = qCab.getBigDecimal("PESOTOT");
                 volumes = qCab.getBigDecimal("VOLTOT");
                 String statusVar = qCab.getString("NUNOTASIT");
+                BigDecimal nunotaCab = qCab.getBigDecimal("NUNOTA");
                 qCab.close();
+
+                // Usa NUNOTA obtido do cabeçalho caso não tenha vindo na seleção
+                if (isNullOrZero(nunota) && !isNullOrZero(nunotaCab)) {
+                    nunota = nunotaCab;
+                }
 
                 if (statusVar == null || !"A".equalsIgnoreCase(statusVar.trim())) {
                     continue;
@@ -237,6 +243,11 @@ public class CotaFrete implements AcaoRotinaJava {
                 }
 
                 nativeSql.executeUpdate("UPDATE AD_TGSCTF SET VLRFRETE = " + valorFrete.toPlainString() + " WHERE NUCTF = " + nuctf.toPlainString());
+
+                // Também atualiza o VLRFRETE em TGFCAB baseado pelo NUNOTA
+                if (!isNullOrZero(nunota)) {
+                    nativeSql.executeUpdate("UPDATE TGFCAB SET VLRFRETE = " + valorFrete.toPlainString() + " WHERE NUNOTA = " + nunota.toPlainString());
+                }
                 appendMsg(retorno, "Valor do frete: R$ " + valorFrete.toPlainString());
             }
 

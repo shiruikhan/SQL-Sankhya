@@ -1,0 +1,39 @@
+CREATE OR REPLACE VIEW VGFNFE AS
+SELECT
+    C.NUNOTA,
+    C.CODVEND,
+    C.AD_PEDIDOMKTPLACE AS PEDIDOEXTERNO,
+    C.AD_WAREHOUSEID,
+    C.CHAVENFE AS CHAVENFE,
+    (
+        
+        SELECT
+            NFE.XMLENVCLI
+        
+        FROM
+            TGFNFE NFE
+        
+        WHERE
+            NFE.NUNOTA = C.NUNOTA
+    
+    ) AS NOTAXML
+FROM TGFCAB C
+LEFT 
+JOIN
+    TGFITE ITE
+        ON C.NUNOTA = ITE.NUNOTA
+WHERE C.TIPMOV IN (
+            'V'
+        )  
+        AND C.CODVEND IN (
+            42
+        )  
+        AND C.STATUSNFE = 'A'  
+        AND C.CHAVENFE IS NOT NULL  
+        AND C.DHPROTOC > TRUNC(SYSDATE) - 4
+GROUP BY
+    C.NUNOTA,  
+    C.CODVEND,    
+    C.AD_PEDIDOMKTPLACE,    
+    C.AD_WAREHOUSEID,    
+    C.CHAVENFE;
