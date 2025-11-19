@@ -27,6 +27,7 @@ import br.com.sankhya.modelcore.util.EntityFacadeFactory;
 public class CotaFrete implements AcaoRotinaJava {
 
     private static final Pattern TOTAL_FRETE_PATTERN = Pattern.compile("\"totalFrete\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
+    private static final Pattern PRAZO_PATTERN = Pattern.compile("\\\"prazo\\\"\\s*:\\s*(\\d+)");
 
     @Override
     public void doAction(ContextoAcao contexto) throws Exception {
@@ -202,6 +203,7 @@ public class CotaFrete implements AcaoRotinaJava {
                        .append("}");
 
                 BigDecimal valorFrete = null;
+                Integer prazoDias = null;
                 String responseStr = null;
                 HttpURLConnection conn = null;
                 try {
@@ -233,6 +235,8 @@ public class CotaFrete implements AcaoRotinaJava {
                     }
 
                     valorFrete = parseTotalFrete(responseStr);
+                    Integer prazoDiasLocal = parsePrazo(responseStr);
+                    prazoDias = prazoDiasLocal;
                 } finally {
                     if (conn != null) {
                         conn.disconnect();
@@ -253,13 +257,17 @@ public class CotaFrete implements AcaoRotinaJava {
                         nativeSql.executeUpdate(
                             "UPDATE TGFCAB SET " +
                             "VLRFRETE = " + valorFrete.toPlainString() + ", " +
-                            "BASEICMS = NVL(BASEICMS,0) + " + valorFrete.toPlainString() + ", " +
-                            "VLRNOTA = NVL(VLRNOTA,0) + " + valorFrete.toPlainString() +
+                            "BASEICMS = NVL(BASEICMS,0) + DECODE(TIPFRETE, 'S', " + valorFrete.toPlainString() + ", 0), " +
+                            "VLRNOTA = NVL(VLRNOTA,0) + DECODE(TIPFRETE, 'S', " + valorFrete.toPlainString() + ", 0) " +
                             " WHERE NUNOTA = " + nunota.toPlainString()
                         );
                     }
                 }
-                appendMsg(retorno, "Valor do frete: R$ " + valorFrete.toPlainString());
+                if (prazoDias != null && prazoDias > 0) {
+                    appendMsg(retorno, "Valor do frete: R$ " + valorFrete.toPlainString() + " | Prazo estimado: até " + prazoDias + " dia(s).");
+                } else {
+                    appendMsg(retorno, "Valor do frete: R$ " + valorFrete.toPlainString());
+                }
             }
 
             contexto.setMensagemRetorno(retorno.toString());
@@ -317,6 +325,18 @@ public class CotaFrete implements AcaoRotinaJava {
         return null;
     }
 
+    private static Integer parsePrazo(String json) {
+        if (json == null) return null;
+        Matcher m = PRAZO_PATTERN.matcher(json);
+        if (m.find()) {
+            try {
+                return Integer.parseInt(m.group(1));
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
     private static class ApiConfig {
         String endpoint;
         String user;
@@ -363,13 +383,17 @@ public class CotaFrete implements AcaoRotinaJava {
                 return false;
             }
             cabVO.setProperty("VLRFRETE", valorFrete);
-            // Somar BASEICMS e VLRNOTA com o VLRFRETE informado
-            BigDecimal baseIcmsAtual = getVOBigDecimal(cabVO, "BASEICMS");
-            BigDecimal vlrNotaAtual = getVOBigDecimal(cabVO, "VLRNOTA");
-            BigDecimal novoBaseIcms = (baseIcmsAtual == null ? BigDecimal.ZERO : baseIcmsAtual).add(valorFrete);
-            BigDecimal novoVlrNota = (vlrNotaAtual == null ? BigDecimal.ZERO : vlrNotaAtual).add(valorFrete);
-            cabVO.setProperty("BASEICMS", novoBaseIcms);
-            cabVO.setProperty("VLRNOTA", novoVlrNota);
+            Object oTip = cabVO.getProperty("TIPFRETE");
+            String tipFreteCab = oTip != null ? oTip.toString() : null;
+            boolean somarValores = "S".equalsIgnoreCase(tipFreteCab);
+            if (somarValores) {
+                BigDecimal baseIcmsAtual = getVOBigDecimal(cabVO, "BASEICMS");
+                BigDecimal vlrNotaAtual = getVOBigDecimal(cabVO, "VLRNOTA");
+                BigDecimal novoBaseIcms = (baseIcmsAtual == null ? BigDecimal.ZERO : baseIcmsAtual).add(valorFrete);
+                BigDecimal novoVlrNota = (vlrNotaAtual == null ? BigDecimal.ZERO : vlrNotaAtual).add(valorFrete);
+                cabVO.setProperty("BASEICMS", novoBaseIcms);
+                cabVO.setProperty("VLRNOTA", novoVlrNota);
+            }
 
             // Tenta diversos métodos possíveis via reflexão
             Class<?> efClass = entityFacade.getClass();
