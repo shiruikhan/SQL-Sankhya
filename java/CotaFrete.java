@@ -23,7 +23,6 @@ import br.com.sankhya.jape.vo.DynamicVO;
 import br.com.sankhya.jape.vo.EntityVO;
 import br.com.sankhya.jape.bmp.PersistentLocalEntity;
 import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
 
 import br.com.sankhya.modelcore.util.EntityFacadeFactory;
 import br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper;
