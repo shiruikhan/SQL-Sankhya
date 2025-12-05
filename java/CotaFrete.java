@@ -19,10 +19,14 @@ import br.com.sankhya.jape.EntityFacade;
 import br.com.sankhya.jape.core.JapeSession;
 import br.com.sankhya.jape.core.JapeSession.SessionHandle;
 import br.com.sankhya.jape.dao.JdbcWrapper;
-import br.com.sankhya.jape.sql.NativeSql;
 import br.com.sankhya.jape.vo.DynamicVO;
+import br.com.sankhya.jape.vo.EntityVO;
+import br.com.sankhya.jape.bmp.PersistentLocalEntity;
+import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
 
 import br.com.sankhya.modelcore.util.EntityFacadeFactory;
+import br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper;
 
 public class CotaFrete implements AcaoRotinaJava {
 
@@ -31,12 +35,14 @@ public class CotaFrete implements AcaoRotinaJava {
 
     @Override
     public void doAction(ContextoAcao contexto) throws Exception {
-        SessionHandle hnd = JapeSession.open();
+        SessionHandle hnd = null;
+        JdbcWrapper jdbc = null;
         StringBuilder retorno = new StringBuilder();
         try {
+            hnd = JapeSession.open();
             EntityFacade entityFacade = EntityFacadeFactory.getDWFFacade();
-            JdbcWrapper jdbc = entityFacade.getJdbcWrapper();
-            NativeSql nativeSql = new NativeSql(jdbc);
+            jdbc = entityFacade.getJdbcWrapper();
+            jdbc.openSession();
 
             ApiConfig cfg = loadApiConfig(contexto);
             if (cfg == null || cfg.endpoint == null || cfg.endpoint.trim().isEmpty()) {
@@ -247,21 +253,27 @@ public class CotaFrete implements AcaoRotinaJava {
                     continue;
                 }
 
-                nativeSql.executeUpdate("UPDATE AD_TGSCTF SET VLRFRETE = " + valorFrete.toPlainString() + " WHERE NUCTF = " + nuctf.toPlainString());
+                try (PreparedStatement pstmt = jdbc.getConnection().prepareStatement("UPDATE AD_TGSCTF SET VLRFRETE = ? WHERE NUCTF = ?")) {
+                    pstmt.setBigDecimal(1, valorFrete);
+                    pstmt.setBigDecimal(2, nuctf);
+                    pstmt.executeUpdate();
+                }
 
                 // Também atualiza o VLRFRETE em TGFCAB baseado pelo NUNOTA
                 if (!isNullOrZero(nunota)) {
-                    boolean ok = updateCabecalho(entityFacade, nunota, valorFrete, nativeSql);
-                    if (!ok) {
-                        // Fallback para SQL direto em caso de erro na atualização via entidade
-                        nativeSql.executeUpdate(
-                            "UPDATE TGFCAB SET " +
-                            "VLRFRETE = " + valorFrete.toPlainString() + ", " +
-                            "BASEICMS = NVL(BASEICMS,0) + DECODE(TIPFRETE, 'S', " + valorFrete.toPlainString() + ", 0), " +
-                            "VLRNOTA = NVL(VLRNOTA,0) + DECODE(TIPFRETE, 'S', " + valorFrete.toPlainString() + ", 0) " +
-                            " WHERE NUNOTA = " + nunota.toPlainString()
-                        );
+                    // Atualiza via Jape para garantir consistencia no cache para o ImpostosHelpper
+                    PersistentLocalEntity entity = entityFacade.findEntityByPrimaryKey("CabecalhoNota", nunota);
+                    if (entity != null) {
+                        DynamicVO cabVO = (DynamicVO) entity.getValueObject();
+                        cabVO.setProperty("VLRFRETE", valorFrete);
+                        entity.setValueObject((EntityVO) cabVO);
                     }
+
+                    // Recalculo de impostos e totais via ImpostosHelpper
+                    // Utilizando calcularImpostos(nunota) com forcarRecalculo para garantir atualização correta
+                    ImpostosHelpper helper = new ImpostosHelpper();
+                    helper.setForcarRecalculo(true);
+                    helper.calcularImpostos(nunota);
                 }
                 if (prazoDias != null && prazoDias > 0) {
                     appendMsg(retorno, "Valor do frete: R$ " + valorFrete.toPlainString() + " | Prazo estimado: até " + prazoDias + " dia(s).");
@@ -274,7 +286,12 @@ public class CotaFrete implements AcaoRotinaJava {
         } catch (Exception e) {
             throw e;
         } finally {
-            JapeSession.close(hnd);
+            if (jdbc != null) {
+                JdbcWrapper.closeSession(jdbc);
+            }
+            if (hnd != null) {
+                JapeSession.close(hnd);
+            }
         }
     }
 
@@ -294,10 +311,6 @@ public class CotaFrete implements AcaoRotinaJava {
     private static String onlyDigits(String s) {
         if (s == null) return "";
         return s.replaceAll("\\D", "");
-    }
-
-    private static String toPlain(BigDecimal v) {
-        return v != null ? v.toPlainString() : "0";
     }
 
     private static String formatDecimal(BigDecimal v) {
@@ -374,89 +387,5 @@ public class CotaFrete implements AcaoRotinaJava {
         return "Basic " + b64;
     }
 
-    // Atualiza TGFCAB via EntityFacade usando reflexão para suportar diferentes versões do SDK
-    private static boolean updateCabecalho(EntityFacade entityFacade, BigDecimal nunota, BigDecimal valorFrete, NativeSql nativeSql) {
-        try {
-            Object entity = entityFacade.findEntityByPrimaryKey("CabecalhoNota", new Object[]{ nunota });
-            DynamicVO cabVO = asDynamicVO(entity);
-            if (cabVO == null) {
-                return false;
-            }
-            cabVO.setProperty("VLRFRETE", valorFrete);
-            Object oTip = cabVO.getProperty("TIPFRETE");
-            String tipFreteCab = oTip != null ? oTip.toString() : null;
-            boolean somarValores = "S".equalsIgnoreCase(tipFreteCab);
-            if (somarValores) {
-                BigDecimal baseIcmsAtual = getVOBigDecimal(cabVO, "BASEICMS");
-                BigDecimal vlrNotaAtual = getVOBigDecimal(cabVO, "VLRNOTA");
-                BigDecimal novoBaseIcms = (baseIcmsAtual == null ? BigDecimal.ZERO : baseIcmsAtual).add(valorFrete);
-                BigDecimal novoVlrNota = (vlrNotaAtual == null ? BigDecimal.ZERO : vlrNotaAtual).add(valorFrete);
-                cabVO.setProperty("BASEICMS", novoBaseIcms);
-                cabVO.setProperty("VLRNOTA", novoVlrNota);
-            }
 
-            // Tenta diversos métodos possíveis via reflexão
-            Class<?> efClass = entityFacade.getClass();
-            try {
-                // updateEntity(String, DynamicVO)
-                java.lang.reflect.Method m = efClass.getMethod("updateEntity", String.class, DynamicVO.class);
-                m.invoke(entityFacade, "CabecalhoNota", cabVO);
-                return true;
-            } catch (NoSuchMethodException ignore) { }
-
-            try {
-                // saveOrUpdateEntity(String, DynamicVO)
-                java.lang.reflect.Method m = efClass.getMethod("saveOrUpdateEntity", String.class, DynamicVO.class);
-                m.invoke(entityFacade, "CabecalhoNota", cabVO);
-                return true;
-            } catch (NoSuchMethodException ignore) { }
-
-            try {
-                // update(DynamicVO)
-                java.lang.reflect.Method m = efClass.getMethod("update", DynamicVO.class);
-                m.invoke(entityFacade, cabVO);
-                return true;
-            } catch (NoSuchMethodException ignore) { }
-
-            try {
-                // saveOrUpdate(DynamicVO)
-                java.lang.reflect.Method m = efClass.getMethod("saveOrUpdate", DynamicVO.class);
-                m.invoke(entityFacade, cabVO);
-                return true;
-            } catch (NoSuchMethodException ignore) { }
-
-            // Se nenhum método conhecido existir, retorna false para cair no fallback
-            return false;
-        } catch (Exception ex) {
-            return false;
-        }
-    }
-
-    private static DynamicVO asDynamicVO(Object entity) {
-        if (entity == null) return null;
-        if (entity instanceof DynamicVO) return (DynamicVO) entity;
-        try {
-            // Tenta getValueObject()
-            java.lang.reflect.Method m = entity.getClass().getMethod("getValueObject");
-            Object vo = m.invoke(entity);
-            if (vo instanceof DynamicVO) return (DynamicVO) vo;
-        } catch (NoSuchMethodException ignored) { } catch (Exception e) { return null; }
-        try {
-            // Tenta asDynamicVO()
-            java.lang.reflect.Method m = entity.getClass().getMethod("asDynamicVO");
-            Object vo = m.invoke(entity);
-            if (vo instanceof DynamicVO) return (DynamicVO) vo;
-        } catch (NoSuchMethodException ignored) { } catch (Exception e) { return null; }
-        return null;
-    }
-
-    private static BigDecimal getVOBigDecimal(DynamicVO vo, String prop) {
-        try {
-            Object o = vo.getProperty(prop);
-            if (o instanceof BigDecimal) return (BigDecimal) o;
-            if (o == null) return BigDecimal.ZERO;
-        } catch (Exception ignored) {
-        }
-        return BigDecimal.ZERO;
-    }
 }
