@@ -82,3 +82,5 @@ libs_sankhya/servlet.jar
 libs_sankhya/SWService.jar
 libs_sankhya/timimob-model-4.8b369.jar
 libs_sankhya/xstream-1.4.4.jar
+.vscode/java-formatter.xml
+.vscode/settings.json

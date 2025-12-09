@@ -1,5 +1,6 @@
 {
     "java.project.sourcePaths": [
         "libs_sankhya"
-    ]
+    ],
+    "java.format.settings.url": ".vscode/java-formatter.xml"
 }
