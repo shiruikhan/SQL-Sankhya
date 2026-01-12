@@ -22,6 +22,7 @@ BEGIN
     BEGIN
     
             P_SUCESSO := 'S';
+            P_MENSAGEM := NULL;
                 
     
     OPEN CUR_ITENS;
@@ -39,7 +40,7 @@ BEGIN
      WHERE NUNOTA = P_NUNOTAORIG
        AND SEQUENCIA = P_SEQUENCIAORIG;
        
-       IF P_COUNT <> P_COUNTORIG THEN 
+       IF P_COUNT > P_COUNTORIG THEN 
        
         SELECT PRO.CODPROD, PRO.DESCRPROD INTO P_CODPROD, P_DESCRPROD
           FROM TGFITE ITE , TGFPRO PRO 
@@ -47,12 +48,14 @@ BEGIN
            AND NUNOTA = P_NUNOTA
            AND SEQUENCIA = P_SEQUENCIA;
        
-            P_MENSAGEM := 'As séries apontadas não confere com a quantidade lançada! Produto: '|| P_CODPROD || ' - ' || P_DESCRPROD;
+            IF P_MENSAGEM IS NULL THEN
+                P_MENSAGEM := 'As séries apontadas não conferem com a quantidade lançada! Produto: '|| P_CODPROD || ' - ' || P_DESCRPROD;
+            ELSE
+                P_MENSAGEM := P_MENSAGEM || CHR(10) || 'As séries apontadas não conferem com a quantidade lançada! Produto: '|| P_CODPROD || ' - ' || P_DESCRPROD;
+            END IF;
             P_SUCESSO := 'N';
        
        END IF;
-       
-       IF P_COUNT = P_COUNTORIG THEN 
        
            SELECT COUNT(*) INTO P_COUNTSER
              FROM TGFSER
@@ -68,13 +71,14 @@ BEGIN
                        AND NUNOTA = P_NUNOTA
                        AND SEQUENCIA = P_SEQUENCIA;
               
-                 P_MENSAGEM := 'As séries apontadas não confere com a quantidade lançada! Produto: '|| P_CODPROD || ' - ' || P_DESCRPROD;
+                 IF P_MENSAGEM IS NULL THEN
+                    P_MENSAGEM := 'As séries apontadas não confere com a quantidade lançada! Produto: '|| P_CODPROD || ' - ' || P_DESCRPROD;
+                 ELSE
+                    P_MENSAGEM := P_MENSAGEM || CHR(10) || 'As séries apontadas não confere com a quantidade lançada! Produto: '|| P_CODPROD || ' - ' || P_DESCRPROD;
+                 END IF;
                  P_SUCESSO := 'N';
             
               END IF;
-       
-       
-       END IF;
     
     
     END LOOP;
