@@ -1,233 +1,493 @@
 create or replace PROCEDURE STP_GERARVOLUMES_SPARK (
-    P_NUNOTA    INT
+    P_NUNOTA IN NUMBER
 ) AS
-    FIELD_NUNOTA    NUMBER;
-    
-    V_CODPROD       INT;
-    V_SEQUENCIA     INT;
-    V_QTDNEG        FLOAT;
-    V_CODPRODEMB    INT;
-    V_QTDEMB        INT;
-    V_QTDITENS      INT;
+    V_IDCAIXA       NUMBER;
+    V_SEQ           NUMBER := 0;
+    V_PESO_TOTAL    NUMBER := 0;
+    V_EMBPADRAO     CONSTANT NUMBER := 546117;
+	V_EMBPADRAO1    CONSTANT NUMBER := 546116;
+    V_MAX_PESO      CONSTANT NUMBER := 25;
+    V_PED           INT;
+	V_PESO_EMB      NUMBER := 0;
     V_MAXSEQ        INT;
-    V_COUNT         INT;
-    V_COUNTEMB      INT;
-    V_EMBPADRAO     INT;
-    V_M3            FLOAT;
-    V_M3EMB         FLOAT;
-    V_M3ACUMULADO   FLOAT;
-    V_PESOACUMULADO FLOAT;
-    V_PESOBRUTO     FLOAT;
-    V_IDCAIXA       INT;
-    V_IDCAIXAEMB    INT;
-    V_NOVACAIXA     BOOLEAN;
-    
-    CURSOR CUR_ITENS IS
-        SELECT ITE.CODPROD, SUM(ITE.QTDNEG) QTDNEG
-        FROM TGFITE ITE
-        WHERE ITE.NUNOTA = FIELD_NUNOTA
-        GROUP BY ITE.CODPROD
-        ORDER BY ITE.CODPROD;
-        
-    CURSOR CUR_EMB IS
-        SELECT 
-            PED.SEQ, PED.CODPROD, PRO.AD_CODPRODEMB,
-            CASE WHEN MOD(ROWNUM,PRO.AD_QTDEMB) = 0 
-                THEN TRUNC(ROWNUM / PRO.AD_QTDEMB) 
-                ELSE TRUNC(ROWNUM / PRO.AD_QTDEMB) + 1 
-                END
-        FROM AD_EMBPED PED
-        JOIN TGFPRO PRO ON PED.CODPROD = PRO.CODPROD
-        JOIN (
-            SELECT PRO.AD_CODPRODEMB, PRO.AD_QTDEMB, COUNT(*) QTDITENS
-            FROM AD_EMBPED PED
-            JOIN TGFPRO PRO ON PED.CODPROD = PRO.CODPROD
-            WHERE PED.NUNOTA = FIELD_NUNOTA
-                AND PED.CODPRODEMB IS NULL
-            GROUP BY PRO.AD_CODPRODEMB, PRO.AD_QTDEMB) ITE ON PRO.AD_CODPRODEMB = ITE.AD_CODPRODEMB AND PRO.AD_QTDEMB = ITE.AD_QTDEMB
-        WHERE PED.NUNOTA = FIELD_NUNOTA
-            AND PED.CODPRODEMB IS NULL
-            AND ROWNUM <= TRUNC(ITE.QTDITENS / PRO.AD_QTDEMB) * PRO.AD_QTDEMB
-        ORDER BY PED.CODPROD;      
-        
-    CURSOR CUR_SOBRA IS
-        SELECT 
-            PED.SEQ, PED.CODPROD, PED.M3, PRO.PESOBRUTO,
-            (SELECT M3 FROM TGFPRO P WHERE CODPROD = V_EMBPADRAO) AS M3EMB
-        FROM AD_EMBPED PED 
-        JOIN TGFPRO PRO ON PED.CODPROD = PRO.CODPROD
-        WHERE PED.NUNOTA = FIELD_NUNOTA 
-            AND PED.CODPRODEMB IS NULL    
-        ORDER BY PED.M3 DESC;
-        
+    V_CODPROD       NUMBER;
+/*************************************************************************
+Autor: Lucas Gabriel
+Data: 27/05/2025
+Obejtivo:Gerar a sugestão de volumetria para cotação do frete.
+*************************************************************************/	
 BEGIN
-    FIELD_NUNOTA := P_NUNOTA;
-    V_EMBPADRAO := 546117;
-    V_NOVACAIXA := TRUE;
+    ---------------------------------------------------------------------------
+    -- 0. Produtos que vão em sua própria embalagem e possuem QTDNEG = 1
+    ---------------------------------------------------------------------------
+    SELECT SUM(QTDNEG)
+		INTO V_PED FROM TGFITE 
+	WHERE NUNOTA = P_NUNOTA;
 
-    -- Limpar volumes existentes
-    DELETE FROM AD_EMBPED
-    WHERE NUNOTA = FIELD_NUNOTA
-    AND TIPO <> 'A';
+    IF V_PED = 1 
+		THEN
+        SELECT MAX(SEQ) INTO V_MAXSEQ 
+			FROM AD_EMBPED 
+		WHERE NUNOTA = P_NUNOTA;
+        IF V_MAXSEQ IS NULL 
+		THEN V_MAXSEQ := 0; END IF;
 
-    COMMIT; 
-    
-    -- Processar itens principais
-    OPEN CUR_ITENS;
-    LOOP
-        FETCH CUR_ITENS INTO V_CODPROD, V_QTDNEG;
-        EXIT WHEN CUR_ITENS%NOTFOUND;
+        SELECT CODPROD 
+			INTO V_CODPROD 
+		FROM TGFITE 
+		WHERE NUNOTA = P_NUNOTA;
+		
+	    DELETE FROM AD_EMBPED 
+		WHERE NUNOTA = P_NUNOTA
+		 AND TIPO <> 'A';
+		
+        INSERT INTO AD_EMBPED ( NUNOTA
+							  , SEQ
+							  , CODPROD
+							  , PESOBRUTO
+							  , M3
+							  , CODPRODEMB
+							  , IDCAIXA
+							  , TIPO
+							  , QTDNEG
+							  )
+        SELECT  ITE.NUNOTA
+               ,V_MAXSEQ + 1
+               ,ITE.CODPROD
+               ,PRO.PESOBRUTO
+               ,PRO.M3
+               ,PRO.AD_CODPRODEMBIND
+               ,1
+               ,'E'
+               ,1
+			   
+          FROM TGFITE ITE
+          INNER JOIN TGFPRO PRO 
+				ON ITE.CODPROD = PRO.CODPROD
+         WHERE ITE.NUNOTA = P_NUNOTA
+           AND ITE.CODPROD = V_CODPROD;
+        COMMIT;
+		
+	BEGIN
+        UPDATE TGFCAB
+           SET QTDVOL = (
+               SELECT COUNT(DISTINCT IDCAIXA)
+                 FROM AD_EMBPED
+                WHERE NUNOTA = P_NUNOTA
+                  AND IDCAIXA IS NOT NULL
+           )
+         WHERE NUNOTA = P_NUNOTA;
 
-        SELECT NVL(MAX(SEQ),0) INTO V_MAXSEQ
-        FROM AD_EMBPED
-        WHERE NUNOTA = FIELD_NUNOTA;
+        SELECT NVL(SUM(PESOBRUTO), 0)
+          INTO V_PESO_TOTAL
+          FROM AD_EMBPED
+         WHERE NUNOTA = P_NUNOTA;
+		 
+		SELECT
+			SUM(PRO.PESOBRUTO * COUNT(DISTINCT IDCAIXA))
+		 INTO V_PESO_EMB
+		FROM AD_EMBPED V, TGFPRO PRO, TGFPRO PROD
+		WHERE V.CODPRODEMB = PRO.CODPROD
+		AND V.CODPROD = PROD.CODPROD
+		AND V.NUNOTA = P_NUNOTA
+		GROUP BY PRO.CODPROD , PRO.DESCRPROD, PRO.M3, PRO.PESOBRUTO;		 
+		 
 
-        SELECT NVL(MAX(IDCAIXA),0) INTO V_IDCAIXA
-        FROM AD_EMBPED
-        WHERE NUNOTA = FIELD_NUNOTA;
+        UPDATE TGFCAB
+           SET PESOBRUTO = ROUND(V_PESO_TOTAL + V_PESO_EMB, 2),
+               PESO = ROUND(V_PESO_TOTAL, 2)
+         WHERE NUNOTA = P_NUNOTA;
+    END;
 
-        INSERT INTO AD_EMBPED (NUNOTA, SEQ, CODPROD, PESOBRUTO, M3, CODPRODEMB, IDCAIXA, TIPO)
-        (   SELECT 
-                ITE.NUNOTA, V_MAXSEQ + ROWNUM, ITE.CODPROD, PRO.PESOBRUTO, PRO.M3, 
-                CASE WHEN TRUNC(ITE.QTDNEG / PRO.AD_QTDEMB) * PRO.AD_QTDEMB >= ROWNUM THEN PRO.AD_CODPRODEMB END,
-                CASE WHEN TRUNC(ITE.QTDNEG / PRO.AD_QTDEMB) * PRO.AD_QTDEMB >= ROWNUM THEN 
-                    CASE WHEN MOD(ROWNUM,PRO.AD_QTDEMB) = 0 
-                        THEN TRUNC(ROWNUM / PRO.AD_QTDEMB) + V_IDCAIXA
-                        ELSE TRUNC(ROWNUM / PRO.AD_QTDEMB) + 1 + V_IDCAIXA
-                    END 
-                END,
-                CASE WHEN TRUNC(ITE.QTDNEG / PRO.AD_QTDEMB) * PRO.AD_QTDEMB >= ROWNUM THEN 'P' END
-            FROM TGFITE ITE
-            JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
-            JOIN TGFPAR PAR ON ROWNUM <= ITE.QTDNEG
-            WHERE ITE.CODPROD = PRO.CODPROD
-                AND ITE.NUNOTA = FIELD_NUNOTA
-                AND ITE.CODPROD = V_CODPROD
-        );                            
-        
-    END LOOP;
-    CLOSE CUR_ITENS;          
-    
-    -- Processar embalagens
-    SELECT NVL(MAX(IDCAIXA),0) INTO V_IDCAIXA
-    FROM AD_EMBPED
-    WHERE NUNOTA = FIELD_NUNOTA;
-    
-    OPEN CUR_EMB;
-    LOOP
-        FETCH CUR_EMB INTO V_SEQUENCIA, V_CODPROD, V_CODPRODEMB, V_IDCAIXAEMB;
-        EXIT WHEN CUR_EMB%NOTFOUND;
+    COMMIT;
+	RETURN;	
+    END IF;
+	
+    ---------------------------------------------------------------------------
+    -- 0. Produtos que que no total são duas caixas, e sempre são embalados em uma caixa A
+    ---------------------------------------------------------------------------
+	
+	IF V_PED <= 5
+	THEN 
+		SELECT MAX(SEQ) 
+			INTO V_MAXSEQ 
+		FROM AD_EMBPED 
+		WHERE NUNOTA = P_NUNOTA;
+		
+	IF V_MAXSEQ IS NULL 
+		THEN V_MAXSEQ := 0; 
+	END IF;
+	
+	DELETE FROM AD_EMBPED 
+	WHERE NUNOTA = P_NUNOTA
+	AND TIPO <> 'A';
+	
+	INSERT INTO AD_EMBPED ( NUNOTA
+						, SEQ
+						, CODPROD
+						, PESOBRUTO
+						, M3
+						, CODPRODEMB
+						, IDCAIXA
+						, TIPO
+						, QTDNEG
+						)
+	SELECT  
+		 ITE.NUNOTA
+		,ITE.SEQUENCIA
+		,ITE.CODPROD
+		,PRO.PESOBRUTO * ITE.QTDNEG
+		,PRO.M3
+		,V_EMBPADRAO1
+		,1
+		,'E'
+		,1
+		
+	FROM TGFITE ITE
+	INNER JOIN TGFPRO PRO 
+			ON ITE.CODPROD = PRO.CODPROD
+	WHERE ITE.NUNOTA = P_NUNOTA;
+	COMMIT;
+		
+	BEGIN
+        UPDATE TGFCAB
+           SET QTDVOL = (
+               SELECT COUNT(DISTINCT IDCAIXA)
+                 FROM AD_EMBPED
+                WHERE NUNOTA = P_NUNOTA
+                  AND IDCAIXA IS NOT NULL
+           )
+         WHERE NUNOTA = P_NUNOTA;
 
-        UPDATE AD_EMBPED 
-        SET CODPRODEMB = V_CODPRODEMB,
-            IDCAIXA = V_IDCAIXA + V_IDCAIXAEMB,
-            TIPO = 'E'
-        WHERE NUNOTA = FIELD_NUNOTA
-            AND CODPROD = V_CODPROD
-            AND SEQ = V_SEQUENCIA;                            
-        
-    END LOOP;
-    CLOSE CUR_EMB; 
-    
-    -- Processar sobras
-    V_COUNT := 0;
-    
-    SELECT COUNT(*) INTO V_COUNTEMB 
-    FROM AD_EMBPED 
-    WHERE NUNOTA = FIELD_NUNOTA 
-        AND CODPRODEMB IS NULL;
-    
-    WHILE V_COUNTEMB > 0 AND V_COUNT < 5
-    LOOP
-        V_COUNT := V_COUNT + 1;
-        
-        SELECT NVL(MAX(IDCAIXA),0) + 1 INTO V_IDCAIXA
-        FROM AD_EMBPED
-        WHERE NUNOTA = FIELD_NUNOTA;
-        
+        SELECT NVL(SUM(PESOBRUTO), 0)
+          INTO V_PESO_TOTAL
+          FROM AD_EMBPED
+         WHERE NUNOTA = P_NUNOTA;
+		 
+		SELECT
+			SUM(PRO.PESOBRUTO * COUNT(DISTINCT IDCAIXA))
+		 INTO V_PESO_EMB
+		FROM AD_EMBPED V, TGFPRO PRO, TGFPRO PROD
+		WHERE V.CODPRODEMB = PRO.CODPROD
+		AND V.CODPROD = PROD.CODPROD
+		AND V.NUNOTA = P_NUNOTA
+		GROUP BY PRO.CODPROD , PRO.DESCRPROD, PRO.M3, PRO.PESOBRUTO;		 
+		 
+
+        UPDATE TGFCAB
+           SET PESOBRUTO = ROUND(V_PESO_TOTAL + V_PESO_EMB, 2),
+               PESO = ROUND(V_PESO_TOTAL, 2)
+         WHERE NUNOTA = P_NUNOTA;
+    END;
+
+    COMMIT;
+	RETURN;	
+	END IF;	
+	
+    ---------------------------------------------------------------------------
+    -- 1. Gera caixas completas e sobras por produto
+    ---------------------------------------------------------------------------
+    DELETE FROM AD_EMBPED 
+    WHERE NUNOTA = P_NUNOTA
+	AND TIPO <> 'A';
+
+    FOR R_ITENS IN (
+					SELECT  ITE.CODPROD
+						   ,ITE.QTDNEG
+						   ,PRO.AD_QTDEMB
+						   ,PRO.AD_CODPRODEMB
+						   ,PRO.PESOBRUTO
+						   ,PRO.M3
+						   ,ITE.SEQUENCIA
+						
+					FROM TGFITE ITE
+						INNER JOIN TGFPRO PRO 
+							ON PRO.CODPROD = ITE.CODPROD
+					WHERE ITE.NUNOTA = P_NUNOTA
+					  AND PRO.AD_CODPRODEMB IS NOT NULL
+					  AND PRO.AD_QTDEMB IS NOT NULL
+					ORDER BY ITE.SEQUENCIA
+    ) LOOP
+        DECLARE
+            V_EMB_COMPLETAS NUMBER;
+            V_SOBRA         NUMBER;
         BEGIN
-            SELECT MIN(P.CODPROD) INTO V_CODPRODEMB
-            FROM TGFPRO P
-            WHERE CODGRUPOPROD = 5461000
-                AND CODPROD IN (546116,546117)
-                AND P.M3 = (
-                    SELECT MIN(M3)
-                    FROM TGFPRO
-                    WHERE CODGRUPOPROD = 5461000
-                        AND CODPROD IN (546116,546117)
-                        AND M3 > (SELECT SUM(PED.M3) FROM AD_EMBPED PED WHERE PED.NUNOTA = FIELD_NUNOTA AND PED.CODPRODEMB IS NULL));
-        EXCEPTION WHEN NO_DATA_FOUND THEN
-            V_CODPRODEMB := 0;
-        END;
-        
-        IF NVL(V_CODPRODEMB,0) > 0 THEN
-            UPDATE AD_EMBPED 
-            SET CODPRODEMB = V_CODPRODEMB,
-                IDCAIXA = V_IDCAIXA,
-                TIPO = 'S'
-            WHERE NUNOTA = FIELD_NUNOTA
-                AND CODPRODEMB IS NULL; 
-        
-        ELSE
-            -- Inicializar acumuladores para nova caixa
-            V_M3ACUMULADO := 0;
-            V_PESOACUMULADO := 0;
-            
-            OPEN CUR_SOBRA;
-            LOOP
-                FETCH CUR_SOBRA INTO V_SEQUENCIA, V_CODPROD, V_M3, V_PESOBRUTO, V_M3EMB;
-                EXIT WHEN CUR_SOBRA%NOTFOUND;
+            V_EMB_COMPLETAS := FLOOR(R_ITENS.QTDNEG / R_ITENS.AD_QTDEMB);
+            V_SOBRA         := MOD(R_ITENS.QTDNEG, R_ITENS.AD_QTDEMB);
 
-                -- Verificar se precisa criar nova caixa
-                IF (V_PESOACUMULADO + V_PESOBRUTO > 25) THEN
-                    V_IDCAIXA := V_IDCAIXA + 1;
-                    V_PESOACUMULADO := 0;
-                    V_M3ACUMULADO := 0;
-                END IF;
-
-                -- Verificar se o item cabe na caixa atual
-                IF (V_PESOACUMULADO + V_PESOBRUTO <= 25) AND (V_M3ACUMULADO + V_M3 <= V_M3EMB) THEN
-                    UPDATE AD_EMBPED 
-                    SET CODPRODEMB = V_EMBPADRAO,
-                        IDCAIXA = V_IDCAIXA,
-                        TIPO = 'S'
-                    WHERE NUNOTA = FIELD_NUNOTA
-                        AND CODPROD = V_CODPROD
-                        AND SEQ = V_SEQUENCIA;  
-
-                    -- Atualizar acumuladores
-                    V_PESOACUMULADO := V_PESOACUMULADO + V_PESOBRUTO;
-                    V_M3ACUMULADO := V_M3ACUMULADO + V_M3;
-                END IF;
+            FOR I IN 1 .. V_EMB_COMPLETAS 
+				LOOP
+                V_SEQ := V_SEQ + 1;
+                INSERT INTO AD_EMBPED ( NUNOTA
+									  , SEQ
+									  , CODPROD
+									  , PESOBRUTO
+									  , M3
+									  , CODPRODEMB
+									  , IDCAIXA
+									  , TIPO
+									  , QTDNEG
+									  )
+							VALUES (  P_NUNOTA
+									 , V_SEQ
+									 , R_ITENS.CODPROD
+									 , R_ITENS.PESOBRUTO * R_ITENS.AD_QTDEMB
+									 , R_ITENS.M3 * R_ITENS.AD_QTDEMB
+									 , R_ITENS.AD_CODPRODEMB
+									 , V_SEQ, 'E', R_ITENS.AD_QTDEMB
+									 );
             END LOOP;
-            CLOSE CUR_SOBRA;
-        END IF;
-        
-        SELECT COUNT(*) INTO V_COUNTEMB 
-        FROM AD_EMBPED 
-        WHERE NUNOTA = FIELD_NUNOTA 
-            AND CODPRODEMB IS NULL;
-        
+
+            IF V_SOBRA > 0 THEN
+                V_SEQ := V_SEQ + 1;
+				
+                INSERT INTO AD_EMBPED ( NUNOTA
+									  , SEQ
+									  , CODPROD
+									  , PESOBRUTO
+									  , M3
+									  , CODPRODEMB
+									  , IDCAIXA
+									  , TIPO
+									  , QTDNEG
+									  )
+							VALUES ( P_NUNOTA
+								   , V_SEQ
+								   , R_ITENS.CODPROD
+								   , R_ITENS.PESOBRUTO * V_SOBRA
+								   , R_ITENS.M3 * V_SOBRA
+								   , NULL
+								   , NULL
+								   , 'S'
+								   , V_SOBRA
+									);
+            END IF;
+        END;
     END LOOP;
-    
-    -- Atualizar cabeçalho
-    UPDATE TGFCAB 
-    SET QTDVOL = (SELECT COUNT(DISTINCT IDCAIXA)
-                FROM AD_EMBPED 
-                WHERE NUNOTA = FIELD_NUNOTA),
-        PESOBRUTO = (SELECT ROUND(SUM(PESOEMB),2) 
-                    FROM(
-                        SELECT COUNT(DISTINCT IDCAIXA) * SUM(DISTINCT PRO.PESOBRUTO) AS PESOEMB
-                        FROM AD_EMBPED EMB
-                            INNER JOIN TGFPRO PRO ON (EMB.CODPRODEMB = PRO.CODPROD)
-                        WHERE NUNOTA = FIELD_NUNOTA
-                        GROUP BY CODPRODEMB
-                        UNION
-                        SELECT ROUND(SUM(EMB.PESOBRUTO),2) AS PESOEMB
-                        FROM AD_EMBPED EMB
-                        WHERE NUNOTA = FIELD_NUNOTA)),
-        PESO = (SELECT ROUND(SUM(EMB.PESOBRUTO),2) AS PESOEMB
-                FROM AD_EMBPED EMB
-                WHERE NUNOTA = FIELD_NUNOTA)            
-    WHERE NUNOTA = FIELD_NUNOTA;
+
+    ---------------------------------------------------------------------------
+    -- 2. Agrupa sobras com mesma embalagem para formar novas embalagens completas
+    ---------------------------------------------------------------------------
+    DECLARE
+        CURSOR C_SOBRAS IS
+            SELECT  P.AD_CODPRODEMB
+                   ,P.AD_QTDEMB
+                   ,SUM(E.QTDNEG) AS TOTAL_SOBRA
+                   ,SUM(E.PESOBRUTO) AS TOTAL_PESO
+				   
+              FROM AD_EMBPED E
+               INNER JOIN TGFPRO P
+					ON P.CODPROD = E.CODPROD
+             WHERE E.NUNOTA = P_NUNOTA
+               AND E.TIPO = 'S'
+               AND E.CODPRODEMB IS NULL
+               AND P.AD_CODPRODEMB IS NOT NULL
+               AND P.AD_QTDEMB IS NOT NULL
+             GROUP BY P.AD_CODPRODEMB, P.AD_QTDEMB;
+
+        V_TOTAL       NUMBER;
+        V_SOBRA       NUMBER;
+        V_QTDNAEMB    NUMBER;
+        V_PESO        NUMBER;
+        V_M3          NUMBER;
+		
+    BEGIN
+        FOR R_EMB 
+			IN C_SOBRAS
+			LOOP
+            DELETE FROM AD_EMBPED
+             WHERE NUNOTA = P_NUNOTA
+               AND CODPRODEMB IS NULL
+               AND CODPROD IN (
+								SELECT CODPROD 
+								  FROM TGFPRO 
+								WHERE AD_CODPRODEMB = R_EMB.AD_CODPRODEMB
+							   )
+               AND TIPO = 'S';
+
+            V_TOTAL := FLOOR(R_EMB.TOTAL_SOBRA / R_EMB.AD_QTDEMB);
+            V_SOBRA := MOD(R_EMB.TOTAL_SOBRA, R_EMB.AD_QTDEMB);
+            V_QTDNAEMB := NULL;
+
+            IF V_SOBRA >= (R_EMB.AD_QTDEMB - 1)
+				THEN
+                V_TOTAL := V_TOTAL + 1;
+                V_QTDNAEMB := V_SOBRA;
+                V_SOBRA := 0;
+            END IF;
+
+            SELECT MIN(CODPROD) 
+				INTO V_CODPROD 
+			FROM TGFPRO 
+			WHERE AD_CODPRODEMB = R_EMB.AD_CODPRODEMB;
+			
+            SELECT AVG(M3) 
+				INTO V_M3	
+			FROM TGFPRO 
+			WHERE AD_CODPRODEMB = R_EMB.AD_CODPRODEMB;
+
+            FOR I IN 1 .. V_TOTAL - CASE WHEN V_QTDNAEMB IS NOT NULL THEN 1 ELSE 0 END LOOP
+                V_SEQ := V_SEQ + 1;
+                V_PESO := (R_EMB.TOTAL_PESO / R_EMB.TOTAL_SOBRA) * R_EMB.AD_QTDEMB;
+                INSERT INTO AD_EMBPED ( NUNOTA
+									  , SEQ
+									  , CODPROD
+									  , PESOBRUTO
+									  , M3
+									  , CODPRODEMB
+									  , IDCAIXA
+									  , TIPO
+									  , QTDNEG
+									  ) 
+									  
+							  VALUES ( P_NUNOTA
+									 , V_SEQ
+									 , V_CODPROD
+									 , V_PESO
+									 , V_M3 * R_EMB.AD_QTDEMB
+									 , R_EMB.AD_CODPRODEMB
+									 , V_SEQ
+									 , 'E'
+									 , R_EMB.AD_QTDEMB
+									);
+            END LOOP;
+
+            IF V_QTDNAEMB IS NOT NULL 
+				THEN
+                V_SEQ := V_SEQ + 1;
+                V_PESO := (R_EMB.TOTAL_PESO / R_EMB.TOTAL_SOBRA) * V_QTDNAEMB;
+				
+                INSERT INTO AD_EMBPED ( NUNOTA
+									  , SEQ
+									  , CODPROD
+									  , PESOBRUTO
+									  , M3
+									  , CODPRODEMB
+									  , IDCAIXA
+									  , TIPO
+									  , QTDNEG
+									  ) 
+									  
+							 VALUES ( P_NUNOTA
+									, V_SEQ
+									, V_CODPROD
+									, V_PESO
+									, V_M3 * V_QTDNAEMB
+									, R_EMB.AD_CODPRODEMB
+									, V_SEQ
+									, 'E'
+									, V_QTDNAEMB
+									);
+            END IF;
+
+            IF V_SOBRA > 0 THEN
+                V_SEQ := V_SEQ + 1;
+                V_PESO := (R_EMB.TOTAL_PESO / R_EMB.TOTAL_SOBRA) * V_SOBRA;
+                INSERT INTO AD_EMBPED ( NUNOTA
+									  , SEQ
+									  , CODPROD
+									  , PESOBRUTO
+									  , M3
+									  , CODPRODEMB
+									  , IDCAIXA
+									  , TIPO
+									  , QTDNEG
+									  ) 
+							VALUES ( P_NUNOTA
+								  , V_SEQ
+								  , V_CODPROD
+								  , V_PESO
+								  , V_M3 * V_SOBRA
+								  , NULL
+								  , NULL
+								  , 'S'
+								  , V_SOBRA
+									);
+            END IF;
+        END LOOP;
+    END;
+
+    ---------------------------------------------------------------------------
+    -- 3. Agrupa sobras restantes em caixas padrão respeitando o peso máximo
+    ---------------------------------------------------------------------------
+    DECLARE
+        V_PESO_ATUAL NUMBER := 0;
+        V_M3_ATUAL   NUMBER := 0;
+    BEGIN
+        SELECT NVL(MAX(IDCAIXA), 0) + 1
+          INTO V_IDCAIXA
+          FROM AD_EMBPED
+         WHERE NUNOTA = P_NUNOTA;
+
+        FOR R_SOBRA IN (
+            SELECT SEQ
+				  , CODPROD
+				  , PESOBRUTO
+				  , M3
+              FROM AD_EMBPED
+             WHERE NUNOTA = P_NUNOTA
+               AND CODPRODEMB IS NULL
+             ORDER BY PESOBRUTO DESC, M3 DESC
+        ) LOOP
+            IF (V_PESO_ATUAL + R_SOBRA.PESOBRUTO) > V_MAX_PESO 
+				THEN
+                V_IDCAIXA 	 := V_IDCAIXA + 1;
+                V_PESO_ATUAL := 0;
+                V_M3_ATUAL 	 := 0;
+            END IF;
+
+            UPDATE AD_EMBPED
+               SET CODPRODEMB = V_EMBPADRAO1,
+                   IDCAIXA = V_IDCAIXA,
+                   TIPO = 'S'
+             WHERE NUNOTA = P_NUNOTA
+               AND SEQ = R_SOBRA.SEQ;
+
+            V_PESO_ATUAL := V_PESO_ATUAL + R_SOBRA.PESOBRUTO;
+            V_M3_ATUAL   := V_M3_ATUAL + R_SOBRA.M3;
+        END LOOP;
+    END;
+
+    ---------------------------------------------------------------------------
+    -- 4. Atualiza cabeçalho da nota
+    ---------------------------------------------------------------------------
+    BEGIN
+        UPDATE TGFCAB
+           SET QTDVOL = (
+               SELECT COUNT(DISTINCT IDCAIXA)
+                 FROM AD_EMBPED
+                WHERE NUNOTA = P_NUNOTA
+                  AND IDCAIXA IS NOT NULL
+           )
+         WHERE NUNOTA = P_NUNOTA;
+
+        SELECT NVL(SUM(PESOBRUTO), 0)
+          INTO V_PESO_TOTAL
+          FROM AD_EMBPED
+         WHERE NUNOTA = P_NUNOTA;
+		 
+		SELECT
+			SUM(PRO.PESOBRUTO * COUNT(DISTINCT IDCAIXA))
+		 INTO V_PESO_EMB
+		FROM AD_EMBPED V, TGFPRO PRO, TGFPRO PROD
+		WHERE V.CODPRODEMB = PRO.CODPROD
+		AND V.CODPROD = PROD.CODPROD
+		AND V.NUNOTA = P_NUNOTA
+		GROUP BY PRO.CODPROD , PRO.DESCRPROD, PRO.M3, PRO.PESOBRUTO;		 
+		 
+
+        UPDATE TGFCAB
+           SET PESOBRUTO = ROUND(V_PESO_TOTAL + V_PESO_EMB, 2),
+               PESO = ROUND(V_PESO_TOTAL, 2)
+         WHERE NUNOTA = P_NUNOTA;
+    END;
+
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE_APPLICATION_ERROR(-20002, 'Erro ao gerar volumes para nota ' || P_NUNOTA || 
+                              '. Linha: ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE || 
+                              ' Erro: ' || SQLERRM);
 END;
