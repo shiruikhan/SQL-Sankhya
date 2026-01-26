@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE regras>
+
+<regras>
+    <regra class="br.com.sankhya.modelcore.comercial.regras.PrecoDinamico">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ControleAcesso">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+		<entidade nome="Financeiro"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoNotaConfirmada">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+		<entidade nome="Financeiro"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesCTe">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesCTeItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesWMS">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesBasicas">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesMetas">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Numero">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesParceiro">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ReducaoPrecoFOB">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoContatoEntrega">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoFinalidadeOperacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoTOP">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoVendedor">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoParceiro">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoEmpresa">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoTipVenda">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoTransportadora">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoTipFrete">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValorMinimoNegociacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValorMaximoNegociacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoCamposPreco">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesTOPItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Bonificacao">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Laudo">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Contrato">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Lucro">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.DescontoCabecalho">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.SemVenda">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Atraso">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Prazo">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.StatusLoteRegra">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesBasicasItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<!-- Validada confirmaapenas>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LimiteCredito">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LimiteCreditoPorMedia">
+		<entidade nome="CabecalhoNota"/>
+	</regra-->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AlteracaoExecutanteItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EstoqueItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ExclusaoExecItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ExclusaoMP">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ImpostosItemRegra">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.DescontoItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesFinaisItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesFinanceiro">
+		<entidade nome="Financeiro"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesFinais">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EPI">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EPI">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.NumeroSerieGlobal">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AtualizacaoVar">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LigaNotaPedido">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ExtensoesGarantia">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.PrecoCusto">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.SuporteKit">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Imobilizado">
+		<entidade nome="ItemNota"/>
+	</regra>
+    <!--regra class="br.com.sk.SuperRegra2">
+        <entidade nome="A"/>
+        <entidade nome="B"/>
+    </regra-->
+    <regra class="br.com.sankhya.modelcore.comercial.regras.ContaCorrenteFlex">
+		<entidade nome="ItemNota"/>
+	</regra>
+    <regra class="br.com.sankhya.modelcore.comercial.regras.FotosEvento">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+    <regra class="br.com.sankhya.modelcore.comercial.regras.EnderecoEntrega">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Conferencia">
+		<entidade nome="ItemNota"/>
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoSolicitacaoCompraItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoAgrupamentoMinimo">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+</regras>

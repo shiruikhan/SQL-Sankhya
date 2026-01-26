@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE regras>
+
+<regras>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesWMS">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EfetivacaoSeriesAnvisaWMS">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.SimulacaoFreteAutomatica">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesBasicas">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesBasicasConfirmacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<!-- O evento 18 deve ser verificado antes -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoConfirmacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesFreteCIF">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesVeiculo">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.FinanceiroFrete">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<!-- Indas valida!"S".equals(topVO.asString("COMPLEMENTO")) -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Bonificacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LigarOrigemDaOrigemQtdNeg">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Laudo">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<!-- Indas validaif((cabVO.asInt("CODTIPOPER") != 0) && (cabVO.asInt("CODTIPOPER") == topImpressoraFiscal))
+		 As validaaqui DEVEM verificar se a TOP do cabea mesma do parametro TOPIMPFISCAL antes de serem executadas -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Contrato">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValorMinimoNegociacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValorMaximoNegociacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	                                                        
+	<regra class="br.com.sankhya.modelcore.comercial.regras.DescontoQtdeGrupoDescProd">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.DescontoCabecalhoConfirmacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.SemVenda">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Atraso">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Prazo">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesBasicasItem">
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LimiteCreditoPorGrupoTipoTitulo">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LimiteCreditoPorMedia">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.QtdMaximaTitulosVencidos">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ConfirmacaoBonifProjeto">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<!-- Fim das validaif((cabVO.asInt("CODTIPOPER") != 0) && (cabVO.asInt("CODTIPOPER") == topImpressoraFiscal)) -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Entrada">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.DataPrimeiraParcela">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.PedidoDeFrete">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LimiteCredito">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoConfirmacaoEvento44">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoConfirmacaoEvento82">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	
+	<!--  ESTA REGRA DEVE FICAR APAS VALIDADE LIMITE -->	
+	<regra class="br.com.sankhya.modelcore.comercial.regras.DistribuicaoJurosDescontos">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+
+	<!--  Verificar se essa regra antes ou depois da regra de limite de cr-->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoAnaliseCreditoVencida">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	
+	<!--  cde impostos (ICMS,IPI,impostos mensais, PIS,COFINS,CSSL,etc) -->	
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ImpostosConfirmacaoNotaRegra">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Lucro">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	
+	<!--  Esta validado Evento 48 deve acontecer depois de calcular os impostos de PIS/COFINS/CSSL -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.MargemContribuicaoMinima">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	
+	<regra class="br.com.sankhya.modelcore.comercial.regras.CupomFinanceiro">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	
+	<!-- Validado controle de estoque -->
+	<!-- dmNumeracao.ValidarSerie -->	
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Serie">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ConfirmacaoDtNeg">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<!-- Fim das valida!"S".equals(topVO.asString("COMPLEMENTO")) -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ConfirmacaoDtFaturamento">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesFinanceiroConfirmacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Compensacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AtualizaCompromisso">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesMetas">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacaoCompromisso">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AnaliseItens">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EPI">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.NumeroSerieGlobal">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesTOP">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.PrecoCusto">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ImpostosMensaisFinanceiroConfirmacaoNotaRegra">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacaoKit">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacaoComponentes">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.RecalculoIcmsKit">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Bens">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.CalculoComissao">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EstoqueInsuficiente">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.PlanejamentoProducao">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.AtualizaAtualEstoque">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ConfirmacaoOrdemCarga">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.NotaRemessa">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesGeraisFinais">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.Conferencia">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesNFCe">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesCTe">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<!-- Evento 40 - Solicitade Compra p/produto em Estoque -->
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoSolicitacaoCompraItem">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesNFSe">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.ValorNotaMenorBaseICMS">
+		<entidade nome="CabecalhoNota" />
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VerificacoesNotaImportacao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.VendaMinimaParceiroCidadeRegiao">
+		<entidade nome="CabecalhoNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.LiberacaoAgrupamentoMinimo">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+	<regra class="br.com.sankhya.modelcore.comercial.regras.EstoqueMaximo">
+		<entidade nome="CabecalhoNota"/>
+		<entidade nome="ItemNota"/>
+	</regra>
+</regras>
