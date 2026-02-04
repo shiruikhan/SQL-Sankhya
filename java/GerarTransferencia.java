@@ -157,8 +157,9 @@ public class GerarTransferencia implements AcaoRotinaJava {
     }finally {
     	JapeSession.close(hnd);
     }    	
-	// Recalcular impostos pós-transação para garantir aplicação em contexto já commitado
+	SessionHandle hnd2 = null;
 	try {
+		hnd2 = JapeSession.open();
 		documentosSaidas.forEach((nunota) ->  {
 	        try {
 				ImpostosHelpper helper = new ImpostosHelpper();
@@ -179,6 +180,8 @@ public class GerarTransferencia implements AcaoRotinaJava {
 		});
 	} catch (Exception e) {
 		e.printStackTrace();
+	} finally {
+		JapeSession.close(hnd2);
 	}
 	documentosSaidas.forEach((nunota) ->  {
         try {
