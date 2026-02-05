@@ -160,22 +160,26 @@ public class GerarTransferencia implements AcaoRotinaJava {
 	SessionHandle hnd2 = null;
 	try {
 		hnd2 = JapeSession.open();
-		documentosSaidas.forEach((nunota) ->  {
-	        try {
-				ImpostosHelpper helper = new ImpostosHelpper();
-				helper.setForcarRecalculo(true);
-				helper.calcularImpostos(nunota);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
-		documentosEntradas.forEach((nunota) ->  {
-	        try {
-				ImpostosHelpper helper = new ImpostosHelpper();
-				helper.setForcarRecalculo(true);
-				helper.calcularImpostos(nunota);
-			} catch (Exception e) {
-				e.printStackTrace();
+		hnd2.execWithTX(new JapeSession.TXBlock() {
+			public void doWithTx() throws Exception {
+				documentosSaidas.forEach((nunota) -> {
+					try {
+						ImpostosHelpper helper = new ImpostosHelpper();
+						helper.setForcarRecalculo(true);
+						helper.calcularImpostos(nunota);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				});
+				documentosEntradas.forEach((nunota) -> {
+					try {
+						ImpostosHelpper helper = new ImpostosHelpper();
+						helper.setForcarRecalculo(true);
+						helper.calcularImpostos(nunota);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				});
 			}
 		});
 	} catch (Exception e) {
@@ -183,46 +187,44 @@ public class GerarTransferencia implements AcaoRotinaJava {
 	} finally {
 		JapeSession.close(hnd2);
 	}
-	documentosSaidas.forEach((nunota) ->  {
-        try {
+	documentosSaidas.forEach((nunota) -> {
+		try {
 			TransferenciaUtils.confirmaNota(nunota);
 			qtdSaidaConfirmadas++;
 		} catch (MGEModelException e) {
-			qtdSaidaConfirmadas--;
 			e.printStackTrace();
 		}
 	});
-	
-	if(qtdSaidaConfirmadas > 0 ) {
-		
-	    try {
-	    	TransferenciaUtils.gerarLote(documentosSaidas);
-	    } catch(Exception e) {
-	    	qtdNFe++;
-	    	e.printStackTrace();
-	    }
-	    
-	    if (qtdNFe > 0 ) {
-	    	documentosEntradas.forEach((nunota) ->  {
-	            try {
-	    			TransferenciaUtils.confirmaNota(nunota);
-	    			qtdEntradaConfirmadas++;
-	    		} catch (MGEModelException e) {
-	    			qtdEntradaConfirmadas--;
-	    			e.printStackTrace();
-	    		}
-	    	});
-	    } else {
-	    	mgsRetorno =  "! , por�m nenhuma nota  de sa�da foi enviada para sefaz e as entradas n�o foram confirmadas!";
-	    }
-	}else {
-		mgsRetorno = "! , por�m nenhuma nota foi confirmada!";
+
+	if (qtdSaidaConfirmadas > 0) {
+
+		try {
+			TransferenciaUtils.gerarLote(documentosSaidas);
+			qtdNFe++;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		if (qtdNFe > 0) {
+			documentosEntradas.forEach((nunota) -> {
+				try {
+					TransferenciaUtils.confirmaNota(nunota);
+					qtdEntradaConfirmadas++;
+				} catch (MGEModelException e) {
+					e.printStackTrace();
+				}
+			});
+		} else {
+			mgsRetorno = "! , porém nenhuma nota de saída foi enviada para sefaz e as entradas não foram confirmadas!";
+		}
+	} else {
+		mgsRetorno = "! , porém nenhuma nota foi confirmada!";
 	}
 
-	if(qtdEntradaConfirmadas == 0 && qtdNFe > 0) {
-		mgsRetorno =  "! , por�m as entradas n�o foram confirmadas!";
+	if (qtdEntradaConfirmadas == 0 && qtdNFe > 0) {
+		mgsRetorno = "! , porém as entradas não foram confirmadas!";
 	}
-	
-	 ctx.setMensagemRetorno("Transfer�ncia realizada" + mgsRetorno == null ? " com sucesso! " : "");	
+
+	ctx.setMensagemRetorno("Transferência realizada" + (mgsRetorno == null ? " com sucesso! " : mgsRetorno));	
   }
 }

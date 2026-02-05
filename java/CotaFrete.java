@@ -265,6 +265,9 @@ public class CotaFrete implements AcaoRotinaJava {
                     if (entity != null) {
                         DynamicVO cabVO = (DynamicVO) entity.getValueObject();
                         cabVO.setProperty("VLRFRETE", valorFrete);
+                        if (prazoDias != null) {
+                            cabVO.setProperty("AD_ESTENTR", String.valueOf(prazoDias));
+                        }
                         entity.setValueObject((EntityVO) cabVO);
                     }
 
