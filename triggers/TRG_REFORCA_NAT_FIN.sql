@@ -1,31 +1,22 @@
 CREATE OR REPLACE TRIGGER TRG_REFORCA_NAT_FIN
-AFTER INSERT OR UPDATE ON TGFFIN
+AFTER INSERT OR UPDATE ON TGFCAB
 FOR EACH ROW
-DECLARE
-    v_codnat TGFCAB.CODNAT%TYPE;
 BEGIN
-    -- Verifica se o título não está entre os tipos isentos e possui nota vinculada
-    IF :NEW.CODTIPTIT NOT IN (34, 35, 36, 15)
-       AND :NEW.NUNOTA IS NOT NULL THEN
-
-        BEGIN
-            -- Busca a natureza da nota de venda (TGFCAB)
-            SELECT CODNAT
-              INTO v_codnat
-              FROM TGFCAB
-             WHERE NUNOTA = :NEW.NUNOTA;
-
-            -- Atualiza somente se for diferente
-            IF NVL(:NEW.CODNAT, -1) <> NVL(v_codnat, -1) THEN
-                UPDATE TGFFIN
-                   SET CODNAT = v_codnat
-                 WHERE NUFIN = :NEW.NUFIN;
-            END IF;
-
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                NULL; -- Nenhuma nota encontrada, não faz nada
-        END;
-
+    -- Reforça a natureza na TGFFIN baseada na TGFCAB
+    -- Utiliza NUNOTA e CODPARC como parâmetros de ligação
+    
+    IF :NEW.CODNAT IS NOT NULL THEN
+        UPDATE TGFFIN
+           SET CODNAT = :NEW.CODNAT
+         WHERE NUNOTA = :NEW.NUNOTA
+           AND CODPARC = :NEW.CODPARC
+           -- Mantém a regra de exclusão dos tipos isentos (34, 35, 36, 15)
+           AND CODTIPTIT NOT IN (34, 35, 36, 15)
+           -- Validação: O update só pode acontecer SE o financeiro não for rateado
+           AND NOT EXISTS (
+               SELECT 1 
+               FROM TGFRAT 
+               WHERE TGFRAT.NUFIN = TGFFIN.NUFIN
+           );
     END IF;
 END;
