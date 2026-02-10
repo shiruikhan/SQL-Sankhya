@@ -107,15 +107,6 @@ public class GerarTransferencia implements AcaoRotinaJava {
 		    		    Collection<PrePersistEntityState> itensNota = TransferenciaUtils.buildItens(saida.getValue(),codLocalDestino);      
 		    		    cacHelper.incluirAlterarItem(nuNotaEntrada, auth, itensNota, true);
 		    		    TransferenciaUtils.gerarSerie(saida.getValue(),nuNotaEntrada);
-		    	        PersistentLocalEntity entityEntrada = ewf.findEntityByPrimaryKey("CabecalhoNota", nuNotaEntrada);
-		    	        if (entityEntrada != null) {
-		    	            DynamicVO cabEntradaVO = (DynamicVO) entityEntrada.getValueObject();
-		    	            cabEntradaVO.setProperty("VLRFRETE", cabEntradaVO.asBigDecimal("VLRFRETE"));
-		    	            entityEntrada.setValueObject((EntityVO) cabEntradaVO);
-		    	        }
-		    		    ImpostosHelpper impostos = new ImpostosHelpper();
-		    		    impostos.setForcarRecalculo(true);
-		    		    impostos.calcularImpostos(nuNotaEntrada);
 		    		    documentos.put(saida.getKey(), new HashMap<BigDecimal,BigDecimal>() {{  		    			
 							    		    			   		put(saida.getValue(),nuNotaEntrada);
 							    		                   }});
@@ -160,26 +151,22 @@ public class GerarTransferencia implements AcaoRotinaJava {
 	SessionHandle hnd2 = null;
 	try {
 		hnd2 = JapeSession.open();
-		hnd2.execWithTX(new JapeSession.TXBlock() {
-			public void doWithTx() throws Exception {
-				documentosSaidas.forEach((nunota) -> {
-					try {
-						ImpostosHelpper helper = new ImpostosHelpper();
-						helper.setForcarRecalculo(true);
-						helper.calcularImpostos(nunota);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				});
-				documentosEntradas.forEach((nunota) -> {
-					try {
-						ImpostosHelpper helper = new ImpostosHelpper();
-						helper.setForcarRecalculo(true);
-						helper.calcularImpostos(nunota);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				});
+		documentosSaidas.forEach((nunota) -> {
+			try {
+				ImpostosHelpper helper = new ImpostosHelpper();
+				helper.setForcarRecalculo(true);
+				helper.calcularImpostos(nunota);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+		documentosEntradas.forEach((nunota) -> {
+			try {
+				ImpostosHelpper helper = new ImpostosHelpper();
+				helper.setForcarRecalculo(true);
+				helper.calcularImpostos(nunota);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		});
 	} catch (Exception e) {
