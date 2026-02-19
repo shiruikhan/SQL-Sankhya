@@ -54,22 +54,22 @@ public class GerarTransferencia implements AcaoRotinaJava {
 			public void doWithTx() throws Exception{
     	    	int qtdSaidas = 0;
     	    	int qtdEntradas = 0;
-    			 //Gerando Sa�das
+    			 //Gerando Saídas
     		    for (int i = 0; i < ctx.getLinhas().length; i++) {
     		        Registro line = ctx.getLinhas()[i];
-    			    System.out.println("Gerando Transfer�ncia de Sa�da para Nro. Unico: " + line.getCampo("NUNOTA"));
+    			    System.out.println("Gerando Transferência de Saída para Nro. Unico: " + line.getCampo("NUNOTA"));
 			        EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
 			        BigDecimal nuNota = (BigDecimal)line.getCampo("NUNOTA");
 			        DynamicVO cabVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO(DynamicEntityNames.CABECALHO_NOTA, new Object[] {nuNota});       
 			        TransferenciaUtils.ehPedido(cabVO);
 			        TransferenciaUtils.ehGerada(cabVO);
 			        TransferenciaUtils.validaConferencia(cabVO);
-			        //Busca Modelo Cabe�alho (278268 = 254438 | Produ��o vs Teste)
+			        //Busca Modelo Cabeçalho (278268 = 254438 | Produção vs Teste)
 			        DynamicVO modelSaidaVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO("CabecalhoNotaModelo", new Object[] {278268});
-			        //Gera Sa�da
+			        //Gera Saída
 			        DynamicVO transferenciaVO = TransferenciaUtils.buildCabecalho(modelSaidaVO,codEmpOrig,codEmpDestino);
 			        if(transferenciaVO == null) 
-				    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lan�amento de Nro. �nico: " + nuNota + " j� gerou uma erro na hora de compilar o modelo da nota!")); 
+				    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. Único: " + nuNota + " já gerou uma erro na hora de compilar o modelo da nota!")); 
 			        CACHelper cacHelper = new CACHelper();
 			        AuthenticationInfo auth = AuthenticationInfo.getCurrent();
 			        JapeSessionContext.putProperty("br.com.sankhya.com.CentralCompraVenda", Boolean.TRUE);
@@ -88,15 +88,15 @@ public class GerarTransferencia implements AcaoRotinaJava {
     		    if(qtdSaidas>0) {
     	   	       // Exibindo todos os elementos do hashmap
     		    	for (Entry<BigDecimal, BigDecimal> saida : notasSaida.entrySet()) {           		
-		    			System.out.println("Gerando Transfer�ncia de Entrada para Nro. Unico: " + saida.getValue());
+		    			System.out.println("Gerando Transferência de Entrada para Nro. Unico: " + saida.getValue());
 		    	        EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
 		    	        DynamicVO cabVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO(DynamicEntityNames.CABECALHO_NOTA, new Object[] {saida.getValue()});       
-		    	        //Busca Modelo Cabe�alho 278275 = 254448 | Produ��o vs Teste 
+		    	        //Busca Modelo Cabeçalho 278275 = 254448 | Produção vs Teste 
 		    	        DynamicVO modelEntradaVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO("CabecalhoNotaModelo", new Object[] {278275});
-		    	        //Gera Sa�da
+		    	        //Gera Saída
 		    	        DynamicVO transferenciaVO = TransferenciaUtils.buildCabecalho(modelEntradaVO,codEmpDestino,codEmpOrig);
 		    	        if(transferenciaVO == null) 
-		    		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lan�amento de Nro. �nico: " + saida.getValue() + " j� gerou uma erro na hora de compilar o modelo da nota!")); 
+		    		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. Único: " + saida.getValue() + " já gerou uma erro na hora de compilar o modelo da nota!")); 
 		    	        CACHelper cacHelper = new CACHelper();
 		    	        AuthenticationInfo auth = AuthenticationInfo.getCurrent();
 		    	        JapeSessionContext.putProperty("br.com.sankhya.com.CentralCompraVenda", Boolean.TRUE);
@@ -115,7 +115,7 @@ public class GerarTransferencia implements AcaoRotinaJava {
     		    totalEntradas = qtdEntradas;
 			    }else {
 		
-			    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. N�o foram localizadas notas de sa�da para gerar as respectivas entradas.")); 
+			    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram localizadas notas de saída para gerar as respectivas entradas.")); 
 			    }       
     if(totalEntradas > 0) {	
 		documentos.forEach((pedido, value) -> {
@@ -129,7 +129,7 @@ public class GerarTransferencia implements AcaoRotinaJava {
 	    	        documentosEntradas.add(entrada);
 		        }catch(Exception e) {
 		           	try {
-						throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. N�o foram geradas notas de entradas, consulte o log para mais informa��es."));
+						throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram geradas notas de entradas, consulte o log para mais informações."));
 					} catch (Exception e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -138,7 +138,7 @@ public class GerarTransferencia implements AcaoRotinaJava {
 		    });
 		});
     }else {
-    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. N�o foram localizadas ENTRADAS, verifique o LOG do Sankhya para mais detalhes.")); 
+    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram localizadas ENTRADAS, verifique o LOG do Sankhya para mais detalhes.")); 
 
     }	
 	}});	
