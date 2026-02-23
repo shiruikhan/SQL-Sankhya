@@ -144,7 +144,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 					<text><![CDATA[Código]]></text>
 				</staticText>
 				<staticText>
-					<reportElement style="table_CH" x="75" y="27" width="230" height="29"/>
+					<reportElement style="table_CH" x="75" y="27" width="210" height="29"/>
 					<box leftPadding="3">
 						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
@@ -157,7 +157,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 					<text><![CDATA[Descrição	]]></text>
 				</staticText>
 				<staticText>
-					<reportElement style="table_CH" x="365" y="27" width="50" height="29"/>
+					<reportElement style="table_CH" x="345" y="27" width="50" height="29"/>
 					<box leftPadding="3">
 						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
@@ -170,7 +170,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 					<text><![CDATA[Atender]]></text>
 				</staticText>
 				<staticText>
-					<reportElement style="table_CH" x="415" y="27" width="40" height="29"/>
+					<reportElement style="table_CH" x="395" y="27" width="60" height="29"/>
 					<box leftPadding="3">
 						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
@@ -193,10 +193,10 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
 					</textElement>
-					<text><![CDATA[Atendido]]></text>
+					<text><![CDATA[Falta]]></text>
 				</staticText>
 				<staticText>
-					<reportElement style="table_CH" mode="Opaque" x="305" y="27" width="60" height="29"/>
+					<reportElement style="table_CH" mode="Opaque" x="285" y="27" width="60" height="29"/>
 					<box leftPadding="3">
 						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
@@ -299,7 +299,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{CODPROD}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="305" y="-1" width="60" height="20"/>
+				<reportElement x="285" y="-1" width="60" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -325,7 +325,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="365" y="-1" width="50" height="20"/>
+				<reportElement x="345" y="-1" width="50" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -338,7 +338,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTD}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="75" y="-1" width="230" height="20"/>
+				<reportElement x="75" y="-1" width="210" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -351,7 +351,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBS
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="415" y="-1" width="40" height="20"/>
+				<reportElement x="395" y="-1" width="60" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
