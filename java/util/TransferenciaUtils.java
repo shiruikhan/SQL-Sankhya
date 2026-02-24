@@ -139,6 +139,11 @@ public class TransferenciaUtils {
 	            	 itemVO.setProperty("CODTRIB", iteVO.asBigDecimal("CODTRIB"));
 	            	 itemVO.setProperty("CSTIPI", BigDecimalUtil.valueOf(iteVO.asBigDecimal("BASEIPI").floatValue() > 0 ? 49 : 1 ));
 	            	 itemVO.setProperty("ALIQICMS", iteVO.asBigDecimal("ALIQICMS"));
+	            	 itemVO.setProperty("BASEICMS", iteVO.asBigDecimal("BASEICMS"));
+	            	 itemVO.setProperty("VLRICMS", iteVO.asBigDecimal("VLRICMS"));
+	            	 itemVO.setProperty("BASEIPI", iteVO.asBigDecimal("BASEIPI"));
+	            	 itemVO.setProperty("VLRIPI", iteVO.asBigDecimal("VLRIPI"));
+	            	 itemVO.setProperty("ALIQIPI", iteVO.asBigDecimal("ALIQIPI"));
 	            	 itemVO.setProperty("CODLOCALORIG",localOrigem);
 	            	 itemVO.setProperty("CONTROLE",iteVO.asString("CONTROLE"));
 	            	 PrePersistEntityState itePreState = PrePersistEntityState.build(ewf, "ItemNota", itemVO);
