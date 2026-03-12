@@ -13,6 +13,7 @@ BEGIN
            AND CODPARC = :NEW.CODPARC
            -- Mantém a regra de exclusão dos tipos isentos (34, 35, 36, 15)
            AND CODTIPTIT NOT IN (34, 35, 36, 15)
+           AND NURENEG IS NULL
            -- Validação: O update só pode acontecer SE o financeiro não for rateado
            AND NOT EXISTS (
                SELECT 1 
