@@ -20,7 +20,7 @@ BEGIN
             WHERE NUNOTA = FIELD_NUNOTA 
               AND SEQUENCIA = FIELD_SEQUENCIA;
               
-            -- Atualiza o campo conforme a regra solicitada
+            -- Atualiza o campo 
             IF FIELD_CODSIT08EFD IS NULL THEN
                 UPDATE TGFITE 
                 SET CODSIT08EFD = 'S' 
