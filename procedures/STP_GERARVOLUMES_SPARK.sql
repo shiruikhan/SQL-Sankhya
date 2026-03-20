@@ -102,12 +102,12 @@ BEGIN
     COMMIT;
 	RETURN;	
     END IF;
-	/*
+	
     ---------------------------------------------------------------------------
     -- 0. Produtos que que no total são duas caixas, e sempre são embalados em uma caixa A
     ---------------------------------------------------------------------------
 	
-	IF V_PED <= 5
+	IF V_PED <= 3
 	THEN 
 		SELECT MAX(SEQ) 
 			INTO V_MAXSEQ 
@@ -183,7 +183,7 @@ BEGIN
     COMMIT;
 	RETURN;	
 	END IF;	
-	*/
+	
     ---------------------------------------------------------------------------
     -- 1. Gera caixas completas e sobras por produto
     ---------------------------------------------------------------------------
