@@ -1,4 +1,5 @@
 /trigger_nativa
+/.claude
 .env
 java/recalcpreco.java
 libs_sankhya/aopalliance-1.0.jar
