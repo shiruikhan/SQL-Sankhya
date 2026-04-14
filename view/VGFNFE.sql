@@ -1,3 +1,14 @@
+/*
+  View: VGFNFE
+  Descrição: lista notas fiscais eletrônicas de vendas ativas para o vendedor 42, com NF-e emitida e protocolo recente.
+  Fonte: TGFCAB, TGFITE, TGFNFE
+  Filtros principais:
+    - TIPMOV = 'V'
+    - CODVEND = 42
+    - STATUSNFE = 'A'
+    - CHAVENFE não nulo
+    - DHPROTOC nos últimos 4 dias
+*/
 CREATE OR REPLACE VIEW VGFNFE AS
 SELECT
     C.NUNOTA,

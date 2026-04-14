@@ -1,3 +1,13 @@
+/*
+  View: VGFEST
+  Descrição: consolida estoque por SKU para produtos ativos com movimento recente.
+  Fonte: TGFPRO, TGFEST, TGFICP
+  Condições principais:
+    - empresa 1, local 109
+    - produtos ativos (PRO.ATIVO = 'S')
+    - produtos com vendas/negócios nos últimos 300 dias
+    - uso de produto em 'R' ou 'V'
+*/
 CREATE OR REPLACE VIEW VGFEST (SKU, ESTO) AS
 SELECT PRO.CODPROD AS SKU
 	,NVL(ESTOQUE, 0) AS ESTO

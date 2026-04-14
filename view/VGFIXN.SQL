@@ -1,3 +1,12 @@
+/*
+  View: VW_CTE_AUTORIZADOS
+  Descrição: retorna CT-e autorizados com chaves de acesso referenciadas em XML de documentos.
+  Fonte: TGFIXN + XMLTABLE sobre DOCSREF
+  Filtros principais:
+    - TIPO = 'C'
+    - SITUACAOCTE = 'A'
+    - DOCSREF não nulo
+*/
 CREATE OR REPLACE VIEW VW_CTE_AUTORIZADOS AS
 SELECT
     X.NUARQUIVO AS NRARQUIVO,
