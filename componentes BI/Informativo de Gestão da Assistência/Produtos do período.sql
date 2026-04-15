@@ -1,8 +1,32 @@
+/*==============================================================================
+  Nome do Script : Produtos do período
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Informativo de Gestão da Assistência
+  Componente     : Produtos do período
+  Descrição      : Retorna quantidade de ordens de assistência agrupadas
+                   por produto no período, com tratamento de código.
+
+  Parâmetros     : :P_ANO — ano
+                   :A_MES — mês
+                   :P_DTFAB — data de fabricação (INI/FIN)
+                   :P_CODPROD — código do produto
+                   :P_CODGRUPOPROD — código do grupo de produto
+                   :A_DEFEITO — tipo de defeito
+
+  Tabelas        : AD_TGFASS, TGFPRO, TGFGRU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
-    CASE 
-        WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
-            TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
-                      '1' || 
+    CASE
+        WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN
+            TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) ||
+                      '1' ||
                       SUBSTR(TO_CHAR(F.T_CODPROD), 3))
         ELSE F.T_CODPROD
     END AS CODPROD_TRATADO,

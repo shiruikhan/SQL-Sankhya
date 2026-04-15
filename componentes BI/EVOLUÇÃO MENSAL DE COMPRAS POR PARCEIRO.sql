@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : EVOLUÇÃO MENSAL DE COMPRAS POR PARCEIRO
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise de Compras
+  Descrição      : Evolução mensal de compras de produtos com quantidades
+                   pendentes agrupadas por fornecedor/parceiro.
+
+  Parâmetros     : :P_CODPROD — Código do produto (ou NULL para todos)
+                   :P_CODPARC — Código do parceiro (ou NULL para todos)
+                   :P_CODGRUPOPROD — Código do grupo de produto (ou NULL para todos)
+                   :P_ANO — Ano para análise
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFPAR
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT V.CODPROD,
 	V.DESCRPROD,
 	V.CODVOL,

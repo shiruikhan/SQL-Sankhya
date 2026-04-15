@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : ESTOQUE SEM MOVIMENTO
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Gestão de Estoque
+  Descrição      : Produtos em estoque sem movimento há períodos
+                   (3, 2 ou 1 ano), com indicação visual por cor.
+
+  Parâmetros     : :P_DTCORTE — Data de corte para análise de movimento
+                   :P_CODLOCAL — Código do local de estoque (ou NULL para todos)
+                   :P_USOPROD — Uso do produto para filtro
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFEST
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH MovAgg AS (
     SELECT I.CODPROD, I.CODLOCALORIG AS CODLOCAL, MAX(C.DTNEG) AS MOVIMENTACAO
     FROM TGFITE I

@@ -1,4 +1,21 @@
 create or replace PROCEDURE STP_REGRA_VALID_FINAN_SPARK (P_NUNOTA INT, P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2, P_CODUSULIB OUT NUMERIC) AS
+/*==============================================================================
+  Nome do Script : STP_REGRA_VALID_FINAN_SPARK
+  Tipo           : Stored Procedure (Validação de Regra)
+  Descrição      : Valida o total da nota fiscal com o total dos valores
+                   financeiros, verificando inconsistências de valores.
+
+  Parâmetros     : P_NUNOTA     — número único da nota fiscal
+                   P_SUCESSO    — indicador de sucesso da validação (S/N)
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+                   P_CODUSULIB  — código do usuário liberador (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
     DECLARE
         P_VLRNOTA   NUMBER;

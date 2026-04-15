@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : EVOLUÇÃO DE VENDAS POR PRODUTO
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise de Vendas
+  Descrição      : Evolução mensal de vendas por produto com valores e
+                   quantidades, incluindo percentuais de participação.
+
+  Parâmetros     : :P_AGRUPADO — 'S' para agrupar por agrupador, outro valor por código
+                   :P_CODPROD — Código do produto (ou NULL para todos)
+                   :P_ANO — Ano para análise
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT T.*,
     -- Totais anuais
     T.JANEIRO+T.FEVEREIRO+T.MAR+T.ABRIL+T.MAIO+T.JUNHO+T.JULHO+T.AGOSTO+T.SETEMBRO+T.OUTUBRO+T.NOVEMBRO+T.DEZEMBRO AS TOTAL,

@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : RELACAO DE VENDAS-PRODUTO POR PREVISAO DE ENTREGA
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Gestão de Vendas e Clientes
+  Descrição      : Relação de itens de venda por produto, volume e cliente
+                   com quantidades agrupadas por mês de previsão de entrega.
+
+  Parâmetros     : :P_ANO — ano de referência (NUMBER)
+                   :P_CODPROD — código do produto (optional)
+                   :P_CODPARC — código do cliente (optional)
+                   :P_CODGRUPOPROD — código do grupo de produto (optional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFPAR (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT V.CODPROD,
 	V.DESCRPROD,
 	V.CODVOL,

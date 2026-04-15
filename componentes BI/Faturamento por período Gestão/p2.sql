@@ -1,3 +1,29 @@
+/*==============================================================================
+  Nome do Script : p2
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : Faturamento por período Gestão
+  Componente     : p2
+  Descrição      : Faturamento de devoluções por agrupador de produto e vendedor
+                   com percentuais de participação em relação ao total.
+
+  Parâmetros     : :P_PER.INI e :P_PER.FIN — Período de devoluções
+                   :P_GRUPO — Filtro por grupo de produtos (opcional)
+                   :P_CODEMP — Filtro por empresa (opcional)
+                   :P_CODVEND — Filtro por vendedor (opcional)
+                   :P_CODPROD — Filtro por produto (opcional)
+                   :P_CODPARC — Filtro por parceiro (opcional)
+                   :P_CODPARCMATRIZ — Filtro por parceiro matriz (opcional)
+                   :P_CODUF — Filtro por UF (opcional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN, TGFPAR, TSICID
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT PRO.AD_AGRUPADOR,
 	PRO.CODVOL,
 	SUM(ITE.QTDNEG) AS QTD,

@@ -1,5 +1,23 @@
 create or replace PROCEDURE STP_VALIDAFRETE_SPARK(P_NUNOTA INT,  P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2,  P_CODUSULIB OUT NUMBER)
 AS
+/*==============================================================================
+  Nome do Script : STP_VALIDAFRETE_SPARK
+  Tipo           : Stored Procedure (Trigger de Evento de Tabela)
+  Descrição      : Valida e rateia automaticamente fretes de CTe entre notas
+                   de compra relacionadas, distribuindo custos de ICMS e PIS
+                   proporcionalmente ao valor de cada nota.
+
+  Parâmetros     : P_NUNOTA      — número da nota a processar
+                   P_SUCESSO     — indicador de sucesso da operação (OUT)
+                   P_MENSAGEM    — mensagem de retorno ao usuário (OUT)
+                   P_CODUSULIB   — código do usuário liberador (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
 DECLARE
        P_COUNT                           INT;

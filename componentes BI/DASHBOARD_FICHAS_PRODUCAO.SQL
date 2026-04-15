@@ -1,21 +1,20 @@
--- Dashboard: Fichas de Produção em Aberto e Andamento
--- Mostra todas as fichas de produção ativas de planos já gerados
--- 
--- Colunas:
--- FICHA: Número da ficha de produção (NROLOTE)
--- PLANO: Número do plano de produção (NUMPS)
--- DESCRICAO_PRODUTO: Descrição do produto sendo produzido
--- TAMANHO_LOTE: Quantidade total a produzir na ficha
--- SALDO_A_PRODUZIR: Quantidade restante a produzir (lote - apontado - perdas)
--- STATUS_PROCESSO: Status atual do processo
--- DATA_PREVISTA_ENTREGA: Data prevista para entrega
--- DATA_INICIO: Data de início do processo
--- LINHA_PRODUCAO: Linha de produção associada
---
--- Filtros aplicados:
--- - Processos com status 'A' (Aberto/Ativo) ou 'P2' (Em Produção)
--- - Processos não finalizados (DHTERMINO IS NULL)
--- - Apenas processos de planos gerados (NUMPS IS NOT NULL)
+/*==============================================================================
+  Nome do Script : DASHBOARD_FICHAS_PRODUCAO
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Fichas de Produção
+  Descrição      : Fichas de produção em aberto e andamento, com saldo
+                   a produzir, status e datas de entrega/início.
+
+  Parâmetros     : Sem parâmetros
+
+  Tabelas        : TPRIPROC, TPRIPA, TGFPRO, TPRAPO, TPRAPA, TPRIATV
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 
 SELECT 
     PRC.NROLOTE AS FICHA,

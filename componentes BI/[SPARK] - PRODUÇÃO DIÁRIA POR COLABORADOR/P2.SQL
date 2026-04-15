@@ -1,4 +1,27 @@
-SELECT 
+/*==============================================================================
+  Nome do Script : P2
+  Tipo           : Componente BI — Tabela
+  Dashboard      : [SPARK] - PRODUÇÃO DIÁRIA POR COLABORADOR
+  Componente     : P2
+  Descrição      : Retorna produção diária por colaborador agrupada por setor
+                   de trabalho.
+
+  Parâmetros     : :P_PERIODO — período (INI/FIN)
+                   :P_STATUSPROC — status do processo
+                   :P_IDIPROD — ID do processo produção
+                   :P_FINAL — S (finalizados) ou N (em progresso)
+                   :P_CODPRC — código do processo (array)
+
+  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TFPFUN, TPRIPROC, TPRPRC
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT
     FUN.NOMEFUNC AS COLABORADOR,
     FX.DESCRICAO AS SETOR,
     SUM(APA.QTDAPONTADA) AS PRODUCAO

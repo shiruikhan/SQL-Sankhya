@@ -4,6 +4,24 @@ create or replace PROCEDURE          STP_COPIALISTAMP_SPARK (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_COPIALISTAMP_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Copia lista de matérias-primas (TPRLMP, TPRMPA, TPRLPI, TPRTPP)
+                   de um processo de manufatura para outro, replicando composição
+                   de produto, substitutos, operações e índices de controle de qualidade.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        PARAM_CODPRODMPORIG VARCHAR2(4000);
        PARAM_CODPRC NUMBER;
        FIELD_IDPROC NUMBER;

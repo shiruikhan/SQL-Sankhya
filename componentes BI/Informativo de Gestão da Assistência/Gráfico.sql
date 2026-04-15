@@ -1,4 +1,26 @@
-SELECT 
+/*==============================================================================
+  Nome do Script : Gráfico
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : Informativo de Gestão da Assistência
+  Componente     : Gráfico
+  Descrição      : Retorna série temporal de ordens de assistência por tipo
+                   de defeito para visualização em gráfico mensal.
+
+  Parâmetros     : :P_ANO — ano
+                   :P_DTFAB — data de fabricação (INI/FIN)
+                   :P_CODPROD — código do produto
+                   :P_CODGRUPOPROD — código do grupo de produto
+
+  Tabelas        : AD_TGFASS, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT
     TO_CHAR(A.DTRECEB, 'MM') AS MES,
     TO_CHAR(TO_DATE(TO_CHAR(A.DTRECEB, 'MM'), 'MM'), 'fmMonth', 'NLS_DATE_LANGUAGE=PORTUGUESE') AS MES_EXTENSO,
     COUNT(A.NUMOS) AS TOTAL_OS,

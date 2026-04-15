@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : painelcomponentes
+  Tipo           : Componente BI — Tabela
+  Dashboard      : INFORMATIVO DE GESTÃO DA ASSISTÊNCIA EXTERNA
+  Componente     : painelcomponentes
+  Descrição      : Retorna total de movimentos de assistência externa
+                   por componente/produto.
+
+  Parâmetros     : :P_PERIODO — período (INI/FIN)
+                   :P_CODPARC — código do parceiro/fornecedor
+
+  Tabelas        : AD_SPKICAE, TGFPRO, AD_SPKCAE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT IA.CODPROD,
     P.DESCRPROD,
     SUM(IA.QTDMOV) AS TOTAL

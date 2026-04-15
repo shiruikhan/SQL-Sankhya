@@ -1,4 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : OrdemProducao
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 16 - Ordem de Produção
+  Descrição      : Ordem de Produção — backup/versão anterior
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  ==============================================================================
+-->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Ordem de Produção" language="groovy" pageWidth="595" pageHeight="842" columnWidth="539" leftMargin="28" rightMargin="28" topMargin="5" bottomMargin="5">
 <<<<<<<< HEAD:reports/16 - Ordem de Produção/BKP/OrdemProducao.jrxml
 	<property name="ireport.zoom" value="1.9965000000000006"/>

@@ -1,5 +1,23 @@
 create or replace PROCEDURE Stp_ALTCAMOUTROS_SPARK(P_NUNOTA INT, P_SEQUENCIA INT, P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2, P_CODUSULIB OUT NUMBER)
 AS
+/*==============================================================================
+  Nome do Script : Stp_ALTCAMOUTROS_SPARK
+  Tipo           : Stored Procedure (Validação de Regra)
+  Descrição      : Atualiza o valor total de outros gastos na nota fiscal
+                   com base na soma dos itens, mantendo consistência.
+
+  Parâmetros     : P_NUNOTA     — número único da nota fiscal
+                   P_SEQUENCIA  — sequência do item
+                   P_SUCESSO    — indicador de sucesso (S/N)
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+                   P_CODUSULIB  — código do usuário liberador (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
 DECLARE
 P_VLROUTROS     FLOAT;

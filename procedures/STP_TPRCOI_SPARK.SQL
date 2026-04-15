@@ -3,6 +3,23 @@ create or replace PROCEDURE STP_TPRCOI_SPARK (
        P_IDSESSAO VARCHAR2, -- Identificador da execução. Serve para buscar informações dos campos da execução.
        P_CODUSU INT         -- Código do usuário logado
 ) AS
+/*==============================================================================
+  Nome do Script : STP_TPRCOI_SPARK
+  Tipo           : Stored Procedure (Trigger de Evento de Tabela)
+  Descrição      : Implementa eventos de INSERT, UPDATE e DELETE na tabela
+                   de conferência de produtos (TPRCOI), sincronizando o
+                   campo CONTROLE com o código de barras automaticamente.
+
+  Parâmetros     : P_TIPOEVENTO — tipo de evento (BEFORE/AFTER INSERT/UPDATE/DELETE)
+                   P_IDSESSAO   — identificador da execução
+                   P_CODUSU     — código do usuário logado
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        BEFORE_INSERT INT;
        AFTER_INSERT  INT;
        BEFORE_DELETE INT;

@@ -3,7 +3,25 @@ create or replace PROCEDURE STP_VERCORCUSTO_SPARK (
     P_IDSESSAO VARCHAR2,
     P_QTDLINHAS NUMBER,
     P_MENSAGEM OUT VARCHAR2
-) AS 
+) AS
+/*==============================================================================
+  Nome do Script : STP_VERCORCUSTO_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Verifica e corrige custos de produtos comparando custo
+                   bloqueado com custo calculado pela função OBTEMCUSTO,
+                   atualizando ou inserindo registros na tabela TGFCUS.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     FIELD_ID NUMBER;
     V_CODPROD NUMBER;
     V_CUSTO AD_TGSCUSBLOCOH.VLRCUS%TYPE;

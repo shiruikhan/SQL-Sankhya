@@ -1,3 +1,22 @@
+/*==============================================================================
+  Nome do Script : P3
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ESTIMATIVA DE ESTOQUE
+  Componente     : P3
+  Descrição      : Produções em processo com quantidade pendente (planejado menos
+                   já entregue) para um produto específico.
+
+  Parâmetros     : :A_CODPROD — Código do produto para filtro
+
+  Tabelas        : TPRIPROC, TPRIPA, TGFCAB, TGFITE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH EntregasProc AS (
     SELECT C.IDIPROC, I.CODPROD, SUM(I.QTDNEG) AS QTD_ENTREGUE
     FROM TGFCAB C

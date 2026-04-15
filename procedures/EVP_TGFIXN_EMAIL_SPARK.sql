@@ -3,6 +3,23 @@ create or replace NONEDITIONABLE PROCEDURE "EVP_TGFIXN_EMAIL_SPARK" (
        P_IDSESSAO VARCHAR2, -- Identificador da execução. Serve para buscar informações dos campos da execução.
        P_CODUSU INT         -- Código do usuário logado
 ) AS
+/*==============================================================================
+  Nome do Script : EVP_TGFIXN_EMAIL_SPARK
+  Tipo           : Procedure de Visão Externa (Evento de Tela)
+  Descrição      : Envia notificações por e-mail automáticas quando notas de devolução
+                   (CFOP 5201, 5202, 6201, 6202, 5410, 6410) são inseridas, informando
+                   áreas de fiscal e controladoria com detalhes da operação.
+
+  Parâmetros     : P_TIPOEVENTO — tipo do evento (0=BEFORE_INSERT, 1=AFTER_INSERT, etc.)
+                   P_IDSESSAO   — identificador da execução
+                   P_CODUSU     — código do usuário logado
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        BEFORE_INSERT INT;
        AFTER_INSERT  INT;
        BEFORE_DELETE INT;

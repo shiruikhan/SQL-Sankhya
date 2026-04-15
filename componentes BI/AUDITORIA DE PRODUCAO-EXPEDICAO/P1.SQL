@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : AUDITORIA DE PRODUCAO-EXPEDICAO
+  Componente     : P1
+  Descrição      : Produção apontada em montagem final por produto e apontador
+
+  Parâmetros     : :P_DTBASE — data base para o apontamento
+
+  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TGFPRO, TSIUSU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT PRO.CODPROD,
 	PRO.DESCRPROD,
 	SUM(APA.QTDAPONTADA) AS PRODUCAO,

@@ -1,3 +1,27 @@
+/*==============================================================================
+  Nome do Script : PAINEL COMERCIAL
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Painel Comercial
+  Descrição      : Painel comercial de pedidos em aberto com estoque
+                   atual, simulações de entrega e disponibilidade.
+
+  Parâmetros     : :P_PERIODO.INI — Data inicial
+                   :P_PERIODO.FIN — Data final
+                   :P_ENTREGA.INI — Data início de entrega prevista (ou NULL)
+                   :P_ENTREGA.FIN — Data fim de entrega prevista (ou NULL)
+                   :P_CODEMP — Código da empresa (ou NULL para todas)
+                   :P_CODPARC — Código do parceiro (ou NULL para todos)
+                   :P_SIMULACRO — Data de simulação para cálculo de estoque
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFPAR, TGFEST, TPRIPROC, TPRIPA
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT CAB.NUNOTA,
 	CAB.DTNEG,
 	CAB.DTPREVENT,

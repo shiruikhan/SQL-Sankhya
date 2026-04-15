@@ -1,3 +1,28 @@
+/*==============================================================================
+  Nome do Script : FATURAMENTO POR PERÍODO - Devoluções
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise de Devoluções
+  Descrição      : Faturamento de devoluções agrupado por produto/agrupador,
+                   com percentual de participação em quantidade e valor.
+
+  Parâmetros     : :P_PER.INI — Data inicial
+                   :P_PER.FIN — Data final
+                   :P_GRUPO — Código do grupo de produto (ou NULL para todos)
+                   :P_CODEMP — Código da empresa (ou NULL para todos)
+                   :P_CODVEND — Código do vendedor (ou NULL para todos)
+                   :P_CODPROD — Código do produto (ou NULL para todos)
+                   :P_CODPARC — Código do parceiro (ou NULL para todos)
+                   :P_CODUF — UF do cliente (ou NULL para todas)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN, TGFPAR, TSICID
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT PRO.AD_AGRUPADOR,
 	PRO.CODVOL,
 	SUM(ITE.QTDNEG) AS QTD,

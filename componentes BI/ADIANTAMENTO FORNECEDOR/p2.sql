@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : p2
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ADIANTAMENTO FORNECEDOR
+  Componente     : P2
+  Descrição      : Detalhes de compensação de adiantamentos com informações de natureza e usuário
+
+  Parâmetros     : :A_NUCOMPENS — número de compensação
+
+  Tabelas        : TGFFIN, TGFPAR, TGFNAT, TSIUSU, TGFFRE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT FIN.NUFIN,
 	FIN.CODEMP,
 	FIN.CODPARC,

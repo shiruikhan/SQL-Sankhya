@@ -1,4 +1,23 @@
-SELECT 
+/*==============================================================================
+  Nome do Script : Valida Natureza
+  Tipo           : Query de Diagnóstico
+  Dashboard      : Validação e Auditoria de Dados
+  Descrição      : Query de validação que identifica discrepâncias de natureza
+                   fiscal entre o cabecalho (TGFCAB) e financeiro (TGFFIN).
+
+  Parâmetros     : :P_PERIODO.INI — data inicial (DATE)
+                   :P_PERIODO.FIN — data final (DATE)
+
+  Tabelas        : TGFCAB, TGFPAR, TGFFIN, TGFNAT (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT
     F.NUNOTA,
     C.TIPMOV,
     P.RAZAOSOCIAL,

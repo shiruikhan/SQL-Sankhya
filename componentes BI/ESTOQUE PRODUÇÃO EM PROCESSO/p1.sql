@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : p1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ESTOQUE PRODUÇÃO EM PROCESSO
+  Componente     : p1
+  Descrição      : Detalhamento de estoque em produção com custos e quantidades
+                   pendentes de conclusão por matéria-prima.
+
+  Parâmetros     : :PER.INI e :PER.FIN — Período de análise
+                   :P_CODPRC — Código(s) do processo produtivo
+                   :P_CODPRODPA — Código do produto acabado (opcional)
+
+  Tabelas        : TPRIPROC, TPRLPA, TPRPRC, TPREFX, TPRLMP, TGFPRO, TGFCAB, TGFITE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH BASE_KEYS AS (
   SELECT DISTINCT MP.CODPRODMP AS CODPRODMP, TRUNC(PROC.DHINST) AS DTINST
   FROM TPRIPROC PROC

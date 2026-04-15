@@ -1,3 +1,26 @@
+/*==============================================================================
+  Nome do Script : RELATORIO COPIA DE ESTOQUE
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Gestão e Controle de Estoque
+  Descrição      : Relatório de contagem de estoque com detalhes de produto,
+                   localização, custos (sem ICM, com ICM, gerencial) e última movimentação.
+
+  Parâmetros     : :CODEMP — código da empresa (NUMBER)
+                   :DATE — data de contagem (DATE)
+                   :CODPROD — código do produto (optional)
+                   :USOPROD — uso do produto (optional)
+                   :CONTENDO — descrição contendo (optional)
+                   :P_CODLOCAL — código da localização (optional)
+
+  Tabelas        : TGFPRO, TGFCTE, TGFGRU, TGFLOC, TGFITE, TGFCAB, TGFCUS (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
   PRO.CODPROD,
   PRO.DESCRPROD,

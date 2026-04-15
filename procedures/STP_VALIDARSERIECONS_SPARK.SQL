@@ -1,4 +1,22 @@
 create or replace PROCEDURE STP_VALIDARSERIECONS_SPARK (P_NUNOTA INT, P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2, P_CODUSULIB OUT NUMERIC) AS
+/*==============================================================================
+  Nome do Script : STP_VALIDARSERIECONS_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Valida séries de devoluções comparando quantidade de séries
+                   apontadas com série da nota original, detectando divergências
+                   de quantidade e séries não encontradas.
+
+  Parâmetros     : P_NUNOTA      — número da nota a validar
+                   P_SUCESSO     — indicador de sucesso da operação (OUT)
+                   P_MENSAGEM    — mensagem de retorno ao usuário (OUT)
+                   P_CODUSULIB   — código do usuário liberador (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
     DECLARE
 

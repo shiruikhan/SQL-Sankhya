@@ -6,6 +6,25 @@ create or replace PROCEDURE "STP_PCPMETA_SPARK" (
     P_QTDDEMBRUTA OUT FLOAT, -- Valor da demanda bruta do PA que será calculada pela procedure.
     P_NUMPS OUT NUMBER	     -- Número do MPS que está sendo gerado
 ) AS
+/*==============================================================================
+  Nome do Script : STP_PCPMETA_SPARK
+  Tipo           : Stored Procedure (Cálculo de Demanda - PCP/MRP)
+  Descrição      : Procedure para cálculo de demanda bruta em MPS (Master Planning Schedule).
+                   Considera meta de vendas, previsões e MPS para produtos acabados.
+
+  Parâmetros     : P_CODPROD      — código do produto acabado (PA)
+                   P_CONTROLE     — controle adicional do PA
+                   P_DATA_INICIAL — data inicial do período de planejamento
+                   P_DATA_FINAL   — data final do período de planejamento
+                   P_QTDDEMBRUTA  — demanda bruta calculada (OUT)
+                   P_NUMPS        — número do MPS gerado (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 P_COUNT INT;
 P_QTDPREV FLOAT;
 V_NUMPS NUMBER;

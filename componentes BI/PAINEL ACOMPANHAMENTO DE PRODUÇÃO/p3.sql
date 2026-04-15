@@ -1,4 +1,28 @@
-SELECT * 
+/*==============================================================================
+  Nome do Script : p3
+  Tipo           : Componente BI — Tabela
+  Dashboard      : PAINEL ACOMPANHAMENTO DE PRODUÇÃO
+  Componente     : p3
+  Descrição      : Retorna detalhes de processos e atividades de produção
+                   com apontamentos de produção e perdas.
+
+  Parâmetros     : :A_VALUE — descrição do processo/atividade
+                   :P_STATUSPROC — status do processo
+                   :P_IDIPROC — ID do processo
+                   :P_DETALHAR — P (processo) ou A (atividade)
+                   :P_FINAL — S (finalizados) ou N (em progresso)
+                   :P_DTAPONT — período de apontamento (INI/FIN)
+
+  Tabelas        : TPRIPROC, TPRPRC, TPRIPA, TPREFX, TPRIATV, TPRAPA, TPRAPO, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT *
 FROM (SELECT PRC.CODPRC AS CODIGO,
 			PRC.DESCRABREV AS DESCRICAO,
 			PROC.IDIPROC AS IDIPROC,

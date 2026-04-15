@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : p2
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ESTOQUE PRODUÇÃO EM PROCESSO
+  Componente     : p2
+  Descrição      : Resumo de produção em processo com saldo pendente por lote
+                   e processo de manufatura.
+
+  Parâmetros     : :PER.INI e :PER.FIN — Período de análise
+                   :P_CODPRC — Código(s) do processo produtivo
+                   :A_CODPRODPA — Código do produto acabado para filtro
+
+  Tabelas        : TPRIPROC, TPRLPA, TPRPRC, TPREFX, TPRIPA, TGFPRO, TGFCAB, TGFITE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH PROD AS (
   SELECT C.IDIPROC, NVL(SUM(I.QTDNEG),0) AS QTDPA
   FROM TGFCAB C

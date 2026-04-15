@@ -3,6 +3,23 @@ create or replace NONEDITIONABLE PROCEDURE "EVP_CLASSIFICACTE_SPARK" (
        P_IDSESSAO VARCHAR2, -- Identificador da execução. Serve para buscar informações dos campos da execução.
        P_CODUSU INT         -- Código do usuário logado
 ) AS
+/*==============================================================================
+  Nome do Script : EVP_CLASSIFICACTE_SPARK
+  Tipo           : Procedure de Visão Externa (Evento de Tela)
+  Descrição      : Classifica automaticamente a operação fiscal (CODTIPOPER) com base no
+                   código da operação NFe (CODTIPOPER_NFE), após inserção de NFe de compra.
+                   Permite mapeamento dinâmico de tipos de operação conforme regras tributárias.
+
+  Parâmetros     : P_TIPOEVENTO — tipo do evento (0=BEFORE_INSERT, 1=AFTER_INSERT, etc.)
+                   P_IDSESSAO   — identificador da execução
+                   P_CODUSU     — código do usuário logado
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        BEFORE_INSERT INT;
        AFTER_INSERT  INT;
        BEFORE_DELETE INT;

@@ -1,8 +1,24 @@
 create or replace PROCEDURE "STP_ORIGPROD_SPARK" (
-       P_TIPOEVENTO INT,    
-       P_IDSESSAO VARCHAR2, 
-       P_CODUSU INT         
+       P_TIPOEVENTO INT,
+       P_IDSESSAO VARCHAR2,
+       P_CODUSU INT
 ) AS
+/*==============================================================================
+  Nome do Script : STP_ORIGPROD_SPARK
+  Tipo           : Stored Procedure (Trigger de Evento)
+  Descrição      : Procedure para atualização de origem de produto em notas de saída.
+                   Sincroniza origem do item com o cadastro de produto.
+
+  Parâmetros     : P_TIPOEVENTO — tipo de evento (BEFORE_INSERT, AFTER_INSERT, etc.)
+                   P_IDSESSAO   — identificador da execução
+                   P_CODUSU     — código do usuário logado
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        BEFORE_INSERT INT;
        AFTER_INSERT  INT;
        BEFORE_DELETE INT;

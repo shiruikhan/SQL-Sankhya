@@ -2,8 +2,26 @@ create or replace PROCEDURE STP_NFREFDEV_SPARK (
     P_CODUSU    NUMBER,       
     P_IDSESSAO  VARCHAR2,  
     P_QTDLINHAS NUMBER,    
-    P_MENSAGEM  OUT VARCHAR2 
+    P_MENSAGEM  OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_NFREFDEV_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Busca as últimas notas de compra para referência do produto
+                   na nota de devolução, valida empresa e atualiza valores
+                   unitários de forma automática.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     FIELD_NUNOTA     NUMBER;
     V_CODTIPOPER     NUMBER;
     V_NUNOTA_ORIG    NUMBER;

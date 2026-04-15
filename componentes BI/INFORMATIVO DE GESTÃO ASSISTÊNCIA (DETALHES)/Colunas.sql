@@ -1,3 +1,25 @@
+/*==============================================================================
+  Nome do Script : Colunas
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : INFORMATIVO DE GESTÃO ASSISTÊNCIA (DETALHES)
+  Componente     : Colunas
+  Descrição      : Movimentações totais por grupo de produto em assistência
+                   com filtros por período e grupos de matéria-prima e produto acabado.
+
+  Parâmetros     : :P_PERIODO.INI e :P_PERIODO.FIN — Período de análise
+                   :P_DTFAB.INI e :P_DTFAB.FIN — Filtro por data de fabricação (opcional)
+                   :P_CODGRUPOMAPROD — Filtro por grupo da matéria-prima (opcional)
+                   :P_CODGRUPOPROD — Filtro por grupo do produto acabado (opcional)
+
+  Tabelas        : AD_TGFIASS, AD_TGFASS, TGFPRO, TGFGRU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT GRU.DESCRGRUPOPROD,
     GRU.CODGRUPOPROD,
     SUM(IAS.QTDMOV) AS QTDMOV

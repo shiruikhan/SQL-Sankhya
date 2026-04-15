@@ -4,6 +4,23 @@ create or replace PROCEDURE "STP_OSINTERNA_INC_SPARK" (
     P_QTDLINHAS NUMBER,
     P_MENSAGEM OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_OSINTERNA_INC_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Procedure para criação de ordens de serviço internas.
+                   Gera número sequencial, insere registro e notifica usuário criador.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 
     PARAM_P_SETOR VARCHAR2(4000);
     PARAM_P_PROBAPONTADO VARCHAR2(4000);

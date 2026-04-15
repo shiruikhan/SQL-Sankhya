@@ -1,3 +1,25 @@
+/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : CRONOGRAMA GERAL DE PRODUCAO
+  Componente     : P1
+  Descrição      : Cronograma de produção com apontamentos por setor e data de evolução
+
+  Parâmetros     : :P_NROLOTE — número do lote (opcional)
+                   :P_NUMPS — número do plano de produção (opcional)
+                   :P_DTPREVENT.INI — data preventiva inicial (opcional)
+                   :P_DTPREVENT.FIN — data preventiva final (opcional)
+                   :P_DESCRICAO — descrições de setores
+
+  Tabelas        : TPRIPROC, TPRIPA, TGFPRO, TPRLPA, TPREFX, TPRIATV, TPRAPO, TPRAPA
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT PRC.NROLOTE AS FICHA,
     PRC.NUMPS AS PLANO,
     PRC.DHINST AS DTINICIO,

@@ -1,8 +1,28 @@
+/*==============================================================================
+  Nome do Script : Cálculo de Proporcionalidade Matriz
+  Tipo           : Componente BI — Card
+  Dashboard      : Análise Fiscal
+  Descrição      : Cálculo de base ICMS e valor de notas fiscal por
+                   código de operação fiscal para proporcionalidade de matriz.
+
+  Parâmetros     : :P_PERIODO.INI — Data inicial
+                   :P_PERIODO.FIN — Data final
+                   :STATUSNOTA — Status da nota ('N' inclui todas)
+
+  Tabelas        : TGFCAB, TGFITE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT SUM(T.BASEICMS) AS BASEICMS,
 	SUM(T.VLRNOTA) AS VLRNOTA
 FROM (SELECT V.CODCFO,
         SUM(CASE WHEN CODCFO IN (7101,6109,7949) THEN V.VLRNOTA ELSE 0 END) AS VLRNOTA,
-        SUM(CASE WHEN CODCFO IN (5101,5116,5151,5401,5910,6101,6107,6116,6118,6401,6910) THEN V.BASEICMS ELSE 0 END) AS BASEICMS  
+        SUM(CASE WHEN CODCFO IN (5101,5116,5151,5401,5910,6101,6107,6116,6118,6401,6910) THEN V.BASEICMS ELSE 0 END) AS BASEICMS
     FROM (SELECT (SELECT MAX(I.CODCFO) FROM TGFITE I WHERE I.NUNOTA = CAB.NUNOTA) AS CODCFO,
             CAB.BASEICMS AS BASEICMS,
             CAB.VLRNOTA AS VLRNOTA

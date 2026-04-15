@@ -4,21 +4,26 @@ create or replace PROCEDURE "STP_MARCARNPENDENTE_SPARK" (
        P_QTDLINHAS NUMBER,
        P_MENSAGEM OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_MARCARNPENDENTE_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Marca itens de nota fiscal como não pendentes e atualiza
+                   campo de observação com valor capturado do parâmetro.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 21/03/2022
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        PARAM_OBSERVACAO VARCHAR2(4000);
        FIELD_NUNOTA NUMBER;
        FIELD_SEQUENCIA NUMBER;
-       
-/******************************************************************************************
- * AUTOR       : Silvio Vieira
- * CARGO       : Analista de Sistemas Sênior
- * EMPRESA     : Spark Eletrônica
- *
- * DESCRIÇÃO   : Marca itens de nota fiscal como não pendentes, atualizando também o campo
- *               "OBSERVACAO" com valor definido via parâmetro de sessão.
- *
- * DATA CRIAÇÃO: 21/03/2022
- * ÚLTIMA ALTERAÇÃO: 23/04/2025
- ******************************************************************************************/
 
 BEGIN
        PARAM_OBSERVACAO := ACT_TXT_PARAM(P_IDSESSAO, 'OBSERVACAO');

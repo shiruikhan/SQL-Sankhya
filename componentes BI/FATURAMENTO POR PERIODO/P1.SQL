@@ -1,3 +1,27 @@
+/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : FATURAMENTO POR PERIODO
+  Componente     : P1
+  Descrição      : Faturamento por período com Curva ABC de vendas por produto
+
+  Parâmetros     : :P_PER.INI — período inicial
+                   :P_PER.FIN — período final
+                   :P_GRUPO — código do grupo de produto (opcional)
+                   :P_CODEMP — código da empresa (opcional)
+                   :P_CODVEND — código do vendedor (opcional)
+                   :P_CODPROD — código do produto (opcional)
+                   :P_CODPARC — código do parceiro (opcional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH TOTALGERAL AS (
 	SELECT SUM(ITE.QTDNEG) AS TOTAL
 	FROM TGFITE ITE

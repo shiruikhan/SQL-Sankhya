@@ -4,6 +4,23 @@ create or replace PROCEDURE "STP_TGFCAB_AGRUPSEP_SPARK" (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_TGFCAB_AGRUPSEP_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Agrupa notas fiscais de venda com mesmo tipo de movimento,
+                   atribuindo um código de agrupamento sequencial.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        FIELD_NUNOTA NUMBER;
        P_AGRUP   NUMBER;
 BEGIN

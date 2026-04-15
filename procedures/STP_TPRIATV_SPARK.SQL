@@ -4,6 +4,24 @@ create or replace PROCEDURE          STP_TPRIATV_SPARK (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execuÃ§Ã£o.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela serÃ¡ exibida como uma informaÃ§Ã£o ao usuÃ¡rio.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_TPRIATV_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Gerencia abertura e fechamento de atividades de produção,
+                   validando pré-requisitos e atualizando status com tempo
+                   gasto e informações do usuário responsável.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        PARAM_NUAPO NUMBER;
        FIELD_IDIATV NUMBER;
        P_REABERTA TPRIATV.AD_REABERTA%TYPE;

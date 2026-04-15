@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ESTIMATIVA DE ESTOQUE GERENCIAL
+  Componente     : P1
+  Descrição      : Estimativa de estoque gerencial com saldo calculado considerando
+                   planejamento de produção, pedidos abertos e entregas pendentes.
+
+  Parâmetros     : :P_DATA — Data de referência para cálculo do saldo
+                   :P_DESCRPROD — Filtro por descrição do produto (opcional)
+                   :P_CODGRUPO — Filtro por grupo de produtos (opcional)
+
+  Tabelas        : TGFPRO, TGFEST, TGFGRU, TPRIPROC, TPRIPA, TGFCAB, TGFITE, TGMMET
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT V.CODPROD,
 	V.DESCRPROD,
 	V.CODVOL,

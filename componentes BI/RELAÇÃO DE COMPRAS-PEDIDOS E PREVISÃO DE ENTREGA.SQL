@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : RELACAO DE COMPRAS-PEDIDOS E PREVISAO DE ENTREGA
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Gestão de Compras e Fornecedores
+  Descrição      : Relação de pedidos de compra por fornecedor com valores
+                   agrupados por mês de previsão de entrega.
+
+  Parâmetros     : :P_ANO — ano de referência para filtro (NUMBER)
+
+  Tabelas        : TGFCAB, TGFPAR (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT V.CODPARC,
 	V.RAZAOSOCIAL,
 	SUM(CASE WHEN V.MES = 1 THEN V.VLRNEG ELSE 0 END) AS JANEIRO,

@@ -4,6 +4,23 @@ create or replace PROCEDURE STP_INCEMB_SPARK (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_INCEMB_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Procedure para inclusão de embalagens em pedidos. Calcula volumes,
+                   pesos e atualiza informações de embalagem no pedido.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        PARAM_P_CODPROD VARCHAR2(4000);
        PARAM_P_CODEMB VARCHAR2(4000);
        PARAM_P_PESO       FLOAT;

@@ -1,3 +1,26 @@
+/*==============================================================================
+  Nome do Script : DASHBOARD DE VENDAS
+  Tipo           : Componente BI — Tabela
+  Dashboard      : DASHBOARD DE VENDAS
+  Componente     : DASHBOARD DE VENDAS
+  Descrição      : Detalhe de vendas com informações de parceiro, produto, preço e volumes
+
+  Parâmetros     : :P_PERIODO.INI — data inicial
+                   :P_PERIODO.FIN — data final
+                   :P_CODVEND — código do vendedor (opcional)
+                   :P_CODGRUPOPROD — código do grupo de produto (opcional)
+                   :P_UF — unidade federativa (opcional)
+                   :P_CODPARC — código do parceiro (opcional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPAR, TGFTOP, TSICID, TSIUFS, TGFVEN, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT PAR.CODPARC,
 	PAR.NOMEPARC,
 	UFS.UF,

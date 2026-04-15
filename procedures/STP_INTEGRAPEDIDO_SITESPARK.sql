@@ -4,6 +4,23 @@ create or replace PROCEDURE "STP_INTEGRAPEDIDO_SITESPARK" (
 	P_QTDLINHAS NUMBER,
 	P_MENSAGEM OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_INTEGRAPEDIDO_SITESPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Procedure para integração de pedidos do portal de vendas Spark.
+                   Cria notas fiscais com itens e séries de produtos.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 	FIELD_NUPED NUMBER;
 	
 	P_CODTIPOPER NUMBER := 1006;

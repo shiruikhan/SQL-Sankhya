@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : P4
+  Tipo           : Componente BI — Tabela
+  Dashboard      : AUDITORIA DE MOVIMENTACOES
+  Componente     : P4
+  Descrição      : Detalhes de movimentações para um usuário específico
+
+  Parâmetros     : :P_MES — mês da movimentação
+                   :P_ANO — ano da movimentação
+                   :A_CODUSU — código do usuário
+                   :P_CODTIPOPER — códigos de tipos de operação
+
+  Tabelas        : TGFCAB, TGFITE, TGFTOP, TSIUSU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT C.NUNOTA,
     SUM(I.QTDNEG) AS QTDNEG,
     C.CODTIPOPER || ' - ' || T.DESCROPER AS DESCROPER,

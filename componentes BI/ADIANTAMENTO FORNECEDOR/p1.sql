@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : p1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ADIANTAMENTO FORNECEDOR
+  Componente     : P1
+  Descrição      : Lista adiantamentos e empréstimos de fornecedores com detalhes de natureza, datas e usuário
+
+  Parâmetros     : :P_CODPARC — código do parceiro (opcional)
+                   :DATA.INI — data inicial
+                   :DATA.FIN — data final
+
+  Tabelas        : TGFFIN, TGFPAR, TGFNAT, TSIUSU, TGFFRE
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT FIN.NUFIN, 	
 	FIN.NUCOMPENS,
 	FIN.CODPARC,

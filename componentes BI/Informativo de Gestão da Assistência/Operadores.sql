@@ -1,3 +1,27 @@
+/*==============================================================================
+  Nome do Script : Operadores
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Informativo de Gestão da Assistência
+  Componente     : Operadores
+  Descrição      : Retorna quantidade de ordens de assistência processadas
+                   por técnico/operador no período.
+
+  Parâmetros     : :P_ANO — ano
+                   :A_MES — mês
+                   :P_DTFAB — data de fabricação (INI/FIN)
+                   :P_CODPROD — código do produto
+                   :P_CODGRUPOPROD — código do grupo de produto
+                   :A_DEFEITO — tipo de defeito
+
+  Tabelas        : AD_TGFASS, AD_CADFUNC, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
     F.TECNICO AS IDFUNC,
     C.NOME AS NOME_TECNICO,

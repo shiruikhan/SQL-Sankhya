@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : TEST_JSON_NUFIN_TGFECQ
+  Tipo           : Query de Diagnóstico
+  Dashboard      : Análise e Teste de Dados
+  Descrição      : Query de testes para extração e validação de dados JSON
+                   do campo DETALHE da tabela TGFECQ (registros financeiros).
+
+  Parâmetros     : Sem parâmetros
+
+  Tabelas        : TGFECQ, TGFFIN, TGFCHQ, TGFMBC, TGFTRC (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT DISTINCT nufin
 FROM (
   SELECT nufin FROM JSON_TABLE('{"NUFIN":[101,102,103]}', '$'

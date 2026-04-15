@@ -1,5 +1,19 @@
 create or replace PROCEDURE STP_LIBERASERIE_SPARK
 AS
+/*==============================================================================
+  Nome do Script : STP_LIBERASERIE_SPARK
+  Tipo           : Stored Procedure (Agendada)
+  Descrição      : Procedure para liberação de séries de produtos em ordens de produção.
+                   Atualiza status de liberação e limpa código de barras em estoque.
+
+  Parâmetros     : [Procedure agendada - sem parâmetros de entrada]
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
     /* 
        TRECHO COMENTADO EM 24/03 PARA TRATAR O ERRO DE SN DUPLICADO NO AGENDADOR

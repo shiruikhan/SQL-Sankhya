@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : P3
+  Tipo           : Componente BI — Tabela
+  Dashboard      : AUDITORIA DE PRODUCAO-EXPEDICAO
+  Componente     : P3
+  Descrição      : Comparação entre produção apontada e expedição — identifica divergências
+
+  Parâmetros     : :P_DTBASE — data base para comparação
+
+  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
     COALESCE(P1.CODPROD, P2.CODPROD) AS CODPROD,
     COALESCE(P1.DESCRPROD, P2.DESCRPROD) AS DESCRPROD,

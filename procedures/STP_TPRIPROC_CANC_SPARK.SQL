@@ -4,6 +4,24 @@ create or replace PROCEDURE          STP_TPRIPROC_CANC_SPARK (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_TPRIPROC_CANC_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Permite reabrir e limpar as atividades e apontamentos de
+                   uma ordem de produção que estava cancelada, restaurando
+                   seu estado operacional.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        FIELD_IDIPROC NUMBER;
        V_TITULO VARCHAR(4000);
        V_MENSAGEM VARCHAR(4000);

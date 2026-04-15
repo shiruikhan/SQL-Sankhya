@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : P2
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : AUDITORIA DE MOVIMENTACOES
+  Componente     : P2
+  Descrição      : Auditoria de movimentações por usuário — quantidade ou contagem de notas
+
+  Parâmetros     : :P_DETALHE — 'S' para somar quantidade, outro valor para contar notas
+                   :P_MES — mês da movimentação
+                   :P_ANO — ano da movimentação
+                   :P_CODTIPOPER — códigos de tipos de operação
+
+  Tabelas        : TGFCAB, TGFITE, TGFTOP, TSIUSU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT (CASE WHEN :P_DETALHE = 'S' THEN SUM(V.QTDNEG) ELSE COUNT(V.NUNOTA) END) AS VALUE,
     V.USUARIO AS LABEL,
     V.CODUSUINC AS CODUSUINC

@@ -4,6 +4,23 @@ CREATE OR REPLACE PROCEDURE "STP_TFPFUN_ALTERADEP" (
     P_QTDLINHAS NUMBER,
     P_MENSAGEM OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_TFPFUN_ALTERADEP
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Atualiza o departamento de funcionários selecionados com
+                   um novo código informado pelo parâmetro do formulário.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     PARAM_NEWCODDEP VARCHAR2(4000);
     FIELD_CODEMP    NUMBER;
     FIELD_CODFUNC   NUMBER;

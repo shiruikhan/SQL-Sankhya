@@ -1,3 +1,27 @@
+/*==============================================================================
+  Nome do Script : RELACAO DE ITENS ENTRADAS
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Movimentação de Estoque - Entradas
+  Descrição      : Relação detalhada de itens de entrada (compra/devolução) com
+                   valores unitários, impostos, custos e informações do fornecedor.
+
+  Parâmetros     : :P_CODPARC — código do fornecedor (optional)
+                   :P_CODPROD — código do produto (optional)
+                   :P_PERIODO.INI — data inicial (DATE)
+                   :P_PERIODO.FIN — data final (DATE)
+                   :P_CODNAT — código da natureza (optional)
+                   :P_CODGRUPOPROD — código do grupo de produto (optional)
+                   :P_CODEMP — código da empresa (optional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPAR, TGFPRO, TSIUSU, TGFNAT, TGFGRU, TGFVOA, TGFIII, TGFIDI (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT CAB.NUNOTA, 
 	CAB.CODEMP,
 	CAB.NUMNOTA,	

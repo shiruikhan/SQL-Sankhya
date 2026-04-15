@@ -1,6 +1,20 @@
 create or replace PROCEDURE STP_GERARVOLUMES_SPARK (
     P_NUNOTA IN NUMBER
 ) AS
+/*==============================================================================
+  Nome do Script : STP_GERARVOLUMES_SPARK
+  Tipo           : Stored Procedure (Processamento de Dados)
+  Descrição      : Gera a sugestão de volumetria para cotação do frete,
+                   agrupando itens em caixas otimizadas por peso e dimensão.
+
+  Parâmetros     : P_NUNOTA     — número único da nota fiscal
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 27/05/2025 (Lucas Gabriel)
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     V_IDCAIXA       NUMBER;
     V_SEQ           NUMBER := 0;
     V_PESO_TOTAL    NUMBER := 0;
@@ -11,11 +25,6 @@ create or replace PROCEDURE STP_GERARVOLUMES_SPARK (
 	V_PESO_EMB      NUMBER := 0;
     V_MAXSEQ        INT;
     V_CODPROD       NUMBER;
-/*************************************************************************
-Autor: Lucas Gabriel
-Data: 27/05/2025
-Obejtivo:Gerar a sugestão de volumetria para cotação do frete.
-*************************************************************************/	
 BEGIN
     ---------------------------------------------------------------------------
     -- 0. Produtos que vão em sua própria embalagem e possuem QTDNEG = 1

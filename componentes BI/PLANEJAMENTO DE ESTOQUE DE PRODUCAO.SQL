@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : PLANEJAMENTO DE ESTOQUE DE PRODUCAO
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Planejamento e Gestão de Estoque
+  Descrição      : Planejamento de estoque agregado por agrupador, com dados de
+                   estoque, vendas mensais, saldo MRP e indicadores de produção.
+
+  Parâmetros     : :P_DATA — data de referência para cálculos (formato DATE)
+
+  Tabelas        : TGFEST, TPRIPROC, TGFCAB, TGFITE, TGFPRO, TPRMPS, VGFSALDOMRP (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH EstBase AS (
     SELECT EST.CODPROD, SUM(EST.ESTOQUE) AS ESTOQUE
     FROM TGFEST EST

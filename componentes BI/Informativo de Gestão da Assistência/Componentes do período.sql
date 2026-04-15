@@ -1,3 +1,27 @@
+/*==============================================================================
+  Nome do Script : Componentes do período
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Informativo de Gestão da Assistência
+  Componente     : Componentes do período
+  Descrição      : Retorna quantidade total de componentes em assistência
+                   por código e grupo de produto no período.
+
+  Parâmetros     : :P_ANO — ano
+                   :A_MES — mês
+                   :P_DTFAB — data de fabricação (INI/FIN)
+                   :P_CODPROD — código do produto
+                   :P_CODGRUPOPROD — código do grupo de produto
+                   :A_DEFEITO — tipo de defeito
+
+  Tabelas        : AD_TGFIASS, AD_TGFASS, TGFPRO, TGFGRU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
     C.CODPROD,
     P.DESCRPROD,

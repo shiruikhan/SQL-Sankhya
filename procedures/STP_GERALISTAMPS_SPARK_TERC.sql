@@ -4,6 +4,24 @@ create or replace PROCEDURE          STP_GERALISTAMPS_SPARK_TERC (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_GERALISTAMPS_SPARK_TERC
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Gera pedidos de requisição (TOP 403) para terceirizados,
+                   funcionando analogamente ao STP_GERALISTAMPS_SPARK mas direcionado
+                   a fornecedores terceirizados (CODPARC = 425) com tipo de venda 99.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        FIELD_NUMPS NUMBER;
        P_NUNOTA                INT;
        P_MAXNUNOTA             INT;

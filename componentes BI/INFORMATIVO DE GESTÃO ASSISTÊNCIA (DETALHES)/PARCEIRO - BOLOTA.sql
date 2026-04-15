@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : PARCEIRO - BOLOTA
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : INFORMATIVO DE GESTÃO ASSISTÊNCIA (DETALHES)
+  Componente     : PARCEIRO - BOLOTA
+  Descrição      : Distribuição de ordens de serviço por parceiro (cliente) em
+                   formato de bolha com filtros por período e estado.
+
+  Parâmetros     : :P_PERIODO.INI e :P_PERIODO.FIN — Período de análise
+                   :P_DTFAB.INI e :P_DTFAB.FIN — Filtro por data de fabricação (opcional)
+                   :A_UFS — Filtro por UF (opcional)
+
+  Tabelas        : AD_TGFASS, TGFPAR, TSICID
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT COUNT(ASS.NUMOS) AS QTD,
     ASS.CODPARC,
     SUBSTR(PAR.RAZAOSOCIAL, 1, 

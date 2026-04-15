@@ -1,3 +1,34 @@
+/*==============================================================================
+  Nome do Script : Curva ABC
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise ABC
+  Descrição      : Análise de Curva ABC de produtos ou parceiros para
+                   segmentação de clientes e estoque conforme valor/movimento.
+
+  Parâmetros     : :@ANALISE — 'Produtos' ou outro para Parceiros
+                   :DESC — 'S' para incluir descontos
+                   :REP — 'S' para incluir reposição
+                   :ST — 'S' para incluir substituição
+                   :IPI — 'S' para incluir IPI
+                   :STATUSNOTA — 'N' para incluir todas as notas
+                   :GRUPO — Grupo de operação
+                   :PERIODO — Data inicial e final
+                   :CODEMP — Código da empresa
+                   :CODPARC — Código do parceiro (ou NULL)
+                   :CODVEND — Código do vendedor (ou NULL)
+                   :PGRUPO — Grupo de produto (ou NULL)
+                   :A — Percentual para classe A
+                   :B — Percentual para classe B
+
+  Tabelas        : TGFCAB, TGFPAR, TGFITE, TGFPRO, TGFGRU, TGFTOP, VGFCAB, TGFVEN
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH BASE AS (
   SELECT CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.AD_AGRUPADOR ELSE PAR.CODPARC || '-' || PAR.NOMEPARC END AS CODIGO,
          SUM(((ITE.VLRTOT + NVL(ITE.AD_VLROUTROS,0))

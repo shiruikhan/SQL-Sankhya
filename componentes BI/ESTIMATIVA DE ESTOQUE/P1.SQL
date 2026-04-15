@@ -1,3 +1,24 @@
+/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : ESTIMATIVA DE ESTOQUE
+  Componente     : P1
+  Descrição      : Estimativa detalhada de estoque com cálculo de saldos e informações
+                   de produto, grupo, limite e linha de produção.
+
+  Parâmetros     : :P_DATA — Data de referência para cálculo
+                   :P_DESCRPROD — Filtro por descrição do produto (opcional)
+                   :P_CODGRUPO — Filtro por grupo de produtos (opcional)
+
+  Tabelas        : TGFEST, TGFPRO, TGFGRU, TPRIPROC, TPRIPA, TGFCAB, TGFITE, TGMMET
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH EstBase AS (
     SELECT EST.CODPROD, SUM(EST.ESTOQUE) AS ESTOQUE
     FROM TGFEST EST

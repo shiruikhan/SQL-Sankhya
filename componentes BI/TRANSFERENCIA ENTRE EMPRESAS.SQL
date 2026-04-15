@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : TRANSFERENCIA ENTRE EMPRESAS
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Gestão de Transferências de Estoque
+  Descrição      : Cálculo de quantidades a transferir entre empresas, identificando
+                   produtos com saldo negativo em uma filial e positivo em outra.
+
+  Parâmetros     : :DATE — data de contagem de estoque (DATE)
+
+  Tabelas        : TGFCTE, TGFPRO, TGFGRU, TGFLOC (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
   EST.CODPROD,
   PRO.DESCRPROD,

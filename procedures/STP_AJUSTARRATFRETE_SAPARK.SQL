@@ -4,12 +4,23 @@ CREATE OR REPLACE PROCEDURE STP_AJUSTARRATFRETE_SAPARK (
     P_QTDLINHAS NUMBER,     -- Quantidade de registros selecionados
     P_MENSAGEM OUT VARCHAR2 -- Mensagem de retorno ao usuário
 ) AS
-    /*********************************************
-    Publicada por: SPARK ELETRONICA LTDA
-    Data: 2024
-    Objetivo: Ajustar rateio de frete proporcional
-             entre notas fiscais vinculadas ao CTE
-    **********************************************/
+/*==============================================================================
+  Nome do Script : STP_AJUSTARRATFRETE_SAPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Realiza rateio proporcional de frete, ICMS e PIS/COFINS
+                   entre notas fiscais vinculadas ao mesmo CTE.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     
     -- Variáveis de controle
     FIELD_NUNOTA NUMBER;     -- NUNOTA do registro atual sendo processado

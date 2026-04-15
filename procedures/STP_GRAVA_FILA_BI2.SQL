@@ -4,11 +4,24 @@ create or replace PROCEDURE STP_GRAVA_FILA_BI2(
 	P_MENSAGEM IN TMDFMG.MENSAGEM%TYPE,
 	P_EMAIL    IN TMDFMG.EMAIL%TYPE,
 	P_CODSMTP  IN TMDFMG.EMAIL%TYPE) AS
-    /*********************************************
-    Publicada por: Lucas Gabriel DM TECH
-    Data: 01/12/2023
-    Objetivo: Grava Fila de Mensagens
-    **********************************************/
+/*==============================================================================
+  Nome do Script : STP_GRAVA_FILA_BI2
+  Tipo           : Stored Procedure (Processamento de Dados)
+  Descrição      : Insere mensagens de envio de email na fila de processamento
+                   com status pendente, controlando tentativas de envio.
+
+  Parâmetros     : P_CODFILA    — código da fila de mensagens
+                   P_ASSUNTO    — assunto do email
+                   P_MENSAGEM   — corpo da mensagem de email
+                   P_EMAIL      — endereço de email de destino
+                   P_CODSMTP    — configuração de servidor SMTP
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 01/12/2023 (Lucas Gabriel - DM TECH)
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
  
 BEGIN
 	IF P_EMAIL IS NULL THEN

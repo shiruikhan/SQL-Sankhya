@@ -4,6 +4,24 @@ CREATE OR REPLACE PROCEDURE STP_APROVA_SOLIC_COMPRA (
     P_QTDLINHAS  NUMBER,        -- Quantidade de registros selecionados
     P_MENSAGEM   OUT VARCHAR2   -- Mensagem de retorno ao usuário
 ) AS
+/*==============================================================================
+  Nome do Script : STP_APROVA_SOLIC_COMPRA
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Processa aprovação ou cancelamento de solicitações de compra
+                   em status EA (Encaminhada Aprovação), registrando usuário aprovador,
+                   data de aprovação e justificativa de cancelamento quando aplicável.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     PARAM_P_STATUS    VARCHAR2(4000);
     PARAM_P_JUTIFIC   VARCHAR2(4000);
     FIELD_NUSOL       NUMBER;

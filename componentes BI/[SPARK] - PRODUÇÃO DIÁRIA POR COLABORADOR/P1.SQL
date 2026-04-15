@@ -1,4 +1,27 @@
-SELECT * 
+/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : [SPARK] - PRODUÇÃO DIÁRIA POR COLABORADOR
+  Componente     : P1
+  Descrição      : Retorna detalhes de processos de produção com apontamentos
+                   filtrados por atividades específicas (inserção, solda, etc).
+
+  Parâmetros     : :P_STATUSPROC — status do processo
+                   :P_IDIPROD — ID do processo produção
+                   :P_FINAL — S (finalizados) ou N (em progresso)
+                   :P_CODPRC — código do processo (array)
+                   :P_PERIODO — período (INI/FIN)
+
+  Tabelas        : TPRIPROC, TPRPRC, TPRIPA, TPRIATV, TPREFX, TPRAPA, TPRAPO, TGFPRO, TFPFUN
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT *
 FROM (SELECT PRC.CODPRC AS CODIGO,
 			PRC.DESCRABREV AS DESCRICAO,
 			PROC.IDIPROC AS IDIPROC,

@@ -1,4 +1,18 @@
 create or replace PROCEDURE STP_INTEGRAPEDIDO_AGENDADA AS
+/*==============================================================================
+  Nome do Script : STP_INTEGRAPEDIDO_AGENDADA
+  Tipo           : Stored Procedure (Agendada)
+  Descrição      : Procedure de integração automática de pedidos de feiras e eventos.
+                   Cria notas fiscais e itens a partir de pedidos pendentes no sistema.
+
+  Parâmetros     : [Procedure agendada - sem parâmetros de entrada]
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     FIELD_NUPED      NUMBER;
     P_CODTIPOPER     NUMBER := 1006;
     P_CODEMP         NUMBER := 2;

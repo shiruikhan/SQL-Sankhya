@@ -1,3 +1,27 @@
+/*==============================================================================
+  Nome do Script : RELACAO DE ITENS SAIDAS
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Movimentação de Estoque - Saídas
+  Descrição      : Relação detalhada de itens de saída (venda/devolução) com
+                   valores unitários, impostos, custos e informações do cliente.
+
+  Parâmetros     : :P_CODPARC — código do cliente (optional)
+                   :P_CODPROD — código do produto (optional)
+                   :P_PERIODO.INI — data inicial (DATE)
+                   :P_PERIODO.FIN — data final (DATE)
+                   :P_CODNAT — código da natureza (optional)
+                   :P_CODGRUPOPROD — código do grupo de produto (optional)
+                   :P_CODEMP — código da empresa (optional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPAR, TGFPRO, TSIUSU, TGFNAT, TGFGRU, TGFVOA (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT CAB.NUNOTA, 
 	CAB.CODEMP,
 	CAB.NUMNOTA,	

@@ -4,6 +4,24 @@ create or replace PROCEDURE "STP_EXCLUIRFINCOM_SPARK" (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_EXCLUIRFINCOM_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Remove registros financeiros associados a fechamento de competência,
+                   desvinculando NUFIN de AD_DBFECHCOMFIN e excluindo registro da
+                   tabela TGFFIN quando apropriado.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        FIELD_NUFECH NUMBER;
        FIELD_SEQUENCIA NUMBER;
        P_NUFIN         INT;

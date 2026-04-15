@@ -1,3 +1,25 @@
+/*==============================================================================
+  Nome do Script : donut
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : INFORMATIVO DE GESTÃO ASSISTÊNCIA (DETALHES)
+  Componente     : ProdAcabado/donut
+  Descrição      : Retorna distribuição de tipos de defeitos encontrados
+                   em produtos acabados em formato de gráfico donut.
+
+  Parâmetros     : :P_PERIODO — período (INI/FIN)
+                   :P_DTFAB — data de fabricação (INI/FIN)
+                   :A_AGRUPADOR — agrupador de produtos
+                   :P_CODGRUPOPROD — código do grupo de produtos
+
+  Tabelas        : AD_TGFASS, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
     L.LABEL AS LABEL,
     SUM(CASE WHEN NVL(A.DEFEITO, 'SD') = L.CODE THEN 1 ELSE 0 END) AS VALUE

@@ -4,6 +4,23 @@ create or replace PROCEDURE "STP_MARCAEFD08_TGFITE" (
     P_QTDLINHAS NUMBER,
     P_MENSAGEM OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_MARCAEFD08_TGFITE
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Marca ou desmarca itens de nota como EFD situação 08,
+                   alternando entre S (marcado) e N (desmarcado).
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     FIELD_NUNOTA NUMBER;
     FIELD_SEQUENCIA NUMBER;
     FIELD_CODSIT08EFD VARCHAR2(50); -- Variável para armazenar o conteúdo do campo CODSIT08EFD

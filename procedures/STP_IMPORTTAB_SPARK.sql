@@ -4,6 +4,23 @@ create or replace PROCEDURE "STP_IMPORTTAB_SPARK" (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_IMPORTTAB_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Procedure para importação de dados de tabelas externas.
+                   Obtém parâmetros da sessão de execução e processa registros selecionados.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        PARAM_P_CODTABORIG VARCHAR2(4000);
        FIELD_CODTAB NUMBER;
 BEGIN

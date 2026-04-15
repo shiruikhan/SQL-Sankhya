@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : EVOLUÇÃO DE BONIFICACAO POR CLIENTE
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise de Bonificações
+  Descrição      : Evolução mensal de bonificações distribuídas por cliente
+                   com filtro por representante e ano.
+
+  Parâmetros     : :P_ANO — Ano para filtro de análise
+                   :P_CODPARC — Código do parceiro (ou NULL para todos)
+                   :P_CODVEND — Código do vendedor (ou NULL para todos)
+
+  Tabelas        : TGFPAR, TGFCAB, TGFVEN, TSIUFS, TSICID
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A definir
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT T.*,
     T.JANEIRO+T.FEVEREIRO+T.MAR+T.ABRIL+T.MAIO+T.JUNHO+T.JULHO+T.AGOSTO+T.SETEMBRO+T.OUTUBRO+T.NOVEMBRO+T.DEZEMBRO AS TOTAL,
     (SELECT APELIDO FROM TGFVEN WHERE CODVEND = T.CODVEND) AS REPRESENTANTE,

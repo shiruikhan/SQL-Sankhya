@@ -1,4 +1,23 @@
-SELECT 
+/*==============================================================================
+  Nome do Script : Producao diaria por colaborador
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Produção e Produtividade
+  Descrição      : Resumo de produção diária por colaborador e setor, agrupado por
+                   apontamentos de atividades em diferentes setores de produção.
+
+  Parâmetros     : :P_PERIODO.INI — data inicial (DATE)
+                   :P_PERIODO.FIN — data final (DATE)
+
+  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TFPFUN (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT
     FUN.NOMEFUNC AS COLABORADOR,
     FX.DESCRICAO AS SETOR,
     SUM(APA.QTDAPONTADA) AS PRODUCAO

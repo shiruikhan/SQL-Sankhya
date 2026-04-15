@@ -1,5 +1,20 @@
 create or replace PROCEDURE STP_VALIDAFRETE_SPARK2
 AS
+/*==============================================================================
+  Nome do Script : STP_VALIDAFRETE_SPARK2
+  Tipo           : Stored Procedure (Execução Programada)
+  Descrição      : Processa em lote fretes de CTe para operações tipo 225,
+                   distribuindo automaticamente custos de frete, ICMS e PIS
+                   entre as notas de compra relacionadas.
+
+  Parâmetros     : (sem parâmetros de entrada)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
 DECLARE
        P_COUNT                           INT;

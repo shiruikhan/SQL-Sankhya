@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : barras
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : INFORMATIVO DE GESTÃO ASSISTÊNCIA (DETALHES)
+  Componente     : ProdAcabado/barras
+  Descrição      : Retorna quantidade de assistências por produto acabado
+                   em formato de gráfico de barras.
+
+  Parâmetros     : :P_PERIODO — período (INI/FIN)
+                   :P_DTFAB — data de fabricação (INI/FIN)
+
+  Tabelas        : AD_TGFASS, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT COUNT(ASS.NUMOS) AS QTD,
     PRO.AD_AGRUPADOR AS DESCRPROD
     

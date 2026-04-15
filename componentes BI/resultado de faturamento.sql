@@ -1,3 +1,23 @@
+/*==============================================================================
+  Nome do Script : resultado de faturamento
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise de Resultados de Faturamento
+  Descrição      : Resultado e análise de faturamento por nota fiscal de venda,
+                   incluindo margens e totalizações de impostos especiais.
+
+  Parâmetros     : :P_PERIODO.INI — data inicial (DATE)
+                   :P_PERIODO.FIN — data final (DATE)
+                   :P_CODEMP — código da empresa (optional)
+
+  Tabelas        : TGFCAB, TGFITE, TGFPAR, TSICID, TSIUFS, TGFDIN (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH DIN_AGG AS (
     SELECT DIN.NUNOTA,
            DIN.SEQUENCIA,

@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : TRG_NUMCHEQUE_TGFECQ_SPARK
+  Tipo           : Trigger — arquivo mal categorizado (deveria estar em triggers/)
+  Dashboard      : Gestão de Cheques e Financeiro
+  Descrição      : Trigger que sincroniza número de cheque para os registros de
+                   movimentação bancária (TGFMBC) quando insere/atualiza evento em TGFECQ.
+
+  Parâmetros     : Sem parâmetros
+
+  Tabelas        : TGFECQ, TGFCHQ, TGFMBC, TGFTRC (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 CREATE OR REPLACE TRIGGER "SPARKTST"."TRG_NUMCHEQUE_TGFECQ_SPARK" 
 AFTER INSERT OR UPDATE ON TGFECQ
 FOR EACH ROW

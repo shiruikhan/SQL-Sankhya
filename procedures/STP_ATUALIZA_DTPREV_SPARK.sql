@@ -4,6 +4,24 @@ create or replace PROCEDURE STP_ATUALIZA_DTPREV_SPARK (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_ATUALIZA_DTPREV_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Atualiza data prevista de entrega em pedidos que não tiveram
+                   quantidades entregues, propagando a data do cabeçalho para
+                   todos os itens. Insere registros em TGFDTP quando não existem.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        FIELD_NUNOTA NUMBER;
        P_COUNT                INT;
        P_SEQUENCIA         INT;

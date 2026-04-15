@@ -1,3 +1,16 @@
+/*==============================================================================
+  Nome do Script : script
+  Tipo           : Query SQL auxiliar de relatório
+  Grupo          : 23 - Inadimplência por Vendedor
+  Descrição      : Query de suporte ao relatório de inadimplência por vendedor.
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT FIN.DTNEG,
     FIN.DTVENC,
     FIN.NUMNOTA,

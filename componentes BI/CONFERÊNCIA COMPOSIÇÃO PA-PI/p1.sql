@@ -1,3 +1,25 @@
+/*==============================================================================
+  Nome do Script : p1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : CONFERÊNCIA COMPOSIÇÃO PA-PI
+  Componente     : P1
+  Descrição      : Conferência de estrutura de produtos — etapas, materiais e configuração
+
+  Parâmetros     : :P_CODPRC — códigos de processos
+                   :P_CODPRODPA — código do produto acabado (opcional)
+                   :P_CODPRODMP — código do material (opcional)
+                   :P_DESCRMP — descrição do material (opcional)
+                   :P_PA — filtro PA
+
+  Tabelas        : TPRPRC, TPRATV, TPREFX, TPRLMP, TGFPRO
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 WITH ULTIMOPROC AS (
     SELECT CODPRC, MAX(IDPROC) AS IDPROC
     FROM TPRPRC

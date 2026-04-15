@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : etiquetanova650-700
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 5 - Etiquetas de Produto
+  Descrição      : Etiqueta de produto (modelo novo) — faixa de 650-700mm.
+                   Modelo "etiquetanova" — layout atualizado.
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  ==============================================================================
+-->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="EtiquetaSerie" language="groovy" columnCount="2" printOrder="Horizontal" pageWidth="310" pageHeight="123" orientation="Landscape" columnWidth="140" columnSpacing="15" leftMargin="8" rightMargin="7" topMargin="4" bottomMargin="4">
 	<property name="ireport.zoom" value="5.054470284992944"/>
 	<property name="ireport.x" value="59"/>

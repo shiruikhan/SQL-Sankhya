@@ -1,3 +1,21 @@
+/*==============================================================================
+  Nome do Script : CARD
+  Tipo           : Componente BI — Card
+  Dashboard      : CARD - VENDAS MENSAL
+  Componente     : CARD
+  Descrição      : Card com vendas mensais por grupo de produtos comparado com meta
+
+  Parâmetros     : Sem parâmetros
+
+  Tabelas        : TGFCAB, TGFITE, TGFPRO, TGFGRU
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT
     GRUPO,
     VENDAS,

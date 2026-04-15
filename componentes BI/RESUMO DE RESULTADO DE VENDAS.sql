@@ -1,3 +1,25 @@
+/*==============================================================================
+  Nome do Script : RESUMO DE RESULTADO DE VENDAS
+  Tipo           : Componente BI — Tabela
+  Dashboard      : Análise de Resultados de Vendas
+  Descrição      : Resumo de faturamento e resultado por nota fiscal de venda,
+                   com valores e margens de lucro desagregados.
+
+  Parâmetros     : :P_CODPARC — código do cliente (optional)
+                   :P_PERIODO.INI — data inicial (DATE)
+                   :P_PERIODO.FIN — data final (DATE)
+                   :P_CODEMP — código da empresa (optional)
+                   :P_CODVEND — código do vendedor (optional)
+
+  Tabelas        : TGFCAB, TGFITE, TGFPAR, TSICID, TSIUFS, TGFPRO (principais)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
 SELECT DISTINCT CAB.NUMNOTA,
 	MAX(ITE.CODCFO) AS CFOP,
 	CAB.DTNEG,

@@ -1,4 +1,21 @@
 create or replace PROCEDURE STP_REGRALOCALDESTINO_SPARK (P_NUNOTA INT, P_SUCESSO OUT VARCHAR, P_MENSAGEM OUT VARCHAR2, P_CODUSULIB OUT NUMERIC) AS
+/*==============================================================================
+  Nome do Script : STP_REGRALOCALDESTINO_SPARK
+  Tipo           : Stored Procedure (Regra de Negócio)
+  Descrição      : Procedure para aplicação de regra de local de destino.
+                   Atualiza local de origem dos itens de nota conforme configuração.
+
+  Parâmetros     : P_NUNOTA      — número único da nota fiscal
+                   P_SUCESSO     — indicador de sucesso da regra (OUT)
+                   P_MENSAGEM    — mensagem de retorno (OUT)
+                   P_CODUSULIB   — código do usuário liberador (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
 DECLARE
 P_CODLOCAL  NUMBER;

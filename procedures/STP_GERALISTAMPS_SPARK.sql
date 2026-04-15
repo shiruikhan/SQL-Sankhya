@@ -4,6 +4,25 @@ create or replace PROCEDURE          STP_GERALISTAMPS_SPARK (
        P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
        P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
 ) AS
+/*==============================================================================
+  Nome do Script : STP_GERALISTAMPS_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Gera pedidos de requisição (TOP 402) automaticamente para
+                   materiais com requisição ativa em planos de produção,
+                   utilizando quantidade calculada de matérias-primas e
+                   localizações de baixa do apontamento de produção.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
        FIELD_NUMPS NUMBER;
        P_NUNOTA                INT;
        P_MAXNUNOTA             INT;

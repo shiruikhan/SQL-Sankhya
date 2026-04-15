@@ -1,9 +1,27 @@
 CREATE OR REPLACE PROCEDURE "STP_CORCSTIPI_SPARK" (
-    P_CODUSU NUMBER,       
-    P_IDSESSAO VARCHAR2,    
-    P_QTDLINHAS NUMBER,   
-    P_MENSAGEM OUT VARCHAR2 
+    P_CODUSU NUMBER,
+    P_IDSESSAO VARCHAR2,
+    P_QTDLINHAS NUMBER,
+    P_MENSAGEM OUT VARCHAR2
 ) AS
+/*==============================================================================
+  Nome do Script : STP_CORCSTIPI_SPARK
+  Tipo           : Stored Procedure (Botão de Ação)
+  Descrição      : Corrige CST do IPI e código de enquadramento legal com validações
+                   contábeis. Remove lançamentos contábeis de mês fechado e revalida
+                   conformidade entre CST/CFOP (entrada vs. saída) com integração Audicon.
+
+  Parâmetros     : P_CODUSU     — código do usuário logado
+                   P_IDSESSAO   — identificador da execução (usado por ACT_TXT_PARAM / ACT_INT_FIELD)
+                   P_QTDLINHAS  — quantidade de registros selecionados
+                   P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     -- Parâmetros do Botão 1
     PARAM_P_CSTIPI VARCHAR2(4000);
     PARAM_P_CODENQENT NUMBER;
