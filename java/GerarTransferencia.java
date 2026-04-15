@@ -1,5 +1,32 @@
 package br.com.spark.transferencia;
 
+/**
+ * <b>Nome:</b> GerarTransferencia<br>
+ * <b>Tipo:</b> Botão de Ação ({@link br.com.sankhya.extensions.actionbutton.AcaoRotinaJava})<br>
+ * <b>Descrição:</b> Gera notas de transferência entre empresas a partir de pedidos de venda
+ * selecionados. O processo é executado em 5 etapas sequenciais, cada uma com transação própria:
+ * <ol>
+ *   <li>Geração das notas de saída (usando modelo {@code CabecalhoNotaModelo} ID 278268)</li>
+ *   <li>Cálculo de impostos das saídas via {@code ImpostosHelpper}</li>
+ *   <li>Geração das notas de entrada espelhando as saídas (modelo ID 278275)</li>
+ *   <li>Cálculo de impostos das entradas</li>
+ *   <li>Confirmação das notas e geração de lote NF-e via {@code ServicosNFeHelper2}</li>
+ * </ol>
+ * Ao final, vincula pedido, saída e entrada nos campos {@code AD_NUNOTASAI} e {@code AD_NUNOTAENT}
+ * de {@code TGFCAB}.
+ *
+ * <p><b>Parâmetros esperados no contexto:</b> P_CODEMPORIG, P_CODEMPDEST,
+ * P_CODLOCALORIG, P_CODLOCALDEST</p>
+ * <p><b>Pré-condições:</b> pedido deve ser TIPMOV='P', com conferência finalizada
+ * e sem transferência prévia gerada.</p>
+ * <p><b>Empresa:</b> Spark Eletrônica</p>
+ *
+ * @author Silvio Vieira
+ * @version 2.0
+ * @since 2023
+ * @see TransferenciaUtils
+ * @see GerarTransferenciaOriginal
+ */
 import br.com.sankhya.extensions.actionbutton.AcaoRotinaJava;
 import br.com.sankhya.extensions.actionbutton.ContextoAcao;
 import br.com.sankhya.extensions.actionbutton.Registro;

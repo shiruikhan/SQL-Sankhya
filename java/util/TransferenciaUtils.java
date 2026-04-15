@@ -1,5 +1,37 @@
 package br.com.spark.transferencia.util;
 
+/**
+ * <b>Nome:</b> TransferenciaUtils<br>
+ * <b>Tipo:</b> Classe utilitária (static helpers)<br>
+ * <b>Descrição:</b> Centraliza todos os métodos de suporte ao processo de transferência
+ * entre empresas executado por {@link br.com.spark.transferencia.GerarTransferencia}.
+ * Agrupa validações de pré-condição, construtores de VO, geração de séries,
+ * confirmação de nota e envio de lote NF-e.
+ *
+ * <p><b>Métodos principais:</b></p>
+ * <ul>
+ *   <li>{@code ehPedido}          — valida se a nota é TIPMOV='P' (pedido de venda)</li>
+ *   <li>{@code ehGerada}          — valida se já foi gerada transferência para a nota</li>
+ *   <li>{@code validaConferencia} — valida se a conferência está finalizada (status 'F')</li>
+ *   <li>{@code buildCabecalho}    — cria o VO de cabeçalho da nota de transferência</li>
+ *   <li>{@code buildItens}        — cria a coleção de itens para a nota de transferência,
+ *                                   copiando impostos da nota de origem</li>
+ *   <li>{@code gerarSerie}        — copia séries de produtos da nota de origem para a destino</li>
+ *   <li>{@code salvarOrigem}      — vincula pedido, saída e entrada via AD_NUNOTASAI/AD_NUNOTAENT</li>
+ *   <li>{@code confirmaNota}      — confirma a nota via {@code ConfirmacaoNotaHelper}</li>
+ *   <li>{@code gerarLote}         — envia lote NF-e via {@code ServicosNFeHelper2}</li>
+ *   <li>{@code getLinkNota}       — gera link HTML para abertura da nota no Sankhya</li>
+ * </ul>
+ *
+ * <p><b>Queries SQL auxiliares:</b> queItem.sql, queSerie.sql (carregadas via NativeSql.loadSql)</p>
+ * <p><b>Empresa:</b> Spark Eletrônica</p>
+ *
+ * @author Silvio Vieira
+ * @version 2.0
+ * @since 2023
+ * @see br.com.spark.transferencia.GerarTransferencia
+ * @see br.com.spark.transferencia.enuns.Tipo
+ */
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -50,14 +82,14 @@ public class TransferenciaUtils {
 			ConferenciaHelper confHelper = new ConferenciaHelper(cabVO);
 			String status = confHelper.getStatusConferenciaAtual();
 		    if (status == null)
-		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_E04652", new Exception(String.format("\n Confer�ncia exigida pela TOP %s ainda n�o realizada. (Nro. = %s)", new Object[] { topVO.asBigDecimal("CODTIPOPER"), cabVO.asBigDecimal("NUNOTA") }))); 
+		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_E04652", new Exception(String.format("\n Conferência exigida pela TOP %s ainda não realizada. (Nro. = %s)", new Object[] { topVO.asBigDecimal("CODTIPOPER"), cabVO.asBigDecimal("NUNOTA") }))); 
 		    if (!"F".equals(status))
-		        throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_E04651", new Exception(String.format("\n O status atual da confer�ncia ainda n�o permite o faturamento (Nro = %s)", new Object[] { cabVO.asBigDecimal("NUNOTA") }))); 
+		        throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_E04651", new Exception(String.format("\n O status atual da conferência ainda não permite o faturamento (Nro = %s)", new Object[] { cabVO.asBigDecimal("NUNOTA") }))); 
 		    try {
 			    if (confHelper.existeProdutosSujeitosAConferencia(conn, cabVO.asBigDecimal("NUNOTA"))) {
 			    String statusConf = confHelper.verificarConferenciaFinalizada();
 			    if (!"F".equals(statusConf))
-			    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_E04653", new Exception(String.format("\n Confer�ncia finalizada, mas n�o confere com os itens do pedido ou nota %s.", new Object[] { cabVO.asBigDecimal("NUNOTA") }))); 
+			    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_E04653", new Exception(String.format("\n Conferência finalizada, mas não confere com os itens do pedido ou nota %s.", new Object[] { cabVO.asBigDecimal("NUNOTA") }))); 
 			    }		    	
 		    }finally {
 				JdbcWrapper.closeSession(conn);				
@@ -72,15 +104,15 @@ public class TransferenciaUtils {
 	public static void ehPedido(DynamicVO cabVO) throws Exception {
 		 BigDecimal nuNota = cabVO.asBigDecimal("NUNOTA");
 		if(!"P".equals(cabVO.asString("TIPMOV")))
-			throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lan�amento de Nro. �nico: " + nuNota + " n�o � um Pedido de Venda, imposs�vel continuar")); 	
+			throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. único: " + nuNota + " não é um Pedido de Venda, impossível continuar")); 	
 	}
 	
 	public static void ehGerada(DynamicVO cabVO) throws Exception {		
 		 BigDecimal nuNota = cabVO.asBigDecimal("NUNOTA");
 		 if(cabVO.asBigDecimalOrZero("AD_NUNOTASAI").intValue() > 0) {
-		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lan�amento de Nro. �nico: " + nuNota + " j� gerou uma Transfer�ncia de Sa�da, imposs�vel continuar")); 
+		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. único: " + nuNota + " já gerou uma Transferência de Saída, impossível continuar")); 
 	        }else if(cabVO.asBigDecimalOrZero("AD_NUNOTAENT").intValue() > 0) {
-		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lan�amento de Nro. �nico: " + nuNota + " j� gerou uma Transfer�ncia de Entrada, imposs�vel continuar")); 
+		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. único: " + nuNota + " já gerou uma Transferência de Entrada, impossível continuar")); 
 	        }
 	}
 	
@@ -124,7 +156,7 @@ public class TransferenciaUtils {
 			finder.setOrderBy("SEQUENCIA ASC");			
 			Collection<DynamicVO> produtosVo = ewf.findByDynamicFinderAsVO(finder);		         
 	        if (produtosVo.size() < 1) {
-	            throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("N�o foram Localizados Produtos para Gera��o da Transfer�ncia")); 
+	            throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Não foram Localizados Produtos para Geração da Transferência")); 
 	        } else {
 	        	 BigDecimal codEmp =  BigDecimal.ONE;
 	        	 if (((Boolean)MGECoreParameter.getParameter("controla.custo.empresa")).booleanValue())
@@ -180,7 +212,7 @@ public class TransferenciaUtils {
 				            .set("AD_NUNOTASAI", nuNotaSai)
 					        .update();
 			}else {
-		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("N�o foi poss�vel salvar a origem pois o tipo de movimento n�o foi encontrado!"));
+		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Não foi possível salvar a origem pois o tipo de movimento não foi encontrado!"));
 		    }
 		}catch(Exception e) {
 			MGEModelException.throwMe(e);  

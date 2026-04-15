@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE regras>
+<!--
+  ============================================================================
+  Nome do Script : regrasConfirmacaoCAC.xml
+  Tipo           : Arquivo de configuração de regras CAC de confirmação
+  Descrição      : Define o conjunto de regras de negócio aplicadas no momento
+                   da confirmação de nota no processo de transferência entre
+                   empresas. Carregado pelo BarramentoRegra.build() em
+                   TransferenciaUtils.confirmaNota_v2().
+
+                   Inclui validações de WMS, fretes, séries, limite de crédito,
+                   impostos de confirmação, planejamento de produção e
+                   verificações gerais de NF-e/NFC-e/CT-e.
+
+  Contexto de uso: Regras executadas NO MOMENTO DA CONFIRMAÇÃO da nota.
+                   Mais abrangente que regrasCAC.xml — inclui validações
+                   fiscais e financeiras finais.
+
+  Consumido por  : TransferenciaUtils.confirmaNota_v2()
+  Empresa        : Spark Eletrônica
+  Última Revisão : Abril/2026 — Adição de cabeçalho descritivo
+  ============================================================================
+-->
 
 <regras>
 	<regra class="br.com.sankhya.modelcore.comercial.regras.ValidacoesWMS">

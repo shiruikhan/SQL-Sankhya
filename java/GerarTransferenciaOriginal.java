@@ -1,5 +1,26 @@
 package br.com.spark.transferencia;
 
+/**
+ * <b>Nome:</b> GerarTransferenciaOriginal<br>
+ * <b>Tipo:</b> Botão de Ação — versão legada / backup<br>
+ * <b>Descrição:</b> Versão original do {@link GerarTransferencia} antes da refatoração
+ * para uso de {@code TransferenciaUtils} e transações separadas por etapa. Mantida para
+ * referência histórica e rollback de emergência. <b>NÃO utilizar em produção.</b>
+ *
+ * <p>Diferenças em relação à versão atual:</p>
+ * <ul>
+ *   <li>Utiliza tabela intermediária {@code AD_GERARTRANSF} (deletada no início da execução)</li>
+ *   <li>Lógica de geração de saída e entrada em uma única sessão sequencial</li>
+ *   <li>Não realiza cálculo de impostos entre as transações</li>
+ * </ul>
+ *
+ * <p><b>Empresa:</b> Spark Eletrônica</p>
+ *
+ * @author Silvio Vieira
+ * @version 1.0 (legado)
+ * @see GerarTransferencia
+ * @deprecated Substituída por {@link GerarTransferencia}. Manter apenas como referência.
+ */
 import br.com.sankhya.extensions.actionbutton.AcaoRotinaJava;
 import br.com.sankhya.extensions.actionbutton.ContextoAcao;
 import br.com.sankhya.extensions.actionbutton.QueryExecutor;

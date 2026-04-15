@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE regras>
+<!--
+  ============================================================================
+  Nome do Script : regrasCAC.xml
+  Tipo           : Arquivo de configuração de regras CAC (BarramentoRegra)
+  Descrição      : Define o conjunto de regras de negócio aplicadas pelo
+                   barramento CAC (Central de Atendimento ao Cliente) durante
+                   a inclusão e alteração de notas via GerarTransferencia.
+                   Carregado pelo BarramentoRegra.build() em TransferenciaUtils.
+
+  Contexto de uso: Validações executadas ANTES da confirmação da nota.
+                   Inclui regras de preço, estoque, parceiro, imposto, série,
+                   conferência, financeiro, entre outras.
+
+  Consumido por  : TransferenciaUtils (GerarTransferencia)
+  Empresa        : Spark Eletrônica
+  Última Revisão : Abril/2026 — Adição de cabeçalho descritivo
+  ============================================================================
+-->
 
 <regras>
     <regra class="br.com.sankhya.modelcore.comercial.regras.PrecoDinamico">

@@ -1,5 +1,22 @@
 package botaoAcao;
 
+/**
+ * <b>Nome:</b> CotaFrete<br>
+ * <b>Tipo:</b> Botão de Ação ({@link br.com.sankhya.extensions.actionbutton.AcaoRotinaJava})<br>
+ * <b>Descrição:</b> Realiza a cotação de frete via API REST da Braspress para os embarques
+ * selecionados. Para cada registro em {@code AD_TGSCTF}, monta o payload JSON com dados do
+ * remetente, destinatário, modal, CEP, peso, volumes e cubagem; chama o endpoint configurado
+ * em {@code AD_TGSAPI}; e atualiza {@code VLRFRETE} em {@code AD_TGSCTF} e {@code TGFCAB},
+ * recalculando impostos via {@link br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper}.
+ *
+ * <p><b>Tabelas acessadas:</b> AD_TGSCTF, AD_TGSLCB, AD_TGSAPI, TGFCAB</p>
+ * <p><b>API externa:</b> Braspress — autenticação HTTP Basic (credenciais em AD_TGSAPI)</p>
+ * <p><b>Empresa:</b> Spark Eletrônica</p>
+ *
+ * @author Silvio Vieira
+ * @version 1.0
+ * @since 2024
+ */
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
