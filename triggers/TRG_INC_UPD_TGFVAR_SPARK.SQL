@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_TGFVAR_SPARK
 BEFORE UPDATE OR INSERT ON TGFVAR
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TGFVAR_SPARK
+  Tipo           : Trigger
+  Descrição      : Atualiza custos adicionais de complementos em variações de pedido de compra
+  Tabela         : TGFVAR
+  Evento         : BEFORE UPDATE OR INSERT
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 WHEN (
 (NEW.SEQUENCIA <> 0) AND (NEW.SEQUENCIAORIG <> 0) AND (NEW.QTDATENDIDA <> 0)
       )
@@ -34,4 +48,4 @@ BEGIN
 
      END IF;
 
-END; 
+END TRG_INC_UPD_TGFVAR_SPARK; 

@@ -1,6 +1,20 @@
 CREATE OR REPLACE TRIGGER TRG_INC_UPD_CMF_SPARK
 BEFORE INSERT OR UPDATE OF NOMECID ON TSICID
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_CMF_SPARK
+  Tipo           : Trigger
+  Descrição      : Normaliza nome de cidade e busca correspondência em tabela de municípios fiscais
+  Tabela         : TSICID
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
   v_sort_raw   RAW(2000);
   v_id_match   AD_TGSMDF.ID%TYPE;
@@ -30,5 +44,5 @@ EXCEPTION
     -- Em caso de erro inesperado, não impede a operação, mas registra a exceção via raise para manter integridade/transparência
     -- Ajuste este tratamento conforme a política de erros da sua instância
     RAISE;
-END;
+END TRG_INC_UPD_CMF_SPARK;
 /

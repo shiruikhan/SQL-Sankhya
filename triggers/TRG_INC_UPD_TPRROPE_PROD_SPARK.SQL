@@ -1,6 +1,20 @@
 CREATE OR REPLACE TRIGGER SPARKPRD.TRG_INC_UPD_TPRROPE_PROD_SPARK
 BEFORE INSERT OR UPDATE ON TPRROPE
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : SPARKPRD
+  Tipo           : Trigger
+  Descrição      : Define local destino em operações baseado em tipo de item e centro de custo
+  Tabela         : TPRROPE
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
   -- Variáveis auxiliares
   P_COUNT          INT;
@@ -28,7 +42,7 @@ BEGIN
       -- Evita falha total da trigger por erro inesperado
       P_CODLOCALORIG := 0;
       V_TIPOITENS := NULL;
-  END;
+  END SPARKPRD;
 
   ----------------------------------------------------------------------
   -- 2. Se não encontrou CODLOCALORIG e TIPOITENS for 'MT', tenta obter pelo centro de custo

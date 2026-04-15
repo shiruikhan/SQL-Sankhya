@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_CMP_TGFVAR_NUNOTASIT
     FOR INSERT OR UPDATE OR DELETE ON TGFVAR
 COMPOUND TRIGGER
+/*==============================================================================
+  Nome do Script : TRG_CMP_TGFVAR_NUNOTASIT
+  Tipo           : Trigger
+  Descrição      : Atualiza NUNOTASIT em AD_TGSCTF e TGFCAB (COMPOUND TRIGGER).
+                  Sincroniza status 'F' ou 'A' baseado em existência de variacões linkadas.
+  Tabela         : TGFVAR
+  Evento         : FOR INSERT OR UPDATE OR DELETE (COMPOUND TRIGGER)
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 
     TYPE t_nunota_set IS TABLE OF BOOLEAN INDEX BY PLS_INTEGER;
     g_nunotaorig_set t_nunota_set;

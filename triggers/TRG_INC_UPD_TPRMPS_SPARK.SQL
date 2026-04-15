@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_TPRMPS_SPARK 
 BEFORE INSERT OR UPDATE ON TPRMPS
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TPRMPS_SPARK
+  Tipo           : Trigger
+  Descrição      : Restaura tipo original de PI ao gerar MRP para produtos padrão
+  Tabela         : TPRMPS
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 P_COUNT INT;
 BEGIN
@@ -19,4 +33,4 @@ BEGIN
     END IF;
 
 
-END; 
+END TRG_INC_UPD_TPRMPS_SPARK; 

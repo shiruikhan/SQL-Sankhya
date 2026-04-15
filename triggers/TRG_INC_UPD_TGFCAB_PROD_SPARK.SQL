@@ -1,6 +1,20 @@
 create or replace TRIGGER "SPARKPRD"."TRG_INC_UPD_TGFCAB_PROD_SPARK"
 BEFORE INSERT OR UPDATE ON TGFCAB
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : UNKNOWN
+  Tipo           : Trigger
+  Descrição      : Define local destino e número PS baseado em atividade vinculada à ordem de produção
+  Tabela         : TGFCAB
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 	P_COUNT  INT;
 	P_CODLOCALORIG TGFITE.CODLOCALORIG%TYPE;
@@ -16,7 +30,7 @@ BEGIN
 		WHERE NUNOTA = :NEW.NUNOTA
 			AND EST.TIPOITENS = 'PA';
 		EXCEPTION WHEN NO_DATA_FOUND THEN P_CODLOCALORIG := 0;
-	END;
+	END UNKNOWN;
 	
 	/*INSERE O LOCAL DESTINO PARA FATURAR O PEDIDO REQUISIÇÃO, BASEADO NA ATIVIDADE QUE REALIZOU O APONTAMENTO */
 	IF :NEW.IDIPROC > 0 AND P_CODLOCALORIG > 0 AND P_CODTIPOPER <> 718 THEN

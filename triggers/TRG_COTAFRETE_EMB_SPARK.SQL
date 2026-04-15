@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_COTAFRETE_EMB_SPARK
 AFTER INSERT OR UPDATE ON AD_TGSCTF
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_COTAFRETE_EMB_SPARK
+  Tipo           : Trigger
+  Descrição      : Insere dimensões de embalagem em AD_TGSLCB após criar cotação.
+                  Calcula volume total com base em produtos e caixas da nota.
+  Tabela         : AD_TGSCTF
+  Evento         : AFTER INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     -- Cursor: codprodemb e quantidade de caixas distintas para a nota
     CURSOR C_EMB IS
@@ -30,7 +45,7 @@ BEGIN
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             RETURN; -- Sai do trigger sem inserir
-    END;
+    END TRG_COTAFRETE_EMB_SPARK;
 
     -- Em caso de UPDATE, limpa embalagem existente para evitar duplicatas
     IF UPDATING THEN

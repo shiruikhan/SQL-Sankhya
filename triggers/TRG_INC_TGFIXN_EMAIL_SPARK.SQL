@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_TGFIXN_EMAIL_SPARK
 AFTER INSERT OR UPDATE ON TGFIXN
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_TGFIXN_EMAIL_SPARK
+  Tipo           : Trigger
+  Descrição      : Dispara notificações por email para notas de devolução (CFOPs 5201, 5202, 6201, 6202, 5410, 6410)
+  Tabela         : TGFIXN
+  Evento         : AFTER INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     V_TITULO       VARCHAR2(300);
     V_CONTEUDO     VARCHAR2(4000);
@@ -17,7 +31,7 @@ DECLARE
     EXCEPTION
         WHEN OTHERS THEN
             NULL;
-    END;
+    END TRG_INC_TGFIXN_EMAIL_SPARK;
 BEGIN
     IF INSERTING THEN
         IF :NEW.CFOPXML IS NOT NULL AND (

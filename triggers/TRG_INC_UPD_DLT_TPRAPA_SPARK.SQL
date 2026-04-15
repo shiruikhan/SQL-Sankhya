@@ -2,6 +2,20 @@ create or replace TRIGGER TRG_INC_UPD_DLT_TPRAPA_SPARK
 BEFORE INSERT OR UPDATE OR DELETE
 ON TPRAPA
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_DLT_TPRAPA_SPARK
+  Tipo           : Trigger
+  Descrição      : Gerencia séries apontadas por atividade e registra na tabela de apontamento de produção
+  Tabela         : TPRAPA
+  Evento         : BEFORE INSERT OR UPDATE OR DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE 
 ERRMSG VARCHAR2(100);
 P_QTDPRODUZIR  TPRIPA.QTDPRODUZIR%TYPE;
@@ -21,7 +35,7 @@ INNER JOIN TPRAPO APO ON (APO.IDIATV = TV.IDIATV)
 WHERE APO.NUAPO = :NEW.NUAPO; 
 EXCEPTION WHEN NO_DATA_FOUND THEN
 RETURN;
-END;
+END TRG_INC_UPD_DLT_TPRAPA_SPARK;
 
 -- SERÁ TRANSITÓRIA ESSA ATUALIZAÇÃO CONFORME APONTAMENTO, OS VALORES OFICIAIS SERÃO GUARDADOS NA TABELA AD_TPRSERAPO CONFORME CONFIRMAÇÃO APONTAMENTO
 DELETE TPRSERPA WHERE IDIPROC = P_IDIPROC AND CODPRODPA = :NEW.CODPRODPA;

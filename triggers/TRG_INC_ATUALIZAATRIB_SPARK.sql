@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_ATUALIZAATRIB_SPARK
 BEFORE INSERT ON AD_MKTPMELIATRIB
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_ATUALIZAATRIB_SPARK
+  Tipo           : Trigger
+  Descrição      : Popula automaticamente atributos de produto (BRAND, MODEL, HEIGHT, WIDTH, WEIGHT, SELLER_SKU, GTIN) com valores da tabela TGFPRO na inserção.
+  Tabela         : AD_MKTPMELIATRIB
+  Evento         : BEFORE INSERT
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     v_compldesc   varchar2(100);
     v_altura      varchar2(100);
@@ -70,4 +84,4 @@ BEGIN
         :NEW.VALUE_NAME := v_referencia;
         :NEW.ACTIVE := 'S';
     END IF;
-END;
+END TRG_INC_ATUALIZAATRIB_SPARK;

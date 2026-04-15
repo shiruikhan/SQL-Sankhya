@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_TGFITE_SPARK 
 BEFORE UPDATE ON TGFITE 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TGFITE_SPARK
+  Tipo           : Trigger
+  Descrição      : Atualiza local origem em transferências e insere séries de produtos em faturamentos
+  Tabela         : TGFITE
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 	P_CODLOCAL NUMBER;
 	P_TIPMOV TGFCAB.TIPMOV%TYPE;
@@ -12,7 +26,7 @@ BEGIN
 		FROM TGFCAB 
 		WHERE NUNOTA = :NEW.NUNOTA;
 		EXCEPTION WHEN NO_DATA_FOUND THEN P_CODLOCAL:=0;
-	END;
+	END TRG_INC_UPD_TGFITE_SPARK;
 
 	IF P_TIPMOV = 'T' AND P_CODLOCAL > 0 AND :NEW.CODLOCALORIG <> P_CODLOCAL AND :NEW.SEQUENCIA < 0 THEN
 		:NEW.CODLOCALORIG := P_CODLOCAL;

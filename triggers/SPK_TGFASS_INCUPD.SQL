@@ -1,6 +1,20 @@
 create or replace TRIGGER SPK_TGFASS_INCUPD 
 BEFORE INSERT OR UPDATE ON AD_TGFASS 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : SPK_TGFASS_INCUPD
+  Tipo           : Trigger
+  Descrição      : Popula automaticamente dados de endereço (rua, número, CEP, estado, cidade, bairro) do parceiro consultando tabelas relacionadas.
+  Tabela         : AD_TGFASS
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     P_CODPARC INTEGER;
     
@@ -35,4 +49,4 @@ BEGIN
     :NEW.ESTADO := P_ESTADO;
     :NEW.CIDADE := P_CIDADE;   
     :NEW.BAIRRO := P_BAIRRO;
-END;
+END SPK_TGFASS_INCUPD;

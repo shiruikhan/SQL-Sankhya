@@ -1,6 +1,20 @@
-CREATE OR REPLACE TRIGGER s
+CREATE OR REPLACE TRIGGER TRG_AVISOCONF_SPARK
 AFTER UPDATE ON tgfcab
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_AVISOCONF_SPARK
+  Tipo           : Trigger
+  Descrição      : Envia notificação por e-mail quando uma conferência é finalizada em pedido, verificando status 'F' e gravando na fila de e-mails.
+  Tabela         : tgfcab
+  Evento         : AFTER UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     v_count_f NUMBER := 0;
     P_MAXFILA       NUMBER;
@@ -25,7 +39,7 @@ BEGIN
             WHEN OTHERS THEN
                 -- Log de erro pode ser adicionado aqui se necessário
                 RETURN;
-        END;
+        END TRG_AVISOCONF_SPARK;
 
         IF v_count_f > 0 THEN
             -- Chamada da procedure de envio de e-mail
@@ -37,4 +51,4 @@ BEGIN
                 P_EMAIL, NULL);
         END IF;
     END IF;
-END;
+END TRG_AVISOCONF_SPARK;

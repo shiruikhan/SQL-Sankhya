@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_TPRIPROC_SPARK 
 BEFORE INSERT OR UPDATE ON TPRIPROC
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TPRIPROC_SPARK
+  Tipo           : Trigger
+  Descrição      : Limpa número MPS ao cancelar ordem de produção para liberação em exclusão de planos
+  Tabela         : TPRIPROC
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 P_COUNT INT;
 BEGIN
@@ -15,4 +29,4 @@ BEGIN
     END IF;
 
 
-END; 
+END TRG_INC_UPD_TPRIPROC_SPARK; 

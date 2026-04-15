@@ -1,5 +1,20 @@
 create or replace TRIGGER TRG_UPT_TGFITE
 BEFORE UPDATE ON TGFITE FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_UPT_TGFITE
+  Tipo           : Trigger
+  Descrição      : Valida e controla atualização de itens em notas
+                   fiscais com múltiplas verificações
+  Tabela         : TGFITE
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     P_VALEST               TGFGRU.VALEST%TYPE;
     P_ACEITAFATACIMA       CHAR;
@@ -171,7 +186,7 @@ BEGIN
          AND SEQUENCIAORIG = :NEW.SEQUENCIA;
      EXCEPTION WHEN NO_DATA_FOUND THEN
        P_QTDTCEVAR := 0;
-     END;
+     END TRG_UPT_TGFITE;
      IF :NEW.QTDNEG > 0 AND NVL(P_QTDTCEVAR, 0) > :NEW.QTDNEG THEN
        ERRMSG := 'A QTDNEG não pode ser menor que a quantidade('||TO_CHAR(P_QTDTCEVAR)||') utilizada no processo de importação.';
        RAISE ERROR;

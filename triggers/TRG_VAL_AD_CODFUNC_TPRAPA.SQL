@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_VAL_AD_CODFUNC_TPRAPA
 BEFORE UPDATE ON TPRAPA
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_VAL_AD_CODFUNC_TPRAPA
+  Tipo           : Trigger
+  Descrição      : Valida obrigatoriedade de funcionário em apontamento,
+                   exceto para atividade de expedição/conferência
+  Tabela         : TPRAPA
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     P_DESCRICAO VARCHAR2(100);
 BEGIN
@@ -15,7 +30,7 @@ BEGIN
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             P_DESCRICAO := NULL;
-    END;
+    END TRG_VAL_AD_CODFUNC_TPRAPA;
 
     -- Valida se o campo AD_CODFUNC está preenchido, EXCETO se for 'EXPEDIÇÃO/CONFERENCIA'
     IF NVL(P_DESCRICAO, ' ') <> 'EXPEDIÇÃO/CONFERENCIA' AND NVL(P_DESCRICAO, ' ') <> 'EXPEDICAO/CONF' THEN

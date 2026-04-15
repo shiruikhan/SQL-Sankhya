@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_UPD_TGFCAB_TRANSP_SPARK
 BEFORE INSERT OR UPDATE ON TGFCAB 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_UPD_TGFCAB_TRANSP_SPARK
+  Tipo           : Trigger
+  Descrição      : Gerencia validação de transportadora e valores de frete
+                   conforme configuração de operação
+  Tabela         : TGFCAB
+  Evento         : BEFORE INSERT
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 P_COUNT              INT;
 P_VALIDA             VARCHAR2(10);
@@ -18,7 +33,7 @@ BEGIN
 
     EXCEPTION WHEN OTHERS THEN
       RAISE_APPLICATION_ERROR (-20101, 'Cód. Operacao: ' || :NEW.CODTIPOPER || ' Data operacao: ' || :NEW.DHTIPOPER); 
-  END;      
+  END TRG_UPD_TGFCAB_TRANSP_SPARK;      
     IF :NEW.CIF_FOB = 'S' AND :NEW.CODPARCTRANSP <> 0 AND P_VALIDA = 'S' AND :NEW.STATUSNOTA = 'L' THEN
 		RAISE_APPLICATION_ERROR (-20101, 'CIF_FOB com marcação igual a "Sem Frete" não deve ter "Paceiro Transportadora" informada!');
     END IF;

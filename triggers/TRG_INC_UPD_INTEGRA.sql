@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_INTEGRA
 BEFORE INSERT OR UPDATE ON AD_TGSPAR
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_INTEGRA
+  Tipo           : Trigger
+  Descrição      : Normaliza dados de entrada, busca parceiro existente e cria automaticamente registros de bairro, endereço e parceiro se necessário.
+  Tabela         : AD_TGSPAR
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     v_codparc TGFPAR.CODPARC%TYPE;
     v_codbai  TSIBAI.CODBAI%TYPE;
@@ -25,7 +39,7 @@ BEGIN
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             :NEW.CODUF := NULL;
-    END;
+    END TRG_INC_UPD_INTEGRA;
     
     -- Busca parceiro existente com o mesmo documento (ignorando máscara)
     BEGIN

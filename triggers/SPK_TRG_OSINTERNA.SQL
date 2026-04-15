@@ -1,6 +1,21 @@
 create or replace TRIGGER SPK_TRG_OSINTERNA 
 BEFORE UPDATE ON AD_OSINTERNA
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : SPK_TRG_OSINTERNA
+  Tipo           : Trigger
+  Descrição      : Envia notificações por email ao atualizar status de Ordem de Serviço.
+                  Gera fila de envio para status em andamento, cancelado, programado e finalizado.
+  Tabela         : AD_OSINTERNA
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     P_CODUSUCRI     AD_OSINTERNA.CODUSUCRI%TYPE := :OLD.CODUSUCRI;
     P_CODUSUALT     AD_OSINTERNA.CODUSUALT%TYPE := :NEW.CODUSUALT;
@@ -63,4 +78,4 @@ BEGIN
                     P_EMAIL, NULL);
         END CASE;
     END IF;
-END;
+END SPK_TRG_OSINTERNA;

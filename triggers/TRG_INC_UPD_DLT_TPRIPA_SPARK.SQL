@@ -2,6 +2,20 @@ create or replace TRIGGER TRG_INC_UPD_DLT_TPRIPA_SPARK
 BEFORE INSERT OR UPDATE OR DELETE
 ON TPRIPA
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_DLT_TPRIPA_SPARK
+  Tipo           : Trigger
+  Descrição      : Gera série automática ou sequencial baseada em tipo de geração do lote de produção
+  Tabela         : TPRIPA
+  Evento         : BEFORE INSERT OR UPDATE OR DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE 
 P_QTDPRODUZIR  TPRIPA.QTDPRODUZIR%TYPE;
 P_NROLOTE      TPRIPA.NROLOTE%TYPE;
@@ -17,7 +31,7 @@ SELECT NVL(LPA.TIPOGERASERIE,'Z') INTO P_TIPOGERASERIE FROM TPRLPA LPA INNER JOI
 AND LPA.CODPRODPA = :NEW.CODPRODPA;
 EXCEPTION WHEN NO_DATA_FOUND THEN
 P_TIPOGERASERIE := 'Z'; --APONTAMENTO MANUAL
-END;
+END TRG_INC_UPD_DLT_TPRIPA_SPARK;
 
 IF P_TIPOGERASERIE = 'A' THEN
 INSERT INTO AD_TPRSERPA (IDIPROC, CODPRODPA, SERIEPA)

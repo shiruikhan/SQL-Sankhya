@@ -1,5 +1,20 @@
 create or replace TRIGGER TRG_CMP_TGFCAB_NFE_SPARK
     FOR  UPDATE ON TGFCAB 
+/*==============================================================================
+  Nome do Script : TRG_CMP_TGFCAB_NFE_SPARK
+  Tipo           : Trigger
+  Descrição      : Sincroniza dados de NFe entre notas de entrada/saída (COMPOUND TRIGGER).
+                  Atualiza valores, tributação e itens entre NUNOTA original e transferência.
+  Tabela         : TGFCAB
+  Evento         : FOR UPDATE (COMPOUND TRIGGER)
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 COMPOUND TRIGGER
 
     V_COUNT     INT;

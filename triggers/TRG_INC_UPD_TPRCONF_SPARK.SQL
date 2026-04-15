@@ -2,6 +2,20 @@ create or replace TRIGGER TRG_INC_UPD_TPRCONF_SPARK
 BEFORE INSERT OR UPDATE OR DELETE
 ON TPRCONF
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TPRCONF_SPARK
+  Tipo           : Trigger
+  Descrição      : Insere códigos de barras consolidados ao finalizar conferência de ordem de produção
+  Tabela         : TPRCONF
+  Evento         : BEFORE INSERT OR UPDATE OR DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE 
 P_COUNT        INT;
 
@@ -28,4 +42,4 @@ AND C.NUCONF = :NEW.NUCONF;
 
 END IF;
 
-END; 
+END TRG_INC_UPD_TPRCONF_SPARK; 

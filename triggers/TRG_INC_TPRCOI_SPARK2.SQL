@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_TPRCOI_SPARK2
 BEFORE INSERT ON TPRCOI 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_TPRCOI_SPARK2
+  Tipo           : Trigger
+  Descrição      : Valida correspondência entre código de barras e lote de produção (14 ou 15 dígitos)
+  Tabela         : TPRCOI
+  Evento         : BEFORE INSERT
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE 
 P_COUNT  INT;
 P_IDIATV TPRIATV.IDIATV%TYPE;
@@ -32,4 +46,4 @@ BEGIN
         END IF;
     END IF;
 
-END;
+END TRG_INC_TPRCOI_SPARK2;

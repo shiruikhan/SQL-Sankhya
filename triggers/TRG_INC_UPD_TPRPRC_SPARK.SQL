@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_TPRPRC_SPARK 
 BEFORE INSERT OR UPDATE ON TPRPRC
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TPRPRC_SPARK
+  Tipo           : Trigger
+  Descrição      : Gerencia tipos de PI em processos produtivos (sub-ordem ou estoque)
+  Tabela         : TPRPRC
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 P_COUNT INT;
 PRAGMA AUTONOMOUS_TRANSACTION;
@@ -76,7 +90,7 @@ END LOOP;
 
 COMMIT;
 
-END;
+END TRG_INC_UPD_TPRPRC_SPARK;
 
 
 

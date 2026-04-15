@@ -2,6 +2,21 @@ create or replace TRIGGER SPK_TGFFIN_LOG
 BEFORE INSERT OR UPDATE OR DELETE 
 ON TGFFIN
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : SPK_TGFFIN_LOG
+  Tipo           : Trigger
+  Descrição      : Registra auditoriae histórico de alterações na tabela TGFFIN.
+                  Log de INSERT, UPDATE e DELETE em campos financeiros.
+  Tabela         : TGFFIN
+  Evento         : BEFORE INSERT OR UPDATE OR DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR] — Última atualização Abril/2026
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
   P_ACAO VARCHAR2(10);
   P_CHAVEPK VARCHAR2(400);
@@ -57,4 +72,4 @@ BEGIN
     END IF;
     RETURN;
   END IF;            
-END;
+END SPK_TGFFIN_LOG;

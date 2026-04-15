@@ -1,6 +1,20 @@
 create or replace TRIGGER "SPARKPRD"."TRG_TGFCON2_SPARK" 
 BEFORE INSERT OR UPDATE ON TGFCON2
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_TGFCON2_SPARK
+  Tipo           : Trigger
+  Descrição      : Insere série em TGFSER ao finalizar conferência
+  Tabela         : TGFCON2
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 P_COUNT      INT;
 
@@ -23,4 +37,4 @@ BEGIN
 
     END IF;
 
-END;
+END UNKNOWN;

@@ -1,6 +1,21 @@
 create or replace TRIGGER SPK_UPD_INS_TGFITE_CONSUMOPRD 
 BEFORE INSERT OR UPDATE ON TGFITE 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : SPK_UPD_INS_TGFITE_CONSUMOPRD
+  Tipo           : Trigger
+  Descrição      : Define CODLOCALORIG em TGFITE conforme centro de custo.
+                  Mapeia unidades de produção (TOP 509) para locais de origem específicos.
+  Tabela         : TGFITE
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     P_CODTIPOPER INT;
     P_CODCENCUS INT;
@@ -45,4 +60,4 @@ BEGIN
     IF P_CODTIPOPER = 509 THEN
         :NEW.CODLOCALORIG := P_CODLOCALORIG;
     END IF;
-END;
+END SPK_UPD_INS_TGFITE_CONSUMOPRD;

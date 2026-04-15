@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_AD_EMBPED_SPARK
 BEFORE DELETE ON AD_EMBPED
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_AD_EMBPED_SPARK
+  Tipo           : Trigger
+  Descrição      : Atualiza QTDVOL e PESO em TGFCAB ao deletar embalagem.
+                  Recalcula quantidade de volumes e peso total de forma autônoma.
+  Tabela         : AD_EMBPED
+  Evento         : BEFORE DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE 
 
 PRAGMA AUTONOMOUS_TRANSACTION;
@@ -31,4 +46,4 @@ SELECT SUM(EMB.PESOBRUTO) AS PESOEMB
         
         COMMIT;
 
-END; 
+END TRG_AD_EMBPED_SPARK; 

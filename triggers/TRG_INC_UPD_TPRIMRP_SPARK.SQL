@@ -1,5 +1,19 @@
 create or replace TRIGGER TRG_INC_UPD_TPRIMRP_SPARK
 BEFORE INSERT OR UPDATE ON TPRIMRP FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TPRIMRP_SPARK
+  Tipo           : Trigger
+  Descrição      : Calcula saldo de necessidade MRP com ajustes adicionais para análise de giro
+  Tabela         : TPRIMRP
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 BEGIN
   /*
@@ -36,4 +50,4 @@ BEGIN
   END IF;
   
   
-END; 
+END TRG_INC_UPD_TPRIMRP_SPARK; 

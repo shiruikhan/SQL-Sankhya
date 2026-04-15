@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_TGFCAB_PREVENT 
 BEFORE INSERT OR UPDATE ON TGFCAB 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_TGFCAB_PREVENT
+  Tipo           : Trigger
+  Descrição      : Popula tabela de entregas (TGFDTP) com previsões de entrega para pedidos de compra
+  Tabela         : TGFCAB
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 	P_CODTIPOPER NUMBER;
 	P_VERIFICA VARCHAR2(1);
@@ -32,7 +46,7 @@ BEGIN
         P_VERIFICA := 'S';
 	EXCEPTION 
 		WHEN NO_DATA_FOUND THEN NULL;
-    END;
+    END TRG_INC_UPD_TGFCAB_PREVENT;
 	
 	BEGIN /*VERIFICA SE JÁ HOUVE ENTREGAS*/
 		SELECT DISTINCT NUNOTA INTO v_temp2

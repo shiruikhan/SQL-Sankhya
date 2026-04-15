@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_UPD_TGSLOGLIB_SPARK 
 BEFORE UPDATE ON TSILIB 
 FOR EACH ROW 
+/*==============================================================================
+  Nome do Script : TRG_UPD_TGSLOGLIB_SPARK
+  Tipo           : Trigger
+  Descrição      : Registra log de liberação de crédito ao autorizar nota
+                   fiscal de venda
+  Tabela         : TSILIB
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 WHEN (NEW.DHLIB IS NOT NULL AND NEW.EVENTO = 3) 
 DECLARE
     V_VLRTOTFIN TGFFIN.VLRDESDOB%TYPE;
@@ -21,7 +36,7 @@ BEGIN
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             V_CODPARC := 0;
-    END;
+    END TRG_UPD_TGSLOGLIB_SPARK;
     
     BEGIN
         SELECT P.CODPARCMATRIZ INTO V_CODPARCMATRIZ

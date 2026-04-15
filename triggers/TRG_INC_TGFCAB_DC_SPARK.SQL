@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_TGFCAB_DC_SPARK
 BEFORE INSERT ON TGFCAB
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_TGFCAB_DC_SPARK
+  Tipo           : Trigger
+  Descrição      : Popula datas de negociação e entrada/saída a partir da data de produção do processo
+  Tabela         : TGFCAB
+  Evento         : BEFORE INSERT
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE 
 
 P_COUNT         INT;
@@ -26,4 +40,4 @@ BEGIN
                        --    RAISE_APPLICATION_ERROR(-20191,'RESULT: ' || :NEW.NUNOTA);
             END IF;					
      END IF;
-END;
+END TRG_INC_TGFCAB_DC_SPARK;

@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_DLT_TGFSER_SPARK
 BEFORE DELETE ON TGFSER 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_DLT_TGFSER_SPARK
+  Tipo           : Trigger
+  Descrição      : Gerencia códigos de barras ao deletar série (TOP de produção 800).
+                  Remove de TGFBAR ou reinsere em TGFEST conforme contexto de exclusão.
+  Tabela         : TGFSER
+  Evento         : BEFORE DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
   P_CODTIPOPER  TGFCAB.CODTIPOPER%TYPE;
   P_CODVOL         TGFPRO.CODVOL%TYPE;
@@ -21,7 +36,7 @@ BEGIN
     WHERE CAB.NUNOTA = :OLD.NUNOTA;     
   EXCEPTION WHEN NO_DATA_FOUND THEN
     P_CODTIPOPER := 0;
-  END; 
+  END TRG_DLT_TGFSER_SPARK; 
    
   SELECT COUNT(*) INTO P_COUNT FROM TGFBAR WHERE CODPROD = :OLD.CODPROD AND CODBARRA = :OLD.SERIE;
   

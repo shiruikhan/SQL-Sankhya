@@ -1,6 +1,21 @@
 create or replace TRIGGER "TRG_TGFITE_SPARK1" 
 BEFORE INSERT OR UPDATE ON TGFITE 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_TGFITE_SPARK1
+  Tipo           : Trigger
+  Descrição      : Calcula valores complementares de volumes e preços baseado
+                   em atualização de outros campos do item
+  Tabela         : TGFITE
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 P_ATUALVLR       VARCHAR2(10);
 P_TIPMOV         VARCHAR2(10);
@@ -21,7 +36,7 @@ BEGIN
         AND CAB.NUNOTA = :NEW.NUNOTA;
      EXCEPTION WHEN NO_DATA_FOUND THEN
      RETURN;    
-    END;    
+    END UNKNOWN;    
 
     IF P_ATUALVLR = 'S' AND :NEW.NUTAB > 0 THEN 
 

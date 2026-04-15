@@ -1,6 +1,20 @@
 create or replace TRIGGER SPK_TGFASS_INC 
 BEFORE INSERT /* OR UPDATE*/ ON AD_TGFASS 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : SPK_TGFASS_INC
+  Tipo           : Trigger
+  Descrição      : Popula automaticamente atributos de série (produto, descrição, referência, data fabricação, lote) consultando view VGFSERIES na inserção.
+  Tabela         : AD_TGFASS
+  Evento         : BEFORE INSERT
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
 	P_CODPROD INTEGER;
 	P_DESCRPROD VARCHAR(200);
@@ -98,4 +112,4 @@ BEGIN
 	:NEW.T_DTFABRICACAO := P_DTFABRICACAO;
 	:NEW.T_TIPO := P_TIPO;
 	:NEW.T_LOTE := P_LOTE;
-END;
+END SPK_TGFASS_INC;

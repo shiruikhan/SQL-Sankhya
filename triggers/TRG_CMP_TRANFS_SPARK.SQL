@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_CMP_TRANFS_SPARK
     FOR DELETE ON TGFCAB 
 COMPOUND TRIGGER
+/*==============================================================================
+  Nome do Script : TRG_CMP_TRANFS_SPARK
+  Tipo           : Trigger
+  Descrição      : Limpa referências de transferência ao deletar notas (COMPOUND TRIGGER).
+                  Anula AD_NUNOTAENT e AD_NUNOTASAI de documentos relacionados.
+  Tabela         : TGFCAB
+  Evento         : FOR DELETE (COMPOUND TRIGGER)
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
     V_PEDORIG          INTEGER:=0;
     V_CODEMP           INTEGER:=0;
     V_NUNOTA          TGFCAB.NUNOTA%TYPE;

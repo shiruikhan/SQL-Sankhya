@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_UPD_TGFCAB_IMF_SPARK
 BEFORE UPDATE ON TGFCAB
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_UPD_TGFCAB_IMF_SPARK
+  Tipo           : Trigger
+  Descrição      : Distribui impostos por financeiro ao fechar nota
+                   de compra
+  Tabela         : TGFCAB
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     P_COUNT     INT;
     P_CODIMP    INT;
@@ -69,4 +84,4 @@ BEGIN
     
     END IF;
 
-END;
+END TRG_UPD_TGFCAB_IMF_SPARK;

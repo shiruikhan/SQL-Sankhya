@@ -2,6 +2,20 @@ create or replace TRIGGER TRG_INC_TGFSER_SPARK
 BEFORE INSERT OR UPDATE ON TGFSER 
 REFERENCING NEW AS NEW OLD AS OLD 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_TGFSER_SPARK
+  Tipo           : Trigger
+  Descrição      : Gerencia código de barras em ajustes de estoque/produção e limpa códigos em conferências
+  Tabela         : TGFSER
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
   P_CODTIPOPER  TGFCAB.CODTIPOPER%TYPE;
   P_CODVOL         TGFPRO.CODVOL%TYPE;
@@ -22,7 +36,7 @@ BEGIN
     WHERE CAB.NUNOTA = NVL(:NEW.NUNOTA,:OLD.NUNOTA);     
   EXCEPTION WHEN NO_DATA_FOUND THEN
     P_CODTIPOPER := 0;
-  END; 
+  END TRG_INC_TGFSER_SPARK; 
    
   SELECT COUNT(*) INTO P_COUNT FROM TGFBAR WHERE CODPROD = :NEW.CODPROD AND CODBARRA = :NEW.SERIE;
   

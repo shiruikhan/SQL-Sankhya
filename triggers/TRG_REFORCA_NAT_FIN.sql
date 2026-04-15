@@ -1,6 +1,20 @@
 CREATE OR REPLACE TRIGGER TRG_REFORCA_NAT_FIN
 AFTER INSERT OR UPDATE ON TGFCAB
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_REFORCA_NAT_FIN
+  Tipo           : Trigger
+  Descrição      : Atualiza natureza e centro de custo na tabela TGFFIN com base nos valores da TGFCAB, excluindo tipos específicos e financeiros rateados.
+  Tabela         : TGFCAB
+  Evento         : AFTER INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 BEGIN
     -- Reforça a natureza e centro de custo na TGFFIN baseada na TGFCAB
     -- Utiliza NUNOTA e CODPARC como parâmetros de ligação
@@ -21,4 +35,4 @@ BEGIN
                WHERE TGFRAT.NUFIN = TGFFIN.NUFIN
            );
     END IF;
-END;
+END TRG_REFORCA_NAT_FIN;

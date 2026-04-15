@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_NOTIFICA_SOLIC_COMPRA
 AFTER INSERT OR UPDATE ON AD_TGSSCP
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_NOTIFICA_SOLIC_COMPRA
+  Tipo           : Trigger
+  Descrição      : Envia notificações por e-mail em mudanças de status de solicitação (nova, aprovada, cancelada, compra realizada).
+  Tabela         : AD_TGSSCP
+  Evento         : AFTER INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     V_TITULO       VARCHAR2(300);
     V_CONTEUDO     VARCHAR2(4000);
@@ -130,4 +144,4 @@ EXCEPTION
         RAISE_APPLICATION_ERROR(-20020, 'Dados não encontrados para envio de e-mail.');
     WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20099, 'Erro na trigger TRG_NOTIFICA_SOLIC_COMPRA: ' || SQLERRM);
-END;
+END TRG_NOTIFICA_SOLIC_COMPRA;

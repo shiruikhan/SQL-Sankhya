@@ -1,6 +1,21 @@
 create or replace TRIGGER TRG_COTAFRETE_SPARK
 AFTER INSERT OR UPDATE OR DELETE ON TGFCAB 
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_COTAFRETE_SPARK
+  Tipo           : Trigger
+  Descrição      : Insere/atualiza cotação de frete em AD_TGSCTF (INSERT/UPDATE/DELETE).
+                  Gera ou limpa registros de cálculo logístico baseado em filtros específicos.
+  Tabela         : TGFCAB
+  Evento         : AFTER INSERT OR UPDATE OR DELETE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
   V_NUCTF AD_TGSCTF.NUCTF%TYPE;
   V_DOCORIG TSIEMP.CGC%TYPE;
@@ -18,7 +33,7 @@ BEGIN
             SELECT NVL(MAX(NUCTF), 0) + 1 INTO V_NUCTF FROM AD_TGSCTF;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN V_NUCTF := 1;
-        END;
+        END TRG_COTAFRETE_SPARK;
 
         BEGIN
             SELECT CEP, CGC INTO V_CEPORIG, V_DOCORIG FROM TSIEMP WHERE CODEMP = :NEW.CODEMP;

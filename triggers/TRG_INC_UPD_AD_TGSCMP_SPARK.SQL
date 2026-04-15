@@ -1,6 +1,20 @@
 create or replace TRIGGER TRG_INC_UPD_AD_TGSCMP_SPARK
 BEFORE INSERT OR UPDATE ON AD_TGSCMP
 FOR EACH ROW
+/*==============================================================================
+  Nome do Script : TRG_INC_UPD_AD_TGSCMP_SPARK
+  Tipo           : Trigger
+  Descrição      : Popula dimensões e propriedades do produto a partir da tabela TGFPRO
+  Tabela         : AD_TGSCMP
+  Evento         : BEFORE INSERT OR UPDATE
+  Escopo         : FOR EACH ROW / STATEMENT
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: [A DEFINIR]
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
 DECLARE
     v_referencia   TGFPRO.REFERENCIA%TYPE;
     v_marca        TGFPRO.MARCA%TYPE;
@@ -25,7 +39,7 @@ BEGIN
                 v_largura    := NULL;
                 v_espessura  := NULL;
                 v_unidade    := NULL;
-        END;
+        END TRG_INC_UPD_AD_TGSCMP_SPARK;
 
         :NEW.REFERENCIA := v_referencia;
         :NEW.MARCA      := v_marca;
