@@ -15,6 +15,9 @@
   Tabelas fonte  : TGFIXN  — arquivo de XML importado (CT-e, NF-e)
                    TGFCAB  — cabeçalho de nota (para busca de CODTIPOPER da NF-e)
 
+  Dependências   : FN_XMLTYPE_SAFE — converte DOCSREF para XMLTYPE com tratamento
+                   de erro; retorna NULL em caso de XML malformado, evitando ORA-31011
+
   Colunas        :
     NRARQUIVO       — número do arquivo XML importado (alias de NUARQUIVO)
     NUMNOTA         — número da nota fiscal no documento
@@ -51,6 +54,8 @@
   Empresa        : Spark Eletrônica
   Data de Criação: 2023
   Última Revisão : Abril/2026 — Padronização de cabeçalho, comentários e formatação
+                               Abril/2026 — Risco 2: XMLTYPE substituído por FN_XMLTYPE_SAFE
+                                            Risco 3: CODTIPOPER_NFE agora determinístico via ORDER BY NUNOTA DESC
 
   Observações    : - Um CT-e pode referenciar múltiplas NF-e. Neste caso, a view
                      retorna uma linha por chave referenciada (XMLTABLE expande
@@ -99,12 +104,17 @@ SELECT
     T.CHAVEACESSO_REF,
 
     -- Busca o CODTIPOPER da NF-e referenciada no Sankhya.
-    -- ROWNUM = 1 evita duplicação quando múltiplas notas compartilham a mesma chave.
+    -- ORDER BY NUNOTA DESC garante resultado determinístico quando há mais de
+    -- uma nota com a mesma chave; ROWNUM = 1 na outer query seleciona a mais recente.
     (
         SELECT CODTIPOPER
-        FROM   TGFCAB
-        WHERE  CHAVENFE = T.CHAVEACESSO_REF
-        AND    ROWNUM   = 1
+        FROM   (
+            SELECT CODTIPOPER
+            FROM   TGFCAB
+            WHERE  CHAVENFE = T.CHAVEACESSO_REF
+            ORDER BY NUNOTA DESC
+        )
+        WHERE  ROWNUM = 1
     ) AS CODTIPOPER_NFE,
 
     -- Posição sequencial do documento dentro do XML de referências
@@ -131,7 +141,7 @@ FROM TGFIXN X,
       */
      XMLTABLE(
          '/docsRef/chaveAcesso'
-         PASSING XMLTYPE(X.DOCSREF)
+         PASSING FN_XMLTYPE_SAFE(X.DOCSREF)
          COLUMNS
              CHAVEACESSO_REF  VARCHAR2(50)  PATH '.',          -- Valor do nó (chave de 44 dígitos)
              NR_SEQUENCIA     FOR ORDINALITY                   -- Posição sequencial no XML
