@@ -135,8 +135,11 @@ BEGIN
     /*==========================================================================
       AFTER_UPDATE — NF-e processada manualmente no portal
       Quando uma NF-e é processada e entra em TGFCAB (NUNOTA preenchido em TGFIXN),
-      busca todos os CT-es pendentes (CODTIPOPER = NULL) que referenciam a chave
-      desta NF-e e os classifica via UPDATE direto em TGFIXN.
+      busca todos os CT-es ainda não processados (DHPROCAG = NULL) que referenciam
+      a chave desta NF-e e os classifica via UPDATE direto em TGFIXN.
+      Nota: o Sankhya preenche CODTIPOPER = 225 como padrão ao criar o registro em
+      TGFIXN, portanto o filtro usa DHPROCAG IS NULL (não processado) em vez de
+      CODTIPOPER IS NULL, que nunca seria verdadeiro.
       O UPDATE não dispara novo ciclo pois o bloco só reage a TIPO = 'N'.
     ==========================================================================*/
     IF P_TIPOEVENTO = AFTER_UPDATE THEN
@@ -166,7 +169,7 @@ BEGIN
                     FROM   VW_CTE_AUTORIZADOS VW
                     INNER  JOIN TGFIXN IX ON IX.NUNOTA = VW.NUNOTA AND IX.TIPO = 'C'
                     WHERE  VW.CHAVEACESSO_REF = V_CHAVE
-                      AND  IX.CODTIPOPER     IS NULL
+                      AND  IX.DHPROCAG       IS NULL  -- CTe ainda não processado pelo agendador
                 ) LOOP
                     V_NEW_TOP := FN_CLASSIFICA(CTE_REC.NUNOTA_CTE);
 

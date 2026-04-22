@@ -42,15 +42,41 @@ AND SITUACAOCTE         = 'A'                 -- apenas autorizados
 AND (SYSDATE - DHEMISS) * 24 > 48            -- emitido há mais de 48 horas
 AND DHIMPORT >= TO_DATE('01/01/2026', 'DD/MM/YYYY') -- importados a partir de 2026
 
--- CT-e classificado: o EVP preencheu CODTIPOPER com base nas NF-e referenciadas
-AND CODTIPOPER IS NOT NULL
-
--- Todas as NF-e referenciadas pelo CT-e já estão em TGFCAB.
--- Enquanto qualquer NF-e ainda não existir no sistema, CODTIPOPER_NFE será NULL
--- na VW_CTE_AUTORIZADOS e o CT-e permanece bloqueado para processamento.
-AND NOT EXISTS (
-    SELECT 1
-    FROM   VW_CTE_AUTORIZADOS VW
-    WHERE  VW.NRARQUIVO      = NUARQUIVO   -- NRARQUIVO: alias de NUARQUIVO na view
-      AND  VW.CODTIPOPER_NFE IS NULL
+-- Gate central de classificação:
+-- Substitui as condições anteriores (CODTIPOPER IS NOT NULL + NOT EXISTS) por uma
+-- única subquery que verifica simultaneamente:
+--   1. Todas as NF-e referenciadas já estão em TGFCAB (nenhum CODTIPOPER_NFE nulo)
+--   2. O CODTIPOPER atual bate exatamente com o que as regras de classificação produzem
+--
+-- O Sankhya preenche CODTIPOPER = 225 por padrão em todo CT-e importado.
+-- Sem esta verificação, um CT-e com TOP 225 (padrão) mas que deveria ser 226 ou 242
+-- seria processado incorretamente assim que todas as NF-e chegassem.
+--
+-- Comportamento da subquery:
+--   — NF-e ausente (CODTIPOPER_NFE = NULL)   → retorna NULL → bloqueia
+--   — Todas as NF-e presentes, mas CODTIPOPER ≠ esperado → condição falsa → bloqueia
+--   — Todas as NF-e presentes e CODTIPOPER = esperado    → libera para processamento
+--
+-- Prioridade das regras (mesma lógica do EVP):
+--   TOP 225 → CODTIPOPER_NFE IN (214, 1125, 1211)
+--   TOP 226 → CODTIPOPER_NFE IN (1100, 1117, 1143, 1142, 2200, 2202)
+--   TOP 242 → CODTIPOPER_NFE IN (267, 231, 1267, 1327, 215, 1227, 228, 266, 233, 1119, 1108)
+--   TOP 234 → CODTIPOPER_NFE IN (201, 221, 209)
+AND CODTIPOPER = (
+    SELECT
+        CASE
+            WHEN COUNT(CASE WHEN VW.CODTIPOPER_NFE IS NULL THEN 1 END) > 0
+                THEN NULL  -- NF-e ainda ausente; bloqueia
+            WHEN MAX(CASE WHEN VW.CODTIPOPER_NFE IN (214, 1125, 1211) THEN 1 END) = 1
+                THEN 225
+            WHEN MAX(CASE WHEN VW.CODTIPOPER_NFE IN (1100, 1117, 1143, 1142, 2200, 2202) THEN 1 END) = 1
+                THEN 226
+            WHEN MAX(CASE WHEN VW.CODTIPOPER_NFE IN (267, 231, 1267, 1327, 215, 1227, 228, 266, 233, 1119, 1108) THEN 1 END) = 1
+                THEN 242
+            WHEN MAX(CASE WHEN VW.CODTIPOPER_NFE IN (201, 221, 209) THEN 1 END) = 1
+                THEN 234
+            ELSE NULL
+        END
+    FROM VW_CTE_AUTORIZADOS VW
+    WHERE VW.NRARQUIVO = NUARQUIVO
 )
