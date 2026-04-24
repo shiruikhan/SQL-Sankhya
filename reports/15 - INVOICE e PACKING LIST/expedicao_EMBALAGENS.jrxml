@@ -186,6 +186,18 @@ ORDER BY 9, 3]]>
 	<variable name="M3_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{M3} != null && $F{QTDCAIXA} != null ? $F{M3}.multiply($F{QTDCAIXA}) : java.math.BigDecimal.ZERO]]></variableExpression>
 	</variable>
+	<variable name="GRP_QTDCAIXA" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Sum">
+		<variableExpression><![CDATA[$F{QTDCAIXA}]]></variableExpression>
+	</variable>
+	<variable name="GRP_PESOBRUTO" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Sum">
+		<variableExpression><![CDATA[$F{PESOBRUTOPROD}]]></variableExpression>
+	</variable>
+	<variable name="GRP_PESOLIQ" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Sum">
+		<variableExpression><![CDATA[$F{PESOLIQ}]]></variableExpression>
+	</variable>
+	<variable name="GRP_M3" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Sum">
+		<variableExpression><![CDATA[$F{M3} != null && $F{QTDCAIXA} != null ? $F{M3}.multiply($F{QTDCAIXA}) : java.math.BigDecimal.ZERO]]></variableExpression>
+	</variable>
 	<group name="GRP_PACKAGE">
 		<groupExpression><![CDATA[$F{PKG} + "|" + ($F{PKG}.equals("BOX") ? $F{CODPROD} : $F{PO}).toString()]]></groupExpression>
 		<groupHeader>
@@ -215,12 +227,12 @@ ORDER BY 9, 3]]>
 					</textElement>
 					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PO}]]></textFieldExpression>
 				</textField>
-				<textField pattern="#,##0;-#,##0">
+				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0;-#,##0">
 					<reportElement x="223" y="1" width="32" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTDCAIXA}]]></textFieldExpression>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{GRP_QTDCAIXA}]]></textFieldExpression>
 				</textField>
 				<textField>
 					<reportElement x="255" y="1" width="36" height="20"/>
@@ -236,26 +248,26 @@ ORDER BY 9, 3]]>
 					</textElement>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
 				</textField>
-				<textField pattern="#,##0.00;-#,##0.00">
+				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0.00;-#,##0.00">
 					<reportElement x="436" y="1" width="46" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PESOBRUTOPROD}]]></textFieldExpression>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{GRP_PESOBRUTO}]]></textFieldExpression>
 				</textField>
-				<textField pattern="#,##0.00;-#,##0.00">
+				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0.00;-#,##0.00">
 					<reportElement x="482" y="0" width="43" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PESOLIQ}]]></textFieldExpression>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{GRP_PESOLIQ}]]></textFieldExpression>
 				</textField>
-				<textField pattern="#,##0.000;-#,##0.000">
+				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0.000;-#,##0.000">
 					<reportElement x="524" y="1" width="30" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{M3} != null && $F{QTDCAIXA} != null ? $F{M3}.multiply($F{QTDCAIXA}) : java.math.BigDecimal.ZERO]]></textFieldExpression>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{GRP_M3}]]></textFieldExpression>
 				</textField>
 			</band>
 		</groupHeader>
@@ -435,7 +447,7 @@ ORDER BY 9, 3]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
-				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{QTDCAIXA_1}]]></textFieldExpression>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{TOTAL_PKGS}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00;-#,##0.00">
 				<reportElement x="471" y="24" width="79" height="20"/>
