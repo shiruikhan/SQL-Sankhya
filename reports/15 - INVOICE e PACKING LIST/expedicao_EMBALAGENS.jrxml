@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="expedicao_EMBALAGENS" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
-	<property name="ireport.zoom" value="1.9487171000000099"/>
+	<property name="ireport.zoom" value="2.657341500000003"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
@@ -18,7 +18,7 @@
         ELSE PRO.DESCRPROD
     END AS DESCPRD,
     PEXP.CODCXPROD AS CODPROD,
-    MAX(PRO1.DESCRPROD) AS DESCRPROD,
+    MAX(PRO1.AD_DESCRPRODOED) AS DESCRPROD,
     SUM(PRO.PESOBRUTO) AS PESOBRUTO,
     SUM(PEXP.QTDA) AS QTDNEG,
     SUM(PEXP.PESOBRUT)
@@ -91,7 +91,7 @@ SELECT
         ELSE PRO.DESCRPROD
     END AS DESCPRD,
     PEXP.CODCXPROD AS CODPROD,
-    MAX(PRO1.DESCRPROD) AS DESCRPROD,
+    MAX(PRO1.AD_DESCRPRODOED) AS DESCRPROD,
     SUM(PRO.PESOBRUTO) AS PESOBRUTO,
     SUM(PEXP.QTDA) AS QTDNEG,
     SUM(PEXP.PESOBRUT)
@@ -220,15 +220,15 @@ ORDER BY 9, 3]]>
 				<line>
 					<reportElement x="554" y="0" width="1" height="21"/>
 				</line>
-				<textField pattern="#,##0;-#,##0">
-					<reportElement x="1" y="1" width="31" height="20"/>
+				<textField pattern="###0;-###0">
+					<reportElement x="1" y="1" width="28" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
 					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PO}]]></textFieldExpression>
 				</textField>
 				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0;-#,##0">
-					<reportElement x="223" y="1" width="32" height="20"/>
+					<reportElement x="221" y="1" width="33" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
@@ -242,21 +242,21 @@ ORDER BY 9, 3]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{PKG}]]></textFieldExpression>
 				</textField>
 				<textField>
-					<reportElement x="291" y="0" width="145" height="20"/>
+					<reportElement x="292" y="1" width="144" height="20"/>
 					<textElement verticalAlignment="Middle" lineSpacing="Single">
 						<font size="6" isBold="true"/>
 					</textElement>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
 				</textField>
 				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0.00;-#,##0.00">
-					<reportElement x="436" y="1" width="46" height="20"/>
+					<reportElement x="437" y="1" width="43" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
 					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{GRP_PESOBRUTO}]]></textFieldExpression>
 				</textField>
 				<textField evaluationTime="Group" evaluationGroup="GRP_PACKAGE" pattern="#,##0.00;-#,##0.00">
-					<reportElement x="482" y="0" width="43" height="20"/>
+					<reportElement x="481" y="1" width="42" height="20"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
@@ -281,32 +281,52 @@ ORDER BY 9, 3]]>
 	<title>
 		<band height="30">
 			<staticText>
-				<reportElement mode="Opaque" x="436" y="1" width="45" height="29" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="185" y="1" width="35" height="29" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Gross Weight (Kg)]]></text>
+				<text><![CDATA[QTY
+pcs]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="222" y="1" width="33" height="29" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="437" y="1" width="43" height="29" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Quantity]]></text>
+				<text><![CDATA[Gross
+Weight
+(Kg)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="481" y="1" width="43" height="29" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="481" y="1" width="42" height="29" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Net Weight (Kg)]]></text>
+				<text><![CDATA[Net
+Weight
+(Kg)]]></text>
 			</staticText>
 			<staticText>
 				<reportElement mode="Opaque" x="524" y="1" width="30" height="29" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Cubing (M³) ]]></text>
+				<text><![CDATA[(M³) ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1" y="1" width="28" height="29" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[P.O.
+NO.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="221" y="1" width="33" height="29" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Quantity]]></text>
 			</staticText>
 			<staticText>
 				<reportElement mode="Opaque" x="255" y="1" width="36" height="29" backcolor="#CCCCCC"/>
@@ -314,6 +334,20 @@ ORDER BY 9, 3]]>
 					<font size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Package]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="292" y="1" width="144" height="29" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle" lineSpacing="Single">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="30" y="1" width="154" height="29" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[]]></text>
 			</staticText>
 			<line>
 				<reportElement x="0" y="0" width="1" height="30"/>
@@ -324,34 +358,9 @@ ORDER BY 9, 3]]>
 					<pen lineWidth="0.5"/>
 				</graphicElement>
 			</line>
-			<staticText>
-				<reportElement mode="Opaque" x="187" y="1" width="35" height="29" backcolor="#CCCCCC"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
-					<font size="8" isBold="true"/>
-				</textElement>
-				<text><![CDATA[QTY pcs]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="1" y="1" width="31" height="29" backcolor="#CCCCCC"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
-					<font size="8" isBold="true"/>
-				</textElement>
-				<text><![CDATA[P.O.NO.]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="32" y="1" width="155" height="29" backcolor="#CCCCCC"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
-					<font size="8" isBold="true"/>
-				</textElement>
-				<text><![CDATA[PART NO.]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="291" y="1" width="145" height="29" backcolor="#CCCCCC"/>
-				<textElement verticalAlignment="Middle" lineSpacing="Single">
-					<font size="8" isBold="true"/>
-				</textElement>
-				<text><![CDATA[ Description]]></text>
-			</staticText>
+			<line>
+				<reportElement x="554" y="0" width="1" height="30"/>
+			</line>
 		</band>
 	</title>
 	<pageHeader>
@@ -375,21 +384,21 @@ ORDER BY 9, 3]]>
 				</graphicElement>
 			</line>
 			<textField pattern="###0;-###0">
-				<reportElement x="32" y="1" width="55" height="20"/>
+				<reportElement x="30" y="1" width="54" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{COD}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="87" y="1" width="100" height="20"/>
+				<reportElement x="84" y="1" width="100" height="20"/>
 				<textElement verticalAlignment="Middle" lineSpacing="Single">
 					<font size="6"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCPRD}]]></textFieldExpression>
 			</textField>
 			<textField pattern="###0;(###0-)">
-				<reportElement x="187" y="1" width="36" height="20"/>
+				<reportElement x="185" y="1" width="35" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8"/>
 				</textElement>
@@ -422,27 +431,27 @@ ORDER BY 9, 3]]>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{M3_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00;-#,##0.00">
-				<reportElement x="436" y="0" width="46" height="20"/>
+				<reportElement x="437" y="0" width="43" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="9" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{PESOTOTAL_1}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement mode="Opaque" x="392" y="24" width="79" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="392" y="23" width="80" height="21" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Gross Weight (Kg)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="392" y="44" width="79" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="392" y="44" width="80" height="20" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Net Weight (Kg)]]></text>
 			</staticText>
-			<textField pattern="#,##0.00;-#,##0.00">
+			<textField pattern="#,##0;-#,##0">
 				<reportElement x="471" y="64" width="79" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
@@ -473,7 +482,7 @@ ORDER BY 9, 3]]>
 				<reportElement x="471" y="23" width="1" height="61"/>
 			</line>
 			<textField pattern="#,##0.00;-#,##0.00">
-				<reportElement x="482" y="0" width="43" height="19"/>
+				<reportElement x="481" y="0" width="42" height="19"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="9" isBold="true"/>
 				</textElement>
@@ -483,7 +492,7 @@ ORDER BY 9, 3]]>
 				<reportElement x="0" y="-1" width="1" height="21"/>
 			</line>
 			<textField>
-				<reportElement mode="Opaque" x="391" y="64" width="80" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="392" y="64" width="79" height="20" backcolor="#CCCCCC"/>
 				<textElement verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
