@@ -172,7 +172,7 @@ ORDER BY 9, 3]]>
 		<variableExpression><![CDATA[$F{PESOLIQ}]]></variableExpression>
 	</variable>
 	<variable name="QTDCAIXA_1" class="java.math.BigDecimal" calculation="Sum">
-		<variableExpression><![CDATA[$F{QTDCAIXA}]]></variableExpression>
+		<variableExpression><![CDATA[$V{GRP_PACKAGE_COUNT} == 1 ? $F{QTDCAIXA} : java.math.BigDecimal.ZERO]]></variableExpression>
 	</variable>
 	<variable name="PESOBRUTO_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{PESOBRUTO}]]></variableExpression>
@@ -184,7 +184,7 @@ ORDER BY 9, 3]]>
 		<variableExpression><![CDATA[$F{PESOBRUTOPROD}]]></variableExpression>
 	</variable>
 	<variable name="M3_1" class="java.math.BigDecimal" calculation="Sum">
-		<variableExpression><![CDATA[$F{M3}]]></variableExpression>
+		<variableExpression><![CDATA[$F{M3} != null && $F{QTDCAIXA} != null ? $F{M3}.multiply($F{QTDCAIXA}) : java.math.BigDecimal.ZERO]]></variableExpression>
 	</variable>
 	<group name="GRP_PACKAGE">
 		<groupExpression><![CDATA[$F{PKG} + "|" + ($F{PKG}.equals("BOX") ? $F{CODPROD} : $F{PO}).toString()]]></groupExpression>
@@ -255,7 +255,7 @@ ORDER BY 9, 3]]>
 					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="true"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{M3}]]></textFieldExpression>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{M3} != null && $F{QTDCAIXA} != null ? $F{M3}.multiply($F{QTDCAIXA}) : java.math.BigDecimal.ZERO]]></textFieldExpression>
 				</textField>
 			</band>
 		</groupHeader>
@@ -392,9 +392,9 @@ ORDER BY 9, 3]]>
 		<band/>
 	</pageFooter>
 	<summary>
-		<band height="111">
+		<band height="84">
 			<rectangle>
-				<reportElement x="378" y="42" width="159" height="61"/>
+				<reportElement x="391" y="23" width="159" height="61"/>
 			</rectangle>
 			<line>
 				<reportElement x="554" y="0" width="1" height="20"/>
@@ -403,9 +403,9 @@ ORDER BY 9, 3]]>
 				<reportElement x="1" y="19" width="553" height="1"/>
 			</line>
 			<textField pattern="#,##0.000;-#,##0.000">
-				<reportElement x="524" y="0" width="30" height="20"/>
+				<reportElement x="524" y="1" width="30" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
-					<font size="9" isBold="true"/>
+					<font size="8" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{M3_1}]]></textFieldExpression>
 			</textField>
@@ -417,48 +417,48 @@ ORDER BY 9, 3]]>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{PESOTOTAL_1}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement mode="Opaque" x="379" y="43" width="79" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="392" y="24" width="79" height="20" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Gross Weight (Kg)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="379" y="63" width="79" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="392" y="44" width="79" height="20" backcolor="#CCCCCC"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Net Weight (Kg)]]></text>
 			</staticText>
 			<textField pattern="#,##0.00;-#,##0.00">
-				<reportElement x="458" y="83" width="79" height="20"/>
+				<reportElement x="471" y="64" width="79" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
-				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PKG} != null && $F{PKG}.equals("BOX") ? $F{TOTAL_PKGS} : $F{QTDPLLT}]]></textFieldExpression>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{QTDCAIXA_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00;-#,##0.00">
-				<reportElement x="458" y="43" width="79" height="20"/>
+				<reportElement x="471" y="24" width="79" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{PESOTOTAL_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00;-#,##0.00">
-				<reportElement x="458" y="63" width="79" height="20"/>
+				<reportElement x="471" y="44" width="79" height="20"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{PESO_1}]]></textFieldExpression>
 			</textField>
 			<line>
-				<reportElement x="378" y="62" width="159" height="1"/>
+				<reportElement x="391" y="43" width="159" height="1"/>
 			</line>
 			<line>
-				<reportElement x="378" y="82" width="159" height="1"/>
+				<reportElement x="391" y="63" width="159" height="1"/>
 			</line>
 			<line>
-				<reportElement x="458" y="42" width="1" height="61"/>
+				<reportElement x="471" y="23" width="1" height="61"/>
 			</line>
 			<textField pattern="#,##0.00;-#,##0.00">
 				<reportElement x="482" y="0" width="43" height="19"/>
@@ -471,7 +471,7 @@ ORDER BY 9, 3]]>
 				<reportElement x="0" y="-1" width="1" height="21"/>
 			</line>
 			<textField>
-				<reportElement mode="Opaque" x="378" y="83" width="80" height="20" backcolor="#CCCCCC"/>
+				<reportElement mode="Opaque" x="391" y="64" width="80" height="20" backcolor="#CCCCCC"/>
 				<textElement verticalAlignment="Middle" lineSpacing="Single">
 					<font size="8" isBold="true"/>
 				</textElement>
