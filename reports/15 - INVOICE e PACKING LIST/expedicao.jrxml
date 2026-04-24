@@ -1,22 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ==============================================================================
-  Nome do Script : expedicao
-  Tipo           : Relatório Jasper (.jrxml)
-  Grupo          : 15 - INVOICE e PACKING LIST
-  Descrição      : Packing List (Lista de Embalagem) para Expedição
-
-  Empresa        : Spark Eletrônica
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-  ==============================================================================
--->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="INVOICE" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
-	<property name="ireport.zoom" value="2.415765000000002"/>
+	<property name="ireport.zoom" value="1.9965000000000017"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="302"/>
+	<property name="ireport.y" value="71"/>
 	<property name="ireport.definition"/>
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
@@ -31,7 +17,8 @@
 		<defaultValueExpression><![CDATA["C:\\CLIENTES\\SPARK\\112 -\\"]]></defaultValueExpression>
 	</parameter>
 	<queryString>
-		<![CDATA[SELECT CAB.NUNOTA
+		<![CDATA[SELECT
+  CAB.NUNOTA
 , CAB.NUMNOTA
 , CAB.OBSERVACAO
 , EMP.RAZAOSOCIAL AS RAZAOEMP
@@ -56,23 +43,38 @@
 , 'E-mail: ' || PAR.EMAIL AS EMAIL_PARCEIRO
 , 'Phone: ' || PAR.TELEFONE as TELEFONE_PARCEIRO
 , PAI.DESCRICAO AS PAIS_PARCEIRO
-, (SELECT SUM(PRO.PESOBRUTO * ITE.QTDNEG) FROM TGFITE ITE, TGFPRO PRO WHERE ITE.CODPROD = PRO.CODPROD AND ITE.NUNOTA = CAB.NUNOTA) AS PESOTOT,
-CAB.DTFATUR,
-SUBSTR(AD_NRINVOICE,0,(length(to_char(AD_NRINVOICE)))-4) || '/' || SUBSTR(AD_NRINVOICE,-4,4) AS NUMINVOICE,
-(SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = 9999990602 AND VALOR = CAB.AD_TRANSPORTE) AS TRANSPORTE,
+, CAB.DTFATUR
+,SUBSTR(AD_NRINVOICE,0,(length(to_char(AD_NRINVOICE)))-4) || '/' || SUBSTR(AD_NRINVOICE,-4,4) AS NUMINVOICE
+,(SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = 9999990602 AND VALOR = CAB.AD_TRANSPORTE) AS TRANSPORTE
+,(	SELECT
+		SUM(PEXP.PESOBRUT)
+         - SUM(PEXP.PESOEMB)
+         + MAX((SELECT NVL(SUM(PLT.PESOPLL),0)
+            FROM AD_TGSPESOEXPPLT PLT
+             WHERE PLT.ID = EXP.ID)
+              )
+	FROM AD_TGSPESOEXP EXP
+	INNER JOIN  AD_TGSPESOEXPROD PEXP
+		ON PEXP.ID = EXP.ID
+	WHERE EXP.NUNOTA = NVL($P{NUNOTA},$P{PK_NUNOTA})
+ ) AS PESOTOT
+,( SELECT
 
-(SELECT SUM(PESOTOTAL)
-FROM
-(
-SELECT
-    (PRO.PESOBRUTO * COUNT(DISTINCT IDCAIXA)) + SUM(V.PESOBRUTO) AS PESOTOTAL
-FROM AD_EMBPED V, TGFPRO PRO, TGFPRO PROD
-WHERE V.CODPRODEMB = PRO.CODPROD
-   AND V.CODPROD = PROD.CODPROD
-   AND V.NUNOTA = NVL($P{NUNOTA},$P{PK_NUNOTA})
-GROUP BY PRO.CODPROD , PRO.DESCRPROD, PRO.M3, PRO.PESOBRUTO
-) V
-) AS PESOTOTAL
+     SUM(NVL(PEXP.PESOBRUT, 0))
+     + MAX((SELECT NVL(SUM(PLT.PESOPLL),0)
+            FROM AD_TGSPESOEXPPLT PLT
+             WHERE PLT.ID = EXP.ID)
+         )
+  FROM AD_TGSPESOEXP EXP
+  INNER JOIN AD_TGSPESOEXPROD PEXP
+  	ON PEXP.ID = EXP.ID
+  WHERE EXP.NUNOTA = NVL($P{NUNOTA},$P{PK_NUNOTA})
+
+  ) AS PESOTOTAL
+
+,CAB.AD_NRPO
+,CAB.MARCA
+,CAB.AD_OBSPKLIST
 
 FROM TGFCAB CAB
 , TGFPAR PAR
@@ -102,7 +104,9 @@ AND EMP.CODCID = CIDE.CODCID
 AND CIDE.UF = UFSE.CODUF
 AND VEN.CODVEND = CAB.CODVEND
 AND CAB.NUNOTA = NVL($P{NUNOTA},$P{PK_NUNOTA})
-ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
+ORDER BY CAB.DTNEG
+	  , CAB.NUNOTA
+	  , CAB.CODEMP]]>
 	</queryString>
 	<field name="DTFATUR" class="java.sql.Timestamp"/>
 	<field name="NUNOTA" class="java.math.BigDecimal"/>
@@ -134,11 +138,14 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 	<field name="PAIS_PARCEIRO" class="java.lang.String"/>
 	<field name="NUMINVOICE" class="java.lang.String"/>
 	<field name="TRANSPORTE" class="java.lang.String"/>
+	<field name="AD_NRPO" class="java.math.BigDecimal"/>
+	<field name="MARCA" class="java.lang.String"/>
+	<field name="AD_OBSPKLIST" class="java.lang.String"/>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
 	<title>
-		<band height="261" splitType="Stretch">
+		<band height="278" splitType="Stretch">
 			<image hAlign="Center">
 				<reportElement x="378" y="29" width="149" height="72"/>
 				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
@@ -152,7 +159,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{RAZAOEMP}]]></textFieldExpression>
 			</textField>
@@ -178,7 +185,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{CGC_EMP}]]></textFieldExpression>
 			</textField>
@@ -191,7 +198,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{ENDERECO_EMP}]]></textFieldExpression>
 			</textField>
@@ -204,7 +211,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{CIDADE_EMP}]]></textFieldExpression>
 			</textField>
@@ -217,7 +224,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{TELEFONE_EMP}]]></textFieldExpression>
 			</textField>
@@ -230,7 +237,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMAIL_EMP}]]></textFieldExpression>
 			</textField>
@@ -242,7 +249,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[PACKING LIST]]></text>
 			</staticText>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="45" y="182" width="309" height="12"/>
+				<reportElement key="textField-1" x="45" y="191" width="309" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -250,12 +257,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="9" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="7" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{RAZAOSOCIAL}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="45" y="194" width="309" height="12"/>
+				<reportElement key="textField-1" x="45" y="203" width="309" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -263,12 +270,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="9" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{ENDERECO_PARCEIRO}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement key="staticText-1" x="0" y="167" width="121" height="15"/>
+				<reportElement key="staticText-1" x="0" y="176" width="121" height="15"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -281,7 +288,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[Importer:]]></text>
 			</staticText>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="45" y="206" width="309" height="12"/>
+				<reportElement key="textField-1" x="45" y="215" width="309" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -289,12 +296,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="9" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{BAIRRO_PARCEIRO}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="45" y="218" width="309" height="12"/>
+				<reportElement key="textField-1" x="45" y="227" width="309" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -302,12 +309,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="9" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{PAIS}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="45" y="230" width="309" height="12"/>
+				<reportElement key="textField-1" x="45" y="239" width="309" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -315,12 +322,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="9" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMAIL_PARCEIRO}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="45" y="242" width="309" height="12"/>
+				<reportElement key="textField-1" x="45" y="251" width="309" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -328,12 +335,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="9" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" isUnderline="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{TELEFONE_PARCEIRO}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement key="staticText-1" x="354" y="206" width="119" height="12"/>
+				<reportElement key="staticText-1" x="354" y="215" width="119" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -346,7 +353,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[País of Origin:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="staticText-1" x="354" y="194" width="119" height="12"/>
+				<reportElement key="staticText-1" x="354" y="203" width="119" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -359,7 +366,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[Transport:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="staticText-1" x="354" y="182" width="119" height="12"/>
+				<reportElement key="staticText-1" x="354" y="191" width="119" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -372,7 +379,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[Destination:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="staticText-1" x="473" y="206" width="80" height="12"/>
+				<reportElement key="staticText-1" x="473" y="215" width="80" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -380,12 +387,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<text><![CDATA[BRAZIL]]></text>
 			</staticText>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="473" y="182" width="80" height="12"/>
+				<reportElement key="textField-1" x="473" y="191" width="80" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -393,12 +400,12 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{PAIS_PARCEIRO}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement key="staticText-1" x="354" y="218" width="119" height="12"/>
+				<reportElement key="staticText-1" x="354" y="227" width="119" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -411,7 +418,7 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[Gross Weight:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="staticText-1" x="354" y="230" width="119" height="12"/>
+				<reportElement key="staticText-1" x="354" y="239" width="119" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -424,41 +431,24 @@ ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODEMP]]>
 				<text><![CDATA[Net Weight:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="354" y="242" width="119" height="12"/>
+				<reportElement x="354" y="251" width="119" height="12"/>
 				<textElement verticalAlignment="Middle">
 					<font size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Marks:]]></text>
 			</staticText>
-			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="473" y="242" width="80" height="12"/>
-				<box>
-					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
-					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
-					<bottomPen lineWidth="0.0" lineColor="#000000"/>
-					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
-				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA["SPARK"]]></textFieldExpression>
-			</textField>
 			<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
-				<reportElement x="473" y="230" width="80" height="12"/>
+				<reportElement x="473" y="239" width="80" height="12"/>
 				<textElement verticalAlignment="Middle">
-					<font size="8" isBold="false"/>
+					<font size="8" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PESOTOT}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement x="0" y="0" width="0" height="3"/>
 				<textElement/>
-				<textFieldExpression class="java.lang.String"><![CDATA[br.com.sankhya.jasperfuncs.Funcoes.stp($P{REPORT_CONNECTION},"STP_GERARVOLUMES_SPARK",
-new Object[]{"N",$P{PK_NUNOTA}})]]></textFieldExpression>
+				<textFieldExpression class="java.lang.String"><![CDATA[]]></textFieldExpression>
 			</textField>
-			<rectangle>
-				<reportElement x="0" y="139" width="555" height="24" forecolor="#CCCCCC" backcolor="#CCCCCC"/>
-			</rectangle>
 			<staticText>
 				<reportElement key="staticText-1" x="335" y="139" width="121" height="12"/>
 				<box>
@@ -500,7 +490,7 @@ new Object[]{"N",$P{PK_NUNOTA}})]]></textFieldExpression>
 				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DTFATUR}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
-				<reportElement key="textField-1" x="473" y="194" width="80" height="12"/>
+				<reportElement key="" x="473" y="203" width="80" height="12"/>
 				<box>
 					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
@@ -508,16 +498,43 @@ new Object[]{"N",$P{PK_NUNOTA}})]]></textFieldExpression>
 					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 				</box>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica-Bold"/>
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{TRANSPORTE}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
-				<reportElement x="473" y="218" width="80" height="12"/>
+				<reportElement x="473" y="227" width="80" height="12"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PESOTOTAL}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText-1" x="335" y="163" width="121" height="12"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isBold="true" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[PO#:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="456" y="163" width="98" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{AD_NRPO}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+				<reportElement x="473" y="251" width="80" height="12"/>
 				<textElement verticalAlignment="Middle">
 					<font size="8" isBold="false"/>
 				</textElement>
-				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PESOTOTAL}]]></textFieldExpression>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{MARCA}]]></textFieldExpression>
 			</textField>
 		</band>
 	</title>
@@ -537,12 +554,25 @@ new Object[]{"N",$P{PK_NUNOTA}})]]></textFieldExpression>
 		<band splitType="Stretch"/>
 	</pageFooter>
 	<summary>
-		<band height="104" splitType="Stretch">
+		<band height="304" splitType="Stretch">
 			<subreport>
-				<reportElement key="expedicao_EMBALAGENS" stretchType="RelativeToBandHeight" x="0" y="4" width="555" height="100"/>
+				<reportElement key="expedicao_EMBALAGENS" stretchType="RelativeToBandHeight" x="0" y="0" width="555" height="100"/>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "expedicao_EMBALAGENS.jasper"]]></subreportExpression>
 			</subreport>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement key="textField-1" x="5" y="289" width="555" height="12"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{AD_OBSPKLIST}]]></textFieldExpression>
+			</textField>
 		</band>
 	</summary>
 </jasperReport>

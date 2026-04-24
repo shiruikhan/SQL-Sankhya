@@ -147,47 +147,54 @@ public class TransferenciaUtils {
 		return null; 
 	}
 	
-	public static Collection<PrePersistEntityState> buildItens(BigDecimal nuNota, BigDecimal localOrigem) throws MGEModelException{
+	/**
+	 * @param copiarImpostos true quando a nota de origem já tem impostos calculados e devem ser
+	 *                       espelhados (entrada ← saída). false para a saída, onde o ImpostosHelpper
+	 *                       recalcula do zero com base na TOP de transferência.
+	 */
+	public static Collection<PrePersistEntityState> buildItens(BigDecimal nuNota, BigDecimal localOrigem, boolean copiarImpostos) throws MGEModelException{
 		JapeSession.SessionHandle hnd = null;
-		Collection<PrePersistEntityState> itensNota = new ArrayList(); 
+		Collection<PrePersistEntityState> itensNota = new ArrayList();
 		try {
-			EntityFacade ewf = EntityFacadeFactory.getDWFFacade(); 
+			EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
 			FinderWrapper finder = new FinderWrapper("ItemNota","this.NUNOTA = " + nuNota);
-			finder.setOrderBy("SEQUENCIA ASC");			
-			Collection<DynamicVO> produtosVo = ewf.findByDynamicFinderAsVO(finder);		         
+			finder.setOrderBy("SEQUENCIA ASC");
+			Collection<DynamicVO> produtosVo = ewf.findByDynamicFinderAsVO(finder);
 	        if (produtosVo.size() < 1) {
-	            throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Não foram Localizados Produtos para Geração da Transferência")); 
+	            throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Não foram Localizados Produtos para Geração da Transferência"));
 	        } else {
 	        	 BigDecimal codEmp =  BigDecimal.ONE;
 	        	 if (((Boolean)MGECoreParameter.getParameter("controla.custo.empresa")).booleanValue())
 	                  codEmp = queryBigDecimal("CODEMP", "TGFCAB", "NUNOTA = " + nuNota);
-		    	 for (DynamicVO iteVO : produtosVo) {				
-	            	 DynamicVO itemVO;            	
+		    	 for (DynamicVO iteVO : produtosVo) {
+	            	 DynamicVO itemVO;
 	            	 itemVO =(DynamicVO)ewf.getDefaultValueObjectInstance("ItemNota");
 	            	 itemVO.setProperty("CODPROD", iteVO.asBigDecimal("CODPROD"));
 	            	 itemVO.setProperty("QTDNEG",  iteVO.asBigDecimal("QTDNEG").subtract(iteVO.asBigDecimal("QTDCONFERIDA")).subtract(iteVO.asBigDecimal("QTDENTREGUE")));
 	            	 itemVO.setProperty("VLRUNIT", getCustoSpark(iteVO.asBigDecimal("CODPROD")));
-	            	 itemVO.setProperty("CODVOL",  iteVO.asString("CODVOL"));         	
-	            	 itemVO.setProperty("CODTRIB", iteVO.asBigDecimal("CODTRIB"));
-	            	 itemVO.setProperty("CSTIPI", BigDecimalUtil.valueOf(iteVO.asBigDecimal("BASEIPI").floatValue() > 0 ? 49 : 1 ));
-	            	 itemVO.setProperty("ALIQICMS", iteVO.asBigDecimal("ALIQICMS"));
-	            	 itemVO.setProperty("BASEICMS", iteVO.asBigDecimal("BASEICMS"));
-	            	 itemVO.setProperty("VLRICMS", iteVO.asBigDecimal("VLRICMS"));
-	            	 itemVO.setProperty("BASEIPI", iteVO.asBigDecimal("BASEIPI"));
-	            	 itemVO.setProperty("VLRIPI", iteVO.asBigDecimal("VLRIPI"));
-	            	 itemVO.setProperty("ALIQIPI", iteVO.asBigDecimal("ALIQIPI"));
+	            	 itemVO.setProperty("CODVOL",  iteVO.asString("CODVOL"));
 	            	 itemVO.setProperty("CODLOCALORIG",localOrigem);
 	            	 itemVO.setProperty("CONTROLE",iteVO.asString("CONTROLE"));
+	            	 if (copiarImpostos) {
+	            	 	itemVO.setProperty("CODTRIB", iteVO.asBigDecimal("CODTRIB"));
+	            	 	itemVO.setProperty("CSTIPI", BigDecimalUtil.valueOf(iteVO.asBigDecimal("BASEIPI").floatValue() > 0 ? 49 : 1 ));
+	            	 	itemVO.setProperty("ALIQICMS", iteVO.asBigDecimal("ALIQICMS"));
+	            	 	itemVO.setProperty("BASEICMS", iteVO.asBigDecimal("BASEICMS"));
+	            	 	itemVO.setProperty("VLRICMS", iteVO.asBigDecimal("VLRICMS"));
+	            	 	itemVO.setProperty("BASEIPI", iteVO.asBigDecimal("BASEIPI"));
+	            	 	itemVO.setProperty("VLRIPI", iteVO.asBigDecimal("VLRIPI"));
+	            	 	itemVO.setProperty("ALIQIPI", iteVO.asBigDecimal("ALIQIPI"));
+	            	 }
 	            	 PrePersistEntityState itePreState = PrePersistEntityState.build(ewf, "ItemNota", itemVO);
-					 itensNota.add(itePreState);	        	
-				}	            
+					 itensNota.add(itePreState);
+				}
 		   }
 		}catch(Exception e) {
-			MGEModelException.throwMe(e);  
+			MGEModelException.throwMe(e);
 		}finally {
 			JapeSession.close(hnd);
 		}
-		return itensNota;		
+		return itensNota;
 	}
 	
 	public static void salvarOrigem(BigDecimal nuNotaPed, BigDecimal nuNotaSai, BigDecimal nuNotaEnt, Tipo tp) throws MGEModelException {		
