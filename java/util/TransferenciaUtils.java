@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import com.sankhya.util.Base64Impl;
-import com.sankhya.util.BigDecimalUtil;
 import com.sankhya.util.JdbcUtils;
 import com.sankhya.util.TimeUtils;
 
@@ -148,11 +147,10 @@ public class TransferenciaUtils {
 	}
 	
 	/**
-	 * @param copiarImpostos true quando a nota de origem já tem impostos calculados e devem ser
-	 *                       espelhados (entrada ← saída). false para a saída, onde o ImpostosHelpper
-	 *                       recalcula do zero com base na TOP de transferência.
+	 * Constrói os itens da nota de transferência de saída a partir do pedido de origem.
+	 * Impostos não são copiados — o {@code ImpostosHelpper} os calcula com base na TOP de transferência.
 	 */
-	public static Collection<PrePersistEntityState> buildItens(BigDecimal nuNota, BigDecimal localOrigem, boolean copiarImpostos) throws MGEModelException{
+	public static Collection<PrePersistEntityState> buildItens(BigDecimal nuNota, BigDecimal localOrigem) throws MGEModelException{
 		JapeSession.SessionHandle hnd = null;
 		Collection<PrePersistEntityState> itensNota = new ArrayList();
 		try {
@@ -167,26 +165,14 @@ public class TransferenciaUtils {
 	        	 if (((Boolean)MGECoreParameter.getParameter("controla.custo.empresa")).booleanValue())
 	                  codEmp = queryBigDecimal("CODEMP", "TGFCAB", "NUNOTA = " + nuNota);
 		    	 for (DynamicVO iteVO : produtosVo) {
-	            	 DynamicVO itemVO;
-	            	 itemVO =(DynamicVO)ewf.getDefaultValueObjectInstance("ItemNota");
-	            	 itemVO.setProperty("CODPROD", iteVO.asBigDecimal("CODPROD"));
-	            	 itemVO.setProperty("QTDNEG",  iteVO.asBigDecimal("QTDNEG").subtract(iteVO.asBigDecimal("QTDCONFERIDA")).subtract(iteVO.asBigDecimal("QTDENTREGUE")));
-	            	 itemVO.setProperty("VLRUNIT", getCustoSpark(iteVO.asBigDecimal("CODPROD")));
-	            	 itemVO.setProperty("CODVOL",  iteVO.asString("CODVOL"));
-	            	 itemVO.setProperty("CODLOCALORIG",localOrigem);
-	            	 itemVO.setProperty("CONTROLE",iteVO.asString("CONTROLE"));
-	            	 if (copiarImpostos) {
-	            	 	itemVO.setProperty("CODTRIB", iteVO.asBigDecimal("CODTRIB"));
-	            	 	itemVO.setProperty("CSTIPI", BigDecimalUtil.valueOf(iteVO.asBigDecimal("BASEIPI").floatValue() > 0 ? 49 : 1 ));
-	            	 	itemVO.setProperty("ALIQICMS", iteVO.asBigDecimal("ALIQICMS"));
-	            	 	itemVO.setProperty("BASEICMS", iteVO.asBigDecimal("BASEICMS"));
-	            	 	itemVO.setProperty("VLRICMS", iteVO.asBigDecimal("VLRICMS"));
-	            	 	itemVO.setProperty("BASEIPI", iteVO.asBigDecimal("BASEIPI"));
-	            	 	itemVO.setProperty("VLRIPI", iteVO.asBigDecimal("VLRIPI"));
-	            	 	itemVO.setProperty("ALIQIPI", iteVO.asBigDecimal("ALIQIPI"));
-	            	 }
-	            	 PrePersistEntityState itePreState = PrePersistEntityState.build(ewf, "ItemNota", itemVO);
-					 itensNota.add(itePreState);
+	            	 DynamicVO itemVO = (DynamicVO)ewf.getDefaultValueObjectInstance("ItemNota");
+	            	 itemVO.setProperty("CODPROD",      iteVO.asBigDecimal("CODPROD"));
+	            	 itemVO.setProperty("QTDNEG",       iteVO.asBigDecimal("QTDNEG").subtract(iteVO.asBigDecimal("QTDCONFERIDA")).subtract(iteVO.asBigDecimal("QTDENTREGUE")));
+	            	 itemVO.setProperty("VLRUNIT",      getCustoSpark(iteVO.asBigDecimal("CODPROD")));
+	            	 itemVO.setProperty("CODVOL",       iteVO.asString("CODVOL"));
+	            	 itemVO.setProperty("CODLOCALORIG", localOrigem);
+	            	 itemVO.setProperty("CONTROLE",     iteVO.asString("CONTROLE"));
+	            	 itensNota.add(PrePersistEntityState.build(ewf, "ItemNota", itemVO));
 				}
 		   }
 		}catch(Exception e) {

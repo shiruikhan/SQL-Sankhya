@@ -88,8 +88,8 @@ public class GerarTransferencia implements AcaoRotinaJava {
                     DynamicVO saidaVO = bRegrasCab.getState().getNewVO();
                     BigDecimal nuNotaSaida = saidaVO.asBigDecimal("NUNOTA");
                     System.out.println("Nota Saída gerada: " + nuNotaSaida);
-                    // copiarImpostos=false: ImpostosHelpper (step 2) calcula com base na TOP de transferência
-                    Collection<PrePersistEntityState> itensNota = TransferenciaUtils.buildItens(nuNota, codLocalOrig, false);
+                    // Impostos omitidos do item; ImpostosHelpper (step 2) calcula com base na TOP de transferência
+                    Collection<PrePersistEntityState> itensNota = TransferenciaUtils.buildItens(nuNota, codLocalOrig);
                     cacHelper.incluirAlterarItem(nuNotaSaida, auth, itensNota, true);
                     TransferenciaUtils.gerarSerie(nuNota, nuNotaSaida);
                     TransferenciaUtils.salvarOrigem(nuNota, nuNotaSaida, BigDecimal.ZERO, Tipo.PEDIDO);
