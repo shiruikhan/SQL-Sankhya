@@ -3,16 +3,14 @@ package br.com.spark.transferencia;
 /**
  * <b>Nome:</b> GerarTransferencia<br>
  * <b>Tipo:</b> Botão de Ação ({@link br.com.sankhya.extensions.actionbutton.AcaoRotinaJava})<br>
- * <b>Descrição:</b> Gera notas de transferência entre empresas a partir de pedidos de venda
- * selecionados. O processo é executado em 4 etapas sequenciais, cada uma com transação própria:
+ * <b>Descrição:</b> Gera notas de saída de transferência entre empresas a partir de pedidos de
+ * venda selecionados. O processo é executado em 2 etapas sequenciais:
  * <ol>
  *   <li>Geração das notas de saída (usando modelo {@code CabecalhoNotaModelo} ID 278268)</li>
  *   <li>Cálculo de impostos das saídas via {@code ImpostosHelpper}</li>
- *   <li>Geração das notas de entrada espelhando as saídas (modelo ID 278275)</li>
- *   <li>Cálculo de impostos das entradas</li>
  * </ol>
- * Ao final, vincula pedido, saída e entrada nos campos {@code AD_NUNOTASAI} e {@code AD_NUNOTAENT}
- * de {@code TGFCAB}. Confirmação e transmissão NF-e são realizadas manualmente pelo operador.
+ * Ao final, vincula pedido e saída no campo {@code AD_NUNOTASAI} de {@code TGFCAB}.
+ * Geração de entrada, confirmação e transmissão NF-e são realizadas manualmente pelo operador.
  *
  * <p><b>Parâmetros esperados no contexto:</b> P_CODEMPORIG, P_CODEMPDEST,
  * P_CODLOCALORIG, P_CODLOCALDEST</p>
@@ -21,7 +19,7 @@ package br.com.spark.transferencia;
  * <p><b>Empresa:</b> Spark Eletrônica</p>
  *
  * @author Silvio Vieira
- * @version 2.1
+ * @version 2.2
  * @since 2023
  * @see TransferenciaUtils
  * @see GerarTransferenciaOriginal
@@ -51,171 +49,84 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 public class GerarTransferencia implements AcaoRotinaJava {
-  int totalEntradas = 0;
 
   public void doAction(ContextoAcao ctx) throws Exception {
 
-    BigDecimal codEmpOrig = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODEMPORIG"));
-    BigDecimal codEmpDestino = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODEMPDEST"));
-    BigDecimal codLocalOrig = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODLOCALORIG"));
-    BigDecimal codLocalDestino = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODLOCALDEST"));
-    HashMap<BigDecimal, BigDecimal> notasSaida = new HashMap();
-    HashMap<BigDecimal,HashMap<BigDecimal, BigDecimal>> documentos = new HashMap();
-    Collection<BigDecimal> documentosSaidas = new ArrayList<>();
-    Collection<BigDecimal> documentosEntradas = new ArrayList<>();
+    BigDecimal codEmpOrig     = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODEMPORIG"));
+    BigDecimal codEmpDestino  = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODEMPDEST"));
+    BigDecimal codLocalOrig   = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODLOCALORIG"));
+    HashMap<BigDecimal, BigDecimal> notasSaida    = new HashMap();
+    Collection<BigDecimal>         documentosSaidas = new ArrayList<>();
 
     // 1. GERAÇÃO DE SAÍDAS
     SessionHandle hnd = null;
     try {
-    	hnd = JapeSession.open();
-    	hnd.execWithTX( new JapeSession.TXBlock(){
-			public void doWithTx() throws Exception{
-    		    for (int i = 0; i < ctx.getLinhas().length; i++) {
-    		        Registro line = ctx.getLinhas()[i];
-    			    System.out.println("Gerando Transferência de Saída para Nro. Unico: " + line.getCampo("NUNOTA"));
-			        EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
-			        BigDecimal nuNota = (BigDecimal)line.getCampo("NUNOTA");
-			        DynamicVO cabVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO(DynamicEntityNames.CABECALHO_NOTA, new Object[] {nuNota});
-			        TransferenciaUtils.ehPedido(cabVO);
-			        TransferenciaUtils.ehGerada(cabVO);
-			        TransferenciaUtils.validaConferencia(cabVO);
-			        //Busca Modelo Cabeçalho (278268 = 254438 | Produção vs Teste)
-			        DynamicVO modelSaidaVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO("CabecalhoNotaModelo", new Object[] {278268});
-			        DynamicVO transferenciaVO = TransferenciaUtils.buildCabecalho(modelSaidaVO,codEmpOrig,codEmpDestino);
-			        if(transferenciaVO == null)
-				    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. Único: " + nuNota + " já gerou uma erro na hora de compilar o modelo da nota!"));
-			        CACHelper cacHelper = new CACHelper();
-			        AuthenticationInfo auth = AuthenticationInfo.getCurrent();
-			        JapeSessionContext.putProperty("br.com.sankhya.com.CentralCompraVenda", Boolean.TRUE);
-			        PrePersistEntityState cabPreState = PrePersistEntityState.build(ewf,"CabecalhoNota", transferenciaVO);
-			        BarramentoRegra bRegrasCab = cacHelper.incluirAlterarCabecalho(auth, cabPreState);
-			        DynamicVO saidaVO = bRegrasCab.getState().getNewVO();
-			        System.out.println("Nota Saida: " + saidaVO.asBigDecimal("NUNOTA"));
-			        BigDecimal nuNotaSaida = saidaVO.asBigDecimal("NUNOTA");
-				    // copiarImpostos=false: a saída nasce sem impostos; ImpostosHelpper (step 2) calcula com a TOP correta
-				    Collection<PrePersistEntityState> itensNota = TransferenciaUtils.buildItens(nuNota,codLocalOrig, false);
-				    cacHelper.incluirAlterarItem(nuNotaSaida, auth, itensNota, true);
-				    TransferenciaUtils.gerarSerie(nuNota,nuNotaSaida);
-				    notasSaida.put(nuNota, nuNotaSaida);
-				    documentosSaidas.add(nuNotaSaida);
-    		    }
-			}
-    	});
-    } catch(Exception e) {
-    	e.printStackTrace();
-    	MGEModelException.throwMe(e);
+        hnd = JapeSession.open();
+        hnd.execWithTX(new JapeSession.TXBlock(){
+            public void doWithTx() throws Exception {
+                for (int i = 0; i < ctx.getLinhas().length; i++) {
+                    Registro line = ctx.getLinhas()[i];
+                    BigDecimal nuNota = (BigDecimal)line.getCampo("NUNOTA");
+                    System.out.println("Gerando Transferência de Saída para Nro. Único: " + nuNota);
+                    EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
+                    DynamicVO cabVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO(DynamicEntityNames.CABECALHO_NOTA, new Object[]{nuNota});
+                    TransferenciaUtils.ehPedido(cabVO);
+                    TransferenciaUtils.ehGerada(cabVO);
+                    TransferenciaUtils.validaConferencia(cabVO);
+                    // Modelo 278268 (Produção) = 254438 (Teste)
+                    DynamicVO modelSaidaVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO("CabecalhoNotaModelo", new Object[]{278268});
+                    DynamicVO transferenciaVO = TransferenciaUtils.buildCabecalho(modelSaidaVO, codEmpOrig, codEmpDestino);
+                    if (transferenciaVO == null)
+                        throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Nro. Único: " + nuNota + " — erro ao compilar o modelo da nota de saída."));
+                    CACHelper cacHelper = new CACHelper();
+                    AuthenticationInfo auth = AuthenticationInfo.getCurrent();
+                    JapeSessionContext.putProperty("br.com.sankhya.com.CentralCompraVenda", Boolean.TRUE);
+                    PrePersistEntityState cabPreState = PrePersistEntityState.build(ewf, "CabecalhoNota", transferenciaVO);
+                    BarramentoRegra bRegrasCab = cacHelper.incluirAlterarCabecalho(auth, cabPreState);
+                    DynamicVO saidaVO = bRegrasCab.getState().getNewVO();
+                    BigDecimal nuNotaSaida = saidaVO.asBigDecimal("NUNOTA");
+                    System.out.println("Nota Saída gerada: " + nuNotaSaida);
+                    // copiarImpostos=false: ImpostosHelpper (step 2) calcula com base na TOP de transferência
+                    Collection<PrePersistEntityState> itensNota = TransferenciaUtils.buildItens(nuNota, codLocalOrig, false);
+                    cacHelper.incluirAlterarItem(nuNotaSaida, auth, itensNota, true);
+                    TransferenciaUtils.gerarSerie(nuNota, nuNotaSaida);
+                    TransferenciaUtils.salvarOrigem(nuNota, nuNotaSaida, BigDecimal.ZERO, Tipo.PEDIDO);
+                    TransferenciaUtils.salvarOrigem(nuNota, nuNotaSaida, BigDecimal.ZERO, Tipo.SAIDA);
+                    notasSaida.put(nuNota, nuNotaSaida);
+                    documentosSaidas.add(nuNotaSaida);
+                }
+            }
+        });
+    } catch (Exception e) {
+        e.printStackTrace();
+        MGEModelException.throwMe(e);
     } finally {
-    	JapeSession.close(hnd);
+        JapeSession.close(hnd);
     }
 
     if (notasSaida.isEmpty()) {
-        throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram geradas notas de saída."));
+        throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou! Nenhuma nota de saída foi gerada."));
     }
 
     // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS (fora de transação para garantir persistência)
-    if (!documentosSaidas.isEmpty()) {
-        SessionHandle hndCalc = null;
-        try {
-            hndCalc = JapeSession.open();
-            for(BigDecimal nuNotaSaida : documentosSaidas) {
-                try {
-                    ImpostosHelpper helper = new ImpostosHelpper();
-                    helper.setForcarRecalculo(true);
-                    helper.calcularImpostos(nuNotaSaida);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+    SessionHandle hndCalc = null;
+    try {
+        hndCalc = JapeSession.open();
+        for (BigDecimal nuNotaSaida : documentosSaidas) {
+            try {
+                ImpostosHelpper helper = new ImpostosHelpper();
+                helper.setForcarRecalculo(true);
+                helper.calcularImpostos(nuNotaSaida);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } finally {
-            JapeSession.close(hndCalc);
         }
+    } finally {
+        JapeSession.close(hndCalc);
     }
 
-    // 3. GERAÇÃO DE ENTRADAS
-    if (!notasSaida.isEmpty()) {
-        SessionHandle hndEnt = null;
-        try {
-            hndEnt = JapeSession.open();
-            hndEnt.execWithTX( new JapeSession.TXBlock(){
-                public void doWithTx() throws Exception{
-                    int qtdEntradas = 0;
-                    for (Entry<BigDecimal, BigDecimal> saida : notasSaida.entrySet()) {
-                        System.out.println("Gerando Transferência de Entrada para Nro. Unico: " + saida.getValue());
-                        EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
-                        //Busca Modelo Cabeçalho (278275 = 254448 | Produção vs Teste)
-                        DynamicVO modelEntradaVO = (DynamicVO) ewf.findEntityByPrimaryKeyAsVO("CabecalhoNotaModelo", new Object[] {278275});
-                        //Gera Entrada (inverte Origem/Destino)
-                        DynamicVO transferenciaVO = TransferenciaUtils.buildCabecalho(modelEntradaVO,codEmpDestino,codEmpOrig);
-                        if(transferenciaVO == null)
-                            throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("O lançamento de Nro. Único: " + saida.getValue() + " já gerou uma erro na hora de compilar o modelo da nota!"));
-                        CACHelper cacHelper = new CACHelper();
-                        AuthenticationInfo auth = AuthenticationInfo.getCurrent();
-                        JapeSessionContext.putProperty("br.com.sankhya.com.CentralCompraVenda", Boolean.TRUE);
-                        PrePersistEntityState cabPreState = PrePersistEntityState.build(ewf,"CabecalhoNota", transferenciaVO);
-                        BarramentoRegra bRegrasCab = cacHelper.incluirAlterarCabecalho(auth, cabPreState);
-                        DynamicVO entradaVO = bRegrasCab.getState().getNewVO();
-                        BigDecimal nuNotaEntrada = entradaVO.asBigDecimal("NUNOTA");
-                        // copiarImpostos=true: a entrada espelha os impostos da saída calculados no step 2
-                        Collection<PrePersistEntityState> itensNota = TransferenciaUtils.buildItens(saida.getValue(),codLocalDestino, true);
-                        cacHelper.incluirAlterarItem(nuNotaEntrada, auth, itensNota, true);
-                        TransferenciaUtils.gerarSerie(saida.getValue(),nuNotaEntrada);
-                        documentos.put(saida.getKey(), new HashMap<BigDecimal,BigDecimal>() {{
-                            put(saida.getValue(),nuNotaEntrada);
-                        }});
-                        documentosEntradas.add(nuNotaEntrada);
-                        qtdEntradas++;
-                    }
-                    totalEntradas = qtdEntradas;
-
-                    // Vinculação pedido ↔ saída ↔ entrada
-                    if(totalEntradas > 0) {
-                        documentos.forEach((pedido, value) -> {
-                            HashMap<BigDecimal, BigDecimal> mov = (HashMap<BigDecimal, BigDecimal>) value;
-                            mov.forEach((saida, entrada) -> {
-                                try {
-                                    TransferenciaUtils.salvarOrigem(pedido,saida,entrada,Tipo.PEDIDO);
-                                    TransferenciaUtils.salvarOrigem(pedido,saida,entrada,Tipo.SAIDA);
-                                    TransferenciaUtils.salvarOrigem(pedido,saida,entrada,Tipo.ENTRADA);
-                                }catch(Exception e) {
-                                    e.printStackTrace();
-                                }
-                            });
-                        });
-                    } else {
-                        throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram localizadas notas de saída para gerar as respectivas entradas."));
-                    }
-                }
-            });
-        } catch(Exception e) {
-            e.printStackTrace();
-            MGEModelException.throwMe(e);
-        } finally {
-            JapeSession.close(hndEnt);
-        }
-    }
-
-    // 4. CÁLCULO DE IMPOSTOS DAS ENTRADAS
-    if (!documentosEntradas.isEmpty()) {
-        SessionHandle hndCalcEnt = null;
-        try {
-            hndCalcEnt = JapeSession.open();
-            for(BigDecimal nuNotaEntrada : documentosEntradas) {
-                try {
-                    ImpostosHelpper helper = new ImpostosHelpper();
-                    helper.setForcarRecalculo(true);
-                    helper.calcularImpostos(nuNotaEntrada);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        } finally {
-            JapeSession.close(hndCalcEnt);
-        }
-    }
-
-    ctx.setMensagemRetorno("Notas de transferência geradas com sucesso! Confirme e transmita as notas manualmente.");
+    ctx.setMensagemRetorno("Notas de saída geradas com sucesso! Gere as entradas, confirme e transmita manualmente.");
   }
 }
