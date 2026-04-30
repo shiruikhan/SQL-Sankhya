@@ -226,44 +226,44 @@ public class GerarTransferencia implements AcaoRotinaJava {
         }
     }
 
-    // 5. CONFIRMAÇÕES E LOTES
-	documentosSaidas.forEach((nunota) -> {
-		try {
-			TransferenciaUtils.confirmaNota(nunota);
-			qtdSaidaConfirmadas++;
-		} catch (MGEModelException e) {
-			e.printStackTrace();
-		}
-	});
+    // 5. CONFIRMAÇÕES E LOTES (desativado — apenas criação de notas e processamento de entradas são executados)
+//	documentosSaidas.forEach((nunota) -> {
+//		try {
+//			TransferenciaUtils.confirmaNota(nunota);
+//			qtdSaidaConfirmadas++;
+//		} catch (MGEModelException e) {
+//			e.printStackTrace();
+//		}
+//	});
+//
+//	if (qtdSaidaConfirmadas > 0) {
+//		try {
+//			TransferenciaUtils.gerarLote(documentosSaidas);
+//			qtdNFe++;
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//
+//		if (qtdNFe > 0) {
+//			documentosEntradas.forEach((nunota) -> {
+//				try {
+//					TransferenciaUtils.confirmaNota(nunota);
+//					qtdEntradaConfirmadas++;
+//				} catch (MGEModelException e) {
+//					e.printStackTrace();
+//				}
+//			});
+//		} else {
+//			mgsRetorno = "! , porém nenhuma nota de saída foi enviada para sefaz e as entradas não foram confirmadas!";
+//		}
+//	} else {
+//		mgsRetorno = "! , porém nenhuma nota foi confirmada!";
+//	}
+//
+//	if (qtdEntradaConfirmadas == 0 && qtdNFe > 0) {
+//		mgsRetorno = "! , porém as entradas não foram confirmadas!";
+//	}
 
-	if (qtdSaidaConfirmadas > 0) {
-		try {
-			TransferenciaUtils.gerarLote(documentosSaidas);
-			qtdNFe++;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		if (qtdNFe > 0) {
-			documentosEntradas.forEach((nunota) -> {
-				try {
-					TransferenciaUtils.confirmaNota(nunota);
-					qtdEntradaConfirmadas++;
-				} catch (MGEModelException e) {
-					e.printStackTrace();
-				}
-			});
-		} else {
-			mgsRetorno = "! , porém nenhuma nota de saída foi enviada para sefaz e as entradas não foram confirmadas!";
-		}
-	} else {
-		mgsRetorno = "! , porém nenhuma nota foi confirmada!";
-	}
-
-	if (qtdEntradaConfirmadas == 0 && qtdNFe > 0) {
-		mgsRetorno = "! , porém as entradas não foram confirmadas!";
-	}
-
-	ctx.setMensagemRetorno("Transferência realizada" + (mgsRetorno == null ? " com sucesso! " : mgsRetorno));	
+	ctx.setMensagemRetorno("Transferência realizada com sucesso! (confirmação e transmissão NF-e desativadas)");
   }
 }
