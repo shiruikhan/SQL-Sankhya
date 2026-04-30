@@ -12,8 +12,7 @@ package br.com.spark.transferencia;
  * Ao final, vincula pedido e saída no campo {@code AD_NUNOTASAI} de {@code TGFCAB}.
  * Geração de entrada, confirmação e transmissão NF-e são realizadas manualmente pelo operador.
  *
- * <p><b>Parâmetros esperados no contexto:</b> P_CODEMPORIG, P_CODEMPDEST,
- * P_CODLOCALORIG, P_CODLOCALDEST</p>
+ * <p><b>Parâmetros esperados no contexto:</b> P_CODEMPORIG, P_CODEMPDEST, P_CODLOCALORIG</p>
  * <p><b>Pré-condições:</b> pedido deve ser TIPMOV='P', com conferência finalizada
  * e sem transferência prévia gerada.</p>
  * <p><b>Empresa:</b> Spark Eletrônica</p>

@@ -14,10 +14,11 @@ package br.com.spark.transferencia.util;
  *   <li>{@code ehGerada}          — valida se já foi gerada transferência para a nota</li>
  *   <li>{@code validaConferencia} — valida se a conferência está finalizada (status 'F')</li>
  *   <li>{@code buildCabecalho}    — cria o VO de cabeçalho da nota de transferência</li>
- *   <li>{@code buildItens}        — cria a coleção de itens para a nota de transferência,
- *                                   copiando impostos da nota de origem</li>
+ *   <li>{@code buildItens}        — cria a coleção de itens para a nota de saída; impostos omitidos
+ *                                   para que {@code ImpostosHelpper} os calcule pela TOP de transferência</li>
  *   <li>{@code gerarSerie}        — copia séries de produtos da nota de origem para a destino</li>
- *   <li>{@code salvarOrigem}      — vincula pedido, saída e entrada via AD_NUNOTASAI/AD_NUNOTAENT</li>
+ *   <li>{@code salvarOrigem}      — vincula pedido e saída via AD_NUNOTASAI/AD_PEDTRANSF;
+ *                                   AD_NUNOTAENT só é gravado quando a entrada existir (valor > 0)</li>
  *   <li>{@code confirmaNota}      — confirma a nota via {@code ConfirmacaoNotaHelper}</li>
  *   <li>{@code gerarLote}         — envia lote NF-e via {@code ServicosNFeHelper2}</li>
  *   <li>{@code getLinkNota}       — gera link HTML para abertura da nota no Sankhya</li>
@@ -55,7 +56,6 @@ import br.com.sankhya.modelcore.MGEModelException;
 import br.com.sankhya.modelcore.auth.AuthenticationInfo;
 import br.com.sankhya.modelcore.comercial.BarramentoRegra;
 import br.com.sankhya.modelcore.comercial.CentralFaturamento;
-import br.com.sankhya.modelcore.comercial.ComercialUtils;
 import br.com.sankhya.modelcore.comercial.ConfirmacaoNotaHelper;
 import br.com.sankhya.modelcore.comercial.nfe.DocumentoEletronicoHelper;
 import br.com.sankhya.modelcore.comercial.nfe.ServicosNFeHelper2;
@@ -67,7 +67,6 @@ import br.com.sankhya.modelcore.util.MGECoreParameter;
 import br.com.sankhya.util.troubleshooting.SKError;
 import br.com.sankhya.util.troubleshooting.TSLevel;
 import br.com.spark.transferencia.enuns.Tipo;
-import  br.com.sankhya.mgecomercial.model.facades.ServicosNfeSPBean;
 import br.com.sankhya.mgecomercial.model.facades.helpper.EnvioNotaSefazHelper;
 
 public class TransferenciaUtils {
@@ -183,33 +182,43 @@ public class TransferenciaUtils {
 		return itensNota;
 	}
 	
-	public static void salvarOrigem(BigDecimal nuNotaPed, BigDecimal nuNotaSai, BigDecimal nuNotaEnt, Tipo tp) throws MGEModelException {		
+	public static void salvarOrigem(BigDecimal nuNotaPed, BigDecimal nuNotaSai, BigDecimal nuNotaEnt, Tipo tp) throws MGEModelException {
+		// nuNotaEnt pode ser zero quando o fluxo é somente de saída — nunca gravar FK com valor 0
+		boolean temEntrada = nuNotaEnt != null && nuNotaEnt.compareTo(BigDecimal.ZERO) > 0;
 		JapeSession.SessionHandle hnd = null;
 		try {
-			if(tp.equals(Tipo.PEDIDO)) {
-				 JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
-				            .prepareToUpdateByPK(nuNotaPed)
-				            .set("AD_NUNOTASAI", nuNotaSai)
-				            .set("AD_NUNOTAENT", nuNotaEnt)
-					        .update();				
-			}else if (tp.equals(Tipo.SAIDA)) {
-				 JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
-				            .prepareToUpdateByPK(nuNotaSai)
-				            .set("AD_PEDTRANSF", nuNotaPed)
-				            .set("AD_NUNOTAENT", nuNotaEnt)
-					        .update();
-			}else if (tp.equals(Tipo.ENTRADA)) {
-				 JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
-				            .prepareToUpdateByPK(nuNotaEnt)
-				            .set("AD_PEDTRANSF", nuNotaPed)
-				            .set("AD_NUNOTASAI", nuNotaSai)
-					        .update();
-			}else {
+			if (tp.equals(Tipo.PEDIDO)) {
+				JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
+				           .prepareToUpdateByPK(nuNotaPed)
+				           .set("AD_NUNOTASAI", nuNotaSai)
+				           .update();
+				if (temEntrada)
+					JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
+					           .prepareToUpdateByPK(nuNotaPed)
+					           .set("AD_NUNOTAENT", nuNotaEnt)
+					           .update();
+			} else if (tp.equals(Tipo.SAIDA)) {
+				JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
+				           .prepareToUpdateByPK(nuNotaSai)
+				           .set("AD_PEDTRANSF", nuNotaPed)
+				           .update();
+				if (temEntrada)
+					JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
+					           .prepareToUpdateByPK(nuNotaSai)
+					           .set("AD_NUNOTAENT", nuNotaEnt)
+					           .update();
+			} else if (tp.equals(Tipo.ENTRADA)) {
+				JapeFactory.dao(DynamicEntityNames.CABECALHO_NOTA)
+				           .prepareToUpdateByPK(nuNotaEnt)
+				           .set("AD_PEDTRANSF", nuNotaPed)
+				           .set("AD_NUNOTASAI", nuNotaSai)
+				           .update();
+			} else {
 		    	throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Não foi possível salvar a origem pois o tipo de movimento não foi encontrado!"));
 		    }
-		}catch(Exception e) {
-			MGEModelException.throwMe(e);  
-		}finally{
+		} catch(Exception e) {
+			MGEModelException.throwMe(e);
+		} finally {
 			JapeSession.close(hnd);
 		}
 	}
@@ -271,9 +280,8 @@ public class TransferenciaUtils {
                                        .save();              
         		}
     			JdbcUtils.closeResultSet(rsSerie);
-        		NativeSql.releaseResources(queSerie);   			
+        		NativeSql.releaseResources(queSerie);
     		}
-    		JapeWrapper dao = JapeFactory.dao("SerieProduto");
     	}catch(Exception e) {
 			MGEModelException.throwMe(e);  
 		}finally{
@@ -282,7 +290,7 @@ public class TransferenciaUtils {
 			JapeSession.close(hnd);
 		}
     }
-    
+
     public static  void confirmaNota(BigDecimal nuNota) throws MGEModelException {
         Collection<BigDecimal> lisNotasConfirmadas = new ArrayList<>();
         JapeSession.SessionHandle hnd = null;
