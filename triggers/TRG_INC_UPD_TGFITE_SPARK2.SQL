@@ -19,36 +19,30 @@ DECLARE
     V_CODTIPOPER TGFCAB.CODTIPOPER%TYPE;
     V_VLRMOEDA   TGFCAB.VLRMOEDA%TYPE;
 BEGIN
-    -- 1. Proteção Matemática: Se a quantidade for zero, aborta o cálculo para não dar erro "divisor is equal to zero"
-    IF NVL(:NEW.QTDNEG, 0) = 0 THEN
-        RETURN;
-    END IF;
+    IF NVL(:NEW.QTDNEG, 0) = 0 THEN RETURN; END IF;
 
-    -- 2. Trava Anti-Mutating Table: Se for um UPDATE, só recalcula se os valores base do item mudaram.
-    -- Isso permite que a trigger do cabeçalho (abaixo) atualize os itens sem causar erro de recursividade.
-    IF UPDATING AND 
-       NVL(:NEW.VLRTOT, 0) = NVL(:OLD.VLRTOT, 0) AND 
-       NVL(:NEW.VLRDESC, 0) = NVL(:OLD.VLRDESC, 0) AND 
-       NVL(:NEW.QTDNEG, 0) = NVL(:OLD.QTDNEG, 0) THEN
-        RETURN;
+    -- 1. TENTA PEGAR DA MEMÓRIA (PACKAGE) PARA EVITAR ORA-04091
+    IF PKG_SPARK_MOEDA.V_NUNOTA = :NEW.NUNOTA THEN
+        V_CODTIPOPER := PKG_SPARK_MOEDA.V_CODTIPOPER;
+        V_VLRMOEDA   := PKG_SPARK_MOEDA.V_VLRMOEDA;
+    ELSE
+        -- 2. SE NÃO ESTIVER NA MEMÓRIA (EX: INSERÇÃO MANUAL), BUSCA NO BANCO.
+        --    Guard WHEN OTHERS / -4091: caso este caminho seja atingido enquanto
+        --    TGFCAB estiver mutante (situação residual), aborta silenciosamente.
+        BEGIN
+            SELECT CODTIPOPER, VLRMOEDA INTO V_CODTIPOPER, V_VLRMOEDA
+            FROM TGFCAB WHERE NUNOTA = :NEW.NUNOTA;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN RETURN;
+            WHEN OTHERS THEN
+                IF SQLCODE = -4091 THEN RETURN; END IF;
+                RAISE;
+        END;
     END IF;
-
-    -- 3. Busca os dados do cabeçalho
-    BEGIN
-        SELECT CODTIPOPER, VLRMOEDA 
-        INTO V_CODTIPOPER, V_VLRMOEDA
-        FROM TGFCAB 
-        WHERE NUNOTA = :NEW.NUNOTA;
-    EXCEPTION 
-        WHEN NO_DATA_FOUND THEN
-            RETURN;
-    END;
     
-    -- 4. Aplica a regra de negócio com tratamento de nulos (NVL)
+    -- 3. APLICA O CÁLCULO
     IF V_CODTIPOPER IN (1008, 1009) AND NVL(V_VLRMOEDA, 0) > 0 THEN
-        
         :NEW.VLRUNITMOE := ((NVL(:NEW.VLRTOT, 0) - NVL(:NEW.VLRDESC, 0)) / :NEW.QTDNEG) / V_VLRMOEDA;
         :NEW.VLRTOTMOE  := :NEW.VLRUNITMOE * :NEW.QTDNEG;
-        
     END IF;
 END;
