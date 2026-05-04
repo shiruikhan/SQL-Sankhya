@@ -20,7 +20,9 @@ package br.com.spark.transferencia.util;
  *   <li>{@code salvarOrigem}      — vincula pedido, saída e entrada via AD_NUNOTASAI/AD_NUNOTAENT</li>
  *   <li>{@code confirmaNota}      — confirma a nota via {@code ConfirmacaoNotaHelper}</li>
  *   <li>{@code gerarLote}         — envia lote NF-e via {@code ServicosNFeHelper2}</li>
- *   <li>{@code getLinkNota}       — gera link HTML para abertura da nota no Sankhya</li>
+ *   <li>{@code getLinkNota}                — gera link HTML para abertura da nota no Sankhya</li>
+ *   <li>{@code totalizarImpostosReformaTrib} — totaliza IBS/CBS na {@code TGFREFIMP} reusando a instância de {@code ImpostosHelpper} já carregada com {@code notaVO}</li>
+ *   <li>{@code copiarImpostosReformaTrib} — copia {@code TGFREFIMP} (IBS/CBS) da saída para a entrada</li>
  * </ul>
  *
  * <p><b>Queries SQL auxiliares:</b> queItem.sql, queSerie.sql (carregadas via NativeSql.loadSql)</p>
@@ -73,6 +75,7 @@ import br.com.sankhya.util.troubleshooting.TSLevel;
 import br.com.spark.transferencia.enuns.Tipo;
 import  br.com.sankhya.mgecomercial.model.facades.ServicosNfeSPBean;
 import br.com.sankhya.mgecomercial.model.facades.helpper.EnvioNotaSefazHelper;
+import br.com.sankhya.mgecomercial.model.impostos.ImpostosHelpper;
 
 public class TransferenciaUtils {
 
@@ -422,6 +425,60 @@ public class TransferenciaUtils {
 			NativeSql.releaseResources(ns);
 		}
 		return null;
+	}
+
+	public static void totalizarImpostosReformaTrib(BigDecimal nuNota, ImpostosHelpper helper) throws MGEModelException {
+		try {
+			helper.totalizarImpostosCbsIbs(nuNota);
+		} catch (Exception e) {
+			MGEModelException.throwMe(e);
+		}
+	}
+
+	public static void copiarImpostosReformaTrib(BigDecimal nuNotaOrigem, BigDecimal nuNotaDestino) throws MGEModelException {
+		try {
+			EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
+			FinderWrapper finder = new FinderWrapper("ImpostosReformaTrib", "this.NUNOTA = " + nuNotaOrigem);
+			Collection<DynamicVO> results = ewf.findByDynamicFinderAsVO(finder);
+			if (results == null || results.isEmpty()) return;
+
+			DynamicVO src = results.iterator().next();
+
+			BigDecimal nuRefImpDest = queryBigDecimal("NUREFIMP", "TGFREFIMP", "NUNOTA = " + nuNotaDestino);
+			if (nuRefImpDest != null)
+				ewf.removeEntity("ImpostosReformaTrib", new Object[]{ nuRefImpDest, nuNotaDestino });
+
+			JapeFactory.dao("ImpostosReformaTrib").create()
+				.set("NUNOTA",            nuNotaDestino)
+				.set("VIS",               src.asBigDecimalOrZero("VIS"))
+				.set("VBCIBSCBS",         src.asBigDecimalOrZero("VBCIBSCBS"))
+				.set("VDIFIBSUF",         src.asBigDecimalOrZero("VDIFIBSUF"))
+				.set("VDEVTRIBIBSUF",     src.asBigDecimalOrZero("VDEVTRIBIBSUF"))
+				.set("VIBSUF",            src.asBigDecimalOrZero("VIBSUF"))
+				.set("VDIFIBSMUN",        src.asBigDecimalOrZero("VDIFIBSMUN"))
+				.set("VDEVTRIBIBSMUN",    src.asBigDecimalOrZero("VDEVTRIBIBSMUN"))
+				.set("VIBSMUN",           src.asBigDecimalOrZero("VIBSMUN"))
+				.set("VIBS",              src.asBigDecimalOrZero("VIBS"))
+				.set("VCREDPRESIBS",      src.asBigDecimalOrZero("VCREDPRESIBS"))
+				.set("VCRDPRESCONSUSIBS", src.asBigDecimalOrZero("VCRDPRESCONSUSIBS"))
+				.set("VDIFCBS",           src.asBigDecimalOrZero("VDIFCBS"))
+				.set("VDEVTRIBCBS",       src.asBigDecimalOrZero("VDEVTRIBCBS"))
+				.set("VCBS",              src.asBigDecimalOrZero("VCBS"))
+				.set("VCREDPRESCBS",      src.asBigDecimalOrZero("VCREDPRESCBS"))
+				.set("VCRDPRESCONSUSCBS", src.asBigDecimalOrZero("VCRDPRESCONSUSCBS"))
+				.set("VIBSMONO",          src.asBigDecimalOrZero("VIBSMONO"))
+				.set("VCBSMONO",          src.asBigDecimalOrZero("VCBSMONO"))
+				.set("VIBSMONORETEN",     src.asBigDecimalOrZero("VIBSMONORETEN"))
+				.set("VCBSMONORETEN",     src.asBigDecimalOrZero("VCBSMONORETEN"))
+				.set("VIBSMONORET",       src.asBigDecimalOrZero("VIBSMONORET"))
+				.set("VCBSMONORET",       src.asBigDecimalOrZero("VCBSMONORET"))
+				.set("VNFTOT",            src.asBigDecimalOrZero("VNFTOT"))
+				.set("VTOTDFE",           src.asBigDecimalOrZero("VTOTDFE"))
+				.set("VALOR_TOTAL",       src.asBigDecimalOrZero("VALOR_TOTAL"))
+				.save();
+		} catch (Exception e) {
+			MGEModelException.throwMe(e);
+		}
 	}
 
 	public static String getLinkNota(final String descricao, final BigDecimal nuNota) {
