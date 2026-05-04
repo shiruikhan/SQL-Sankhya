@@ -34,6 +34,7 @@ package br.com.spark.transferencia.util;
  */
 import java.math.BigDecimal;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -53,6 +54,8 @@ import br.com.sankhya.jape.vo.PrePersistEntityState;
 import br.com.sankhya.jape.wrapper.JapeFactory;
 import br.com.sankhya.jape.wrapper.JapeWrapper;
 import br.com.sankhya.modelcore.MGEModelException;
+import br.com.sankhya.modelcore.PlatformService;
+import br.com.sankhya.modelcore.PlatformServiceFactory;
 import br.com.sankhya.modelcore.auth.AuthenticationInfo;
 import br.com.sankhya.modelcore.comercial.BarramentoRegra;
 import br.com.sankhya.modelcore.comercial.CentralFaturamento;
@@ -374,6 +377,53 @@ public class TransferenciaUtils {
         }
     }
     
+	public static void confirmarETransmitir(Collection<BigDecimal> notas) throws MGEModelException {
+		if (notas == null || notas.isEmpty()) return;
+		JapeSession.SessionHandle hnd = null;
+		try {
+			hnd = JapeSession.open();
+			BigDecimal primeiraNota = notas.iterator().next();
+			BigDecimal codTipOper   = queryBigDecimal("CODTIPOPER", "TGFCAB", "NUNOTA = " + primeiraNota);
+			String      serie       = queryString("SERIENOTA",  "TGFCAB", "NUNOTA = " + primeiraNota);
+			Timestamp   agora       = new Timestamp(System.currentTimeMillis());
+
+			PlatformService svc = PlatformServiceFactory.getInstance().lookupService("@core:faturamento.service");
+			svc.set("NUNOTA",           primeiraNota);
+			svc.set("NUNOTACOLLECTION", notas);
+			svc.set("CODTIPOPER",       codTipOper);
+			svc.set("DTENTRADASAIDA",   agora);
+			svc.set("HRENTRADASAIDA",   agora);
+			svc.set("DTFATURAMENTO",    agora);
+			svc.set("SERIE",            serie != null ? serie : "1");
+			svc.set("CODUSUAUTHINFO",   BigDecimal.ZERO);
+			svc.execute();
+		} catch (Exception e) {
+			MGEModelException.throwMe(e);
+		} finally {
+			JapeSession.close(hnd);
+		}
+	}
+
+	private static String queryString(String campo, String tabela, String where) throws MGEModelException {
+		NativeSql  ns   = null;
+		ResultSet  rs   = null;
+		JdbcWrapper jdbc = null;
+		try {
+			jdbc = EntityFacadeFactory.getDWFFacade().getJdbcWrapper();
+			ns   = new NativeSql(jdbc);
+			ns.appendSql("SELECT " + campo + " FROM " + tabela + " WHERE " + where);
+			rs = ns.executeQuery();
+			if (rs.next()) return rs.getString(1);
+			return null;
+		} catch (Exception e) {
+			MGEModelException.throwMe(e);
+		} finally {
+			JdbcUtils.closeResultSet(rs);
+			NativeSql.releaseResources(ns);
+		}
+		return null;
+	}
+
 	public static String getLinkNota(final String descricao, final BigDecimal nuNota) {
         final String pk = "{\"NUNOTA\":\"{0}\"}".replace("{0}", nuNota.toString());
         String url = "<a title=\"Abrir Tela\" href=\"/mge/system.jsp#app/{0}/{1}\" target=\"_top\"><u><b>{2}</b></u></a>".replace("{0}", Base64Impl.encode("br.com.sankhya.com.mov.CentralNotas".getBytes()).trim());
