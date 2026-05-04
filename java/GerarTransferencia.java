@@ -226,25 +226,44 @@ public class GerarTransferencia implements AcaoRotinaJava {
         }
     }
 
-    // 5. CONFIRMAÇÃO E TRANSMISSÃO (via PlatformService @core:faturamento.service)
-    if (!documentosSaidas.isEmpty()) {
-        try {
-            TransferenciaUtils.confirmarETransmitir(documentosSaidas);
-        } catch (Exception e) {
-            e.printStackTrace();
-            MGEModelException.throwMe(e);
-        }
-    }
+    // 5. CONFIRMAÇÕES E LOTES
+	documentosSaidas.forEach((nunota) -> {
+		try {
+			TransferenciaUtils.confirmaNota(nunota);
+			qtdSaidaConfirmadas++;
+		} catch (MGEModelException e) {
+			e.printStackTrace();
+		}
+	});
 
-    if (!documentosEntradas.isEmpty()) {
-        try {
-            TransferenciaUtils.confirmarETransmitir(documentosEntradas);
-        } catch (Exception e) {
-            e.printStackTrace();
-            MGEModelException.throwMe(e);
-        }
-    }
+	if (qtdSaidaConfirmadas > 0) {
+		try {
+			TransferenciaUtils.gerarLote(documentosSaidas);
+			qtdNFe++;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-	ctx.setMensagemRetorno("Transferência realizada com sucesso!");
+		if (qtdNFe > 0) {
+			documentosEntradas.forEach((nunota) -> {
+				try {
+					TransferenciaUtils.confirmaNota(nunota);
+					qtdEntradaConfirmadas++;
+				} catch (MGEModelException e) {
+					e.printStackTrace();
+				}
+			});
+		} else {
+			mgsRetorno = "! , porém nenhuma nota de saída foi enviada para sefaz e as entradas não foram confirmadas!";
+		}
+	} else {
+		mgsRetorno = "! , porém nenhuma nota foi confirmada!";
+	}
+
+	if (qtdEntradaConfirmadas == 0 && qtdNFe > 0) {
+		mgsRetorno = "! , porém as entradas não foram confirmadas!";
+	}
+
+	ctx.setMensagemRetorno("Transferência realizada" + (mgsRetorno == null ? " com sucesso! " : mgsRetorno));	
   }
 }
