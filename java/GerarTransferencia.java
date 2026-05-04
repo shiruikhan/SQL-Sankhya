@@ -128,7 +128,7 @@ public class GerarTransferencia implements AcaoRotinaJava {
         SessionHandle hndCalc = null;
         try {
             hndCalc = JapeSession.open();
-            for(BigDecimal nuNotaSaida : documentosSaidas) {
+            for (BigDecimal nuNotaSaida : documentosSaidas) {
                 try {
                     ImpostosHelpper helper = new ImpostosHelpper();
                     helper.setForcarRecalculo(true);

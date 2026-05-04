@@ -21,8 +21,7 @@ package br.com.spark.transferencia.util;
  *   <li>{@code confirmaNota}      — confirma a nota via {@code ConfirmacaoNotaHelper}</li>
  *   <li>{@code gerarLote}         — envia lote NF-e via {@code ServicosNFeHelper2}</li>
  *   <li>{@code getLinkNota}                — gera link HTML para abertura da nota no Sankhya</li>
- *   <li>{@code totalizarImpostosReformaTrib} — totaliza IBS/CBS na {@code TGFREFIMP} reusando a instância de {@code ImpostosHelpper} já carregada com {@code notaVO}</li>
- *   <li>{@code copiarImpostosReformaTrib} — copia {@code TGFREFIMP} (IBS/CBS) da saída para a entrada</li>
+ *   <li>{@code copiarImpostosReformaTrib} — copia {@code TGFREFIMP} (IBS/CBS) de uma nota para outra (pedido→saída ou saída→entrada)</li>
  * </ul>
  *
  * <p><b>Queries SQL auxiliares:</b> queItem.sql, queSerie.sql (carregadas via NativeSql.loadSql)</p>
@@ -76,7 +75,6 @@ import br.com.spark.transferencia.enuns.Tipo;
 import  br.com.sankhya.mgecomercial.model.facades.ServicosNfeSPBean;
 import br.com.sankhya.mgecomercial.model.facades.helpper.EnvioNotaSefazHelper;
 import br.com.sankhya.mgecomercial.model.impostos.ImpostosHelpper;
-
 public class TransferenciaUtils {
 
 	public static void validaConferencia(DynamicVO cabVO) throws MGEModelException {
@@ -429,6 +427,13 @@ public class TransferenciaUtils {
 
 	public static void totalizarImpostosReformaTrib(BigDecimal nuNota, ImpostosHelpper helper) throws MGEModelException {
 		try {
+			EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
+			FinderWrapper finder = new FinderWrapper("ItemNota", "this.NUNOTA = " + nuNota);
+			finder.setOrderBy("SEQUENCIA ASC");
+			Collection<DynamicVO> itens = ewf.findByDynamicFinderAsVO(finder);
+			for (DynamicVO itemVO : itens) {
+				helper.calcularImpostos(itemVO.asBigDecimal("SEQUENCIA"));
+			}
 			helper.totalizarImpostosCbsIbs(nuNota);
 		} catch (Exception e) {
 			MGEModelException.throwMe(e);
