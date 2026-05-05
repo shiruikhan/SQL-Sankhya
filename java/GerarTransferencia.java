@@ -7,10 +7,9 @@ package br.com.spark.transferencia;
  * selecionados. O processo é executado em 5 etapas sequenciais, cada uma com transação própria:
  * <ol>
  *   <li>Geração das notas de saída (usando modelo {@code CabecalhoNotaModelo} ID 278268)</li>
- *   <li>Cálculo e totalização de IBS/CBS das saídas via {@code ImpostosHelpper}</li>
+ *   <li>Cálculo de impostos das saídas via {@code ImpostosHelpper}</li>
  *   <li>Geração das notas de entrada espelhando as saídas (modelo ID 278275)</li>
  *   <li>Cálculo de impostos das entradas</li>
- *   <li>Importação de IBS/CBS nas entradas (copia {@code TGFREFIMP} das saídas)</li>
  *   <li>Confirmação das notas e geração de lote NF-e via {@code ServicosNFeHelper2}</li>
  * </ol>
  * Ao final, vincula pedido, saída e entrada nos campos {@code AD_NUNOTASAI} e {@code AD_NUNOTAENT}
@@ -43,7 +42,7 @@ import br.com.sankhya.modelcore.MGEModelException;
 import br.com.sankhya.modelcore.auth.AuthenticationInfo;
 import br.com.sankhya.modelcore.comercial.BarramentoRegra;
 import br.com.sankhya.modelcore.comercial.centrais.CACHelper;
-import br.com.sankhya.mgecomercial.model.impostos.ImpostosHelpper;
+import br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper;
 import br.com.sankhya.modelcore.util.DynamicEntityNames;
 import br.com.sankhya.modelcore.util.EntityFacadeFactory;
 import br.com.sankhya.util.troubleshooting.SKError;
@@ -123,17 +122,16 @@ public class GerarTransferencia implements AcaoRotinaJava {
         throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram geradas notas de saída."));
     }
 
-    // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS + TOTALIZAÇÃO IBS/CBS (Fora de Transação para persistência)
+    // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS (Fora de Transação para persistência)
     if (!documentosSaidas.isEmpty()) {
         SessionHandle hndCalc = null;
         try {
             hndCalc = JapeSession.open();
-            for (BigDecimal nuNotaSaida : documentosSaidas) {
+            for(BigDecimal nuNotaSaida : documentosSaidas) {
                 try {
                     ImpostosHelpper helper = new ImpostosHelpper();
                     helper.setForcarRecalculo(true);
                     helper.calcularImpostos(nuNotaSaida);
-                    TransferenciaUtils.totalizarImpostosReformaTrib(nuNotaSaida, helper);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -228,69 +226,25 @@ public class GerarTransferencia implements AcaoRotinaJava {
         }
     }
 
-    // 5. IMPORTAÇÃO DE IBS/CBS NAS ENTRADAS (copia TGFREFIMP das saídas)
-    if (!documentos.isEmpty()) {
-        SessionHandle hndIbs = null;
+    // 5. CONFIRMAÇÃO E TRANSMISSÃO (via PlatformService @core:faturamento.service)
+    if (!documentosSaidas.isEmpty()) {
         try {
-            hndIbs = JapeSession.open();
-            hndIbs.execWithTX(new JapeSession.TXBlock() {
-                public void doWithTx() throws Exception {
-                    documentos.forEach((pedido, movs) -> {
-                        movs.forEach((saida, entrada) -> {
-                            try {
-                                TransferenciaUtils.copiarImpostosReformaTrib(saida, entrada);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    });
-                }
-            });
+            TransferenciaUtils.confirmarETransmitir(documentosSaidas);
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            JapeSession.close(hndIbs);
+            MGEModelException.throwMe(e);
         }
     }
 
-    // 6. CONFIRMAÇÕES E LOTES
-	documentosSaidas.forEach((nunota) -> {
-		try {
-			TransferenciaUtils.confirmaNota(nunota);
-			qtdSaidaConfirmadas++;
-		} catch (MGEModelException e) {
-			e.printStackTrace();
-		}
-	});
+    if (!documentosEntradas.isEmpty()) {
+        try {
+            TransferenciaUtils.confirmarETransmitir(documentosEntradas);
+        } catch (Exception e) {
+            e.printStackTrace();
+            MGEModelException.throwMe(e);
+        }
+    }
 
-	if (qtdSaidaConfirmadas > 0) {
-		try {
-			TransferenciaUtils.gerarLote(documentosSaidas);
-			qtdNFe++;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		if (qtdNFe > 0) {
-			documentosEntradas.forEach((nunota) -> {
-				try {
-					TransferenciaUtils.confirmaNota(nunota);
-					qtdEntradaConfirmadas++;
-				} catch (MGEModelException e) {
-					e.printStackTrace();
-				}
-			});
-		} else {
-			mgsRetorno = "! , porém nenhuma nota de saída foi enviada para sefaz e as entradas não foram confirmadas!";
-		}
-	} else {
-		mgsRetorno = "! , porém nenhuma nota foi confirmada!";
-	}
-
-	if (qtdEntradaConfirmadas == 0 && qtdNFe > 0) {
-		mgsRetorno = "! , porém as entradas não foram confirmadas!";
-	}
-
-	ctx.setMensagemRetorno("Transferência realizada" + (mgsRetorno == null ? " com sucesso! " : mgsRetorno));	
+	ctx.setMensagemRetorno("Transferência realizada com sucesso!");
   }
 }
