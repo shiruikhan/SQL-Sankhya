@@ -4,99 +4,143 @@ package br.com.spark.transferencia.teste.util;
  * <b>Nome:</b> ReformaTribUtils<br>
  * <b>Tipo:</b> Classe utilitária (static helpers)<br>
  * <b>Descrição:</b> Suporte ao cálculo dos impostos da Reforma Tributária (IBS/CBS)
- * para notas de transferência. Encapsula as chamadas a
- * {@code ImpostosHelpper.calcularImpostos} e {@code totalizarImpostosCbsIbsIs},
- * que persiste os totalizadores na tabela {@code TGFREFIMP} via entidade
- * {@code ImpostosReformaTrib}.
+ * para notas de transferência. Encapsula as duas fases de cálculo em torno do
+ * limite de transação exigido por {@code totalizarImpostosCbsIbsIs}.
  *
- * <h3>Arquitetura de classes (descoberta via inspeção de JAR)</h3>
+ * <h3>Por que dois ImpostosHelpper e duas fases?</h3>
  * <ul>
- *   <li>{@code br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper}
- *       — classe <b>proxy/delegate</b> em {@code mge-modelcore-4.35b448.jar}.
- *       É esta que deve ser instanciada (consistente com produção em
+ *   <li>{@code calcularImpostos} usa {@code NativeSql}/JDBC direto → <b>não requer TX</b>,
+ *       é chamado fora de {@code execWithTX} (padrão de produção em
  *       {@code GerarTransferencia.java}).</li>
- *   <li>{@code br.com.sankhya.mgecomercial.model.impostos.ImpostosHelpper}
- *       — implementação real em {@code mgecom-model-4.35b448.jar}. O proxy
- *       delega para ela via {@code IImpostosHelpper delegate}.</li>
+ *   <li>{@code totalizarImpostosCbsIbsIs} chama {@code dwfEntityFacade.removeEntity} e
+ *       {@code dwfEntityFacade.createEntity} → <b>requer TX ativa</b>; sem ela Sankhya
+ *       lança "Operação requer uma transação ativa".</li>
+ *   <li>As duas fases não podem compartilhar a mesma instância dentro do mesmo
+ *       {@code execWithTX} porque {@code calcularImpostos} (Fase 1) deve commitar
+ *       o TGFDIN via JDBC antes de {@code totalizaImpostos} (Fase 2) ler esses dados.</li>
+ *   <li>A Fase 2 usa {@code carregarNota(nuNota)} para inicializar {@code notaVO}
+ *       na nova instância — campo interno exigido por {@code totalizarImpostosCbsIbsIs}
+ *       para buscar {@code NUREFIMP} em {@code TGFREFIMP}.</li>
  * </ul>
  *
- * <h3>Fluxo interno de {@code totalizarImpostosCbsIbsIs}</h3>
- * <ol>
- *   <li>Guard: {@code if (nuNota == null || ImpostosFacade.getInstance() == null) return;}
- *       — sai silenciosamente se o serviço de Reforma não estiver deployado/habilitado.</li>
- *   <li>Obtém {@code TotalizadoresImpostosDTO} via {@code ImpostosFacade.getInstance().totalizaImpostos(nuNota)}.</li>
- *   <li>Busca {@code NUREFIMP} em {@code TGFREFIMP} onde {@code NUNOTA = nuNota}.</li>
- *   <li>Se encontrado, remove via {@code dwfEntityFacade.removeEntity("ImpostosReformaTrib", ...)}.</li>
- *   <li>Insere novo registro via {@code insertTGFREFIMP(dto)} + {@code dwfEntityFacade.createEntity(...)}.</li>
- * </ol>
+ * <h3>Fluxo de dados confirmado via inspeção de JAR (mgecom-model-4.35b448)</h3>
+ * <pre>
+ * ── TX-1 (execWithTX #1) ──────────────────────────────────────────────────
+ * calcularImpostos(nuNota)
+ *   └─ calcularImpostosReforma(item, false) ← bloqueado por "ja.calculou"¹
  *
- * <h3>Campos IBS/CBS em TGFDIN (CODIMP)</h3>
- * <ul>
- *   <li>{@code 12} = IBS-UF (estadual)</li>
- *   <li>{@code 13} = IBS-MUN (municipal)</li>
- *   <li>{@code 14} = CBS (federal)</li>
- * </ul>
+ * calcularImpostosReforma()              ← iconst_1=true por item → bypass "ja.calculou"
+ *   └─ armazenarImpostosCalculadoSistema → TGFDIN [CODIMP 12=IBS-UF, 13=IBS-MUN, 14=CBS]
+ *      (entity facade — escrita pendente na TX-1)
+ *                   COMMIT TX-1  →  IBS/CBS agora visíveis via JDBC
  *
- * <h3>Causas conhecidas de erro em {@code totalizarImpostosCbsIbsIs}</h3>
+ * ── TX-2 (execWithTX #2) ──────────────────────────────────────────────────
+ * carregarNota(nuNota)                   ← inicializa notaVO na nova instância
+ *
+ * totalizarImpostosCbsIbsIs(nuNota)
+ *   └─ ImpostosFacade.totalizaImpostos(nuNota)  ← NativeSql: lê TGFDIN committed ✓
+ *   └─ dwfEntityFacade.createEntity("ImpostosReformaTrib")  →  TGFREFIMP
+ *                   COMMIT TX-2
+ *                                                         ↓
+ * confirmarETransmitir → GeradorXmlNFe2
+ *   └─ SELECT VTOTDFE,VNFTOT,VIBS,VCBS FROM TGFREFIMP WHERE NUNOTA = :NUNOTA
+ *
+ * ¹ "ja.calculou.impostos.reforma.tributaria:NUNOTA:SEQ" setada por
+ *   adiantarCalculoImpostosReforma durante incluirAlterarItem (mesmo JapeSession).
+ * </pre>
+ *
+ * <h3>Causas conhecidas de falha em {@code totalizarImpostosCbsIbsIs}</h3>
  * <ol>
- *   <li><b>Saída silenciosa</b>: {@code ImpostosFacade.getInstance()} retorna {@code null}
- *       quando o parâmetro {@code CALCULA_REFORMA_PELA_DIN} não está habilitado
- *       ou o serviço da Reforma Tributária não foi deployado. Nenhum erro é lançado,
- *       mas {@code TGFREFIMP} nunca é populado.</li>
- *   <li><b>NPE em {@code this.notaVO}</b>: se {@code calcularImpostos} lançar exceção
- *       que seja engolida antes de chamar {@code totalizarImpostosCbsIbsIs}, o campo
- *       interno {@code notaVO} permanece {@code null} e a busca de {@code NUREFIMP} explode.
- *       Por isso ambas as chamadas estão no mesmo {@code try} sem {@code catch} intermediário.</li>
- *   <li><b>ORA-00942 (TGFREFIMP)</b>: tabela ausente — migration da Reforma não aplicada.</li>
+ *   <li><b>Saída silenciosa</b>: {@code ImpostosFacade.getInstance() == null} —
+ *       parâmetro {@code CALCULA_REFORMA_PELA_DIN} desabilitado ou serviço não deployado.</li>
+ *   <li><b>ORA-00942</b>: tabela {@code TGFREFIMP} inexistente — migration não aplicada.</li>
  *   <li><b>PersistenceException</b>: entidade {@code ImpostosReformaTrib} não registrada
- *       no EJB (JAR desatualizado ou não deployado corretamente).</li>
- *   <li><b>DTO zerado</b>: produtos/TOP não configurados para IBS/CBS — sem erro,
- *       mas registro em {@code TGFREFIMP} vem com zeros. Comportamento esperado.</li>
- *   <li><b>{@code isVersaoNT2029001 = false}</b>: NT 2029/001 (NF-e Reforma) não habilitada
- *       via parâmetro de sistema — {@code calcularImpostosReforma} retorna sem calcular.</li>
+ *       no EJB — {@code mgecom-model-4.35b448.jar} não deployado.</li>
+ *   <li><b>DTO zerado</b>: produto/TOP não configurado para IBS/CBS — sem erro,
+ *       {@code TGFREFIMP} gravado com zeros. Comportamento esperado.</li>
+ *   <li><b>{@code isVersaoNT2029001 = false}</b>: NT 2029/001 não habilitada —
+ *       {@code calcularImpostosReforma} retorna sem calcular.</li>
  * </ol>
+ *
+ * <p><b>Import obrigatório</b>: {@code br.com.sankhya.mgecomercial.model.impostos.ImpostosHelpper}
+ * ({@code mgecom-model-4.35b448.jar}). O proxy {@code mge-modelcore} não expõe
+ * {@code totalizarImpostosCbsIbsIs} nas versões 4.10/4.1.</p>
  *
  * <p><b>Empresa:</b> Spark Eletrônica</p>
  *
  * @author Silvio Vieira
- * @version 1.1
+ * @version 1.2
  * @since 2026
  * @see br.com.spark.transferencia.teste.GerarTransferenciaReformaTrib
  */
 
 import java.math.BigDecimal;
 
+import br.com.sankhya.jape.core.JapeSession;
 import br.com.sankhya.modelcore.MGEModelException;
-// Usa a implementação direta (mgecom-model-4.35b448.jar) em vez do proxy (mge-modelcore).
-// O proxy não expõe totalizarImpostosCbsIbsIs nas versões 4.10/4.1 do modelcore.
 import br.com.sankhya.mgecomercial.model.impostos.ImpostosHelpper;
 
 public class ReformaTribUtils {
 
     /**
-     * Calcula impostos convencionais e persiste os totalizadores IBS/CBS (Reforma Tributária)
-     * para a nota informada em uma única chamada sequencial.
+     * Executa o cálculo completo de impostos (ICMS + IBS/CBS) para a nota informada
+     * em dois blocos de transação sequenciais com um commit implícito entre eles.
      *
-     * <p><b>Importante</b>: {@code calcularImpostos} e {@code totalizarImpostosCbsIbsIs} são
-     * executados no mesmo {@code try} sem {@code catch} intermediário. Isso garante que
-     * {@code totalizarImpostosCbsIbsIs} nunca seja chamado com {@code notaVO == null}
-     * (o que ocorreria se {@code calcularImpostos} falhasse silenciosamente).</p>
+     * <h3>Por que dois execWithTX separados?</h3>
+     * <p>{@code calcularImpostosReforma()} grava IBS/CBS em {@code TGFDIN} via
+     * {@code dwfEntityFacade} (entity ops). Essas escritas ficam <b>não-commitadas</b>
+     * dentro do mesmo {@code execWithTX}. {@code totalizarImpostosCbsIbsIs} lê
+     * {@code TGFDIN} internamente via {@code ImpostosFacade.totalizaImpostos(nuNota)}
+     * (NativeSql/JDBC), que enxerga apenas dados <b>committed</b> — e portanto leria
+     * zeros enquanto as escritas de entity facade estivessem pendentes na mesma TX.</p>
      *
-     * <p>Se {@code ImpostosFacade.getInstance()} retornar {@code null} (Reforma desabilitada),
-     * o método retorna sem erro e sem gravar {@code TGFREFIMP} — este é o comportamento
-     * normal da Sankhya quando a feature ainda não está ativa.</p>
+     * <p>O primeiro {@code execWithTX} commita os IBS/CBS em {@code TGFDIN}; o segundo
+     * lê esse estado committed e persiste os totalizadores em {@code TGFREFIMP}.</p>
+     *
+     * <h3>Fluxo interno do TX-1</h3>
+     * <ol>
+     *   <li>{@code calcularImpostos} — ICMS/IPI via NativeSql; reforma bloqueada pela
+     *       guard de sessão {@code "ja.calculou.impostos.reforma.tributaria"} (setada por
+     *       {@code adiantarCalculoImpostosReforma} durante {@code incluirAlterarItem}).</li>
+     *   <li>{@code calcularImpostosReforma()} — método público que passa {@code true}
+     *       (iconst_1) por item, ativando {@code "forcar.recalculo.reforma.tributaria"}
+     *       como bypass da guard → IBS/CBS gravados em {@code TGFDIN} via entity facade.</li>
+     * </ol>
+     *
+     * <h3>Fluxo interno do TX-2</h3>
+     * <ol>
+     *   <li>{@code carregarNota} — inicializa {@code notaVO} na nova instância.</li>
+     *   <li>{@code totalizarImpostosCbsIbsIs} — lê {@code TGFDIN} (committed), totaliza
+     *       IBS/CBS e persiste em {@code TGFREFIMP} via {@code dwfEntityFacade.createEntity}
+     *       (exige TX ativa).</li>
+     * </ol>
      *
      * @param nuNota número único da nota (TGFCAB.NUNOTA)
-     * @throws MGEModelException propagado de {@code calcularImpostos} ou {@code totalizarImpostosCbsIbsIs}
+     * @param hnd    handle da sessão ativa — reutilizado nos dois {@code execWithTX}
+     * @throws MGEModelException propagado de qualquer falha nos dois blocos
      */
-    public static void calcularImpostosReformaTrib(BigDecimal nuNota) throws MGEModelException {
+    public static void calcularImpostosReformaTrib(BigDecimal nuNota,
+                                                   JapeSession.SessionHandle hnd)
+            throws MGEModelException {
         try {
-            ImpostosHelpper helper = new ImpostosHelpper();
-            helper.setForcarRecalculo(true);
-            // calcularImpostos inicializa this.notaVO internamente (via inicializaNota).
-            // totalizarImpostosCbsIbsIs depende de notaVO estar carregado — NÃO separe com try/catch.
-            helper.calcularImpostos(nuNota);
-            helper.totalizarImpostosCbsIbsIs(nuNota);
+            // TX-1: ICMS + IBS/CBS → commita TGFDIN
+            hnd.execWithTX(new JapeSession.TXBlock() {
+                public void doWithTx() throws Exception {
+                    ImpostosHelpper helper = new ImpostosHelpper();
+                    helper.setForcarRecalculo(true);
+                    helper.calcularImpostos(nuNota);        // ICMS/IPI via NativeSql
+                    helper.calcularImpostosReforma();       // IBS/CBS via entity facade (iconst_1=true → força bypass da guard ja.calculou)
+                }
+            });
+
+            // TX-2: lê TGFDIN committed → persiste TGFREFIMP
+            hnd.execWithTX(new JapeSession.TXBlock() {
+                public void doWithTx() throws Exception {
+                    ImpostosHelpper helper = new ImpostosHelpper();
+                    helper.carregarNota(nuNota);            // inicializa notaVO exigido por totalizarImpostosCbsIbsIs
+                    helper.totalizarImpostosCbsIbsIs(nuNota);
+                }
+            });
         } catch (Exception e) {
             MGEModelException.throwMe(e);
         }

@@ -136,14 +136,14 @@ public class GerarTransferenciaReformaTrib implements AcaoRotinaJava {
                     new Exception("Nenhuma nota de saída gerada."));
 
         // ── 2. IMPOSTOS CONVENCIONAIS + IBS/CBS DAS SAÍDAS ──────────────────────
-        // calcularImpostos → TGFDIN (CODIMP 12/13/14) → totalizarImpostosCbsIbsIs → TGFREFIMP
-        // Sem inner catch: falha aqui aborta a transferência antes da transmissão NF-e.
+        // Fase 1 (calcularImpostos) fora de TX; Fase 2 (totalizarImpostosCbsIbsIs)
+        // dentro de execWithTX via hndCalcSai — exigido por dwfEntityFacade.createEntity.
         if (!documentosSaidas.isEmpty()) {
             SessionHandle hndCalcSai = null;
             try {
                 hndCalcSai = JapeSession.open();
                 for (BigDecimal nuNotaSaida : documentosSaidas) {
-                    ReformaTribUtils.calcularImpostosReformaTrib(nuNotaSaida);
+                    ReformaTribUtils.calcularImpostosReformaTrib(nuNotaSaida, hndCalcSai);
                 }
             } catch (Exception e) {
                 MGEModelException.throwMe(e);
@@ -224,13 +224,13 @@ public class GerarTransferenciaReformaTrib implements AcaoRotinaJava {
         }
 
         // ── 4. IMPOSTOS CONVENCIONAIS + IBS/CBS DAS ENTRADAS ────────────────────
-        // Mesma regra do passo 2: sem inner catch.
+        // Mesma separação de TX do passo 2.
         if (!documentosEntradas.isEmpty()) {
             SessionHandle hndCalcEnt = null;
             try {
                 hndCalcEnt = JapeSession.open();
                 for (BigDecimal nuNotaEntrada : documentosEntradas) {
-                    ReformaTribUtils.calcularImpostosReformaTrib(nuNotaEntrada);
+                    ReformaTribUtils.calcularImpostosReformaTrib(nuNotaEntrada, hndCalcEnt);
                 }
             } catch (Exception e) {
                 MGEModelException.throwMe(e);
