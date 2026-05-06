@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ETQ_Compra_MKTP" language="groovy" pageWidth="283" pageHeight="425" columnWidth="283" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="PK_NUNOTA" class="java.math.BigDecimal" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT P.RAZAOSOCIAL, P.CGC_CPF, V.APELIDO
+FROM TGFPAR P
+INNER JOIN TGFCAB C ON P.CODPARC = C.CODPARC
+INNER JOIN TGFVEN V ON C.CODVEND = V.CODVEND
+WHERE C.NUNOTA = $P{PK_NUNOTA}]]>
+	</queryString>
+	<field name="RAZAOSOCIAL" class="java.lang.String"/>
+	<field name="CGC_CPF" class="java.lang.String"/>
+	<field name="APELIDO" class="java.lang.String"/>
+	<variable name="DOC_DIGITOS" class="java.lang.String">
+		<variableExpression><![CDATA[$F{CGC_CPF} == null ? "" : $F{CGC_CPF}.replaceAll("\\D","")]]></variableExpression>
+	</variable>
+	<variable name="IS_CPF" class="java.lang.Boolean">
+		<variableExpression><![CDATA[new Boolean($V{DOC_DIGITOS}.length() == 11)]]></variableExpression>
+	</variable>
+	<variable name="NOME_TRIM" class="java.lang.String">
+		<variableExpression><![CDATA[$F{RAZAOSOCIAL} == null ? "" : $F{RAZAOSOCIAL}.trim()]]></variableExpression>
+	</variable>
+	<variable name="PRIMEIRO_NOME" class="java.lang.String">
+		<variableExpression><![CDATA[$V{NOME_TRIM}.indexOf(" ") > 0 ? $V{NOME_TRIM}.substring(0, $V{NOME_TRIM}.indexOf(" ")) : $V{NOME_TRIM}]]></variableExpression>
+	</variable>
+	<variable name="PRIMEIRO_NOME_FMT" class="java.lang.String">
+		<variableExpression><![CDATA[$V{PRIMEIRO_NOME}.length() > 1 ? $V{PRIMEIRO_NOME}.substring(0,1).toUpperCase() + $V{PRIMEIRO_NOME}.substring(1).toLowerCase() : $V{PRIMEIRO_NOME}.toUpperCase()]]></variableExpression>
+	</variable>
+	<background>
+		<band/>
+	</background>
+	<title>
+		<band/>
+	</title>
+	<pageHeader>
+		<band/>
+	</pageHeader>
+	<columnHeader>
+		<band/>
+	</columnHeader>
+	<detail>
+		<band height="398">
+			<rectangle radius="30">
+				<reportElement x="5" y="5" width="273" height="388"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#999999"/>
+				</graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="15" y="15" width="253" height="45"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font fontName="Times New Roman" size="15" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Obrigado " + ($V{IS_CPF}.booleanValue() ? $V{PRIMEIRO_NOME_FMT} : $V{NOME_TRIM})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="15" y="80" width="253" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Top" lineSpacing="Single">
+					<font fontName="SansSerif" size="13"/>
+				</textElement>
+				<text><![CDATA[Seu pedido foi preparado com muito carinho]]></text>
+			</staticText>
+			<image hAlign="Center" vAlign="Middle" onErrorType="Blank">
+				<reportElement x="125" y="100" width="30" height="20"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "coracao_maos.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="15" y="125" width="253" height="40"/>
+				<textElement textAlignment="Center" verticalAlignment="Top" lineSpacing="Single">
+					<font fontName="SansSerif" size="13"/>
+				</textElement>
+				<text><![CDATA[Esperamos que ele torne seu dia a dia ainda melhor]]></text>
+			</staticText>
+			<image hAlign="Center" vAlign="Middle" onErrorType="Blank">
+				<reportElement x="125" y="165" width="30" height="20"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "rosto_sorridente.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="15" y="190" width="253" height="40"/>
+				<textElement textAlignment="Center" verticalAlignment="Top" lineSpacing="Single">
+					<font fontName="SansSerif" size="13"/>
+				</textElement>
+				<text><![CDATA[Se precisar de ajuda, nosso suporte está
+à disposição]]></text>
+			</staticText>
+			<frame>
+				<reportElement x="15" y="232" width="253" height="20"/>
+				<image hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="56" y="2" width="16" height="16"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "telefone.png"]]></imageExpression>
+				</image>
+				<staticText>
+					<reportElement x="76" y="0" width="121" height="20"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle" lineSpacing="Single">
+						<font fontName="SansSerif" size="14"/>
+					</textElement>
+					<text><![CDATA[(34) 98852-6101]]></text>
+				</staticText>
+			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="15" y="257" width="253" height="25"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font fontName="SansSerif" size="13"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Avalie sua experiência: " + ($F{APELIDO} != null ? $F{APELIDO} : "Shopee")]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement x="69" y="285" width="144" height="26"/>
+				<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="0" y="1" width="24" height="24"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "estrelas.png"]]></imageExpression>
+				</image>
+				<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="30" y="1" width="24" height="24"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "estrelas.png"]]></imageExpression>
+				</image>
+				<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="60" y="1" width="24" height="24"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "estrelas.png"]]></imageExpression>
+				</image>
+				<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="90" y="1" width="24" height="24"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "estrelas.png"]]></imageExpression>
+				</image>
+				<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="120" y="1" width="24" height="24"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "estrelas.png"]]></imageExpression>
+				</image>
+			</frame>
+			<staticText>
+				<reportElement x="15" y="322" width="253" height="25"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font fontName="SansSerif" size="13"/>
+				</textElement>
+				<text><![CDATA[Isso nos ajuda muito]]></text>
+			</staticText>
+			<frame>
+				<reportElement x="85" y="352" width="113" height="30"/>
+				<staticText>
+					<reportElement x="0" y="0" width="80" height="30"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
+						<font fontName="SansSerif" size="18" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Spark]]></text>
+				</staticText>
+				<image hAlign="Center" vAlign="Middle" onErrorType="Blank">
+					<reportElement x="88" y="2" width="25" height="25"/>
+					<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "coracao.png"]]></imageExpression>
+				</image>
+			</frame>
+		</band>
+	</detail>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+	<pageFooter>
+		<band/>
+	</pageFooter>
+	<summary>
+		<band/>
+	</summary>
+</jasperReport>
