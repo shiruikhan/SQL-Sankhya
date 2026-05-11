@@ -55,21 +55,21 @@ WHERE C.NUNOTA = $P{PK_NUNOTA}]]>
 				</graphicElement>
 			</rectangle>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="15" y="15" width="253" height="45"/>
+				<reportElement x="15" y="5" width="253" height="45"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font fontName="Times New Roman" size="15" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA["Obrigado " + ($V{IS_CPF}.booleanValue() ? $V{PRIMEIRO_NOME_FMT} : $V{NOME_TRIM})]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="15" y="80" width="253" height="20"/>
+				<reportElement x="15" y="70" width="253" height="34"/>
 				<textElement textAlignment="Center" verticalAlignment="Top" lineSpacing="Single">
 					<font fontName="SansSerif" size="13"/>
 				</textElement>
 				<text><![CDATA[Seu pedido foi preparado com muito carinho]]></text>
 			</staticText>
 			<image hAlign="Center" vAlign="Middle" onErrorType="Blank">
-				<reportElement x="125" y="100" width="30" height="20"/>
+				<reportElement x="125" y="104" width="30" height="20"/>
 				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "coracao_maos.png"]]></imageExpression>
 			</image>
 			<staticText>
