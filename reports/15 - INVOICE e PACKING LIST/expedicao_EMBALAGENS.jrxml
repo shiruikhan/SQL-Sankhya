@@ -38,7 +38,10 @@
     ),0)) AS PESOLIQ,
     PEXP.NRPALLET AS PO,
     CAB.AD_PACKAGE,
-    COUNT(PEXP.IDCX) AS QTDCAIXA,
+    MAX((SELECT COUNT(DISTINCT P2.IDCX)
+         FROM AD_TGSPESOEXPROD P2
+         WHERE P2.ID = EXP1.ID
+           AND P2.NRPALLET = PEXP.NRPALLET)) AS QTDCAIXA,
      'Pallet' AS PKG,
    MAX(NVL((
         SELECT SUM(PLT.M3)
@@ -111,7 +114,10 @@ SELECT
     ),0)) AS PESOLIQ,
     MAX(CAB.AD_NRPO) AS PO,
     CAB.AD_PACKAGE,
-    COUNT(PEXP.IDCX) AS QTDCAIXA,
+    MAX((SELECT COUNT(DISTINCT P2.IDCX)
+         FROM AD_TGSPESOEXPROD P2
+         WHERE P2.ID = EXP1.ID
+           AND P2.CODCXPROD = PEXP.CODCXPROD)) AS QTDCAIXA,
     'BOX' AS PKG,
 	MAX(PRO1.M3) AS M3,
     0 AS NRPALLET,
@@ -186,7 +192,7 @@ ORDER BY 9, 3]]>
 	<variable name="M3_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{M3} != null && $F{QTDCAIXA} != null ? $F{M3}.multiply($F{QTDCAIXA}) : java.math.BigDecimal.ZERO]]></variableExpression>
 	</variable>
-	<variable name="GRP_QTDCAIXA" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Sum">
+	<variable name="GRP_QTDCAIXA" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Highest">
 		<variableExpression><![CDATA[$F{QTDCAIXA}]]></variableExpression>
 	</variable>
 	<variable name="GRP_PESOBRUTO" class="java.math.BigDecimal" resetType="Group" resetGroup="GRP_PACKAGE" calculation="Sum">
