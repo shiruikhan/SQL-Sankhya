@@ -101,7 +101,7 @@
 	SUBSTR(AD_NRINVOICE,0,(length(to_char(AD_NRINVOICE)))-4) || '/' || SUBSTR(AD_NRINVOICE,-4,4) AS NRINVOICE,
 	CAB.VLRMOEDA,
 	CASE WHEN CAB.TIPFRETE = 'S' THEN (CASE WHEN CAB.VLRFRETE > 0 THEN CAB.VLRFRETE / CAB.VLRMOEDA ELSE 0 END) ELSE 0 END AS VLRFRETEUSD,
-	(SELECT SUM(I.VLRTOTMOE - I.VLRDESCMOE - I.VLRREPRED)
+	(SELECT SUM(ROUND(I.VLRTOTMOE - I.VLRDESCMOE, 2))
 			FROM TGFITE I
 			   , TGFCAB C
 	WHERE I.NUNOTA = C.NUNOTA
@@ -248,7 +248,7 @@ ORDER BY CAB.DTNEG
 	<field name="TEMHTS" class="java.lang.String"/>
 	<field name="MARCA" class="java.lang.String"/>
 	<variable name="VLRTOT_1" class="java.math.BigDecimal" calculation="Sum">
-		<variableExpression><![CDATA[$F{VLRTOT}]]></variableExpression>
+		<variableExpression><![CDATA[$F{VLRTOT}.setScale(2, java.math.RoundingMode.HALF_UP)]]></variableExpression>
 	</variable>
 	<variable name="PESOTOT_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{PESOTOT}]]></variableExpression>
