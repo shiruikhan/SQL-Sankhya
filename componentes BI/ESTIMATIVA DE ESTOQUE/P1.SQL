@@ -62,7 +62,7 @@ PedidosVendaPorProd AS (
       AND CAB.PENDENTE = 'S'
       AND CAB.TIPMOV = 'P'
       AND CAB.CODTIPOPER <> 900
-      AND CAB.DTPREVENT <= :P_DATA
+      AND (CAB.CODEMP = 2 OR CAB.DTPREVENT <= :P_DATA)
     GROUP BY ITE.CODPROD
 ),
 EstoqueProduto AS (
