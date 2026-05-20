@@ -1,0 +1,24 @@
+create or replace FUNCTION FC_GETPRECO_TRASF_SP(P_CODPROD INT)
+RETURN FLOAT
+AS
+    V_PRECO FLOAT(126);
+    
+BEGIN
+      SELECT NVL(MAX(CIT.CUSTO), 0)
+        INTO V_PRECO
+        FROM AD_TGSCUS CUS
+        INNER JOIN AD_TGSCIT CIT
+          ON CUS.CODREG = CIT.CODREG
+       WHERE CIT.CODPROD = P_CODPROD
+         AND CUS.DTREF = (
+              SELECT MAX(CUS2.DTREF)
+                FROM AD_TGSCUS CUS2
+                INNER JOIN AD_TGSCIT CIT2
+                  ON CUS2.CODREG = CIT2.CODREG
+               WHERE CUS2.DTREF <= TRUNC(SYSDATE)
+                 AND CIT2.CODPROD = P_CODPROD
+         );
+
+      RETURN V_PRECO;
+
+END;
