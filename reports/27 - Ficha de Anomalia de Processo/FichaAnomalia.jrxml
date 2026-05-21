@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : FichaAnomalia
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 27 - Ficha de Anomalia de Processo
+  Descrição      : Ficha impressa de anomalia de processo produtivo, baseada na
+                   tabela customizada AD_TGFFTA. Estrutura em seções:
+                   identificação, indicador/anomalia, contenção (solução
+                   imediata), análise de causa pelos 5 Porquês, ação corretiva,
+                   verificação da eficácia, aprovação e registro fotográfico.
+                   Imprime uma ficha por NUFTA.
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Data de Criação: 21/05/2026
+  Última Revisão : Maio/2026 — Criação do relatório
+  ==============================================================================
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FichaAnomalia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="539" leftMargin="28" rightMargin="28" topMargin="20" bottomMargin="20" isSummaryNewPage="true">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PK_NUFTA" class="java.math.BigDecimal" isForPrompting="false">
+		<parameterDescription><![CDATA[Nr. da Anomalia]]></parameterDescription>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT  FTA.NUFTA
+       ,TO_CHAR(FTA.DTFTA, 'DD/MM/YYYY')                   AS DTFTA
+       ,NVL(DEP.DESCRDEP, '-')                             AS SETOR_AFETADO
+       ,NVL(FUN.NOMEFUNC, '-')                             AS RESP_INDICADOR
+       ,CASE FTA.INDICADOR
+             WHEN 'PRD' THEN 'Produção'
+             WHEN 'RTB' THEN 'Retrabalho'
+             WHEN 'OTR' THEN 'Outro'
+             WHEN 'QLD' THEN 'Qualidade'
+             ELSE NVL(FTA.INDICADOR, '-')
+        END                                                AS INDICADOR
+       ,NVL(FTA.INDICADORORT, '-')                         AS INDICADORORT
+       ,FTA.META                                           AS META
+       ,FTA.RESOBTIDO                                      AS RESOBTIDO
+       ,DBMS_LOB.SUBSTR(FTA.DESCOANOM, 4000, 1)            AS DESCOANOM
+       ,DBMS_LOB.SUBSTR(FTA.CONTENCAO, 4000, 1)            AS CONTENCAO
+       ,NVL(R2.NOMEFUNC, '-')                              AS RESP_CONT
+       ,TO_CHAR(FTA.CONTPRAZO, 'DD/MM/YYYY')               AS CONTPRAZO
+       ,NVL(FTA.PROBLEMA, '-')                             AS PROBLEMA
+       ,NVL(DEPR.DESCRDEP, '-')                            AS SETOR_CAUSADOR
+       ,NVL(FTA.PORQUE1, '-')                              AS PORQUE1
+       ,NVL(FTA.PORQUE2, '-')                              AS PORQUE2
+       ,NVL(FTA.PORQUE3, '-')                              AS PORQUE3
+       ,NVL(FTA.PORQUE4, '-')                              AS PORQUE4
+       ,NVL(FTA.PORQUE5, '-')                              AS PORQUE5
+       ,DBMS_LOB.SUBSTR(FTA.CAUSARAIZ, 4000, 1)            AS CAUSARAIZ
+       ,DBMS_LOB.SUBSTR(FTA.ACAOCORRET, 4000, 1)           AS ACAOCORRET
+       ,CASE FTA.TIPOACAO
+             WHEN '1' THEN 'Criar padrão operacional'
+             WHEN '2' THEN 'Revisar padrão'
+             WHEN '3' THEN 'Treinar equipe'
+             WHEN '4' THEN 'Ajuste de processo'
+             WHEN '5' THEN 'Manutenção'
+             WHEN '6' THEN 'Alteração de fornecedor/material'
+             WHEN '7' THEN 'Alteração de maquinário'
+             ELSE NVL(FTA.TIPOACAO, '-')
+        END                                                AS TIPOACAO
+       ,NVL(R3.NOMEFUNC, '-')                              AS RESP_ACAO
+       ,TO_CHAR(FTA.ACAOPRAZO, 'DD/MM/YYYY')               AS ACAOPRAZO
+       ,TO_CHAR(FTA.DTVERIFICA, 'DD/MM/YYYY')              AS DTVERIFICA
+       ,CASE FTA.VERIFICACAO
+             WHEN '1' THEN 'A anomalia não voltou'
+             WHEN '2' THEN 'Voltou parcialmente'
+             WHEN '3' THEN 'Voltou totalmente'
+             ELSE NVL(FTA.VERIFICACAO, '-')
+        END                                                AS VERIFICACAO
+       ,DBMS_LOB.SUBSTR(FTA.CONCLUSAO, 4000, 1)            AS CONCLUSAO
+       ,CASE FTA.FINALIZACAO
+             WHEN 'E' THEN 'Encerrar FTA'
+             WHEN 'R' THEN 'Reabrir análise'
+             ELSE NVL(FTA.FINALIZACAO, '-')
+        END                                                AS FINALIZACAO
+       ,NVL(APR.NOMEFUNC, '-')                             AS APROVADOR
+       ,FTA.IMG1                                           AS IMG1
+       ,FTA.IMG2                                           AS IMG2
+  FROM AD_TGFFTA FTA
+  LEFT JOIN TFPDEP DEP  ON FTA.CODDEP     = DEP.CODDEP
+  LEFT JOIN TFPDEP DEPR ON FTA.CODDEPRESP = DEPR.CODDEP
+  LEFT JOIN TFPFUN FUN  ON FTA.CODFUNC    = FUN.CODFUNC
+  LEFT JOIN TFPFUN R2   ON FTA.RESP2      = R2.CODFUNC
+  LEFT JOIN TFPFUN R3   ON FTA.RESP3      = R3.CODFUNC
+  LEFT JOIN TFPFUN APR  ON FTA.APROVADOR  = APR.CODFUNC
+ WHERE FTA.NUFTA = $P{PK_NUFTA}]]>
+	</queryString>
+	<field name="NUFTA" class="java.math.BigDecimal"/>
+	<field name="DTFTA" class="java.lang.String"/>
+	<field name="SETOR_AFETADO" class="java.lang.String"/>
+	<field name="RESP_INDICADOR" class="java.lang.String"/>
+	<field name="INDICADOR" class="java.lang.String"/>
+	<field name="INDICADORORT" class="java.lang.String"/>
+	<field name="META" class="java.math.BigDecimal"/>
+	<field name="RESOBTIDO" class="java.math.BigDecimal"/>
+	<field name="DESCOANOM" class="java.lang.String"/>
+	<field name="CONTENCAO" class="java.lang.String"/>
+	<field name="RESP_CONT" class="java.lang.String"/>
+	<field name="CONTPRAZO" class="java.lang.String"/>
+	<field name="PROBLEMA" class="java.lang.String"/>
+	<field name="SETOR_CAUSADOR" class="java.lang.String"/>
+	<field name="PORQUE1" class="java.lang.String"/>
+	<field name="PORQUE2" class="java.lang.String"/>
+	<field name="PORQUE3" class="java.lang.String"/>
+	<field name="PORQUE4" class="java.lang.String"/>
+	<field name="PORQUE5" class="java.lang.String"/>
+	<field name="CAUSARAIZ" class="java.lang.String"/>
+	<field name="ACAOCORRET" class="java.lang.String"/>
+	<field name="TIPOACAO" class="java.lang.String"/>
+	<field name="RESP_ACAO" class="java.lang.String"/>
+	<field name="ACAOPRAZO" class="java.lang.String"/>
+	<field name="DTVERIFICA" class="java.lang.String"/>
+	<field name="VERIFICACAO" class="java.lang.String"/>
+	<field name="CONCLUSAO" class="java.lang.String"/>
+	<field name="FINALIZACAO" class="java.lang.String"/>
+	<field name="APROVADOR" class="java.lang.String"/>
+	<field name="IMG1" class="java.io.InputStream"/>
+	<field name="IMG2" class="java.io.InputStream"/>
+	<background>
+		<band/>
+	</background>
+	<title>
+		<band height="46">
+			<staticText>
+				<reportElement x="0" y="0" width="539" height="26"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font fontName="Arial" size="13" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FICHA DE ANOMALIA DE PROCESSO PRODUTIVO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="26" width="539" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font fontName="Arial" size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Análise e Tratamento de Não Conformidade — Metodologia dos 5 Porquês]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="690" splitType="Stretch">
+			<!-- ============ 1. IDENTIFICAÇÃO ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+					<font fontName="Arial" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[1. IDENTIFICAÇÃO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="15" width="68" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Nr. Anomalia]]></text>
+			</staticText>
+			<textField>
+				<reportElement mode="Opaque" x="68" y="15" width="92" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUFTA}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="160" y="15" width="68" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Dt. Abertura]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="228" y="15" width="92" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DTFTA}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="320" y="15" width="78" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Setor Afetado]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="398" y="15" width="141" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SETOR_AFETADO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="30" width="140" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Responsável pelo Indicador]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="140" y="30" width="399" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{RESP_INDICADOR}]]></textFieldExpression>
+			</textField>
+			<!-- ============ 2. INDICADOR / ANOMALIA ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="48" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[2. INDICADOR / DESCRIÇÃO DA ANOMALIA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="63" width="100" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Indicador Afetado]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="100" y="63" width="160" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{INDICADOR}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="260" y="63" width="100" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Outros (descreva)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="360" y="63" width="179" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{INDICADORORT}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="78" width="100" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Meta]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="100" y="78" width="160" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{META}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="260" y="78" width="100" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Resultado Obtido]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="360" y="78" width="179" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{RESOBTIDO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="93" width="539" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Descrição Objetiva da Anomalia]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="106" width="539" height="48"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="3" y="109" width="533" height="42"/>
+				<box topPadding="2" leftPadding="3"/>
+				<textElement verticalAlignment="Top"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCOANOM}]]></textFieldExpression>
+			</textField>
+			<!-- ============ 3. CONTENÇÃO / SOLUÇÃO IMEDIATA ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="157" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[3. CONTENÇÃO — SOLUÇÃO IMEDIATA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="172" width="539" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Solução Imediata Adotada]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="185" width="539" height="44"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="3" y="188" width="533" height="38"/>
+				<box topPadding="2" leftPadding="3"/>
+				<textElement verticalAlignment="Top"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CONTENCAO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="229" width="68" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Responsável]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="68" y="229" width="182" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{RESP_CONT}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="250" y="229" width="50" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Prazo]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="300" y="229" width="239" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CONTPRAZO}]]></textFieldExpression>
+			</textField>
+			<!-- ============ 4. ANÁLISE DE CAUSA — 5 PORQUÊS ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="247" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[4. ANÁLISE DE CAUSA — 5 PORQUÊS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="262" width="68" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Problema]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="68" y="262" width="291" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PROBLEMA}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="359" y="262" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Setor Causador]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="449" y="262" width="90" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SETOR_CAUSADOR}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="277" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[1º Por quê?]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="90" y="277" width="449" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PORQUE1}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="292" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[2º Por quê?]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="90" y="292" width="449" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PORQUE2}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="307" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[3º Por quê?]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="90" y="307" width="449" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PORQUE3}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="322" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[4º Por quê?]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="90" y="322" width="449" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PORQUE4}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="337" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[5º Por quê?]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="90" y="337" width="449" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PORQUE5}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="352" width="539" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Causa Raiz Definida]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="365" width="539" height="44"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="3" y="368" width="533" height="38"/>
+				<box topPadding="2" leftPadding="3"/>
+				<textElement verticalAlignment="Top"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CAUSARAIZ}]]></textFieldExpression>
+			</textField>
+			<!-- ============ 5. AÇÃO CORRETIVA ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="412" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[5. AÇÃO CORRETIVA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="427" width="539" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[O que será feito para impedir a reincidência]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="440" width="539" height="44"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="3" y="443" width="533" height="38"/>
+				<box topPadding="2" leftPadding="3"/>
+				<textElement verticalAlignment="Top"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{ACAOCORRET}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="484" width="80" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Tipo da Ação]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="80" y="484" width="130" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TIPOACAO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="210" y="484" width="68" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Responsável]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="278" y="484" width="131" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{RESP_ACAO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="409" y="484" width="45" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Prazo]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="454" y="484" width="85" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{ACAOPRAZO}]]></textFieldExpression>
+			</textField>
+			<!-- ============ 6. VERIFICAÇÃO DA EFICÁCIA ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="502" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[6. VERIFICAÇÃO DA EFICÁCIA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="517" width="85" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Dt. Verificação]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="85" y="517" width="125" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DTVERIFICA}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="210" y="517" width="130" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Verificação de Efetividade]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="340" y="517" width="199" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{VERIFICACAO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="532" width="539" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Conclusão]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="545" width="539" height="40"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="3" y="548" width="533" height="34"/>
+				<box topPadding="2" leftPadding="3"/>
+				<textElement verticalAlignment="Top"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CONCLUSAO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="585" width="70" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Finalização]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="70" y="585" width="469" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{FINALIZACAO}]]></textFieldExpression>
+			</textField>
+			<!-- ============ 7. APROVAÇÃO ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="603" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[7. APROVAÇÃO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="618" width="90" height="15" backcolor="#E0E0E0"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Aprovado por]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="90" y="618" width="449" height="15" backcolor="#FFFFFF"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{APROVADOR}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="0" y="633" width="265" height="56"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<line>
+				<reportElement x="15" y="672" width="235" height="1"/>
+				<graphicElement><pen lineWidth="0.5"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="0" y="675" width="265" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Responsável pela Ficha]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="274" y="633" width="265" height="56"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</rectangle>
+			<line>
+				<reportElement x="289" y="672" width="235" height="1"/>
+				<graphicElement><pen lineWidth="0.5"/></graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="274" y="675" width="265" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Aprovação / Qualidade]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20">
+			<line>
+				<reportElement x="0" y="0" width="539" height="1"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#AAAAAA"/></graphicElement>
+			</line>
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement x="0" y="4" width="270" height="14"/>
+				<textElement verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="270" y="4" width="269" height="14"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Página " + $V{PAGE_NUMBER} + " de "]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="0" y="4" width="539" height="14"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="Arial" size="7"/></textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[String.valueOf($V{PAGE_NUMBER})]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="198">
+			<!-- ============ 8. REGISTRO FOTOGRÁFICO ============ -->
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="539" height="15" forecolor="#FFFFFF" backcolor="#2B5EA7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="8" isBold="true"/></textElement>
+				<text><![CDATA[8. REGISTRO FOTOGRÁFICO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="15" width="265" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Imagem da Anomalia]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="274" y="15" width="265" height="13" backcolor="#E8E8E8"/>
+				<box leftPadding="3"><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="Arial" size="7" isBold="true"/></textElement>
+				<text><![CDATA[Imagem da Solução]]></text>
+			</staticText>
+			<image scaleImage="RetainShape" isUsingCache="false" onErrorType="Blank">
+				<reportElement x="0" y="28" width="265" height="170"/>
+				<box><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<imageExpression class="java.io.InputStream"><![CDATA[$F{IMG1}]]></imageExpression>
+			</image>
+			<image scaleImage="RetainShape" isUsingCache="false" onErrorType="Blank">
+				<reportElement x="274" y="28" width="265" height="170"/>
+				<box><pen lineWidth="0.5" lineColor="#AAAAAA"/></box>
+				<imageExpression class="java.io.InputStream"><![CDATA[$F{IMG2}]]></imageExpression>
+			</image>
+		</band>
+	</summary>
+</jasperReport>
