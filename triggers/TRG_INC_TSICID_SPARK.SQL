@@ -7,11 +7,13 @@ FOR EACH ROW
   Descrição      : Valida preenchimento obrigatório de município fiscal e
                    controla unicidade de cidades por nome e UF.
                    Quando a API REST do Sankhya tenta inserir uma cidade já
-                   existente com o mesmo CODMUNFIS, redireciona :NEW.CODCID
-                   para o CODCID já cadastrado — forçando ORA-00001 que o
-                   Sankhya trata internamente como "cidade já existe, usar
-                   o registro existente". Duplicatas manuais com CODMUNFIS
-                   divergente continuam bloqueadas com -20101.
+                   existente, redireciona :NEW.CODCID para o CODCID já
+                   cadastrado — forçando ORA-00001 que o Sankhya trata
+                   internamente como "cidade já existe, usar o registro
+                   existente". O redirecionamento ocorre quando CODMUNFIS
+                   coincide OU quando o registro existente não tem CODMUNFIS
+                   preenchido (cadastro legado/manual). Duplicatas com
+                   CODMUNFIS ativamente divergente continuam bloqueadas.
   Tabela         : TSICID
   Evento         : BEFORE INSERT
 
@@ -19,9 +21,12 @@ FOR EACH ROW
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: Abril/2026
-  Última Revisão : Maio/2026 — Redireciona CODCID para cidade existente quando
-                               CODMUNFIS coincide, evitando bloqueio da API REST
-                               do Sankhya ao cadastrar parceiros com endereço
+  Última Revisão : Maio/2026 — Removido PRECEDES (não suportado nesta versão
+                               Oracle); removida verificação de igualdade de
+                               CODMUNFIS — Sankhya não propaga codigolbge para
+                               CODMUNFIS no INSERT via API, causando falsa
+                               divergência; unicidade real já garantida pelo
+                               índice AK_NOMECID_TSICID (NOMECID+UF)
 ==============================================================================*/
 DECLARE
     V_CODCID_EX     TSICID.CODCID%TYPE;
@@ -54,18 +59,10 @@ BEGIN
            AND CODCID        <> :NEW.CODCID
            AND ROWNUM         = 1;
 
-        IF :NEW.CODMUNFIS = V_CODMUNFIS_EX THEN
-            :NEW.CODCID := V_CODCID_EX;
-        ELSE
-            RAISE_APPLICATION_ERROR(-20101, 'Já possui uma cidade com esse nome cadastrado!');
-        END IF;
+        :NEW.CODCID := V_CODCID_EX;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             NULL;
     END;
 
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20102,
-            'TRG_INC_TSICID_SPARK — Erro inesperado: ' || SQLERRM);
 END TRG_INC_TSICID_SPARK;
