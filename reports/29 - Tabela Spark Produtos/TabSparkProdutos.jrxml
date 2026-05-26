@@ -61,13 +61,13 @@
     ,P.REFERENCIA
     ,P.NCM
     ,P.AD_PESOLIQ_SPARK
-    ,NVL(TRIM(TO_CHAR(P.AD_ALTURA_SPARK)),    '0') || 'x' ||
-     NVL(TRIM(TO_CHAR(P.AD_ESPESSURA_SPARK)), '0') || 'x' ||
-     NVL(TRIM(TO_CHAR(P.AD_LARGURA_SPARK)),   '0') AS MEDIDA_PRODUTO
+    ,NVL(TRIM(TO_CHAR(P.AD_ESPESSURA_SPARK)), '0') || 'x' ||
+     NVL(TRIM(TO_CHAR(P.AD_LARGURA_SPARK)),   '0') || 'x' ||
+     NVL(TRIM(TO_CHAR(P.AD_ALTURA_SPARK)),    '0') AS MEDIDA_PRODUTO
     ,P.PESOBRUTO
-    ,NVL(TRIM(TO_CHAR(P.ALTURA)),    '0') || 'x' ||
-     NVL(TRIM(TO_CHAR(P.ESPESSURA)), '0') || 'x' ||
-     NVL(TRIM(TO_CHAR(P.LARGURA)),   '0') AS MEDIDA_CAIXA
+    ,NVL(TRIM(TO_CHAR(P.ESPESSURA)), '0') || 'x' ||
+     NVL(TRIM(TO_CHAR(P.LARGURA)),   '0') || 'x' ||
+     NVL(TRIM(TO_CHAR(P.ALTURA)),    '0') AS MEDIDA_CAIXA
 FROM TGFPRO P
 WHERE P.ATIVO = 'S'
   AND NVL(P.AD_OBSOLETO, 'N') <> 'S'
@@ -111,7 +111,7 @@ ORDER BY P.CODPROD]]>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font fontName="Arial" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
                 </textElement>
-                <text><![CDATA[TABELA SPARK CARACTERÍSTICAS V2]]></text>
+                <text><![CDATA[TABELA SPARK CARACTERÍSTICAS]]></text>
             </staticText>
             <staticText>
                 <reportElement x="668" y="6" width="62" height="14"/>
@@ -335,7 +335,7 @@ ORDER BY P.CODPROD]]>
                 <textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{AD_PESOLIQ_SPARK}]]></textFieldExpression>
             </textField>
 
-            <!-- MEDIDA_PRODUTO (AD_ALTURA x AD_ESPESSURA x AD_LARGURA) -->
+            <!-- MEDIDA_PRODUTO (AD_ESPESSURA x AD_LARGURA x AD_ALTURA = CxLxA) -->
             <textField isBlankWhenNull="true">
                 <reportElement x="587" y="1" width="80" height="12"/>
                 <box><rightPen lineWidth="0.3" lineColor="#B8CCE4"/></box>
@@ -355,7 +355,7 @@ ORDER BY P.CODPROD]]>
                 <textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{PESOBRUTO}]]></textFieldExpression>
             </textField>
 
-            <!-- MEDIDA_CAIXA (ALTURA x ESPESSURA x LARGURA) -->
+            <!-- MEDIDA_CAIXA (ESPESSURA x LARGURA x ALTURA = CxLxA) -->
             <textField isBlankWhenNull="true">
                 <reportElement x="722" y="1" width="110" height="12"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
