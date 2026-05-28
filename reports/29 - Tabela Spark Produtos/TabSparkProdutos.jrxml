@@ -36,9 +36,8 @@
     ,NVL(TRIM(TO_CHAR(P.ESPESSURA)), '0') || 'x' ||
      NVL(TRIM(TO_CHAR(P.LARGURA)),   '0') || 'x' ||
      NVL(TRIM(TO_CHAR(P.ALTURA)),    '0') AS MEDIDA_CAIXA,
-     G.DESCRGRUPOPROD
+     (SELECT DESCRGRUPOPROD FROM TGFGRU WHERE CODGRUPOPROD = $P{CODGRUPOPROD}) AS DESCRGRUPOPROD
 FROM TGFPRO P
-     INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
 WHERE P.ATIVO = 'S'
   AND NVL(P.AD_OBSOLETO, 'N') <> 'S'
   AND P.CODGRUPOPROD IN (
@@ -72,11 +71,11 @@ ORDER BY P.CODPROD]]>
 				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
 			</image>
 			<staticText>
-				<reportElement x="146" y="0" width="324" height="42"/>
+				<reportElement x="146" y="0" width="304" height="42"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font fontName="Arial" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
 				</textElement>
-				<text><![CDATA[TABELA SPARK CARACTERÍSTICAS]]></text>
+				<text><![CDATA[TABELA SPARK CARACTERÍSTICAS - ]]></text>
 			</staticText>
 			<staticText>
 				<reportElement x="668" y="6" width="62" height="14"/>
@@ -93,8 +92,8 @@ ORDER BY P.CODPROD]]>
 				<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement mode="Transparent" x="470" y="0" width="197" height="42" forecolor="#000000" backcolor="#FFFFFF"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
+				<reportElement mode="Transparent" x="450" y="0" width="217" height="42" forecolor="#000000" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="Arial" size="16" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica-Bold" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRGRUPOPROD}]]></textFieldExpression>
