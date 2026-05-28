@@ -1,0 +1,60 @@
+<gadget >
+  <prompt-parameters>
+    <parameter  id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_CODGRUPOPROD : Entidade/Tabela" order="0"/>
+  </prompt-parameters>
+  <level id="026" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_027" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS">
+          <![CDATA[SELECT P.CODPROD,
+    P.DESCRPROD,
+    P.COMPLDESC,
+    P.AD_DESCRPRODOED,
+    P.AD_QTDEMB,
+    P.REFERENCIA,
+    P.NCM,
+    P.AD_PESOLIQ_SPARK,
+    NVL(TRIM(TO_CHAR(P.AD_ESPESSURA_SPARK)), '0') || 'x' || NVL(TRIM(TO_CHAR(P.AD_LARGURA_SPARK)),   '0') || 'x' || NVL(TRIM(TO_CHAR(P.AD_ALTURA_SPARK)),    '0') AS MEDIDA_PRODUTO,
+    P.PESOBRUTO,
+    NVL(TRIM(TO_CHAR(P.ESPESSURA)), '0') || 'x' || NVL(TRIM(TO_CHAR(P.LARGURA)),   '0') || 'x' || NVL(TRIM(TO_CHAR(P.ALTURA)),    '0') AS MEDIDA_CAIXA
+FROM TGFPRO P
+WHERE P.ATIVO = 'S'
+    AND NVL(P.AD_OBSOLETO, 'N') <> 'S'
+    AND P.CODGRUPOPROD IN (
+        SELECT CODGRUPOPROD
+            FROM TGFGRU
+        WHERE CODGRUPOPROD = :P_CODGRUPOPROD
+            OR (    CODGRUPAI = :P_CODGRUPOPROD
+                AND (SELECT ANALITICO FROM TGFGRU WHERE CODGRUPOPROD = :P_CODGRUPOPROD) = 'N'
+                )
+    )
+ORDER BY P.DESCRPROD]]>
+        </expression>
+        <metadata>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="DESCRPROD" label="Descrição" type="S" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="COMPLDESC" label="Referência" type="S" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="AD_DESCRPRODOED" label="Nome comercial" type="S" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="AD_QTDEMB" label="MOQ" type="F" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="REFERENCIA" label="EAN" type="S" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="NCM" label="NCM" type="S" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="AD_PESOLIQ_SPARK" label="Peso Líquido" type="F" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="MEDIDA_PRODUTO" label="Medidas do Produto" type="S" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="PESOBRUTO" label="Peso Bruto" type="F" visible="true" useFooter="false" align="center">
+          </field>
+          <field name="MEDIDA_CAIXA" label="Medidas da Caixa" type="S" visible="true" useFooter="false" align="center">
+          </field>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>
