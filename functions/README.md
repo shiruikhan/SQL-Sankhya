@@ -2,12 +2,60 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de functions:** 3  
+**Total de functions:** 5  
 **Banco:** Oracle PL/SQL  
 
 ---
 
 ## Catálogo
+
+### `FC_GETPRECO_TRASF_SP`
+
+**Arquivo:** `FC_GETPRECO_TRASF_SP.SQL`  
+**Tipo de retorno:** `FLOAT`
+
+**Assinatura:**
+```sql
+FC_GETPRECO_TRASF_SP(P_CODPROD IN INT) RETURN FLOAT
+```
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `P_CODPROD` | `INT` | Código do produto a consultar |
+
+**Retorno:** Custo mais recente do produto na tabela de custos customizada (`AD_TGSCUS` / `AD_TGSCIT`) com data de referência `≤ SYSDATE`. Retorna `0` se não houver registro.
+
+**Tabelas consultadas:** `AD_TGSCUS` (cabeçalho da tabela de custo), `AD_TGSCIT` (itens da tabela de custo)  
+**Uso:** Procedure de transferência entre empresas para obter o preço de custo do produto no momento da geração da nota.
+
+---
+
+### `FN_XMLTYPE_SAFE`
+
+**Arquivo:** `FN_XMLTYPE_SAFE.SQL`  
+**Tipo de retorno:** `XMLTYPE`  
+**Criação:** Abril/2026 | **Última revisão:** Abril/2026
+
+**Assinatura:**
+```sql
+FN_XMLTYPE_SAFE(P_XML IN VARCHAR2) RETURN XMLTYPE
+```
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `P_XML` | `VARCHAR2` | String contendo o conteúdo XML a converter |
+
+**Retorno:**
+- `XMLTYPE` — objeto XML parseado com sucesso
+- `NULL` — quando o conteúdo não é XML válido (suprime `ORA-31011`)
+
+**Uso:** Substituição de `XMLTYPE(X.DOCSREF)` no `PASSING` do `XMLTABLE` na view `VW_CTE_AUTORIZADOS`. Evita que XMLs malformados ou nulos em `TGFIXN.DOCSREF` derrubem queries que dependem de parsing de XML.
+
+---
 
 ### `FC_TEMMETA_SPARK`
 

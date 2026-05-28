@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de componentes:** 70+  
+**Total de componentes:** 75+  
 **Ambiente:** Sankhya BI (SQL analítico Oracle)  
 
 ---
@@ -227,7 +227,16 @@ Query de teste/diagnóstico para validar estrutura JSON em `TGFECQ`.
 
 ---
 
-### 10. Auxiliares / Cálculo
+### 10. Cadastro de Produtos
+
+#### `Tabela de características de produto/`
+- `p1.sql` — Tabela de características de produto: lista produtos ativos e não obsoletos com descrição completa, referência, NCM, peso líquido, medidas do produto (espessura × largura × altura em campos customizados `AD_`) e medidas da caixa (campos nativos). Aceita filtro multilist por grupo via `:P_CODGRUPOPROD`; quando o grupo informado for sintético (`ANALITICO = 'N'`), inclui automaticamente os filhos diretos. Tabelas: `TGFPRO`, `TGFGRU`.
+- `filtro.sql` — Componente de filtro multilist que popula o parâmetro `:P_CODGRUPOPROD` com grupos de produto cujo código inicia com `'3'`. Retorna `VALUE` (código) e `LABEL` (descrição).
+- `p1.xml` — Gadget de configuração do componente BI (prompt-parameter `P_CODGRUPOPROD` com entidade `GrupoProduto@CODGRUPOPROD`).
+
+---
+
+### 11. Auxiliares / Cálculo
 
 #### `Cálculo de Proporcionalidade Matriz.sql`
 Query de apoio ao cálculo de proporcionalidade de componentes em matrizes de produção.

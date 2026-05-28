@@ -2,8 +2,8 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Versão:** 2.0  
-**Data:** Abril/2026  
+**Versão:** 2.1  
+**Data:** Maio/2026  
 **Plataforma-alvo:** Sankhya ERP (Oracle Database)
 
 ---
@@ -22,6 +22,7 @@ O objetivo é manter um histórico versionado, auditável e documentado de cada 
 - Triggers de banco de dados (validação, automação, notificação)
 - Stored procedures e procedures de visão externa (botões de ação, eventos de tela)
 - Funções escalares auxiliares
+- Packages Oracle (estado de sessão compartilhado entre triggers e procedures)
 - Views de consulta
 - Tabelas customizadas (prefixo `AD_`)
 - Componentes BI (queries analíticas para dashboards gerenciais)
@@ -46,6 +47,7 @@ SQL Sankhya/
 ├── triggers/               Triggers de banco de dados (validação, automação, notificação)
 ├── procedures/             Stored procedures e procedures de visão externa
 ├── functions/              Funções escalares auxiliares
+├── package/                Packages Oracle (variáveis de sessão compartilhadas entre objetos)
 ├── view/                   Views de consulta reutilizáveis
 ├── tables/                 Scripts DDL de tabelas customizadas (prefixo AD_)
 ├── componentes BI/         Queries analíticas para dashboards e relatórios gerenciais
@@ -64,7 +66,7 @@ SQL Sankhya/
 
 | Tecnologia | Uso |
 |---|---|
-| Oracle PL/SQL | Triggers, procedures, functions, views, DDL |
+| Oracle PL/SQL | Triggers, procedures, functions, packages, views, DDL |
 | SQL Analítico | CTEs, window functions, queries de BI |
 | Java (SE 8) | Listeners de eventos, botões de ação, utilitários |
 | JasperReports (.jrxml) | Templates de relatórios impressos |
@@ -81,7 +83,7 @@ SQL Sankhya/
 | **Vendas e Faturamento** | `TRG_CMP_TGFCAB_NFE_SPARK`, `STP_VALIDARCONF_SPARK`, `STP_VALIDARSERIE_SPARK`, `STP_NFREFDEV_SPARK` |
 | **Estoque** | `VGFEST`, `STP_GARANTEESTOQUE_SPARK`, `STP_TRANSFEMP_SPARK`, `OBTEMCUSTO_SPARK` |
 | **Financeiro** | `TRG_REFORCA_NAT_FIN`, `STP_INCLUIRLANCTO_SPARK`, `SPK_TGFFIN_LOG`, `STP_EXCLUIRFINCOM_SPARK` |
-| **Logística e Expedição** | `STP_GERARVOLUMES_SPARK`, `STP_INCEMB_SPARK`, `TRG_COTAFRETE_SPARK`, `CotaFrete.java` |
+| **Logística e Expedição** | `STP_GERARVOLUMES_SPARK`, `STP_INCEMB_SPARK`, `TRG_COTAFRETE_SPARK`, `TRG_FRETE_CIF_MTKPL_SPARK`, `CotaFrete.java` |
 | **Assistência Técnica** | `STP_INCMOVASSIST_SPARK`, `STP_INCNCONFORM_SPARK`, `TRG_UPD_OSINTERNA`, `STP_ENVIAEMAILOS_SPARK` |
 | **Produção / Apontamento** | `TRG_VAL_SETOR_CODFUNC_TPRAPA`, `TRG_VAL_AD_CODFUNC_TPRAPA`, `AD_MAP_SETOR_FUNC` |
 | **Integração E-commerce / Site** | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA`, `TRG_INC_UPD_INTEGRA` |
@@ -109,24 +111,24 @@ SQL Sankhya/
 ## 7. Inventário de Objetos
 
 ### 7.1 Triggers (pasta `triggers/`)
-> 75 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
+> 82 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
 
 Agrupadas por domínio:
 
 | Domínio | Qtd | Exemplos |
 |---|---|---|
-| Produção / PCP | 9 | `TRG_INC_UPD_TPRMPS_SPARK`, `TRG_INC_UPD_TPRPRC_SPARK`, `TRG_INC_UPD_TPRIPROC_SPARK` |
-| Nota Fiscal / Movimentação | 10 | `TRG_CMP_TGFCAB_NFE_SPARK`, `TRG_INC_TGFCAB_DC_SPARK`, `TRG_UPD_TGFCAB_DTFAT_SPARK` |
-| Compras / SC | 5 | `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC`, `TRG_BLOQUEIA_EDICAO_STATUS_CR` |
-| Logística / Frete | 4 | `TRG_COTAFRETE_SPARK`, `TRG_COTAFRETE_EMB_SPARK`, `TRG_AD_EMBPED_SPARK` |
-| Assistência / O.S. | 4 | `TRG_UPD_OSINTERNA`, `TRG_UPD_OSINTERNA_DHFIM`, `TRG_INS_OSSTATUS_SPARK` |
-| Itens de Nota | 4 | `TRG_INC_UPD_TGFITE_SPARK`, `TRG_UPD_INS_TGFITE_CONSUMOPRD`, `TRG_UPT_TGFITE` |
-| Validação / Controle | 8 | `TRG_VAL_SETOR_CODFUNC_TPRAPA`, `TRG_VAL_CSTIPI_SPARK`, `TRG_BLOQUEIA_DELETE_SC` |
-| Financeiro | 3 | `TRG_REFORCA_NAT_FIN`, `SPK_TGFFIN_LOG`, `TRG_INCDEVCH_SPARK` |
-| Parceiro / Cadastro | 3 | `TRG_UPD_TGFPAR_UF_SPARK`, `TRG_INC_TSICID_SPARK`, `TRG_INC_UPD_CMF_SPARK` |
+| Produção / PCP | 17 | `TRG_INC_UPD_TPRMPS_SPARK`, `TRG_INC_UPD_TPRPRC_SPARK`, `TRG_INC_UPD_TPRIPROC_SPARK` |
+| Nota Fiscal / Movimentação | 19 | `TRG_CMP_TGFCAB_NFE_SPARK`, `TRG_INC_TGFCAB_DC_SPARK`, `TRG_UPD_TGFCAB_MOEDA_SPARK2`, `TRG_INC_TGFVAR_SPARK` |
+| Compras / SC | 6 | `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC`, `TRG_BLOQUEIA_EDICAO_STATUS_CR` |
+| Logística / Frete | 5 | `TRG_COTAFRETE_SPARK`, `TRG_COTAFRETE_EMB_SPARK`, `TRG_FRETE_CIF_MTKPL_SPARK` |
+| Assistência / O.S. | 6 | `TRG_UPD_OSINTERNA`, `TRG_UPD_OSINTERNA_DHFIM`, `TRG_INS_OSSTATUS_SPARK` |
+| Itens de Nota | 5 | `TRG_INC_UPD_TGFITE_SPARK`, `TRG_UPD_INS_TGFITE_CONSUMOPRD`, `TRG_UPT_TGFITE` |
+| Validação / Controle | 3 | `TRG_VAL_SETOR_CODFUNC_TPRAPA`, `TRG_VAL_CSTIPI_SPARK`, `TRG_BLOQUEIA_DELETE_SC` |
+| Financeiro | 4 | `TRG_REFORCA_NAT_FIN`, `SPK_TGFFIN_LOG`, `TRG_INCDEVCH_SPARK` |
+| Parceiro / Cadastro | 6 | `TRG_UPD_TGFPAR_UF_SPARK`, `TRG_INC_TSICID_SPARK`, `TRG_INC_TGFPAR_SPARK` |
 | Séries / Conferência | 4 | `TRG_INC_TGFSER_SPARK`, `TRG_DLT_TGFSER_SPARK`, `TRG_TGFCON2_SPARK` |
 | Notificações / Avisos | 4 | `TRG_AVISOCONF_SPARK`, `TRG_UPD_AVISOSPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK` |
-| Demais | 17 | Transferência, impressão de etiquetas, etc. |
+| Demais | 3 | Integrações, produto, custo |
 
 ---
 
@@ -155,8 +157,19 @@ Agrupadas por domínio:
 | Objeto | Assinatura | Descrição |
 |---|---|---|
 | `FC_TEMMETA_SPARK` | `(P_CODPROD NUMBER) → VARCHAR2` | Retorna `'S'` se o produto possui meta cadastrada (CODMETA = 3) |
+| `FC_GETPRECO_TRASF_SP` | `(P_CODPROD INT) → FLOAT` | Retorna o custo mais recente do produto na tabela de custos customizada (`AD_TGSCUS`/`AD_TGSCIT`) |
+| `FN_XMLTYPE_SAFE` | `(P_XML VARCHAR2) → XMLTYPE` | Converte string para XMLTYPE retornando NULL em caso de XML inválido (evita ORA-31011) |
 | `OBTEMCUSTO_SPARK` | `(P_CODPROD, P_POREMP, P_CODEMP, P_PORLOCAL, P_CODLOCAL, P_PORCONTROLE, P_CONTROLE, P_DATA, P_TIPO) → FLOAT` | Retorna o custo do produto por tipo (reposição, médio, variável, sem ICMS, etc.) |
 | `OBTEM_TOTAIS_MRP` | `(P_NUMPS, P_CODPRODPA, P_CODPRODMP, P_TIPO) → FLOAT` | Retorna totais do MRP: meta PA, produção PA, saldo a produzir, necessidade MP, estoque disponível |
+
+---
+
+### 7.3.1 Packages (pasta `package/`)
+> Ver [`package/README.md`](package/README.md).
+
+| Objeto | Descrição |
+|---|---|
+| `PKG_SPARK_MOEDA` | Package de estado de sessão — expõe variáveis globais (`V_NUNOTA`, `V_VLRMOEDA`, `V_CODTIPOPER`) usadas pela trigger compound `TRG_UPD_TGFCAB_MOEDA_SPARK2` para comunicar valores do cabeçalho aos triggers de itens sem incorrer em ORA-04091 |
 
 ---
 
@@ -182,7 +195,7 @@ Agrupadas por domínio:
 ---
 
 ### 7.6 Componentes BI (pasta `componentes BI/`)
-> 70+ queries. Ver [`componentes BI/README.md`](componentes BI/README.md).
+> 75+ queries. Ver [`componentes BI/README.md`](componentes BI/README.md).
 
 | Tema | Dashboard / Componente |
 |---|---|
@@ -192,6 +205,7 @@ Agrupadas por domínio:
 | Compras | Relação de Compras por Previsão, Adiantamento Fornecedor, Evolução Mensal de Compras |
 | Assistência | Informativo de Gestão da Assistência, Gestão Externa, Detalhes |
 | Auditoria | Auditoria de Movimentações, Auditoria Produção-Expedição, Auditor E-commerce |
+| Cadastro | Tabela de Características de Produto (descrição, NCM, medidas, grupo — filtro multilist) |
 
 ---
 
