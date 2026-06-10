@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   ==============================================================================
-  Nome do Script : etiquetanova950-1000
+  Nome do Script : etiquetanova100-150
   Tipo           : Relatório Jasper (.jrxml)
   Grupo          : 5 - Etiquetas de Produto
-  Descrição      : Etiqueta de produto (modelo novo) — faixa de 950-1000mm.
+  Descrição      : Etiqueta de produto (modelo novo) — faixa de 100-150mm.
                    Modelo "etiquetanova" — layout atualizado.
 
   Empresa        : Spark Eletrônica
@@ -19,7 +19,10 @@
 	<property name="ireport.x" value="59"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
-	<parameter name="PK_IDIPROC" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="PK_IDIPROC" class="java.math.BigDecimal" isForPrompting="false">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new BigDecimal(35)]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[SELECT * FROM
 (
@@ -36,15 +39,17 @@ SELECT IPA.IDIPROC,
                    INNER JOIN TGFPRO PRO ON (PRO.CODPROD = IPA.CODPRODPA)
                    INNER JOIN AD_TPRSERPA RPA ON (OP.IDIPROC = RPA.IDIPROC AND RPA.CODPRODPA=IPA.CODPRODPA)
  WHERE OP.IDIPROC = $P{PK_IDIPROC}
- ) WHERE RANQ > 950
- AND RANQ <= 1000]]>
+ ) WHERE RANQ > 100
+ AND RANQ <= 150]]>
 	</queryString>
+	<field name="IDIPROC" class="java.math.BigDecimal"/>
 	<field name="CODPROD" class="java.math.BigDecimal"/>
 	<field name="SERIEPA" class="java.lang.String"/>
 	<field name="AD_REFINTERNA" class="java.lang.String"/>
 	<field name="COMPLDESC" class="java.lang.String"/>
 	<field name="AD_ETIQUETAPROD" class="java.lang.String"/>
 	<field name="REFERENCIA" class="java.lang.String"/>
+	<field name="RANQ" class="java.math.BigDecimal"/>
 	<detail>
 		<band height="115" splitType="Stretch">
 			<componentElement>

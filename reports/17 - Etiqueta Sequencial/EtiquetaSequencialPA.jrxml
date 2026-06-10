@@ -1,21 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ==============================================================================
-  Nome do Script : EtiquetaSequencialPA
-  Tipo           : Relatório Jasper (.jrxml)
-  Grupo          : 17 - Etiqueta Sequencial
-  Descrição      : Etiqueta Sequencial para Produto Acabado (PA)
-
-  Empresa        : Spark Eletrônica
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-  ==============================================================================
--->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="EtiquetaSerie" language="groovy" columnCount="2" printOrder="Horizontal" pageWidth="303" pageHeight="42" orientation="Landscape" columnWidth="142" columnSpacing="8" leftMargin="8" rightMargin="2" topMargin="0" bottomMargin="0">
-	<property name="ireport.zoom" value="7.794868400000005"/>
-	<property name="ireport.x" value="351"/>
+	<property name="ireport.zoom" value="5.856400000000003"/>
+	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
 	<parameter name="PK_IDIPROC" class="java.math.BigDecimal" isForPrompting="false"/>
@@ -45,30 +31,30 @@ CAST(IPA.QTDPRODUZIR AS varchar(10)) AS QTDPRODUZIR,
 	<field name="DTFAB" class="java.sql.Timestamp"/>
 	<field name="SEQ" class="java.lang.String"/>
 	<detail>
-		<band height="32" splitType="Stretch">
+		<band height="32">
 			<textField>
 				<reportElement x="0" y="-2" width="141" height="16"/>
-				<textElement verticalAlignment="Top">
+				<textElement verticalAlignment="Top" lineSpacing="Single">
 					<font size="12"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{REFERENCIA}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="0" y="14" width="65" height="18"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
+				<reportElement x="0" y="14" width="60" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="12" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{NROLOTE}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="67" y="14" width="73" height="18"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
+				<reportElement x="62" y="14" width="79" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="12" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{SEQ}+"/"+$F{QTDPRODUZIR}]]></textFieldExpression>
 			</textField>
 			<line>
-				<reportElement x="65" y="24" width="2" height="1"/>
+				<reportElement x="60" y="24" width="2" height="1"/>
 				<graphicElement>
 					<pen lineWidth="1.25"/>
 				</graphicElement>
