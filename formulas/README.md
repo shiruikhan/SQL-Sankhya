@@ -39,16 +39,26 @@ Onde `percentualComissao` vem da tabela de tipos de venda (`TGFTPV`) se o vended
 **Tipo:** Regra de processamento (SQL de condição/ação configurado no Sankhya)  
 **Contexto:** Processamento automático de CT-e na importação de XML (`TGFIXN`)  
 
-**Descrição:** Regra que identifica CT-e autorizados que ainda não foram processados e que possuem NF-e referenciada com tipo de operação `214` (importação/entrada). Utiliza a view `VW_CTE_AUTORIZADOS` para filtrar os documentos elegíveis.
+**Descrição:** Regra que identifica CT-e autorizados elegíveis para processamento automático, garantindo que todas as NF-e referenciadas já estejam em `TGFCAB` e que o `CODTIPOPER` atual bata com o tipo de operação recalculado. Utiliza a view `VW_CTE_AUTORIZADOS` para filtrar os documentos elegíveis.
 
-**Critérios de ativação:**
-- CT-e com status 0, 2 ou 4 (pendentes de processamento)
-- Situação do CT-e: `'A'` (Autorizado)
+**Domínio oficial de `TGFIXN.STATUS` (Portal de Importação de XML):**
+
+| Código | Descrição |
+|---|---|
+| 0 | Pendente |
+| 1 | Cancelado |
+| 2 | Importado |
+| 3 | Inválido |
+| 4 | Com divergência |
+| 5 | Confirmado |
+
+**Critérios de ativação (complemento Spark):**
+- Apenas CT-e (`TIPO = 'C'`), situação `'A'` (Autorizado), sem evento de cancelamento
 - Emitidos há mais de 48 horas (`(SYSDATE - DHEMISS) * 24 > 48`)
-- Emitidos a partir de 01/01/2026
-- Com NF-e referenciada de `CODTIPOPER = 214`
+- Importados a partir de 01/01/2026
+- Todas as NF-e referenciadas presentes em `TGFCAB` e `CODTIPOPER` igual ao TOP recalculado (gate central)
 
-**Integração:** Esta regra complementa o evento `EVP_CLASSIFICACTE_SPARK` — enquanto o evento classifica na importação, esta regra processa documentos que ficaram pendentes por qualquer motivo.
+**Integração:** Esta regra complementa a procedure agendada `STP_CLASSIFICACTE_SPARK` (sucessora do evento `EVP_CLASSIFICACTE_SPARK`) — a procedure classifica o `CODTIPOPER` a cada 5 minutos; a regra libera o documento para o agendador nativo somente quando a classificação está completa e consistente.
 
 ---
 

@@ -34,6 +34,20 @@
   Data de Criação: 2026
   Última Revisão : Abril/2026 — Reescrita completa: correção de alias, AND ausente,
                                 gate NOT EXISTS para garantir todas as NF-e presentes
+                   Junho/2026 — Documentação: TOP padrão corrigido (1301, não 225);
+                                domínio oficial de TGFIXN.STATUS registrado
+
+  Observações    : Domínio oficial de TGFIXN.STATUS (Portal de Importação XML):
+                     0 = Pendente          3 = Inválido
+                     1 = Cancelado         4 = Com divergência
+                     2 = Importado         5 = Confirmado
+                   O filtro nativo do agendador (STATUS = 0, transcrito acima)
+                   NÃO inclui o status 5 (Confirmado), que é documento válido
+                   para a operação. Como este complemento é apenas ANDado à
+                   consulta nativa, ele não consegue AMPLIAR o filtro de status
+                   — CT-es Confirmados só entram no fluxo automático retornando
+                   a Pendente pela tela do portal, ou ajustando o filtro nativo
+                   na configuração do agendador (se a tela permitir).
 ==============================================================================*/
 
 TIPO = 'C'                                    -- apenas CT-e (não NF-e, MDF-e, etc.)
@@ -48,8 +62,9 @@ AND DHIMPORT >= TO_DATE('01/01/2026', 'DD/MM/YYYY') -- importados a partir de 20
 --   1. Todas as NF-e referenciadas já estão em TGFCAB (nenhum CODTIPOPER_NFE nulo)
 --   2. O CODTIPOPER atual bate exatamente com o que as regras de classificação produzem
 --
--- O Sankhya preenche CODTIPOPER = 225 por padrão em todo CT-e importado.
--- Sem esta verificação, um CT-e com TOP 225 (padrão) mas que deveria ser 226 ou 242
+-- O Sankhya preenche CODTIPOPER = 1301 por padrão em todo CT-e importado
+-- (confirmado em produção via AD_LOG_ERROS em Jun/2026).
+-- Sem esta verificação, um CT-e ainda no TOP padrão mas que deveria ser 226 ou 242
 -- seria processado incorretamente assim que todas as NF-e chegassem.
 --
 -- Comportamento da subquery:
