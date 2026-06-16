@@ -3,3 +3,9 @@
 .env
 java/recalcpreco.java
 libs_sankhya/*
+# Dados sensiveis - dash PRODUCAO DIARIA POR SETOR (volumetria e estrutura interna)
+componentes BI/PRODUCAO DIARIA POR SETOR/README.md
+componentes BI/PRODUCAO DIARIA POR SETOR/00_MAPEAMENTO_TABELAS.sql
+# Dados sensiveis - dash PRODUCAO DIARIA POR COLABORADOR (volumetria e nomes de colaboradores)
+componentes BI/PRODUCAO DIARIA POR COLABORADOR/README.md
+componentes BI/PRODUCAO DIARIA POR COLABORADOR/00_MAPEAMENTO_COLABORADOR.sql

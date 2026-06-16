@@ -1,0 +1,23 @@
+*** SIADE ***
+ 
+IF(&CODEMP=2, IF(&PDES('TIPMOV','TGFCAB','NUNOTA='+NUNOTA)='V', IF(&PDES('TIPPESSOA','TGFPAR','CODPARC='+&TGFCAB.CODPARC)='J', 'Operacao contratada no ambito do comercio eletronico ou do telemarketing. Mercadoria destinada a uso e consumo, vedado o aproveitamento de credito nos termos do inciso III do art. 70 do RICMS.', 'Operacao contratada no ambito do comercio eletronico ou do telemarketing, venda beneficiada pelo RET E-PTA 45.000015167-79. '),''),'')
+ 
+&Pdes('V.OBSDEV','VGF_OBSNOTAS_SPARK V','V.NUNOTA_DEV='+NUNOTA)
+ 
+&Pdes('V.OBSRICMS','VGF_OBSRICMS_SPARK V','V.NUNOTA='+NUNOTA)
+ 
+&Pdes('V.OBSIPI','VGF_OBSIPI_SPARK V','V.NUNOTA='+NUNOTA)
+ 
+&Pdes('V.OBS','VGF_OBSNOTASSIMPLES_SPARK  V','V.NUNOTA='+NUNOTA)
+ 
+&Pdes('V.OBSSUFRAMA','VGF_OBSRSUFRAMA_SPARK V','V.NUNOTA='+NUNOTA)
+
+&Pdes('V.OBSSUFRAMA','VGF_OBSPISCOFINS_SPARK V','V.NUNOTA='+NUNOTA)
+ 
+IF(&Val(&Pdes('COUNT(1)','TGFDIN','CODIMP = 1 AND VLRFCPINT > 0 AND NUNOTA='+&TGFCAB.NUNOTA)) = 0,'', 'Recolhimento de FCP conforme Orientacao Tributaria DOLT/SUTRI nro 003/2016 - FEM/FCP ICMS- ALIQ. 2% -> R$ '+formatnumeric('###,##0.00',&Val(&Pdes('SUM(VLRFCPINT)','TGFDIN','CODIMP = 1 AND VLRFCPINT > 0 AND NUNOTA='+&TGFCAB.NUNOTA))))
+ 
+IF(&Val(&Pdes('COUNT(1)','TGFDIN','CODIMP = 2 AND VLRFCPINT > 0 AND NUNOTA='+&TGFCAB.NUNOTA)) = 0,'', 'Recolhimento de FCP conforme Orientacao Tributaria DOLT/SUTRI nro 003/2016 - FEM/FCP ICMS ST- ALIQ. 2% -> R$ '+formatnumeric('###,##0.00',&Val(&Pdes('SUM(VLRFCPINT)','TGFDIN','CODIMP = 2 AND VLRFCPINT > 0 AND NUNOTA='+&TGFCAB.NUNOTA))))
+ 
+&tottributosnfe
+ 
+&Pdes('V.OBSRED','VGF_OBSNOTASRED_SPARK V','V.NUNOTA='+NUNOTA)
