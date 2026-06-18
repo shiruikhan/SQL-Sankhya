@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION OBTEM_TOTAIS_MRP (
     P_TIPO      VARCHAR2   -- Tipo de total a retornar (ver tabela abaixo)
 )
 RETURN FLOAT
+RESULT_CACHE   -- Cacheia por combinação de argumentos; invalida automaticamente em DML nas tabelas-fonte
 /*==============================================================================
   Nome do Script : OBTEM_TOTAIS_MRP
   Tipo           : Function
@@ -52,7 +53,6 @@ RETURN FLOAT
                    TPRATV    — Atividades do processo
                    TPROEST   — Etapas do processo (tipo de item)
                    TGFPRO    — Cadastro de produtos
-                   TGFPAR    — Parceiros (fornecedor da MP)
                    TGFCAB    — Cabeçalho de nota (pedidos de compra)
                    TGFITE    — Itens de nota
                    TGFTOP    — Tipos de operação
@@ -67,7 +67,13 @@ RETURN FLOAT
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 2022
-  Última Revisão : Abril/2026 — Padronização completa: cabeçalho, keywords,
+  Última Revisão : Junho/2026 — Performance/robustez (sem alterar assinatura nem
+                   pontos de chamada): RESULT_CACHE adicionado; tipos N e NA
+                   reescritos em ANSI puro sem GROUP BY/HAVING (elimina o sort
+                   por chamada e o risco de TOO_MANY_ROWS, com retorno idêntico);
+                   handler WHEN OTHERS de topo retornando 0; variável local
+                   P_VALOR → V_VALOR.
+                   Abril/2026 — Padronização completa: cabeçalho, keywords,
                    indentação (tabs → espaços) e comentários de seção
 
   Observações    : - O tipo 'C' (necessidade de compra) está listado no header
@@ -76,11 +82,17 @@ RETURN FLOAT
                      se o layout de locais mudar.
                    - VGFSALDOMRP é uma view intermediária que agrega saldo do MRP
                      por produto e data de referência mensal.
+                   - A função usa RESULT_CACHE: o resultado é cacheado por
+                     combinação de argumentos e invalidado automaticamente em DML
+                     nas tabelas-fonte. Os valores refletem o último COMMIT.
+                   - Tipos N e NA mantêm TGFPRO como INNER JOIN apenas para
+                     preservar o filtro de produto; TGFPAR foi removido (não
+                     influenciava o SUM).
 ==============================================================================*/
 IS
     -- Variável de retorno. Inicializada implicitamente como NULL;
     -- NVL na instrução RETURN garante retorno 0 em caso de NOT FOUND.
-    P_VALOR FLOAT;
+    V_VALOR FLOAT;
 
 BEGIN
 
@@ -92,12 +104,12 @@ BEGIN
     IF P_TIPO = 'E' AND P_CODPRODMP > 0 THEN
         BEGIN
             SELECT SUM(E.ESTOQUE - E.RESERVADO)
-              INTO P_VALOR
+              INTO V_VALOR
               FROM TGFEST E
              WHERE E.CODLOCAL = 101            -- Local de estoque principal de MP
                AND E.CODPROD  = P_CODPRODMP;
         EXCEPTION
-            WHEN NO_DATA_FOUND THEN P_VALOR := 0;
+            WHEN NO_DATA_FOUND THEN V_VALOR := 0;
         END;
     END IF;
 
@@ -109,7 +121,7 @@ BEGIN
     IF P_TIPO = 'S' THEN
         BEGIN
             SELECT SALDO
-              INTO P_VALOR
+              INTO V_VALOR
               FROM (
                   SELECT SUM(SALDO) AS SALDO
                     FROM VGFSALDOMRP
@@ -122,7 +134,7 @@ BEGIN
                      )
               ) D;
         EXCEPTION
-            WHEN NO_DATA_FOUND THEN P_VALOR := 0;
+            WHEN NO_DATA_FOUND THEN V_VALOR := 0;
         END;
     END IF;
 
@@ -140,7 +152,7 @@ BEGIN
                             ELSE QTDPREV       -- Quantidade prevista (meta)
                        END
                    )
-              INTO P_VALOR
+              INTO V_VALOR
               FROM VGFSALDOMRP
              WHERE CODPROD = P_CODPRODPA
                -- Filtra exatamente o mês de início do MPS
@@ -150,7 +162,7 @@ BEGIN
                     WHERE NUMPS = P_NUMPS
                );
         EXCEPTION
-            WHEN NO_DATA_FOUND THEN P_VALOR := 0;
+            WHEN NO_DATA_FOUND THEN V_VALOR := 0;
         END;
     END IF;
 
@@ -158,49 +170,36 @@ BEGIN
     -- TIPO 'N' — NECESSIDADE LÍQUIDA DE MP NO MPS FILTRADO
     -- Calcula a necessidade de MP multiplicando o fator de mistura (QTDMISTURA)
     -- pela quantidade líquida a produzir (QTDPRODUZIRLIQ) de cada PA no plano.
-    -- Considera apenas itens com necessidade positiva (HAVING > 0).
+    -- Considera apenas necessidade positiva (valores <= 0 retornam 0).
     -- P_CODPRODPA = 0 retorna a necessidade consolidada de todos os PAs do plano.
     -- =========================================================================
     IF P_TIPO = 'N' THEN
         BEGIN
+            -- Agregado escalar: JOIN em ANSI puro, sem GROUP BY/HAVING.
             SELECT SUM(LMP.QTDMISTURA * NVL(I.QTDPRODUZIRLIQ, 0))
-              INTO P_VALOR
+              INTO V_VALOR
               FROM TPRMPS  MPS
-              INNER JOIN TPRIMPS  I   ON MPS.NUMPS  = I.NUMPS
-                                      ,
-                   TPRPRC  PRC,
-                   TPRLPA  LPA,
-                   TPRLMP  LMP,
-                   TPRATV  ATV,
-                   TPROEST EST,
-                   TGFPRO  PRO
-              LEFT JOIN TGFPAR PAR ON PAR.CODPARC = PRO.CODPARCFORN
-             WHERE PRC.IDPROC     = I.IDPROC
-               AND I.CODPROD      = LPA.CODPRODPA
-               AND LPA.CODPRODPA  = LMP.CODPRODPA
-               AND LMP.CODPRODMP  = PRO.CODPROD
-               AND I.IDPROC       = ATV.IDPROC
-               AND EST.IDEFX      = ATV.IDEFX
-               AND LMP.IDEFX      = ATV.IDEFX
-               AND LPA.IDPROC     = I.IDPROC
-               AND EST.TIPOITENS  = 'PA'
-               AND MPS.NUMPS      = P_NUMPS
-               AND LMP.CODPRODMP  = P_CODPRODMP
+              INNER JOIN TPRIMPS  I   ON I.NUMPS       = MPS.NUMPS
+              INNER JOIN TPRPRC   PRC ON PRC.IDPROC    = I.IDPROC
+              INNER JOIN TPRLPA   LPA ON LPA.CODPRODPA = I.CODPROD
+                                     AND LPA.IDPROC    = I.IDPROC
+              INNER JOIN TPRLMP   LMP ON LMP.CODPRODPA = LPA.CODPRODPA
+                                     AND LMP.CODPRODMP = P_CODPRODMP
+              INNER JOIN TPRATV   ATV ON ATV.IDPROC    = I.IDPROC
+                                     AND ATV.IDEFX     = LMP.IDEFX
+              INNER JOIN TPROEST  EST ON EST.IDEFX     = ATV.IDEFX
+                                     AND EST.TIPOITENS = 'PA'
+              INNER JOIN TGFPRO   PRO ON PRO.CODPROD   = LMP.CODPRODMP
+             WHERE MPS.NUMPS = P_NUMPS
                -- Se P_CODPRODPA = 0, considera todos os PAs do plano
-               AND LMP.CODPRODPA  = CASE WHEN P_CODPRODPA = 0
-                                         THEN LMP.CODPRODPA
-                                         ELSE P_CODPRODPA
-                                    END
-             GROUP BY
-                   LMP.CODPRODMP,
-                   PRO.DESCRPROD,
-                   PRO.CODVOL,
-                   NVL(PRO.AGRUPCOMPMINIMO, PRO.AGRUPMIN),
-                   PRO.CODPARCFORN,
-                   PAR.NOMEPARC
-            HAVING SUM(LMP.QTDMISTURA * I.QTDPRODUZIRLIQ) > 0;
+               AND (P_CODPRODPA = 0 OR LMP.CODPRODPA = P_CODPRODPA);
+
+            -- Preserva a semântica do antigo HAVING > 0: valores <= 0 retornam 0
+            IF NVL(V_VALOR, 0) <= 0 THEN
+                V_VALOR := 0;
+            END IF;
         EXCEPTION
-            WHEN NO_DATA_FOUND THEN P_VALOR := 0;
+            WHEN NO_DATA_FOUND THEN V_VALOR := 0;
         END;
     END IF;
 
@@ -209,47 +208,42 @@ BEGIN
     -- Calcula a necessidade acumulada de MP proveniente de saldos de períodos
     -- anteriores ao mês do MPS informado. Usa VGFSALDOMRP para obter o saldo
     -- histórico de cada PA e o multiplica pelo fator de composição da MP.
-    -- Considera apenas saldos positivos (HAVING > 0).
+    -- Considera apenas saldos positivos (valores <= 0 retornam 0).
     -- =========================================================================
     IF P_TIPO = 'NA' THEN
         BEGIN
+            -- Agregado escalar: JOIN em ANSI puro, sem GROUP BY/HAVING.
             SELECT SUM(LMP.QTDMISTURA * NVL(SAL.SALDO, 0))
-              INTO P_VALOR
+              INTO V_VALOR
               FROM TPRMPS     MPS
-              INNER JOIN TPRIMPS     I   ON MPS.NUMPS   = I.NUMPS
-                                        AND MPS.NUMPS   = P_NUMPS
-              INNER JOIN VGFSALDOMRP SAL ON SAL.CODPROD = I.CODPROD
-              INNER JOIN TPRPRC      PRC ON PRC.IDPROC  = I.IDPROC
-              INNER JOIN TPRLPA      LPA ON I.CODPROD   = LPA.CODPRODPA
-              INNER JOIN TPRLMP      LMP ON LPA.CODPRODPA = LMP.CODPRODPA
+              INNER JOIN TPRIMPS     I   ON I.NUMPS       = MPS.NUMPS
+              INNER JOIN VGFSALDOMRP SAL ON SAL.CODPROD   = I.CODPROD
+              INNER JOIN TPRPRC      PRC ON PRC.IDPROC    = I.IDPROC
+              INNER JOIN TPRLPA      LPA ON LPA.CODPRODPA = I.CODPROD
                                         AND LPA.IDPROC    = I.IDPROC
+              INNER JOIN TPRLMP      LMP ON LMP.CODPRODPA = LPA.CODPRODPA
                                         AND LMP.CODPRODMP = P_CODPRODMP
-              INNER JOIN TPRATV      ATV ON I.IDPROC    = ATV.IDPROC
-                                        AND LMP.IDEFX   = ATV.IDEFX
-              INNER JOIN TPROEST     EST ON EST.IDEFX   = ATV.IDEFX
+              INNER JOIN TPRATV      ATV ON ATV.IDPROC    = I.IDPROC
+                                        AND ATV.IDEFX     = LMP.IDEFX
+              INNER JOIN TPROEST     EST ON EST.IDEFX     = ATV.IDEFX
                                         AND EST.TIPOITENS = 'PA'
-              INNER JOIN TGFPRO      PRO ON LMP.CODPRODMP = PRO.CODPROD
-              LEFT  JOIN TGFPAR      PAR ON PAR.CODPARC = PRO.CODPARCFORN
-             WHERE LMP.CODPRODPA = CASE WHEN NVL(P_CODPRODPA, 0) = 0
-                                        THEN LMP.CODPRODPA
-                                        ELSE P_CODPRODPA
-                                   END
+              INNER JOIN TGFPRO      PRO ON PRO.CODPROD   = LMP.CODPRODMP
+             WHERE MPS.NUMPS = P_NUMPS
+               -- Se P_CODPRODPA = 0, considera todos os PAs do plano
+               AND (NVL(P_CODPRODPA, 0) = 0 OR LMP.CODPRODPA = P_CODPRODPA)
                -- Apenas períodos anteriores ao mês do MPS
                AND SAL.DTREF < (
-                   SELECT TRUNC(MPS2.DTINICMPS, 'MM')
-                     FROM TPRMPS MPS2
-                    WHERE MPS2.NUMPS = P_NUMPS
-               )
-             GROUP BY
-                   LMP.CODPRODMP,
-                   PRO.DESCRPROD,
-                   PRO.CODVOL,
-                   NVL(PRO.AGRUPCOMPMINIMO, PRO.AGRUPMIN),
-                   PRO.CODPARCFORN,
-                   PAR.NOMEPARC
-            HAVING SUM(LMP.QTDMISTURA * SAL.SALDO) > 0;
+                       SELECT TRUNC(MPS2.DTINICMPS, 'MM')
+                         FROM TPRMPS MPS2
+                        WHERE MPS2.NUMPS = P_NUMPS
+                   );
+
+            -- Preserva a semântica do antigo HAVING > 0: valores <= 0 retornam 0
+            IF NVL(V_VALOR, 0) <= 0 THEN
+                V_VALOR := 0;
+            END IF;
         EXCEPTION
-            WHEN NO_DATA_FOUND THEN P_VALOR := 0;
+            WHEN NO_DATA_FOUND THEN V_VALOR := 0;
         END;
     END IF;
 
@@ -263,7 +257,7 @@ BEGIN
     IF P_TIPO = 'O' THEN
         BEGIN
             SELECT SUM(I.QTDNEG - I.QTDENTREGUE)
-              INTO P_VALOR
+              INTO V_VALOR
               FROM TGFCAB C
               INNER JOIN TGFITE I   ON C.NUNOTA     = I.NUNOTA
               INNER JOIN TGFTOP TPO ON TPO.CODTIPOPER = C.CODTIPOPER
@@ -273,15 +267,21 @@ BEGIN
                AND I.PENDENTE       = 'S'              -- Item com recebimento pendente
                AND I.CODPROD        = P_CODPRODMP;
         EXCEPTION
-            WHEN NO_DATA_FOUND THEN P_VALOR := 0;
+            WHEN NO_DATA_FOUND THEN V_VALOR := 0;
         END;
     END IF;
 
     -- =========================================================================
     -- RETORNO FINAL:
     -- NVL garante 0 quando nenhum dos blocos IF foi executado
-    -- (P_TIPO inválido ou desconhecido) ou quando P_VALOR ficou NULL.
+    -- (P_TIPO inválido ou desconhecido) ou quando V_VALOR ficou NULL.
     -- =========================================================================
-    RETURN NVL(P_VALOR, 0);
+    RETURN NVL(V_VALOR, 0);
+
+EXCEPTION
+    -- Função de relatório: nunca propagar erro ao SELECT chamador.
+    -- Qualquer falha inesperada retorna 0 (mesma filosofia do NO_DATA_FOUND).
+    WHEN OTHERS THEN
+        RETURN 0;
 
 END OBTEM_TOTAIS_MRP;
