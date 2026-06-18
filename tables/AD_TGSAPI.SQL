@@ -1,0 +1,13 @@
+CREATE TABLE AD_TGSAPI (
+  API       VARCHAR2(100)  NOT NULL,
+  ENDPOINT  VARCHAR2(100),
+  USUARIO   VARCHAR2(100),
+  PASSWORD  VARCHAR2(100),
+  AMBIENTE  VARCHAR2(10),
+  CONSTRAINT PK_AD_TGSAPI PRIMARY KEY (API)
+);
+
+-- Campos adicionados para suporte à integração Rodonaves
+ALTER TABLE AD_TGSAPI ADD ENDPOINTAUTH    VARCHAR2(200); -- URL do endpoint de autenticação OAuth2 (/token)
+ALTER TABLE AD_TGSAPI ADD ENDPOINTCIDADE  VARCHAR2(200); -- URL do endpoint busca-cidade por CEP
+ALTER TABLE AD_TGSAPI ADD AUTH_TYPE        VARCHAR2(10);  -- Tipo de autenticação: 'DEV' ou 'PRD'
