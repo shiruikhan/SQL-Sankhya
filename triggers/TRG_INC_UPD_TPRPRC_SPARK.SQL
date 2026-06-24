@@ -13,7 +13,15 @@ FOR EACH ROW
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Última Revisão : Junho/2026 — Blocos de UPDATE (P_COUNT=1) comentados: a trigger
+                   propagava o AD_TIPOPI do processo para todos os PIs existentes,
+                   sobrescrevendo configurações individuais em TPRLPI. Como um mesmo
+                   processo pode conter PIs com TIPOPI='O' (apenas lista de materiais,
+                   sem sub-ordem) e TIPOPI='E' (sub-ordem + explosão de composição)
+                   coexistindo, a atualização em massa apagava essa distinção a cada
+                   edição do processo. Os blocos de INSERT (P_COUNT=0) foram mantidos
+                   para que novos PIs adicionados ao processo recebam o valor inicial
+                   correto de AD_TIPOPI. Registros já existentes não são mais tocados.
 ==============================================================================*/
 DECLARE
 P_COUNT INT;
@@ -51,6 +59,12 @@ INSERT INTO TPRLPI (IDPROC, CODPRODPA,CONTROLEPA,CODPRODPI,CONTROLEPI,
 END IF;
 
 -- REGISTROS JÁ EXISTENTES NA TPRLPI, ATUALIZA OS CAMPOS TIPO SUB-ORDEM
+-- *** INATIVADO Jun/2026 ***
+-- Motivo: sobrescrevia a configuração individual de cada PI (TIPOPI/AD_TIPOPI em TPRLPI)
+-- sempre que qualquer campo do processo (TPRPRC) era alterado, impedindo a coexistência
+-- de PIs com TIPOPI='O' e TIPOPI='E' dentro do mesmo processo produtivo.
+-- O INSERT (P_COUNT=0) abaixo continua ativo para inicializar novos PIs corretamente.
+/*
 IF NVL(:NEW.AD_TIPOPI,'N')= 'O' AND P_COUNT=1 THEN
 
 UPDATE TPRLPI SET TIPOPI='O',TIPOSUBOP='I',AGUARDARSUBOP='N',TIPONROLOTE='L',CONSIDERAQTDEST='N',
@@ -59,6 +73,7 @@ UPDATE TPRLPI SET TIPOPI='O',TIPOSUBOP='I',AGUARDARSUBOP='N',TIPONROLOTE='L',CON
 
 --COMMIT;
 END IF;
+*/
 
 -- TIPO PI COMO ESTOQUE INCLUI
 IF NVL(:NEW.AD_TIPOPI,'N')= 'E' AND P_COUNT=0 THEN
@@ -73,6 +88,10 @@ INSERT INTO TPRLPI (IDPROC, CODPRODPA,CONTROLEPA,CODPRODPI,CONTROLEPI,
 END IF;
 
 -- TIPO PI COMO ESTOQUE ATUALIZA SE JÁ EXISTIR
+-- *** INATIVADO Jun/2026 ***
+-- Mesmo motivo do bloco 'O' acima: aplicava o AD_TIPOPI do processo sobre todos os
+-- PIs já existentes em TPRLPI, apagando diferenças individuais entre 'O' e 'E'.
+/*
 IF NVL(:NEW.AD_TIPOPI,'N')= 'E' AND P_COUNT=1 THEN
 
 UPDATE TPRLPI SET TIPOPI='E',TIPOSUBOP='I',AGUARDARSUBOP='S',TIPONROLOTE='I',CONSIDERAQTDEST='N',
@@ -81,6 +100,7 @@ UPDATE TPRLPI SET TIPOPI='E',TIPOSUBOP='I',AGUARDARSUBOP='S',TIPONROLOTE='I',CON
 
 --COMMIT;
 END IF;
+*/
 
 
 END LOOP;
