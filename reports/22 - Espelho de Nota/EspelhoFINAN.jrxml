@@ -4,9 +4,7 @@
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
-	<parameter name="PK_NUNOTA" class="java.math.BigDecimal" isForPrompting="false">
-		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
-	</parameter>
+	<parameter name="PK_NUNOTA" class="java.math.BigDecimal"/>
 	<queryString>
 		<![CDATA[SELECT FIN.NUMNOTA,
 	FIN.CODEMP,
