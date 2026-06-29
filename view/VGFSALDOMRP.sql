@@ -17,8 +17,7 @@
                         LEFT JOIN
                            TPRMPS MPS
                         ON (PROC.NUMPS = MPS.NUMPS)
-                WHERE   STATUSPROC IN ('A', 'F',                      /*'R',*/
-                                                'P2') --'R' = STATUS PRODUCAO CRIADO, RENAN PEDIU PARA DESCONSIDERAR 18/03/22
+                WHERE   STATUSPROC IN ('A', 'F', /*'R',*/ 'P2') --'R' = STATUS PRODUCAO CRIADO, RENAN PEDIU PARA DESCONSIDERAR 18/03/22
                         AND PROC.NUMPS IN
                                  (SELECT   MP.NUMPS
                                     FROM      TPRMPS MPS2
