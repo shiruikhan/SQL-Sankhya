@@ -6,9 +6,13 @@ FOR EACH ROW
   Tipo           : Trigger
   Descrição      : Impede a edição dos dados de identidade do apontamento de
                    conferência após sua criação (NUCONF, CODUSUINC, NUARQUIVO,
-                   DTINI, OBSERVACAO). O apontamento é único e imutável: uma
-                   vez gravado pelo botão de ação (STP_APONTACONFERENCIA_SPARK),
-                   só pode ser fechado automaticamente pelo próprio sistema.
+                   DTINI, CODEMP, NUMNOTA, DHEMISS). O apontamento é único e imutável nesses campos: uma
+                   vez gravado (tela de AD_TGSIXN), só pode ser fechado
+                   automaticamente pelo próprio sistema. Exceções controladas:
+                   CODFUNC (conferente) pode ser preenchido uma única vez
+                   via UPDATE após o INSERT inicial — depois de setado, não
+                   pode mais ser alterado. OBSERVACAO é livremente editável a
+                   qualquer momento (anotações do conferente durante o processo).
   Tabela         : AD_TGSIXN
   Evento         : BEFORE UPDATE
   Escopo         : FOR EACH ROW
@@ -19,13 +23,18 @@ FOR EACH ROW
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
-  Última Revisão : Julho/2026 — Criação
+  Última Revisão : Julho/2026 — Inclusão de DHEMISS na checagem de imutabilidade
 
   Observações    : - DTFIM e STATUS ficam de fora da checagem de propósito:
                      são as únicas colunas que o próprio sistema pode alterar
                      (TRG_INC_UPD_TGSIXN_DTFIM_SPARK e
                      TRG_INC_UPD_AD_TGSIXN_SPARK, acionadas também pela
                      reavaliação periódica de STP_ATUALIZADTFIM_TGSIXN_SPARK).
+                   - CODFUNC também fica de fora da checagem "sempre
+                     bloqueia": é validado à parte, permitindo a transição
+                     NULL -> valor (atribuição do conferente) uma única vez.
+                   - OBSERVACAO não é validada: fica de fora de qualquer
+                     checagem, livre para edição.
                    - Só atua em UPDATE (não em INSERT), pois na criação
                      :OLD ainda não existe.
 ==============================================================================*/
@@ -34,12 +43,18 @@ BEGIN
        OR NVL(:NEW.CODUSUINC, -1) != NVL(:OLD.CODUSUINC, -1)
        OR NVL(:NEW.NUARQUIVO, -1) != NVL(:OLD.NUARQUIVO, -1)
        OR NVL(:NEW.DTINI, DATE '0001-01-01') != NVL(:OLD.DTINI, DATE '0001-01-01')
-       OR (:OLD.OBSERVACAO IS NULL AND :NEW.OBSERVACAO IS NOT NULL)
-       OR (:OLD.OBSERVACAO IS NOT NULL AND :NEW.OBSERVACAO IS NULL)
-       OR (:OLD.OBSERVACAO IS NOT NULL AND :NEW.OBSERVACAO IS NOT NULL
-           AND DBMS_LOB.COMPARE(:OLD.OBSERVACAO, :NEW.OBSERVACAO) != 0)
+       OR NVL(:NEW.CODEMP, -1) != NVL(:OLD.CODEMP, -1)
+       OR NVL(:NEW.NUMNOTA, -1) != NVL(:OLD.NUMNOTA, -1)
+       OR NVL(:NEW.DHEMISS, DATE '0001-01-01') != NVL(:OLD.DHEMISS, DATE '0001-01-01')
     THEN
         RAISE_APPLICATION_ERROR(-20010,
             'Apontamento de conferência (NUCONF ' || :OLD.NUCONF || ') não pode ser alterado após criado.');
+    END IF;
+
+    -- CODFUNC só pode ser preenchido uma vez (NULL -> valor); depois de
+    -- setado, uma tentativa de troca ou remocao tambem e bloqueada
+    IF :OLD.CODFUNC IS NOT NULL AND NVL(:NEW.CODFUNC, -1) != :OLD.CODFUNC THEN
+        RAISE_APPLICATION_ERROR(-20011,
+            'Conferente do apontamento (NUCONF ' || :OLD.NUCONF || ') já foi definido e não pode ser alterado.');
     END IF;
 END;

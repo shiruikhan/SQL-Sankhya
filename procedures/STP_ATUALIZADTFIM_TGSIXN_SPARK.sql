@@ -11,7 +11,11 @@ create or replace PROCEDURE STP_ATUALIZADTFIM_TGSIXN_SPARK AS
                    reavaliação periodicamente: para cada apontamento aberto,
                    executa um UPDATE que aciona novamente as triggers de
                    DTFIM/STATUS, sem duplicar a lógica de busca (que permanece
-                   centralizada na trigger).
+                   centralizada na trigger). Na sequência, calcula e grava
+                   DURACAO_DIAS_UTEIS (dias úteis entre DTINI e DTFIM, ou
+                   entre DTINI e SYSDATE enquanto ainda aberto) diretamente
+                   aqui — não há trigger para isso, pois nada mais toca a
+                   linha entre uma execução e outra deste job.
 
   Parâmetros     : [Procedure agendada - sem parâmetros de entrada]
 
@@ -25,12 +29,20 @@ create or replace PROCEDURE STP_ATUALIZADTFIM_TGSIXN_SPARK AS
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
-  Última Revisão : Julho/2026 — Criação
+  Última Revisão : Julho/2026 — Passou a calcular e gravar DURACAO_DIAS_UTEIS
+                   (substitui a trigger TRG_DURACAO_AD_TGSIXN_SPARK, removida
+                   por não ter nenhum evento próprio que a acionasse)
 
   Observações    : - Recomenda-se agendar com frequência compatível com o volume
                      de conferências em aberto (ex.: a cada 30-60 minutos).
                    - Erro em um apontamento é registrado e o lote continua.
+                   - O RETURNING no passo 2 captura o DTFIM já recalculado
+                     pela trigger nesta mesma instrução, para que o cálculo
+                     de dias úteis do passo 3 use o valor atualizado (e não
+                     o valor antigo, de antes do UPDATE).
 ==============================================================================*/
+
+    V_DTFIM AD_TGSIXN.DTFIM%TYPE;
 
     -- Registra erros em AD_LOG_ERROS com transacao autonoma
     PROCEDURE LOG_ERRO(
@@ -62,7 +74,7 @@ BEGIN
     -- 1. Percorre os apontamentos de conferencia ainda em aberto
     ---------------------------------------------------------------------------
     FOR R_CONF IN (
-        SELECT NUCONF
+        SELECT NUCONF, DTINI
         FROM   AD_TGSIXN
         WHERE  STATUS = '1'
     ) LOOP
@@ -72,6 +84,20 @@ BEGIN
             -----------------------------------------------------------------
             UPDATE AD_TGSIXN
                SET DTFIM = DTFIM
+             WHERE NUCONF = R_CONF.NUCONF
+            RETURNING DTFIM INTO V_DTFIM;
+
+            -----------------------------------------------------------------
+            -- 3. Recalcula a duracao em dias uteis com o DTFIM ja atualizado
+            -----------------------------------------------------------------
+            UPDATE AD_TGSIXN
+               SET DURACAO_DIAS_UTEIS =
+                   (SELECT COUNT(*)
+                      FROM (SELECT TRUNC(R_CONF.DTINI) + LEVEL - 1 AS DIA
+                              FROM DUAL
+                            CONNECT BY LEVEL <= TRUNC(NVL(V_DTFIM, SYSDATE))
+                                              - TRUNC(R_CONF.DTINI) + 1)
+                     WHERE TO_CHAR(DIA, 'DY', 'NLS_DATE_LANGUAGE = AMERICAN') NOT IN ('SAT', 'SUN'))
              WHERE NUCONF = R_CONF.NUCONF;
         EXCEPTION
             WHEN OTHERS THEN
