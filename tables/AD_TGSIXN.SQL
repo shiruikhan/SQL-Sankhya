@@ -1,0 +1,21 @@
+  CREATE TABLE "SPARKPRD"."AD_TGSIXN" 
+   (	"NUCONF" NUMBER(10,0) NOT NULL ENABLE, 
+	"CODUSUINC" NUMBER(10,0), 
+	"DTINI" DATE, 
+	"DTFIM" DATE, 
+	"OBSERVACAO" CLOB, 
+	"STATUS" VARCHAR2(10), 
+	"NUARQUIVO" NUMBER(10,0), 
+	 CONSTRAINT "PK_AD_TGSIXN" PRIMARY KEY ("NUCONF")
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "AD_FK_D7F4619F248178E0A862E" FOREIGN KEY ("CODUSUINC")
+	  REFERENCES "SPARKPRD"."TSIUSU" ("CODUSU") ENABLE, 
+	 CONSTRAINT "AD_FK_0D2D719F248C35C5EE87E" FOREIGN KEY ("NUARQUIVO")
+	  REFERENCES "SPARKPRD"."TGFIXN" ("NUARQUIVO") ENABLE
+   ) ;
+
+-- Apontamento de conferencia e unico por arquivo: garante a nivel de banco que
+-- nao existam dois registros para o mesmo NUARQUIVO, mesmo sob concorrencia
+-- (o check aplicativo em STP_APONTACONFERENCIA_SPARK sozinho nao cobre a
+-- corrida entre duas sessoes clicando o botao ao mesmo tempo).
+ALTER TABLE AD_TGSIXN ADD CONSTRAINT UQ_AD_TGSIXN_NUARQUIVO UNIQUE (NUARQUIVO);
