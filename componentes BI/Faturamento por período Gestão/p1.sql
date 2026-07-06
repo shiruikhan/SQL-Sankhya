@@ -1,29 +1,3 @@
-/*==============================================================================
-  Nome do Script : p1
-  Tipo           : Componente BI — Gráfico
-  Dashboard      : Faturamento por período Gestão
-  Componente     : p1
-  Descrição      : Faturamento por agrupador de produto e vendedor com percentuais
-                   de participação em relação ao total do período.
-
-  Parâmetros     : :P_PER.INI e :P_PER.FIN — Período de vendas
-                   :P_GRUPO — Filtro por grupo de produtos (opcional)
-                   :P_CODEMP — Filtro por empresa (opcional)
-                   :P_CODVEND — Filtro por vendedor (opcional)
-                   :P_CODPROD — Filtro por produto (opcional)
-                   :P_CODPARC — Filtro por parceiro (opcional)
-                   :P_CODPARCMATRIZ — Filtro por parceiro matriz (opcional)
-                   :P_CODUF — Filtro por UF (opcional)
-
-  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN, TGFPAR, TSICID
-
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Empresa        : Spark Eletrônica
-  Data de Criação: A DEFINIR
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-==============================================================================*/
-
 SELECT PRO.AD_AGRUPADOR,
 	PRO.CODVOL,
 	SUM(ITE.QTDNEG) AS QTD,
@@ -37,7 +11,7 @@ SELECT PRO.AD_AGRUPADOR,
 						INNER JOIN TGFPRO PRO2 ON ITE2.CODPROD = PRO2.CODPROD
 						INNER JOIN TGFGRU GRU2 ON PRO2.CODGRUPOPROD = GRU2.CODGRUPOPROD
 						INNER JOIN TGFVEN VEN2 ON CAB2.CODVEND = VEN2.CODVEND
-						WHERE TRUNC(CAB2.DTNEG) >= :P_PER.INI AND TRUNC(CAB2.DTNEG) <= :P_PER.FIN AND CAB2.TIPMOV = 'V' AND PRO2.USOPROD = 'V' AND ((GRU2.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB2.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN2.CODVEND = :P_CODVEND)) AND CAB2.CODTIPOPER IN (1100,2200,1111,1190,1124,2202))) * 100 AS PARTE,
+						WHERE TRUNC(CAB2.DTNEG) >= :P_PER.INI AND TRUNC(CAB2.DTNEG) <= :P_PER.FIN AND CAB2.TIPMOV = 'V' AND PRO2.USOPROD = 'V' AND (CAB2.CODEMP = 501 OR CAB2.STATUSNFE <> 'D') AND ((GRU2.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB2.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN2.CODVEND = :P_CODVEND)) AND CAB2.CODTIPOPER IN (1100,2200,1111,1190,1124,2202))) * 100 AS PARTE,
 	SUM(ITE.VLRTOT - ITE.VLRDESC) AS TOTALLIQ,
 	SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTALOUTROS,
 	SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTAL,
@@ -47,7 +21,7 @@ SELECT PRO.AD_AGRUPADOR,
 																					INNER JOIN TGFPRO PRO3 ON ITE3.CODPROD = PRO3.CODPROD
 																					INNER JOIN TGFGRU GRU3 ON PRO3.CODGRUPOPROD = GRU3.CODGRUPOPROD
 																					INNER JOIN TGFVEN VEN3 ON CAB3.CODVEND = VEN3.CODVEND
-																					WHERE TRUNC(CAB3.DTNEG) >= :P_PER.INI AND TRUNC(CAB3.DTNEG) <= :P_PER.FIN AND CAB3.TIPMOV = 'V' AND PRO3.USOPROD = 'V' AND ((GRU3.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB3.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN3.CODVEND = :P_CODVEND)) AND CAB3.CODTIPOPER IN (1100,2200,1111,1190,1124,2202))) * 100 AS PARTEFATURADO
+																					WHERE TRUNC(CAB3.DTNEG) >= :P_PER.INI AND TRUNC(CAB3.DTNEG) <= :P_PER.FIN AND CAB3.TIPMOV = 'V' AND PRO3.USOPROD = 'V' AND (CAB3.CODEMP = 501 OR CAB3.STATUSNFE <> 'D') AND ((GRU3.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB3.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN3.CODVEND = :P_CODVEND)) AND CAB3.CODTIPOPER IN (1100,2200,1111,1190,1124,2202))) * 100 AS PARTEFATURADO
 FROM TGFITE ITE
 	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
 	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
@@ -59,6 +33,7 @@ WHERE TRUNC(CAB.DTNEG) >= :P_PER.INI
 	AND TRUNC(CAB.DTNEG) <= :P_PER.FIN 
 	AND CAB.TIPMOV = 'V' 
 	AND PRO.USOPROD = 'V' 
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
 	AND ((GRU.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) 
 	AND ((:P_CODEMP IS NULL) OR (CAB.CODEMP = :P_CODEMP)) 
 	AND ((:P_CODVEND IS NULL) OR (VEN.CODVEND = :P_CODVEND)) 

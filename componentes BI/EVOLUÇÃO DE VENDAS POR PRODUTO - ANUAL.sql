@@ -1,6 +1,6 @@
 /*==============================================================================
   Nome do Script : EVOLUÇÃO DE VENDAS POR PRODUTO - ANUAL
-  Tipo           : Componente BI ? Tabela
+  Tipo           : Componente BI — Tabela
   Dashboard      : Análise de Vendas
   Descrição      : Evolução de vendas com eixos invertidos em relação ao
                    componente original EVOLUÇÃO DE VENDAS POR PRODUTO:
@@ -8,21 +8,35 @@
                    Cada linha é a combinação mês + linha de produto (AD_LINHA),
                    permitindo comparar o desempenho do mesmo mês entre anos
                    consecutivos. Não realiza cálculo de percentual.
+                   Relatório fixo, sem parâmetros de tela: o período é
+                   resolvido internamente (01/01/2022 a 31/12/2026).
 
-  Parâmetros     : :PERIODO.INI ? Data inicial do período analisado
-                   :PERIODO.FIN ? Data final do período analisado
-
-  Tabelas        : TGFITE, TGFCAB, TGFPRO
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN, TGFPAR, TSICID
 
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: Junho/2026
-  Última Revisão : ?
+  Última Revisão : Julho/2026 - Removidos os parâmetros de tela (:PERIODO.INI
+                   / :PERIODO.FIN); período fixado em código. Corrigido
+                   filtro de produto para PRO.USOPROD = 'V'. Corrigido filtro
+                   de data para TRUNC(CAB.DTNEG) BETWEEN ..., pois DTNEG
+                   carrega hora. Adicionados INNER JOIN com TGFGRU, TGFVEN,
+                   TGFPAR e TSICID. Ajustada a soma de VLRNOTA para
+                   SUM(VLRTOT - VLRDESC) + SUM(NVL(AD_VLROUTROS,0)). Incluído
+                   o filtro (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D'),
+                   replicando correção feita em p1.sql: sem ele, notas
+                   fiscais denegadas pela SEFAZ (STATUSNFE = 'D') eram
+                   somadas como venda válida, inflando valor e quantidade —
+                   essa era a causa raiz da discrepância, não os filtros de
+                   data/produto ajustados antes. Todos os critérios seguem o
+                   componente validado "Faturamento por período Gestão"
+                   (p1.sql).
 
   Observações    : Colunas de ano cobertas: 2022 a 2026. Para adicionar um
                    novo ano, incluir o par VLR_AAAA / QTD_AAAA seguindo o
-                   padrão das colunas existentes na seção de pivot.
+                   padrão das colunas existentes na seção de pivot e
+                   estender o período fixo abaixo.
 ==============================================================================*/
 
 WITH BASE AS (
@@ -34,15 +48,21 @@ WITH BASE AS (
         ,TO_CHAR(CAB.DTNEG, 'Mon')                                             AS MES_NOME
         ,EXTRACT(YEAR FROM CAB.DTNEG)                                          AS ANO
         ,NVL(PRO.AD_LINHA, 'SEM LINHA')                                        AS AD_LINHA
-        ,SUM( (ITE.VLRTOT - NVL(ITE.VLRDESC, 0)) + NVL(ITE.AD_VLROUTROS, 0) ) AS VLRNOTA
+        ,SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS, 0))        AS VLRNOTA
         ,SUM(ITE.QTDNEG)                                                       AS QTDNEG
     FROM       TGFPRO PRO
     INNER JOIN TGFITE ITE  ON ITE.CODPROD     = PRO.CODPROD
     INNER JOIN TGFCAB CAB  ON CAB.NUNOTA      = ITE.NUNOTA
                           AND CAB.TIPMOV      = 'V'
                           AND CAB.CODTIPOPER IN (1100, 2200, 1111, 1190, 1124, 2202)
-    WHERE CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
-      AND SUBSTR(TO_CHAR(PRO.CODPROD), 1, 1) = '3'
+    INNER JOIN TGFGRU  GRU  ON GRU.CODGRUPOPROD = PRO.CODGRUPOPROD
+    INNER JOIN TGFVEN  VEN  ON VEN.CODVEND      = CAB.CODVEND
+    INNER JOIN TGFPAR  PAR  ON PAR.CODPARC      = CAB.CODPARC
+    INNER JOIN TSICID  CID  ON CID.CODCID       = PAR.CODCID
+    WHERE TRUNC(CAB.DTNEG) BETWEEN TO_DATE('01/01/2022', 'DD/MM/YYYY')
+                                AND TO_DATE('31/12/2026', 'DD/MM/YYYY')
+      AND PRO.USOPROD = 'V'
+      AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
     GROUP BY
          TO_CHAR(CAB.DTNEG, 'MM')
         ,TO_CHAR(CAB.DTNEG, 'Mon')
