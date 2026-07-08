@@ -1,48 +1,33 @@
-create or replace PROCEDURE STP_ATUALIZADTFIM_TGSIXN_SPARK AS
+CREATE OR REPLACE PROCEDURE STP_ATUALIZADTFIM_TGSIXN_SPARK AS
 /*==============================================================================
   Nome do Script : STP_ATUALIZADTFIM_TGSIXN_SPARK
   Tipo           : Stored Procedure (Agendada)
   Descrição      : Reavalia os apontamentos de conferência em aberto em
-                   AD_TGSIXN (STATUS = 1). A trigger TRG_INC_UPD_TGSIXN_DTFIM_SPARK
-                   só preenche DTFIM no momento em que a linha é gravada; se a
-                   nota vinculada ainda não estava lançada (STATUSNOTA <> 'L')
-                   nesse momento, o apontamento fica aberto indefinidamente sem
-                   um novo evento que o reavalie. Esta procedure força essa
-                   reavaliação periodicamente: para cada apontamento aberto,
-                   executa um UPDATE que aciona novamente as triggers de
-                   DTFIM/STATUS, sem duplicar a lógica de busca (que permanece
-                   centralizada na trigger). Na sequência, calcula e grava
-                   DURACAO_DIAS_UTEIS (dias úteis entre DTINI e DTFIM, ou
-                   entre DTINI e SYSDATE enquanto ainda aberto) diretamente
-                   aqui — não há trigger para isso, pois nada mais toca a
-                   linha entre uma execução e outra deste job.
+                   AD_TGSIXN (STATUS = 1). Para cada um, localiza a chave de
+                   acesso do arquivo (TGFIXN.CHAVEACESSO) pelo NUARQUIVO e
+                   busca, com essa chave, a nota lançada correspondente em
+                   TGFCAB (CHAVENFE, STATUSNOTA = 'L'). Quando encontra,
+                   grava TGFCAB.DTMOV em DTFIM, fechando o apontamento
+                   (TRG_INC_UPD_AD_TGSIXN_SPARK deriva STATUS = 2 a partir
+                   disso). Em seguida recalcula DURACAO_DIAS_UTEIS (dias
+                   úteis entre DTINI e DTFIM, ou entre DTINI e SYSDATE
+                   enquanto ainda aberto), desconsiderando sábado/domingo.
 
   Parâmetros     : [Procedure agendada - sem parâmetros de entrada]
 
-  Tabelas        : AD_TGSIXN -- apontamentos reavaliados (UPDATE dispara triggers)
+  Tabelas        : AD_TGSIXN -- apontamentos reavaliados (leitura e UPDATE)
+                   TGFIXN    -- leitura de CHAVEACESSO a partir de NUARQUIVO
+                   TGFCAB    -- leitura de DTMOV/STATUSNOTA a partir de CHAVENFE
   Tabela de Log  : AD_LOG_ERROS -- erros por apontamento, sem abortar o lote
-
-  Dependências   : TRG_INC_UPD_TGSIXN_DTFIM_SPARK -- calcula DTFIM
-                   TRG_INC_UPD_AD_TGSIXN_SPARK     -- deriva STATUS de DTFIM
 
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
-  Última Revisão : Julho/2026 — Passou a calcular e gravar DURACAO_DIAS_UTEIS
-                   (substitui a trigger TRG_DURACAO_AD_TGSIXN_SPARK, removida
-                   por não ter nenhum evento próprio que a acionasse)
-
-  Observações    : - Recomenda-se agendar com frequência compatível com o volume
-                     de conferências em aberto (ex.: a cada 30-60 minutos).
-                   - Erro em um apontamento é registrado e o lote continua.
-                   - O RETURNING no passo 2 captura o DTFIM já recalculado
-                     pela trigger nesta mesma instrução, para que o cálculo
-                     de dias úteis do passo 3 use o valor atualizado (e não
-                     o valor antigo, de antes do UPDATE).
 ==============================================================================*/
 
-    V_DTFIM AD_TGSIXN.DTFIM%TYPE;
+    V_QTD_AVALIADOS NUMBER := 0; -- apontamentos abertos encontrados nesta execucao
+    V_QTD_FECHADOS  NUMBER := 0; -- dentre esses, quantos foram fechados agora
 
     -- Registra erros em AD_LOG_ERROS com transacao autonoma
     PROCEDURE LOG_ERRO(
@@ -71,38 +56,44 @@ create or replace PROCEDURE STP_ATUALIZADTFIM_TGSIXN_SPARK AS
 
 BEGIN
     ---------------------------------------------------------------------------
-    -- 1. Percorre os apontamentos de conferencia ainda em aberto
+    -- 1. Percorre os apontamentos em aberto, ja com o DTFIM da nota lancada
+    --    (quando existir) calculado na propria consulta
     ---------------------------------------------------------------------------
     FOR R_CONF IN (
-        SELECT NUCONF, DTINI
-        FROM   AD_TGSIXN
-        WHERE  STATUS = '1'
+        SELECT  TGS.NUCONF
+               ,TGS.DTINI
+               ,(SELECT MAX(CAB.DTMOV)
+                   FROM TGFCAB CAB
+                  WHERE CAB.CHAVENFE   = IXN.CHAVEACESSO
+                    AND CAB.STATUSNOTA = 'L') AS DTFIM_NOVO
+        FROM    AD_TGSIXN TGS
+        INNER JOIN TGFIXN IXN ON IXN.NUARQUIVO = TGS.NUARQUIVO
+        WHERE   TGS.STATUS = '1'
     ) LOOP
+        V_QTD_AVALIADOS := V_QTD_AVALIADOS + 1;
         BEGIN
             -----------------------------------------------------------------
-            -- 2. Forca a reavaliacao de DTFIM/STATUS via triggers da tabela
+            -- 2. Fecha o apontamento (DTFIM) quando a nota ja foi lancada, e
+            --    recalcula a duracao em dias uteis com o DTFIM resultante
             -----------------------------------------------------------------
             UPDATE AD_TGSIXN
-               SET DTFIM = DTFIM
-             WHERE NUCONF = R_CONF.NUCONF
-            RETURNING DTFIM INTO V_DTFIM;
-
-            -----------------------------------------------------------------
-            -- 3. Recalcula a duracao em dias uteis com o DTFIM ja atualizado
-            -----------------------------------------------------------------
-            UPDATE AD_TGSIXN
-               SET DURACAO_DIAS_UTEIS =
-                   (SELECT COUNT(*)
-                      FROM (SELECT TRUNC(R_CONF.DTINI) + LEVEL - 1 AS DIA
-                              FROM DUAL
-                            CONNECT BY LEVEL <= TRUNC(NVL(V_DTFIM, SYSDATE))
-                                              - TRUNC(R_CONF.DTINI) + 1)
-                     WHERE TO_CHAR(DIA, 'DY', 'NLS_DATE_LANGUAGE = AMERICAN') NOT IN ('SAT', 'SUN'))
+               SET DTFIM = NVL(R_CONF.DTFIM_NOVO, DTFIM)
+                  ,DURACAO_DIAS_UTEIS =
+                       (SELECT COUNT(*)
+                          FROM (SELECT TRUNC(R_CONF.DTINI) + LEVEL - 1 AS DIA
+                                  FROM DUAL
+                                CONNECT BY LEVEL <= TRUNC(NVL(R_CONF.DTFIM_NOVO, SYSDATE))
+                                                  - TRUNC(R_CONF.DTINI) + 1)
+                         WHERE TO_CHAR(DIA, 'DY', 'NLS_DATE_LANGUAGE = AMERICAN') NOT IN ('SAT', 'SUN'))
              WHERE NUCONF = R_CONF.NUCONF;
+
+            IF R_CONF.DTFIM_NOVO IS NOT NULL THEN
+                V_QTD_FECHADOS := V_QTD_FECHADOS + 1;
+            END IF;
         EXCEPTION
             WHEN OTHERS THEN
                 LOG_ERRO(
-                    P_OPERACAO      => 'ATUALIZA_DTFIM',
+                    P_OPERACAO      => 'ATU_DTFIM',
                     P_NUNOTA        => R_CONF.NUCONF,
                     P_ERR_CODE      => SQLCODE,
                     P_ERR_MSG       => SQLERRM,
@@ -112,13 +103,29 @@ BEGIN
         END;
     END LOOP;
 
+    -----------------------------------------------------------------------
+    -- 3. Registra a execucao em AD_LOG_ERROS (mesmo sem erro), para dar
+    --    visibilidade do historico de rodadas do job -- inclusive quando
+    --    nao ha nenhum apontamento aberto para avaliar
+    -----------------------------------------------------------------------
+    LOG_ERRO(
+        P_OPERACAO      => 'EXEC_OK',
+        P_NUNOTA        => NULL,
+        P_ERR_CODE      => 0,
+        P_ERR_MSG       => 'Execucao concluida: ' || V_QTD_AVALIADOS || ' apontamento(s) avaliado(s), '
+                            || V_QTD_FECHADOS || ' fechado(s) nesta execucao, '
+                            || (V_QTD_AVALIADOS - V_QTD_FECHADOS) || ' permanece(m) em aberto.',
+        P_ERR_BACKTRACE => NULL,
+        P_CALL_STACK    => NULL
+    );
+
     COMMIT;
 
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
         LOG_ERRO(
-            P_OPERACAO      => 'LOOP_PRINCIPAL',
+            P_OPERACAO      => 'LOOP_PRINC',
             P_NUNOTA        => NULL,
             P_ERR_CODE      => SQLCODE,
             P_ERR_MSG       => SQLERRM,

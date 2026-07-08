@@ -1,7 +1,6 @@
 CREATE OR REPLACE TRIGGER TRG_INC_UPD_AD_TGSIXN_SPARK
 BEFORE INSERT OR UPDATE ON AD_TGSIXN
 FOR EACH ROW
-FOLLOWS TRG_INC_UPD_TGSIXN_DTFIM_SPARK
 /*==============================================================================
   Nome do Script : TRG_INC_UPD_AD_TGSIXN_SPARK
   Tipo           : Trigger
@@ -19,14 +18,16 @@ FOLLOWS TRG_INC_UPD_TGSIXN_DTFIM_SPARK
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
-  Última Revisão : Julho/2026 — Adicionado FOLLOWS TRG_INC_UPD_TGSIXN_DTFIM_SPARK
-                   para garantir que STATUS seja calculado após o preenchimento
-                   automático de DTFIM.
+  Última Revisão : Julho/2026 — Removida a cláusula FOLLOWS
+                   TRG_INC_UPD_TGSIXN_DTFIM_SPARK: essa trigger foi
+                   descontinuada (STP_ATUALIZADTFIM_TGSIXN_SPARK passou a
+                   calcular DTFIM diretamente, consultando TGFCAB). Esta
+                   trigger não depende de ordem de execução com nenhuma
+                   outra: DTFIM já chega pronto em :NEW, seja de um UPDATE
+                   direto da procedure, seja de uma edição manual na tela.
 
   Observações    : - STATUS é sempre recalculado a partir de DTFIM, sobrepondo
                      qualquer valor informado manualmente para a coluna.
-                   - Depende da execução prévia de TRG_INC_UPD_TGSIXN_DTFIM_SPARK
-                     (cláusula FOLLOWS) para enxergar o DTFIM já calculado.
 ==============================================================================*/
 BEGIN
     IF :NEW.DTFIM IS NULL THEN

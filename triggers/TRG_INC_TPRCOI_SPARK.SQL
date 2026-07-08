@@ -1,6 +1,7 @@
-create or replace TRIGGER TRG_INC_TPRCOI_SPARK 
-  BEFORE INSERT OR UPDATE OR DELETE ON TPRCOI 
+create or replace TRIGGER TRG_INC_TPRCOI_SPARK
+  BEFORE INSERT OR UPDATE OR DELETE ON TPRCOI
   FOR EACH ROW
+  FOLLOWS TRG_TPRCOI_REPLICA_PA
 /*==============================================================================
   Nome do Script : TRG_INC_TPRCOI_SPARK
   Tipo           : Trigger
@@ -13,7 +14,10 @@ create or replace TRIGGER TRG_INC_TPRCOI_SPARK
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Última Revisão : Julho/2026 — Adicionado FOLLOWS TRG_TPRCOI_REPLICA_PA para
+                   garantir que essa trigger rode depois da réplica de
+                   CONTROLEPA/CODPRODPA (ORA-25025 impede usar PRECEDES na
+                   trigger de réplica, então a ordenação foi movida para cá).
 ==============================================================================*/
 DECLARE 
 P_COUNT  INT;

@@ -25,36 +25,6 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
   Última Revisão : Julho/2026 — Criação
-
-  Observações    : - NUCONF não é gerado aqui: o Sankhya já auto-incrementa a
-                     PK da tela, sem necessidade (ou risco de concorrência)
-                     de cálculo manual via MAX+1.
-                   - CODUSUINC vem de STP_GET_CODUSULOGADO(), padrão já usado
-                     em outras triggers do projeto para capturar o usuário
-                     logado fora do contexto de botão de ação.
-                   - CODEMP é fixado em 1 (única empresa neste cenário);
-                     existe apenas para viabilizar a FK composta
-                     FK_AD_TGSIXN_CODFUNC contra a PK composta de TFPFUN
-                     (CODEMP, CODFUNC). Setado aqui, não confiando só no
-                     DEFAULT da coluna, caso a tela envie NULL explícito.
-                   - NUMNOTA e DHEMISS vêm de TGFIXN, localizados pelo
-                     NUARQUIVO selecionado na tela (mesma busca, um único
-                     SELECT); se não encontrar (arquivo inválido ou ainda
-                     sem nota vinculada), ambos ficam NULL em vez de
-                     interromper o INSERT.
-                   - DURACAO_DIAS_UTEIS começa com o valor do dia de criação
-                     (0 ou 1, conforme hoje seja fim de semana ou dia útil).
-                     A partir daí, quem mantém o valor atualizado enquanto o
-                     apontamento estiver aberto é STP_ATUALIZADTFIM_TGSIXN_SPARK
-                     (job agendado) — não há trigger de UPDATE recalculando
-                     isso, já que nada mais toca a linha até o job rodar.
-                   - DTFIM e STATUS não são tratados aqui: continuam a cargo
-                     de TRG_INC_UPD_TGSIXN_DTFIM_SPARK e
-                     TRG_INC_UPD_AD_TGSIXN_SPARK, já em produção.
-                   - Sobrescreve CODUSUINC/DTINI/CODEMP/NUMNOTA/DHEMISS/
-                     DURACAO_DIAS_UTEIS mesmo que informados na tela,
-                     garantindo que o apontamento sempre reflita quem e
-                     quando realmente o criou.
 ==============================================================================*/
 DECLARE
     V_NUMNOTA TGFIXN.NUMNOTA%TYPE;

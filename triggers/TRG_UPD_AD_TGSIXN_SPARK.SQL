@@ -24,19 +24,6 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
   Última Revisão : Julho/2026 — Inclusão de DHEMISS na checagem de imutabilidade
-
-  Observações    : - DTFIM e STATUS ficam de fora da checagem de propósito:
-                     são as únicas colunas que o próprio sistema pode alterar
-                     (TRG_INC_UPD_TGSIXN_DTFIM_SPARK e
-                     TRG_INC_UPD_AD_TGSIXN_SPARK, acionadas também pela
-                     reavaliação periódica de STP_ATUALIZADTFIM_TGSIXN_SPARK).
-                   - CODFUNC também fica de fora da checagem "sempre
-                     bloqueia": é validado à parte, permitindo a transição
-                     NULL -> valor (atribuição do conferente) uma única vez.
-                   - OBSERVACAO não é validada: fica de fora de qualquer
-                     checagem, livre para edição.
-                   - Só atua em UPDATE (não em INSERT), pois na criação
-                     :OLD ainda não existe.
 ==============================================================================*/
 BEGIN
     IF :NEW.NUCONF != :OLD.NUCONF
