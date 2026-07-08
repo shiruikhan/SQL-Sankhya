@@ -13,7 +13,7 @@
 
 **Arquivo:** `VGFEST.sql`
 
-**Objetivo:** Consolidar estoque disponível por SKU para produtos ativos com movimento comercial recente.
+**Objetivo:** Consolidar estoque disponível por SKU para produtos ativos de revenda/venda.
 
 **Colunas:**
 
@@ -22,14 +22,12 @@
 | `SKU` | `NUMBER` | Código do produto (`CODPROD`) |
 | `ESTO` | `NUMBER` | Estoque disponível consolidado (0 se ausente em `TGFEST`) |
 
-**Tabelas fonte:** `TGFPRO`, `TGFEST`, `TGFITE`, `TGFCAB`, `TGFICP`
+**Tabelas fonte:** `TGFPRO`, `TGFEST`
 
 **Filtros ativos:**
 - Empresa: `1` | Local de estoque: `109`
 - Apenas produtos ativos: `PRO.ATIVO = 'S'`
-- Com negociações nos últimos **300 dias**
 - Uso de produto: `'R'` (Revenda) ou `'V'` (Venda)
-- Inclui também estoque de itens de composição (`TGFICP`)
 
 **Uso:** Queries de BI de estimativa de estoque, painel de produção e relatórios de planejamento.
 
