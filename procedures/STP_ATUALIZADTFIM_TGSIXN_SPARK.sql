@@ -24,10 +24,9 @@ CREATE OR REPLACE PROCEDURE STP_ATUALIZADTFIM_TGSIXN_SPARK AS
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
+  Última Revisão : Julho/2026 — removido o log compulsório de execução
+                   (EXEC_OK); AD_LOG_ERROS passa a registrar apenas erros.
 ==============================================================================*/
-
-    V_QTD_AVALIADOS NUMBER := 0; -- apontamentos abertos encontrados nesta execucao
-    V_QTD_FECHADOS  NUMBER := 0; -- dentre esses, quantos foram fechados agora
 
     -- Registra erros em AD_LOG_ERROS com transacao autonoma
     PROCEDURE LOG_ERRO(
@@ -70,7 +69,6 @@ BEGIN
         INNER JOIN TGFIXN IXN ON IXN.NUARQUIVO = TGS.NUARQUIVO
         WHERE   TGS.STATUS = '1'
     ) LOOP
-        V_QTD_AVALIADOS := V_QTD_AVALIADOS + 1;
         BEGIN
             -----------------------------------------------------------------
             -- 2. Fecha o apontamento (DTFIM) quando a nota ja foi lancada, e
@@ -86,10 +84,6 @@ BEGIN
                                                   - TRUNC(R_CONF.DTINI) + 1)
                          WHERE TO_CHAR(DIA, 'DY', 'NLS_DATE_LANGUAGE = AMERICAN') NOT IN ('SAT', 'SUN'))
              WHERE NUCONF = R_CONF.NUCONF;
-
-            IF R_CONF.DTFIM_NOVO IS NOT NULL THEN
-                V_QTD_FECHADOS := V_QTD_FECHADOS + 1;
-            END IF;
         EXCEPTION
             WHEN OTHERS THEN
                 LOG_ERRO(
@@ -102,22 +96,6 @@ BEGIN
                 );
         END;
     END LOOP;
-
-    -----------------------------------------------------------------------
-    -- 3. Registra a execucao em AD_LOG_ERROS (mesmo sem erro), para dar
-    --    visibilidade do historico de rodadas do job -- inclusive quando
-    --    nao ha nenhum apontamento aberto para avaliar
-    -----------------------------------------------------------------------
-    LOG_ERRO(
-        P_OPERACAO      => 'EXEC_OK',
-        P_NUNOTA        => NULL,
-        P_ERR_CODE      => 0,
-        P_ERR_MSG       => 'Execucao concluida: ' || V_QTD_AVALIADOS || ' apontamento(s) avaliado(s), '
-                            || V_QTD_FECHADOS || ' fechado(s) nesta execucao, '
-                            || (V_QTD_AVALIADOS - V_QTD_FECHADOS) || ' permanece(m) em aberto.',
-        P_ERR_BACKTRACE => NULL,
-        P_CALL_STACK    => NULL
-    );
 
     COMMIT;
 
