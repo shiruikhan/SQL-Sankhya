@@ -9,15 +9,17 @@ package botaoAcao;
  *   <li>Autentica via OAuth2 (POST form-urlencoded) em {@code ENDPOINTAUTH} de {@code AD_TGSAPI}
  *       e obtém Bearer token.</li>
  *   <li>Resolve {@code OriginCityId} e {@code DestinationCityId} chamando o endpoint
- *       {@code ENDPOINTCIDADE} com os CEPs de origem e destino; grava em
- *       {@code CIDORIGID}/{@code CIDDESTID} de {@code AD_TGSCTF}.</li>
+ *       {@code ENDPOINTCIDADE} com os CEPs de origem e destino (usados apenas em
+ *       memória para montar o payload; não são persistidos).</li>
  *   <li>Monta payload JSON com dados do remetente, destinatário, peso, valor e dimensões
  *       ({@code AD_TGSLCB}); chama {@code ENDPOINT} (gera-cotacao).</li>
- *   <li>Grava {@code VLRFRETE} em {@code AD_TGSCTF} e {@code TGFCAB},
- *       recalculando impostos via {@link br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper}.</li>
+ *   <li>Grava {@code VLRFRETE} em {@code AD_TGSCTF}. Atualização de {@code TGFCAB} e
+ *       recálculo de impostos (via {@link br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper})
+ *       estão temporariamente desativados para testes em ambiente de homologação —
+ *       ver bloco comentado em {@code processarLinha}.</li>
  * </ol>
  *
- * <p><b>Tabelas acessadas:</b> AD_TGSCTF, AD_TGSLCB, AD_TGSAPI, TGFCAB</p>
+ * <p><b>Tabelas acessadas:</b> AD_TGSCTF, AD_TGSLCB, AD_TGSAPI</p>
  * <p><b>API externa:</b> Rodonaves — autenticação OAuth2 Bearer token</p>
  * <p><b>Empresa:</b> Spark Eletrônica</p>
  *
@@ -61,8 +63,8 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
 
     // Parsers de resposta JSON (sem dependência de biblioteca externa)
     private static final Pattern ACCESS_TOKEN_PATTERN  = Pattern.compile("\"access_token\"\\s*:\\s*\"([^\"]+)\"");
-    private static final Pattern FREIGHT_VALUE_PATTERN = Pattern.compile("\"FreightValue\"\\s*:\\s*\"([^\"]+)\"");
-    private static final Pattern PROTOCOL_ID_PATTERN   = Pattern.compile("\"ProtocolId\"\\s*:\\s*(\\d+)");
+    private static final Pattern FREIGHT_VALUE_PATTERN = Pattern.compile("\"Value\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?)");
+    private static final Pattern PROTOCOL_NUMBER_PATTERN = Pattern.compile("\"ProtocolNumber\"\\s*:\\s*\"([^\"]*)\"");
     private static final Pattern CITY_ID_PATTERN       = Pattern.compile("\"Id\"\\s*:\\s*(\\d+)");
 
     @Override
@@ -214,15 +216,6 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
             return;
         }
 
-        // Persiste os CityIds para rastreabilidade
-        try (PreparedStatement ps = jdbc.getConnection().prepareStatement(
-                "UPDATE AD_TGSCTF SET CIDORIGID = ?, CIDDESTID = ? WHERE NUCTF = ?")) {
-            ps.setInt(1, cidOrigId);
-            ps.setInt(2, cidDestId);
-            ps.setBigDecimal(3, nuctf);
-            ps.executeUpdate();
-        }
-
         // ── Monta array Packs a partir de AD_TGSLCB ─────────────────────────
 
         StringBuilder packsJson = new StringBuilder("[");
@@ -247,7 +240,7 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
                 if (!firstPack) packsJson.append(",");
                 packsJson.append("{")
                         .append("\"AmountPackages\":").append(voltot != null && voltot.intValue() > 0 ? voltot.intValue() : 1).append(",")
-                        .append("\"Weight\":").append(formatDecimal(pesoItem != null ? pesoItem : BigDecimal.ZERO)).append(",")
+                        .append("\"Weight\":").append(formatWeightKg(pesoItem != null ? pesoItem : BigDecimal.ZERO)).append(",")
                         .append("\"Length\":").append(formatDecimal(comp)).append(",")
                         .append("\"Height\":").append(formatDecimal(alt)).append(",")
                         .append("\"Width\":").append(formatDecimal(larg))
@@ -267,7 +260,7 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
             "\"OriginCityId\":"               + cidOrigId                + ","   +
             "\"DestinationZipCode\":\""       + onlyDigits(cepDestino)   + "\"," +
             "\"DestinationCityId\":"          + cidDestId                + ","   +
-            "\"TotalWeight\":"                + formatDecimal(peso)       + ","   +
+            "\"TotalWeight\":"                + formatWeightKg(peso)      + ","   +
             "\"EletronicInvoiceValue\":"      + formatDecimal(vlrMercadoria) + "," +
             "\"CustomerTaxIdRegistration\":\"" + onlyDigits(docOrig)     + "\"," +
             "\"ReceiverCpfcnp\":\""           + onlyDigits(docDest)      + "\"," +
@@ -282,7 +275,7 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
 
         String responseStr = null;
         BigDecimal valorFrete = null;
-        Integer protocolId = null;
+        String protocolNumber = null;
         HttpURLConnection conn = null;
 
         try {
@@ -317,14 +310,14 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
             }
 
             valorFrete = parseFreightValue(responseStr);
-            protocolId = parseProtocolId(responseStr);
+            protocolNumber = parseProtocolNumber(responseStr);
 
         } finally {
             if (conn != null) conn.disconnect();
         }
 
         if (valorFrete == null) {
-            appendMsg(retorno, "NUCTF " + nuctf + ": Falha ao ler FreightValue. Resposta da API: " + responseStr);
+            appendMsg(retorno, "NUCTF " + nuctf + ": Falha ao ler o valor do frete (campo \"Value\"). Resposta da API: " + responseStr);
             return;
         }
 
@@ -338,7 +331,10 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
         }
 
         // ── Atualiza TGFCAB e recalcula impostos ────────────────────────────
-
+        // DESATIVADO TEMPORARIAMENTE (ambiente de teste): manter a cotação
+        // restrita a AD_TGSCTF, sem tocar em TGFCAB nem disparar recálculo de
+        // impostos. Reativar removendo este comentário antes de ir para produção.
+        /*
         if (!isNullOrZero(nunota)) {
             PersistentLocalEntity entity = entityFacade.findEntityByPrimaryKey("CabecalhoNota", nunota);
             if (entity != null) {
@@ -372,11 +368,12 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
                         + eRecalculo.getMessage());
             }
         }
+        */
 
         // ── Mensagem de retorno ──────────────────────────────────────────────
 
         String msg = "Valor do frete: R$ " + valorFrete.toPlainString();
-        if (protocolId != null) msg += " | Protocolo Rodonaves: " + protocolId;
+        if (protocolNumber != null) msg += " | Protocolo Rodonaves: " + protocolNumber;
         appendMsg(retorno, msg);
     }
 
@@ -468,7 +465,7 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
                 cfg.user           = q.getString("USUARIO");
                 cfg.pass           = q.getString("PASSWORD");
                 cfg.authType       = q.getString("AUTH_TYPE");
-                if (isBlank(cfg.authType)) cfg.authType = "PRD";
+                if (isBlank(cfg.authType)) cfg.authType = "DEV"; // default do endpoint /token de Cotação (Rodonaves)
             }
             q.close();
         } catch (Exception ignored) {}
@@ -482,22 +479,17 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
         Matcher m = FREIGHT_VALUE_PATTERN.matcher(json);
         if (!m.find()) return null;
         try {
-            // Normaliza separadores: "1.234,56" → "1234.56"
-            String raw = m.group(1).trim().replace(".", "").replace(",", ".");
-            return new BigDecimal(raw);
+            // "Value" já vem como número JSON puro (ponto decimal, sem milhar) — sem conversão de separador
+            return new BigDecimal(m.group(1).trim());
         } catch (Exception e) {
             return null;
         }
     }
 
-    private static Integer parseProtocolId(String json) {
+    private static String parseProtocolNumber(String json) {
         if (json == null) return null;
-        Matcher m = PROTOCOL_ID_PATTERN.matcher(json);
-        try {
-            return m.find() ? Integer.parseInt(m.group(1)) : null;
-        } catch (Exception e) {
-            return null;
-        }
+        Matcher m = PROTOCOL_NUMBER_PATTERN.matcher(json);
+        return m.find() ? m.group(1) : null;
     }
 
     // ─── Utilitários ──────────────────────────────────────────────────────────
@@ -531,6 +523,12 @@ public class CotaFreteRodonaves implements AcaoRotinaJava {
     private static String formatDecimal(BigDecimal v) {
         if (v == null) return "0.00";
         return v.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString().replace(',', '.');
+    }
+
+    // Peso em Kg inteiro, sempre arredondado para cima (exigência da API Rodonaves)
+    private static String formatWeightKg(BigDecimal v) {
+        if (v == null) return "0";
+        return v.setScale(0, BigDecimal.ROUND_UP).toPlainString();
     }
 
     private static void appendMsg(StringBuilder sb, String msg) {

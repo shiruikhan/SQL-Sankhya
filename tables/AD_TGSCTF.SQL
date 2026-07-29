@@ -19,10 +19,3 @@ CREATE TABLE AD_TGSCTF (
   CONSTRAINT AD_FK_70E1D199BA490A59E9C1D FOREIGN KEY (NUNOTA)
     REFERENCES TGFCAB (NUNOTA)
 );
-
--- Campos adicionados para suporte à integração Rodonaves
-ALTER TABLE AD_TGSCTF ADD CIDORIGID    NUMBER(10,0);  -- OriginCityId Rodonaves (preenchido automaticamente via busca-cidade)
-ALTER TABLE AD_TGSCTF ADD CIDDESTID    NUMBER(10,0);  -- DestinationCityId Rodonaves (preenchido automaticamente via busca-cidade)
-ALTER TABLE AD_TGSCTF ADD NOMECONTATO  VARCHAR2(100); -- ContactName (hardcoded: 'SPARK')
-ALTER TABLE AD_TGSCTF ADD TELCONTATO   VARCHAR2(30);  -- ContactPhoneNumber (hardcoded: '33511256')
-ALTER TABLE AD_TGSCTF ADD EMAILCLI     VARCHAR2(100); -- CustomerEmail (hardcoded: 'pedidos@spark.ind.br')

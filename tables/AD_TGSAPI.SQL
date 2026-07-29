@@ -10,4 +10,4 @@ CREATE TABLE AD_TGSAPI (
 -- Campos adicionados para suporte à integração Rodonaves
 ALTER TABLE AD_TGSAPI ADD ENDPOINTAUTH    VARCHAR2(200); -- URL do endpoint de autenticação OAuth2 (/token)
 ALTER TABLE AD_TGSAPI ADD ENDPOINTCIDADE  VARCHAR2(200); -- URL do endpoint busca-cidade por CEP
-ALTER TABLE AD_TGSAPI ADD AUTH_TYPE        VARCHAR2(10);  -- Tipo de autenticação: 'DEV' ou 'PRD'
+ALTER TABLE AD_TGSAPI ADD AUTH_TYPE        VARCHAR2(10);  -- Tipo de autenticação exigido pelo POST /token de Cotação da Rodonaves; usar 'DEV' (default documentado em https://dev.rodonaves.com.br/reference/post_token; não usar 'PRD', é inválido)

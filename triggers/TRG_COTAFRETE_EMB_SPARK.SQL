@@ -18,10 +18,11 @@ FOR EACH ROW
                    (TGFPRO.PESOBRUTO x nº de caixas) + peso dos itens
                    (AD_EMBPED.PESOBRUTO). Esse peso-base só serve para ratear
                    proporcionalmente o peso oficial da cotação
-                   (AD_TGSCTF.PESOTOT) entre os grupos — a soma de
-                   PESOITEM x VOLTOT de todos os pacotes sempre bate com
-                   PESOTOT, para não haver divergência entre o peso declarado
-                   à transportadora e o peso total da nota.
+                   (AD_TGSCTF.PESOTOT) entre os grupos. PESOITEM é sempre
+                   arredondado para cima (CEIL) para Kg inteiro, pois a API da
+                   Rodonaves exige peso em Kg sem casas decimais — por isso a
+                   soma de PESOITEM x VOLTOT pode ficar levemente acima de
+                   PESOTOT (nunca abaixo), o que é intencional.
 
   Tabela         : AD_TGSCTF
   Evento         : AFTER INSERT OR UPDATE
@@ -47,6 +48,8 @@ FOR EACH ROW
                    em AD_TGSLCB agora roda antes da checagem de existência em
                    AD_EMBPED, para não deixar pacotes órfãos quando a
                    embalagem da nota for totalmente removida numa atualização.
+                   Julho/2026 — PESOITEM agora é arredondado para cima (CEIL)
+                   em Kg inteiro, conforme exigência da API da Rodonaves.
 ==============================================================================*/
 DECLARE
     -- Cursor: codprodemb e quantidade de caixas distintas para a nota
@@ -218,8 +221,9 @@ BEGIN
 
     ---------------------------------------------------------------------------
     -- 2. Grava os pacotes em AD_TGSLCB, rateando AD_TGSCTF.PESOTOT entre os
-    --    grupos proporcionalmente ao peso-base — a soma de PESOITEM x VOLTOT
-    --    bate exatamente com PESOTOT
+    --    grupos proporcionalmente ao peso-base, arredondando cada PESOITEM
+    --    para cima em Kg inteiro (exigência da API) — a soma de
+    --    PESOITEM x VOLTOT fica igual ou levemente acima de PESOTOT
     ---------------------------------------------------------------------------
     SELECT NVL(MAX(IDEMB), 0) + 1
       INTO V_NEXT_IDEMB
@@ -228,12 +232,14 @@ BEGIN
 
     FOR I IN 1 .. V_QTD_PACOTES LOOP
         IF V_PESOBASE_TOTAL > 0 THEN
-            V_PESOITEM := (NVL(:NEW.PESOTOT, 0) * V_PACOTES(I).PESOBASE / V_PESOBASE_TOTAL)
-                          / V_PACOTES(I).VOLTOT;
+            -- CEIL: API exige peso em Kg inteiro, sempre arredondado para cima
+            -- (nunca declarar menos peso do que a caixa realmente tem)
+            V_PESOITEM := CEIL((NVL(:NEW.PESOTOT, 0) * V_PACOTES(I).PESOBASE / V_PESOBASE_TOTAL)
+                                / V_PACOTES(I).VOLTOT);
         ELSIF V_CAIXAS_TOTAL > 0 THEN
             -- Nenhum peso-base calculável (embalagem e itens sem PESOBRUTO): distribui
             -- o peso total igualmente entre todas as caixas da cotação
-            V_PESOITEM := NVL(:NEW.PESOTOT, 0) / V_CAIXAS_TOTAL;
+            V_PESOITEM := CEIL(NVL(:NEW.PESOTOT, 0) / V_CAIXAS_TOTAL);
         ELSE
             V_PESOITEM := NULL;
         END IF;
