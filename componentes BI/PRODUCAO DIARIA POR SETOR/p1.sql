@@ -1,6 +1,6 @@
 /*==============================================================================
   Nome do Script : P1
-  Tipo           : Componente BI — Tabela (matriz data x setor)
+  Tipo           : Componente BI ? Tabela (matriz data x setor)
   Dashboard      : [SPARK] - PRODUÇÃO DIÁRIA POR SETOR
   Componente     : P1
   Descrição      : Matriz de produção diária por setor no intervalo informado,
@@ -13,14 +13,14 @@
                    Regras de negócio:
                    - Somente apontamentos concluídos (APO.SITUACAO = 'C').
                    - 'EXPEDICAO/CONF' é typo legado de 'EXPEDIÇÃO/CONFERENCIA'
-                     (decisão registrada no README) — aqui não entra no modelo,
+                     (decisão registrada no README) ? aqui não entra no modelo,
                      que não possui coluna de expedição.
                    - Coluna DISPLAY soma 'DISPLAY' + 'APONTAMENTO X MONTAGEM
-                     DISPLAY' (premissa: mesmo setor físico — validar com o
+                     DISPLAY' (premissa: mesmo setor físico ? validar com o
                      solicitante).
 
-  Parâmetros     : :P_PERIODO.INI — data inicial do intervalo
-                   :P_PERIODO.FIN — data final do intervalo
+  Parâmetros     : :P_PERIODO.INI ? data inicial do intervalo
+                   :P_PERIODO.FIN ? data final do intervalo
 
   Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX
 
@@ -28,7 +28,7 @@
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: Junho/2026
-  Última Revisão : Junho/2026 — Criação inicial; 
+  Última Revisão : Junho/2026 ? Criação inicial; 
 ==============================================================================*/
 
 WITH CALENDARIO AS (
@@ -62,6 +62,7 @@ WITH CALENDARIO AS (
                             ,'TESTE'
                             ,'MONTAGEM FINAL'
                             ,'DISPLAY'
+                            ,'APONTAMENTO KIT X DISSIPADOR'
                             ,'APONTAMENTO X MONTAGEM DISPLAY')
      GROUP  BY
             TRUNC(APO.DHAPO)
@@ -80,6 +81,7 @@ SELECT  CAL.DT_PRODUCAO                                                         
        ,NVL(SUM(CASE WHEN PRD.SETOR = 'DISSIPADOR'            THEN PRD.QTD END), 0) AS DISSIPADOR
        ,NVL(SUM(CASE WHEN PRD.SETOR = 'TESTE'                 THEN PRD.QTD END), 0) AS TESTE
        ,NVL(SUM(CASE WHEN PRD.SETOR = 'MONTAGEM FINAL'        THEN PRD.QTD END), 0) AS MONTAGEMFINAL
+       ,NVL(SUM(CASE WHEN PRD.SETOR = 'APONTAMENTO KIT X DISSIPADOR' THEN PRD.QTD END), 0) AS FURACAO_DISSIPADOR
        ,NVL(SUM(CASE WHEN PRD.SETOR = 'DISPLAY'               THEN PRD.QTD END), 0) AS DISPLAY
        ,NVL(SUM(PRD.QTD), 0)                                                        AS TOTALDIA
   FROM  CALENDARIO CAL
