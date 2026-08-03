@@ -1,23 +1,3 @@
-/*==============================================================================
-  Nome do Script : resultado de faturamento
-  Tipo           : Componente BI — Tabela
-  Dashboard      : Análise de Resultados de Faturamento
-  Descrição      : Resultado e análise de faturamento por nota fiscal de venda,
-                   incluindo margens e totalizações de impostos especiais.
-
-  Parâmetros     : :P_PERIODO.INI — data inicial (DATE)
-                   :P_PERIODO.FIN — data final (DATE)
-                   :P_CODEMP — código da empresa (optional)
-
-  Tabelas        : TGFCAB, TGFITE, TGFPAR, TSICID, TSIUFS, TGFDIN (principais)
-
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Empresa        : Spark Eletrônica
-  Data de Criação: A DEFINIR
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-==============================================================================*/
-
 WITH DIN_AGG AS (
     SELECT DIN.NUNOTA,
            DIN.SEQUENCIA,
@@ -50,6 +30,7 @@ SELECT CAB.NUNOTA,
        SUM(ITE.QTDNEG) AS QTD
 FROM TGFCAB CAB
   INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA
+  INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
   LEFT JOIN DIN_AGG DA ON DA.NUNOTA = CAB.NUNOTA AND DA.SEQUENCIA = ITE.SEQUENCIA
   INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
   INNER JOIN TSICID CID ON CID.CODCID = PAR.CODCID
@@ -57,9 +38,10 @@ FROM TGFCAB CAB
 WHERE TRUNC(CAB.DTNEG) >= :P_PERIODO.INI
   AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN
   AND CAB.TIPMOV = 'V'
+  AND PRO.USOPROD = 'V'
   AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
   AND (:P_CODEMP IS NULL OR CAB.CODEMP = :P_CODEMP)
-  AND CAB.STATUSNFE <> 'D'
+  AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
 GROUP BY
     CAB.NUNOTA,
     CAB.CODEMP,
