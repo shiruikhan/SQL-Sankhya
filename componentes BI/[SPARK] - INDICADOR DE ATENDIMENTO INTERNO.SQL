@@ -98,7 +98,7 @@ SELECT  BAS.NUNOTA                              AS NUNOTA
        ,BAS.DT_ATENDIMENTO                      AS DT_ATENDIMENTO
         -- Dias úteis: semanas ISO completas x 5, mais a posição do dia dentro
         -- da semana limitada a 5 (sábado e domingo contam como sexta-feira)
-       ,(TRUNC(BAS.DT_ATENDIMENTO, 'IW')
+       ,(TRUNC(BAS.DT_ATENDIMENTO, 'IW')     
          - TRUNC(BAS.DT_SOLICITACAO, 'IW')) / 7 * 5
         + LEAST(BAS.DT_ATENDIMENTO - TRUNC(BAS.DT_ATENDIMENTO, 'IW') + 1, 5)
         - LEAST(BAS.DT_SOLICITACAO - TRUNC(BAS.DT_SOLICITACAO, 'IW') + 1, 5)

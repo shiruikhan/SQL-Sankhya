@@ -53,7 +53,7 @@ BEGIN
     IF  :NEW.CODEMP     = 2
     AND :NEW.CODTIPVENDA = 78
     AND :NEW.CODTIPOPER = 1005
-    AND :NEW.CODVEND    = 5
+    AND :NEW.CODVEND    IN (5,42,43,44)
     THEN
         :NEW.CIF_FOB  := 'C';
         :NEW.TIPFRETE := 'N';
