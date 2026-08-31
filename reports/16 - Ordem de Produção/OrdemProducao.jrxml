@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ==============================================================================
-  Nome do Script : OrdemProducao
-  Tipo           : Relatório Jasper (.jrxml)
-  Grupo          : 16 - Ordem de Produção
-  Descrição      : Ordem de Produção com detalhes operacionais
-
-  Empresa        : Spark Eletrônica
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-  ==============================================================================
--->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Ordem de Produção" language="groovy" pageWidth="595" pageHeight="842" columnWidth="539" leftMargin="28" rightMargin="28" topMargin="5" bottomMargin="5">
-	<property name="ireport.zoom" value="1.9965000000000006"/>
+	<property name="ireport.zoom" value="1.8150000000000026"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
@@ -91,12 +77,12 @@
 	PROC.DTPREVENT,
 	PRO.COMPLDESC,
 	PRO.AD_OBSTECNICA,
-	(SELECT LPA.AD_OBSPLANEJA FROM TPRLPA LPA WHERE LPA.CODPRODPA = IPA.CODPRODPA AND LPA.IDPROC = PROC.IDPROC) AS AD_OBSPLANEJA
+	(SELECT LPA.AD_OBSPLANEJA FROM TPRLPA LPA WHERE LPA.CODPRODPA = IPA.CODPRODPA AND LPA.IDPROC = PROC.IDPROC) AS AD_OBSPLANEJA,
+    (SELECT RC.VERSAO FROM TPRPRC RC WHERE RC.IDPROC = PROC.IDPROC) AS VERSAO
 FROM TPRIPROC PROC
 	INNER JOIN TPRIPA IPA ON IPA.IDIPROC = PROC.IDIPROC
 	INNER JOIN TGFPRO PRO ON PRO.CODPROD = IPA.CODPRODPA
-WHERE NVL(PROC.AD_AGRUPADORIMP,PROC.IDIPROC) IN (SELECT NVL(PR.AD_AGRUPADORIMP,PR.IDIPROC)
-													FROM TPRIPROC PR WHERE PR.IDIPROC= $P{PK_IDIPROC})
+WHERE NVL(PROC.AD_AGRUPADORIMP,PROC.IDIPROC) IN (SELECT NVL(PR.AD_AGRUPADORIMP,PR.IDIPROC) FROM TPRIPROC PR WHERE PR.IDIPROC= $P{PK_IDIPROC})
 ORDER BY PROC.IDIPROC]]>
 	</queryString>
 	<field name="IDIPROC" class="java.math.BigDecimal"/>
@@ -110,6 +96,7 @@ ORDER BY PROC.IDIPROC]]>
 	<field name="COMPLDESC" class="java.lang.String"/>
 	<field name="AD_OBSTECNICA" class="java.lang.String"/>
 	<field name="AD_OBSPLANEJA" class="java.lang.String"/>
+	<field name="VERSAO" class="java.math.BigDecimal"/>
 	<variable name="LOTE_1" class="java.lang.Integer" calculation="Count">
 		<variableExpression><![CDATA[]]></variableExpression>
 	</variable>
@@ -125,15 +112,15 @@ ORDER BY PROC.IDIPROC]]>
 				<reportElement x="-1" y="1" width="539" height="47"/>
 			</rectangle>
 			<staticText>
-				<reportElement x="267" y="17" width="146" height="15"/>
+				<reportElement x="171" y="18" width="38" height="15"/>
 				<box leftPadding="3"/>
 				<textElement verticalAlignment="Middle">
-					<font size="8" isBold="false"/>
+					<font fontName="Arial" size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[FICHA:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="105" y="1" width="308" height="19"/>
+				<reportElement x="105" y="1" width="307" height="18"/>
 				<box leftPadding="3"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="14" isBold="true"/>
@@ -141,98 +128,113 @@ ORDER BY PROC.IDIPROC]]>
 				<text><![CDATA[SPARK ELETRÔNICA LTDA]]></text>
 			</staticText>
 			<textField>
-				<reportElement mode="Transparent" x="44" y="17" width="150" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="55" y="18" width="116" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{CODPRODPA}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement mode="Transparent" x="300" y="17" width="113" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="209" y="18" width="113" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{NROLOTE}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement mode="Transparent" x="51" y="32" width="216" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="55" y="32" width="212" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="414" y="32" width="84" height="15"/>
+				<reportElement x="412" y="32" width="81" height="15"/>
 				<box leftPadding="3"/>
 				<textElement verticalAlignment="Middle">
-					<font size="8" isBold="true"/>
+					<font fontName="Arial" size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[TOTAL DE PEÇAS:]]></text>
 			</staticText>
 			<textField>
-				<reportElement mode="Transparent" x="498" y="32" width="41" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="493" y="32" width="46" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="7" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTDPRODUZIR}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="413" y="1" width="42" height="19"/>
+				<reportElement x="412" y="1" width="42" height="18"/>
 				<box leftPadding="3"/>
 				<textElement verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
+					<font fontName="Arial" size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[PLANO:]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement mode="Transparent" x="455" y="1" width="83" height="19" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="454" y="1" width="83" height="18" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUMPS}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="413" y="17" width="61" height="15"/>
+				<reportElement x="412" y="18" width="62" height="15"/>
 				<box leftPadding="3"/>
 				<textElement verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
+					<font fontName="Arial" size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[PREV.ENT:]]></text>
 			</staticText>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="474" y="17" width="65" height="15"/>
+				<reportElement x="474" y="18" width="65" height="15"/>
 				<textElement verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
+					<font fontName="Arial" size="7" isBold="false"/>
 				</textElement>
 				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DTPREVENT}]]></textFieldExpression>
 			</textField>
-			<textField pattern="" isBlankWhenNull="false">
-				<reportElement mode="Transparent" x="267" y="32" width="146" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement mode="Transparent" x="267" y="32" width="145" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-					<font fontName="SansSerif" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{COMPLDESC}]]></textFieldExpression>
 			</textField>
 			<image hAlign="Left" vAlign="Middle" isUsingCache="true" onErrorType="Blank">
-				<reportElement key="logo" x="0" y="0" width="140" height="19"/>
+				<reportElement key="logo" x="0" y="1" width="105" height="18"/>
 				<imageExpression class="java.lang.String"><![CDATA["/home/spark/modelos/logo_spark.png"]]></imageExpression>
 			</image>
 			<staticText>
 				<reportElement x="0" y="32" width="55" height="15"/>
 				<box leftPadding="3"/>
 				<textElement verticalAlignment="Middle">
-					<font size="8" isBold="false"/>
+					<font fontName="Arial" size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[PRODUTO:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="0" y="20" width="267" height="15"/>
+				<reportElement x="0" y="18" width="55" height="15"/>
 				<box leftPadding="3"/>
 				<textElement verticalAlignment="Middle">
-					<font size="8" isBold="false"/>
+					<font fontName="Arial" size="8" isBold="true"/>
 				</textElement>
 				<text><![CDATA[CÓDIGO:]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="322" y="18" width="45" height="15"/>
+				<box leftPadding="3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[VERSÃO:]]></text>
+			</staticText>
+			<textField>
+				<reportElement mode="Transparent" x="367" y="18" width="45" height="15" forecolor="#000000" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
+					<font fontName="Arial" size="7" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{VERSAO}]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<detail>

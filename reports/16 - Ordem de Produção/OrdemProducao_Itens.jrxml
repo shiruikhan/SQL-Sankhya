@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Ordem de Produção_Itens" language="groovy" columnCount="2" pageWidth="540" pageHeight="226" columnWidth="270" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
-	<property name="ireport.zoom" value="3.0"/>
-	<property name="ireport.x" value="0"/>
+	<property name="ireport.zoom" value="5.846151300000003"/>
+	<property name="ireport.x" value="880"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
-	<style name="table">
+	<style name="table" lineSpacing="Single">
 		<box>
 			<pen lineWidth="1.0" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="table_TH" mode="Opaque" backcolor="#C3C3D9">
+	<style name="table_TH" mode="Opaque" backcolor="#C3C3D9" lineSpacing="Single">
 		<box>
 			<topPen lineWidth="0.5" lineColor="#000000"/>
 			<bottomPen lineWidth="0.5" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="table_CH" mode="Opaque" backcolor="#E6E6FF">
+	<style name="table_CH" mode="Opaque" backcolor="#E6E6FF" lineSpacing="Single">
 		<box>
 			<topPen lineWidth="0.5" lineColor="#000000"/>
 			<leftPen lineWidth="0.5"/>
@@ -23,7 +23,7 @@
 			<rightPen lineWidth="0.5"/>
 		</box>
 	</style>
-	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF" hAlign="Center">
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF" hAlign="Center" lineSpacing="Single">
 		<box leftPadding="0">
 			<topPen lineWidth="0.5" lineColor="#000000"/>
 			<leftPen lineWidth="0.5"/>
@@ -32,25 +32,25 @@
 		</box>
 		<conditionalStyle>
 			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
-			<style backcolor="#F8F8FF"/>
+			<style backcolor="#F8F8FF" lineSpacing="Single"/>
 		</conditionalStyle>
 	</style>
-	<style name="table 1">
+	<style name="table 1" lineSpacing="Single">
 		<box>
 			<pen lineWidth="1.0" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="table 1_TH" mode="Opaque" backcolor="#F0F8FF">
+	<style name="table 1_TH" mode="Opaque" backcolor="#F0F8FF" lineSpacing="Single">
 		<box>
 			<pen lineWidth="0.5" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="table 1_CH" mode="Opaque" backcolor="#BFE1FF">
+	<style name="table 1_CH" mode="Opaque" backcolor="#BFE1FF" lineSpacing="Single">
 		<box>
 			<pen lineWidth="0.5" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="table 1_TD" mode="Opaque" backcolor="#FFFFFF">
+	<style name="table 1_TD" mode="Opaque" backcolor="#FFFFFF" lineSpacing="Single">
 		<box>
 			<pen lineWidth="0.5" lineColor="#000000"/>
 		</box>
@@ -67,27 +67,28 @@
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<queryString>
-		<![CDATA[SELECT DISTINCT  ATV.IDEFX,
-MP.CODPRODMP,
-MP.QTDMISTURA,
-MP.CODVOL,
-EFX.DESCRICAO,
-PROC.IDIPROC,
-IPA.CODPRODPA,
-PRO.DESCRPROD,
-IPA.QTDPRODUZIR * MP.QTDMISTURA AS TOTAL,
-cast(LPA.AD_OBSTECNICA as varchar2(3999)) AS OBSTECNICA
+		<![CDATA[SELECT DISTINCT
+	ATV.IDEFX
+	,MP.CODPRODMP
+	,MP.QTDMISTURA
+	,MP.CODVOL
+	,EFX.DESCRICAO
+	,PROC.IDIPROC
+	,IPA.CODPRODPA
+	,PRO.DESCRPROD
+	,IPA.QTDPRODUZIR * MP.QTDMISTURA AS TOTAL
+	,cast(LPA.AD_OBSTECNICA as varchar2(3999)) AS OBSTECNICA
+	,AD_POSINSERCAO
 FROM TPRIPROC PROC
-INNER JOIN TPRPRC PRC ON PRC.IDPROC = PROC.IDPROC
-INNER JOIN TPRLPA LPA ON LPA.IDPROC = PRC.IDPROC
-INNER JOIN TPRATV ATV ON PRC.IDPROC = ATV.IDPROC
-INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC AND IPA.CODPRODPA = LPA.CODPRODPA)
-INNER JOIN TPROEST EST ON (EST.IDEFX = ATV.IDEFX)
-INNER JOIN TPRLMP MP ON (ATV.IDEFX = MP.IDEFX AND IPA.CODPRODPA = MP.CODPRODPA)
-INNER JOIN TPREFX EFX ON EFX.IDEFX = ATV.IDEFX
-INNER JOIN TGFPRO PRO ON PRO.CODPROD = MP.CODPRODMP
-WHERE /*EST.TIPOITENS = 'PA'
-AND */PROC.IDIPROC= $P{PK2_IDIPROC}
+	INNER JOIN TPRPRC PRC ON PRC.IDPROC = PROC.IDPROC
+	INNER JOIN TPRLPA LPA ON LPA.IDPROC = PRC.IDPROC
+	INNER JOIN TPRATV ATV ON PRC.IDPROC = ATV.IDPROC
+	INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC AND IPA.CODPRODPA = LPA.CODPRODPA)
+	INNER JOIN TPROEST EST ON (EST.IDEFX = ATV.IDEFX)
+	INNER JOIN TPRLMP MP ON (ATV.IDEFX = MP.IDEFX AND IPA.CODPRODPA = MP.CODPRODPA)
+	INNER JOIN TPREFX EFX ON EFX.IDEFX = ATV.IDEFX
+	INNER JOIN TGFPRO PRO ON PRO.CODPROD = MP.CODPRODMP
+WHERE PROC.IDIPROC= $P{PK2_IDIPROC}
 ORDER BY 1,2,6]]>
 	</queryString>
 	<field name="IDEFX" class="java.math.BigDecimal"/>
@@ -100,6 +101,7 @@ ORDER BY 1,2,6]]>
 	<field name="DESCRPROD" class="java.lang.String"/>
 	<field name="TOTAL" class="java.math.BigDecimal"/>
 	<field name="OBSTECNICA" class="java.lang.String"/>
+	<field name="AD_POSINSERCAO" class="java.math.BigDecimal"/>
 	<variable name="LOTE_1" class="java.lang.Integer" calculation="Count">
 		<variableExpression><![CDATA[]]></variableExpression>
 	</variable>
@@ -108,35 +110,43 @@ ORDER BY 1,2,6]]>
 		<groupHeader>
 			<band height="16">
 				<staticText>
-					<reportElement x="1" y="0" width="36" height="16"/>
+					<reportElement x="0" y="0" width="36" height="16"/>
 					<box leftPadding="3"/>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
+					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="false"/>
 					</textElement>
 					<text><![CDATA[Item]]></text>
 				</staticText>
 				<textField>
-					<reportElement mode="Transparent" x="37" y="0" width="146" height="16" forecolor="#000000" backcolor="#FFFFFF"/>
+					<reportElement mode="Transparent" x="36" y="0" width="146" height="16" forecolor="#000000" backcolor="#FFFFFF"/>
 					<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 						<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 					</textElement>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRICAO}]]></textFieldExpression>
 				</textField>
 				<staticText>
-					<reportElement x="183" y="0" width="37" height="16"/>
+					<reportElement x="182" y="0" width="29" height="16"/>
 					<box leftPadding="3"/>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
+					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="false"/>
 					</textElement>
 					<text><![CDATA[Unidade]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="220" y="0" width="30" height="16"/>
+					<reportElement x="211" y="0" width="29" height="16"/>
 					<box leftPadding="3"/>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
+					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 						<font size="8" isBold="false"/>
 					</textElement>
 					<text><![CDATA[Total]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="240" y="0" width="29" height="16"/>
+					<box leftPadding="3"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
+						<font size="8" isBold="false"/>
+					</textElement>
+					<text><![CDATA[Inser.]]></text>
 				</staticText>
 			</band>
 		</groupHeader>
@@ -145,37 +155,44 @@ ORDER BY 1,2,6]]>
 		</groupFooter>
 	</group>
 	<background>
-		<band splitType="Stretch"/>
+		<band/>
 	</background>
 	<detail>
-		<band height="8" splitType="Stretch">
+		<band height="8">
 			<textField>
-				<reportElement mode="Transparent" x="0" y="0" width="37" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="0" y="0" width="36" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="SansSerif" size="6" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{CODPRODMP}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement mode="Transparent" x="37" y="0" width="146" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="36" y="0" width="146" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="SansSerif" size="6" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement mode="Transparent" x="183" y="0" width="37" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="182" y="0" width="29" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="SansSerif" size="6" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTDMISTURA}]]></textFieldExpression>
 			</textField>
 			<textField pattern="###0.0">
-				<reportElement mode="Transparent" x="222" y="0" width="28" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="211" y="0" width="29" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="SansSerif" size="6" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{TOTAL}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0" isBlankWhenNull="true">
+				<reportElement mode="Transparent" x="240" y="0" width="29" height="8" forecolor="#000000" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
+					<font fontName="SansSerif" size="6" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{AD_POSINSERCAO}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
