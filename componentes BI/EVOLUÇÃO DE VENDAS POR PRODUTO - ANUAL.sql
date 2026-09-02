@@ -1,6 +1,6 @@
 /*==============================================================================
   Nome do Script : EVOLUÇÃO DE VENDAS POR PRODUTO - ANUAL
-  Tipo           : Componente BI — Tabela
+  Tipo           : Componente BI ? Tabela
   Dashboard      : Análise de Vendas
   Descrição      : Evolução de vendas com eixos invertidos em relação ao
                    componente original EVOLUÇÃO DE VENDAS POR PRODUTO:
@@ -10,6 +10,13 @@
                    consecutivos. Não realiza cálculo de percentual.
                    Relatório fixo, sem parâmetros de tela: o período é
                    resolvido internamente (01/01/2022 a 31/12/2026).
+                   Os totalizadores de valor e quantidade são LÍQUIDOS de
+                   devolução: as devoluções (TIPMOV = 'D', CODTIPOPER IN
+                   1200, 1201, 1216, 1217, 1272) são somadas com sinal
+                   negativo no mês em que ocorreram, abatendo o mês/ano
+                   correspondente. Critérios de devolução replicados do
+                   componente validado "Faturamento por período Gestão"
+                   (p2.sql).
 
   Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN, TGFPAR, TSICID
 
@@ -17,7 +24,13 @@
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: Junho/2026
-  Última Revisão : Julho/2026 - Removidos os parâmetros de tela (:PERIODO.INI
+  Última Revisão : Setembro/2026 - Totalizadores de valor e quantidade
+                   passaram a abater as devoluções. Adicionado o ramo
+                   TIPMOV = 'D' / CODTIPOPER IN (1200, 1201, 1216, 1217,
+                   1272) na leitura de TGFCAB e sinal negativo aplicado a
+                   VLRNOTA e QTDNEG para esses movimentos, seguindo os
+                   critérios de p2.sql.
+                   Julho/2026 - Removidos os parâmetros de tela (:PERIODO.INI
                    / :PERIODO.FIN); período fixado em código. Corrigido
                    filtro de produto para PRO.USOPROD = 'V'. Corrigido filtro
                    de data para TRUNC(CAB.DTNEG) BETWEEN ..., pois DTNEG
@@ -27,7 +40,7 @@
                    o filtro (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D'),
                    replicando correção feita em p1.sql: sem ele, notas
                    fiscais denegadas pela SEFAZ (STATUSNFE = 'D') eram
-                   somadas como venda válida, inflando valor e quantidade —
+                   somadas como venda válida, inflando valor e quantidade ?
                    essa era a causa raiz da discrepância, não os filtros de
                    data/produto ajustados antes. Todos os critérios seguem o
                    componente validado "Faturamento por período Gestão"
@@ -41,20 +54,27 @@
 
 WITH BASE AS (
     ---------------------------------------------------------------------------
-    -- 1. Dados brutos: valor e quantidade agrupados por mês, ano e AD_LINHA
+    -- 1. Dados brutos: valor e quantidade agrupados por mês, ano e AD_LINHA.
+    --    Vendas entram com sinal +; devoluções (TIPMOV = 'D') com sinal -,
+    --    abatendo o mês/ano em que ocorreram.
     ---------------------------------------------------------------------------
     SELECT
          TO_CHAR(CAB.DTNEG, 'MM')                                              AS MES_ORDEM
         ,TO_CHAR(CAB.DTNEG, 'Mon')                                             AS MES_NOME
         ,EXTRACT(YEAR FROM CAB.DTNEG)                                          AS ANO
         ,NVL(PRO.AD_LINHA, 'SEM LINHA')                                        AS AD_LINHA
-        ,SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS, 0))        AS VLRNOTA
-        ,SUM(ITE.QTDNEG)                                                       AS QTDNEG
+        ,SUM(CASE WHEN CAB.TIPMOV = 'D'
+                  THEN -((ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0))
+                  ELSE  ((ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0))
+             END)                                                              AS VLRNOTA
+        ,SUM(CASE WHEN CAB.TIPMOV = 'D' THEN -ITE.QTDNEG ELSE ITE.QTDNEG END)  AS QTDNEG
     FROM       TGFPRO PRO
     INNER JOIN TGFITE ITE  ON ITE.CODPROD     = PRO.CODPROD
     INNER JOIN TGFCAB CAB  ON CAB.NUNOTA      = ITE.NUNOTA
-                          AND CAB.TIPMOV      = 'V'
-                          AND CAB.CODTIPOPER IN (1100, 2200, 1111, 1190, 1124, 2202)
+                          AND (
+                                  (CAB.TIPMOV = 'V' AND CAB.CODTIPOPER IN (1100, 2200, 1111, 1190, 1124, 2202))
+                               OR (CAB.TIPMOV = 'D' AND CAB.CODTIPOPER IN (1200, 1201, 1216, 1217, 1272))
+                              )
     INNER JOIN TGFGRU  GRU  ON GRU.CODGRUPOPROD = PRO.CODGRUPOPROD
     INNER JOIN TGFVEN  VEN  ON VEN.CODVEND      = CAB.CODVEND
     INNER JOIN TGFPAR  PAR  ON PAR.CODPARC      = CAB.CODPARC
