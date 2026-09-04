@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Espelho" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
-	<property name="ireport.zoom" value="1.5000000000000073"/>
+	<property name="ireport.zoom" value="1.6500000000000068"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="46"/>
+	<property name="ireport.y" value="242"/>
 	<property name="ireport.definition"/>
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
@@ -44,12 +44,14 @@
 	CAB.VLRSTFCPINT,
 	PAR.TELEFONE AS TELPARC,
 	PAR.FAX AS FAXPARC,
-	PAR.IDENTINSCESTAD AS INSCESTADPARC,
+	PAR.INSCESTADNAUF AS INSCESTADPARC,
 	CAB.CODPARCTRANSP,
+	PART.RAZAOSOCIAL AS PARCTRANSPORT,
 	(CASE WHEN CAB.CIF_FOB = 'C' THEN 'CIF' WHEN CAB.CIF_FOB = 'S' THEN 'Sem frete' WHEN CAB.CIF_FOB = 'T' THEN 'Terceiros' WHEN CAB.CIF_FOB = 'F' THEN 'FOB' ELSE NULL END) AS CIF_FOB,
 	(CASE WHEN CAB.TIPFRETE = 'N' THEN 'Extra Nota' ELSE 'Incluso' END) AS TIPFRETE,
 	(CASE WHEN CAB.CODVEND = 0 THEN ' ' ELSE VEN.APELIDO END) AS APELIDO,
 	VEN.EMAIL AS EMAILVEND,
+	TPV.DESCRTIPVENDA,
 	NVL(CAB.OBSERVACAO,' ') AS OBSERVACAO,
 	ITE.CODPROD,
 	NVL(AD_DESCRPRODOED,PRO.DESCRPROD) AS  DESCRPROD,
@@ -118,10 +120,10 @@ FROM TGFCAB CAB
 	INNER JOIN TGFPRO PRO
         ON ITE.CODPROD = PRO.CODPROD
 
-	LEFT JOIN TGFPAR PART
+	INNER JOIN TGFPAR PART
         ON CAB.CODPARCTRANSP = PART.CODPARC
 
-	LEFT JOIN TGFVEN VEN
+	INNER JOIN TGFVEN VEN
         ON CAB.CODVEND = VEN.CODVEND
 
 	INNER JOIN TGFTPV TPV
@@ -162,6 +164,7 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 	<field name="TELPARC" class="java.lang.String"/>
 	<field name="FAXPARC" class="java.lang.String"/>
 	<field name="INSCESTADPARC" class="java.lang.String"/>
+	<field name="PARCTRANSPORT" class="java.lang.String"/>
 	<field name="CIF_FOB" class="java.lang.String"/>
 	<field name="TIPFRETE" class="java.lang.String"/>
 	<field name="APELIDO" class="java.lang.String"/>
@@ -244,7 +247,7 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<reportElement x="15" y="91" width="535" height="1"/>
 			</line>
 			<staticText>
-				<reportElement x="281" y="116" width="97" height="14"/>
+				<reportElement x="301" y="116" width="97" height="14"/>
 				<textElement lineSpacing="Single">
 					<font isBold="true"/>
 				</textElement>
@@ -286,58 +289,58 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<text><![CDATA[Cliente:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="281" y="144" width="97" height="14"/>
+				<reportElement x="301" y="144" width="65" height="14"/>
 				<textElement lineSpacing="Single">
 					<font isBold="true"/>
 				</textElement>
 				<text><![CDATA[E-mail:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="281" y="102" width="97" height="14"/>
+				<reportElement x="301" y="102" width="97" height="14"/>
 				<textElement lineSpacing="Single">
 					<font isBold="true"/>
 				</textElement>
 				<text><![CDATA[CEP:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="281" y="130" width="97" height="14"/>
+				<reportElement x="301" y="130" width="97" height="14"/>
 				<textElement lineSpacing="Single">
 					<font isBold="true"/>
 				</textElement>
 				<text><![CDATA[Inscrição Estadual:]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement x="80" y="102" width="200" height="14"/>
+				<reportElement x="80" y="102" width="221" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{RAZAOSOCIAL}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="80" y="116" width="200" height="14"/>
+				<reportElement x="80" y="116" width="221" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{ENDPARC}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="379" y="116" width="171" height="14"/>
+				<reportElement x="398" y="116" width="152" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{CIDADEPARC}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="80" y="130" width="200" height="14"/>
+				<reportElement x="80" y="130" width="221" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{BAIRROPARC}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="80" y="144" width="200" height="14"/>
+				<reportElement x="80" y="144" width="221" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{CGC_CPF}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="80" y="158" width="200" height="14"/>
+				<reportElement x="80" y="158" width="221" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{TELPARC}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="379" y="130" width="171" height="14"/>
+				<reportElement x="398" y="130" width="152" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{INSCESTADPARC}]]></textFieldExpression>
 			</textField>
@@ -386,12 +389,12 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<text><![CDATA[  Subtotal      Produtos]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement x="379" y="102" width="171" height="14"/>
+				<reportElement x="398" y="102" width="152" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{CEP}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="379" y="144" width="171" height="14"/>
+				<reportElement x="366" y="144" width="184" height="14"/>
 				<textElement lineSpacing="Single"/>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMAIL}]]></textFieldExpression>
 			</textField>
@@ -442,7 +445,7 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<text><![CDATA[Cond. Pgto:]]></text>
 			</staticText>
 			<textField pattern="" isBlankWhenNull="true">
-				<reportElement mode="Transparent" x="80" y="172" width="200" height="14" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="80" y="172" width="470" height="14" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Top" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="SansSerif" size="10" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
@@ -470,14 +473,14 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{REDESPACHO}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="false">
-				<reportElement mode="Transparent" x="398" y="68" width="119" height="24" forecolor="#000000" backcolor="#FFFFFF"/>
+				<reportElement mode="Transparent" x="427" y="67" width="119" height="24" forecolor="#000000" backcolor="#FFFFFF"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="SansSerif" size="12" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
 				<textFieldExpression class="java.util.Date"><![CDATA[$F{DTNEG}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="301" y="66" width="97" height="25"/>
+				<reportElement x="366" y="67" width="61" height="25"/>
 				<textElement verticalAlignment="Middle" lineSpacing="Single">
 					<font size="12" isBold="true"/>
 				</textElement>
@@ -627,7 +630,7 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<reportElement x="15" y="92" width="535" height="1"/>
 			</line>
 			<staticText>
-				<reportElement x="300" y="3" width="140" height="15"/>
+				<reportElement x="335" y="3" width="105" height="15"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="10" isBold="true"/>
 				</textElement>
@@ -684,21 +687,21 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{TOTGER}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="300" y="18" width="140" height="15"/>
+				<reportElement x="335" y="18" width="105" height="15"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="10" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Frete:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="300" y="48" width="140" height="15"/>
+				<reportElement x="335" y="48" width="105" height="15"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="10" isBold="true"/>
 				</textElement>
 				<text><![CDATA[IPI:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="300" y="33" width="140" height="15"/>
+				<reportElement x="335" y="33" width="105" height="15"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="10" isBold="true"/>
 				</textElement>
@@ -734,14 +737,14 @@ WHERE CAB.NUNOTA = NVL($P{NUNOTA}, $P{PK_NUNOTA})]]>
 				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "EspelhoFINAN.jasper"]]></subreportExpression>
 			</subreport>
 			<staticText>
-				<reportElement x="300" y="62" width="140" height="15"/>
+				<reportElement x="335" y="62" width="105" height="15"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="10" isBold="true"/>
 				</textElement>
 				<text><![CDATA[ICMS FCP:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="300" y="76" width="140" height="15"/>
+				<reportElement x="335" y="76" width="105" height="15"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle" lineSpacing="Single">
 					<font size="10" isBold="true"/>
 				</textElement>
