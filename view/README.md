@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de views:** 3  
+**Total de views:** 6  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -35,7 +35,7 @@
 
 ### `VW_CTE_AUTORIZADOS`
 
-**Arquivo:** `VGFNFE.sql`
+**Arquivo:** `VGFIXN.SQL` (nome do arquivo baseado na tabela fonte `TGFIXN`; a view criada é `VW_CTE_AUTORIZADOS`)
 
 **Objetivo:** Retornar CT-e autorizados que possuem referência a NF-e, extraindo `CODTIPOPER` da nota referenciada via XML.
 
@@ -101,6 +101,36 @@
 - Emissão nos **últimos 4 dias**
 
 **Uso:** Integração com o site e marketplace da Spark para informar chave NF-e ao cliente externo.
+
+---
+
+---
+
+### `VGFSALDOMRP`
+
+**Arquivo:** `VGFSALDOMRP.sql`
+
+**Objetivo:** Consolidar, por mês de referência e produto, a quantidade prevista (meta) contra a quantidade a produzir das ordens de produção, retornando o saldo.
+
+**Colunas:** `DTREF` (mês, truncado), `CODPROD`, `QTDPREV` (meta de `AD_TGFMET`, `CODMETA = 3`, líquida de `QTDREDMET`), `QTDPRODUZIR` (das OPs em `TPRIPROC`/`TPRIPA`, status `A`/`F`/`P2`), `SALDO` (`QTDPREV - QTDPRODUZIR`).
+
+**Tabelas fonte:** `TPRIPROC`, `TPRIPA`, `TGFPAL`, `TPRMPS`, `TPRIMPS`, `AD_TGFMET`
+
+**Uso:** Componentes BI de cronograma/saldo de produção e planejamento de MP.
+
+---
+
+### `AD_VWMELIFATVIX` / `AD_VWMELIFATVIX2`
+
+**Arquivos:** `AD_VWMELIFATVIX.sql`, `AD_VWMELIFATVIX2.sql`
+
+**Objetivo:** Listar NF-e de venda de marketplace (Mercado Livre) autorizadas nos últimos 7 dias que ainda **não** têm etiqueta gerada, para disparar a impressão/integração de etiqueta de expedição.
+
+**Colunas:** `ID` (fixo `0`), `NUMNOTA`, `NUNOTA`, `SERIENOTA`, `DTFATUR`, `STATUSNFE`, `AD_PEDIDOMKTPLACE`, `AD_SHIPID` (de `AD_MELISHIPID`), `CHAVENFE`, `CODVEND`, `CODEMP`, `NOTAXML` (de `TGFNFE.XMLENVCLI`).
+
+**Tabelas fonte:** `TGFCAB`, `TGFNFE`; exclui notas já presentes em `TSIATA` com descrição contendo `Etiqueta`.
+
+**Diferença entre as duas:** filtro de vendedor/empresa — `AD_VWMELIFATVIX` usa `CODVEND = 5`; `AD_VWMELIFATVIX2` usa `CODVEND = 43`. Vendedor/empresa fixos no código — ajustar conforme o ambiente.
 
 ---
 

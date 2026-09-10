@@ -36,6 +36,20 @@ Os arquivos `.class` compilados devem ser empacotados em `.jar` e deployados no 
 
 ---
 
+### `CotaFreteRodonaves.java`
+
+**Pacote:** `botaoAcao`  
+**Interface:** `AcaoRotinaJava`  
+**Tipo:** Botão de Ação  
+
+**Descrição:** Cotação de frete via API REST da Rodonaves para os embarques selecionados. Fluxo por registro em `AD_TGSCTF`: (1) autentica via OAuth2 no `ENDPOINTAUTH` de `AD_TGSAPI` e obtém Bearer token; (2) resolve `OriginCityId`/`DestinationCityId` chamando `ENDPOINTCIDADE` com os CEPs (usados só em memória); (3) monta payload JSON com remetente, destinatário, peso, valor e dimensões (`AD_TGSLCB`) e chama `ENDPOINT` (gera-cotação); (4) grava `VLRFRETE` em `AD_TGSCTF`.
+
+**Tabelas acessadas:** `AD_TGSCTF`, `AD_TGSLCB`, `AD_TGSAPI`  
+**API externa:** Rodonaves — OAuth2 Bearer token (`AUTH_TYPE = 'DEV'`)  
+**Observação:** a atualização de `TGFCAB` e o recálculo de impostos (`ImpostosHelpper`) estão **desativados** no código (bloco comentado em `processarLinha`) enquanto a integração está em homologação. Ver memória `integracao-rodonaves-status`.
+
+---
+
 ### `GerarTransferencia.java`
 
 **Pacote:** `br.com.spark.transferencia`  

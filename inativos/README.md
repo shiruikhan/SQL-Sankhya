@@ -29,5 +29,6 @@ Ao mover um objeto para esta pasta, documentar aqui:
 | `OSINTERNA_DEFINESTATUS.SQL` | Procedure (botão de ação) | [A DEFINIR] | Botão desativado — definição de status da O.S. interna substituída por outra lógica |
 | `STP_VALIDANATUREZA_SPARK.SQL` | Procedure de validação | [A DEFINIR] | Regra de validação de natureza de operação — substituída ou incorporada em outro fluxo |
 | `VGF_ESTOQUEMELI_SPARK.sql` | View | [A DEFINIR] | View de estoque para o Mercado Livre — vinculada à tabela `AD_MKTPMELI`; descontinuada com a migração da integração ML |
+| `TRG_INC_UPD_TPRMPS_SPARK.sql` | Trigger (`TPRMPS`) | Junho/2026 | Restaurava `TIPOPI = AD_TIPOPI` após a geração do MRP para desfazer o forçamento `UPDATE TPRLPI SET TIPOPI='O'` que existia em `STP_PCPMETA_SPARK`. Com a inativação daquele UPDATE (Jun/2026) não há mais nada a restaurar — o corpo da trigger está todo comentado. Uma trigger **ativa** de mesmo nome existe em `triggers/` (ver `triggers/README.md` §1) |
 
 > Para ver o histórico de quando cada arquivo foi movido para cá, use: `git log --follow -- inativos/<arquivo>`

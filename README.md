@@ -2,8 +2,8 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Versão:** 2.1  
-**Data:** Maio/2026  
+**Versão:** 2.2  
+**Data:** Setembro/2026  
 **Plataforma-alvo:** Sankhya ERP (Oracle Database)
 
 ---
@@ -57,8 +57,13 @@ SQL Sankhya/
 ├── audicon/                Procedures de integração contábil (Audicon)
 ├── trigger_nativa/         Trigger nativa do Sankhya (customizada para a empresa)
 ├── libs_sankhya/           Dependências JAR do Sankhya SDK
+├── exemplos/               Amostras reais de dados (cabeçalho+itens+série) para referência
+├── teste_transf/           Protótipo Java — transferência com Reforma Tributária (IBS/CBS)
 └── inativos/               Objetos descontinuados (preservados para referência)
 ```
+
+> `trigger_nativa/` e `libs_sankhya/` estão listados acima por completude, mas
+> não são versionados (`.gitignore`).
 
 ---
 
@@ -89,7 +94,7 @@ SQL Sankhya/
 | **Integração E-commerce / Site** | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA`, `TRG_INC_UPD_INTEGRA` |
 | **CT-e / NF-e** | `EVP_CLASSIFICACTE_SPARK`, `TRG_CMP_TGFCAB_NFE_SPARK`, `VW_CTE_AUTORIZADOS`, `VGFNFE` |
 | **Integração Contábil** | `STP_CRIA_CTACTBCLI_AUDICON`, `STP_CRIA_CTACTBFOR_AUDICON` |
-| **BI / Gerencial** | 70+ queries analíticas em `componentes BI/` |
+| **BI / Gerencial** | ~100 queries analíticas em `componentes BI/` |
 
 ---
 
@@ -111,14 +116,14 @@ SQL Sankhya/
 ## 7. Inventário de Objetos
 
 ### 7.1 Triggers (pasta `triggers/`)
-> 82 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
+> 87 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
 
 Agrupadas por domínio:
 
 | Domínio | Qtd | Exemplos |
 |---|---|---|
-| Produção / PCP | 17 | `TRG_INC_UPD_TPRMPS_SPARK`, `TRG_INC_UPD_TPRPRC_SPARK`, `TRG_INC_UPD_TPRIPROC_SPARK` |
-| Nota Fiscal / Movimentação | 19 | `TRG_CMP_TGFCAB_NFE_SPARK`, `TRG_INC_TGFCAB_DC_SPARK`, `TRG_UPD_TGFCAB_MOEDA_SPARK2`, `TRG_INC_TGFVAR_SPARK` |
+| Produção / PCP | 18 | `TRG_INC_UPD_TPRMPS_SPARK`, `TRG_INC_UPD_TPRIPROC_SPARK`, `TRG_TPRCOI_REPLICA_PA` |
+| Nota Fiscal / Movimentação | 20 | `TRG_CMP_TGFCAB_NFE_SPARK`, `TRG_UPD_TGFCAB_MOEDA_SPARK2`, `TRG_INC_TGFVAR_SPARK`, `TRG_UPD_DIFALPB_SPARK` |
 | Compras / SC | 6 | `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC`, `TRG_BLOQUEIA_EDICAO_STATUS_CR` |
 | Logística / Frete | 5 | `TRG_COTAFRETE_SPARK`, `TRG_COTAFRETE_EMB_SPARK`, `TRG_FRETE_CIF_MTKPL_SPARK` |
 | Assistência / O.S. | 6 | `TRG_UPD_OSINTERNA`, `TRG_UPD_OSINTERNA_DHFIM`, `TRG_INS_OSSTATUS_SPARK` |
@@ -127,13 +132,14 @@ Agrupadas por domínio:
 | Financeiro | 4 | `TRG_REFORCA_NAT_FIN`, `SPK_TGFFIN_LOG`, `TRG_INCDEVCH_SPARK` |
 | Parceiro / Cadastro | 6 | `TRG_UPD_TGFPAR_UF_SPARK`, `TRG_INC_TSICID_SPARK`, `TRG_INC_TGFPAR_SPARK` |
 | Séries / Conferência | 4 | `TRG_INC_TGFSER_SPARK`, `TRG_DLT_TGFSER_SPARK`, `TRG_TGFCON2_SPARK` |
-| Notificações / Avisos | 4 | `TRG_AVISOCONF_SPARK`, `TRG_UPD_AVISOSPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK` |
+| Notificações / Avisos | 5 | `TRG_AVISOCONF_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_NOTIF_PARCERIA_SPARK` |
+| Conferência de XML (`AD_TGSIXN`) | 3 | `TRG_INC_AD_TGSIXN_SPARK`, `TRG_INC_UPD_AD_TGSIXN_SPARK`, `TRG_UPD_AD_TGSIXN_SPARK` |
 | Demais | 3 | Integrações, produto, custo |
 
 ---
 
 ### 7.2 Procedures (pasta `procedures/`)
-> 68 procedures. Ver [`procedures/README.md`](procedures/README.md) para catálogo completo.
+> 78 procedures. Ver [`procedures/README.md`](procedures/README.md) para catálogo completo.
 
 | Domínio | Qtd | Exemplos |
 |---|---|---|
@@ -146,9 +152,10 @@ Agrupadas por domínio:
 | Financeiro | 4 | `STP_INCLUIRLANCTO_SPARK`, `STP_EXCLUIRFINCOM_SPARK`, `STP_ATUALIZARVLRMOEDA_SPARK`, `STP_REGRA_VALID_FINAN_SPARK` |
 | E-commerce / Integração | 3 | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA`, `STP_ATTESTML_SPARK` |
 | Cadastros / Produto | 6 | `STP_ALTDADOSPRO_SPARK`, `STP_MUDANCADECODIGO_SPARK`, `STP_ORIGPROD_SPARK`, `STP_CORCSTIPI_SPARK` |
-| Produção | 5 | `STP_TPRCOI_SPARK`, `STP_TPRIATV_SPARK`, `STP_TPRIPROC_CANC_SPARK`, `STP_GERALISTAMPS_SPARK` |
+| Produção | 7 | `STP_TPRCOI_SPARK`, `STP_TPRIATV_SPARK`, `STP_REABRIR_PA_SPARK`, `STP_CORRIGENOTAPROD_SPARK` |
+| CT-e / Conferência de XML | 3 | `STP_CLASSIFICACTE_SPARK`, `STP_APONTACONFERENCIA_SPARK`, `STP_ATUALIZADTFIM_TGSIXN_SPARK` |
 | Eventos de tela (EVP) | 2 | `EVP_CLASSIFICACTE_SPARK`, `EVP_TGFIXN_EMAIL_SPARK` |
-| Demais / Auxiliares | 16 | BI, impressão, agendamento, etc. |
+| Demais / Auxiliares | 17 | BI, impressão, agendamento, alteração de CFOP, etc. |
 
 ---
 
@@ -179,8 +186,10 @@ Agrupadas por domínio:
 | Objeto | Colunas principais | Descrição |
 |---|---|---|
 | `VGFEST` | `SKU, ESTO` | Estoque consolidado por SKU para produtos ativos com movimento recente (empresa 1, local 109) |
-| `VW_CTE_AUTORIZADOS` | `NRARQUIVO, NUMNOTA, NUNOTA, CHAVEACESSO, CODTIPOPER_NFE, ...` | CT-e autorizados com referência à NF-e correspondente |
+| `VW_CTE_AUTORIZADOS` (arquivo `VGFIXN.SQL`) | `NRARQUIVO, NUNOTA, CHAVEACESSO, CODTIPOPER_NFE, ...` | CT-e autorizados com referência à NF-e correspondente |
 | `VGFNFE` | `NUNOTA, CODVEND, PEDIDOEXTERNO, CHAVENFE, NOTAXML` | NF-e ativas de vendas com XML do cliente (últimos 4 dias) |
+| `VGFSALDOMRP` | `DTREF, CODPROD, QTDPREV, QTDPRODUZIR, SALDO` | Saldo mensal por produto: meta (`AD_TGFMET`) contra quantidade a produzir das OPs |
+| `AD_VWMELIFATVIX` / `AD_VWMELIFATVIX2` | `NUNOTA, AD_SHIPID, CHAVENFE, NOTAXML, ...` | NF-e de marketplace (ML) autorizadas nos últimos 7 dias sem etiqueta gerada. As duas diferem no vendedor/empresa (`CODVEND` 5 / 43) |
 
 ---
 
@@ -191,11 +200,19 @@ Agrupadas por domínio:
 |---|---|---|
 | `AD_LOG_ERROS` | `IDLOG` | Log centralizado de erros gerados por triggers. Registra código de erro, backtrace e contexto da nota |
 | `AD_MAP_SETOR_FUNC` | `DESCDEP, DESCIDEFX` | Mapeamento entre departamento do colaborador e etapa de produção (suporte à validação de apontamentos) |
+| `AD_CORRNOTAPROD` | `NUCORR` | Auditoria das correções de notas de produção feitas por `STP_CORRIGENOTAPROD_SPARK` |
+| `AD_TGFASS` | `NUMOS` | Cabeçalho da O.S. de assistência técnica da Spark (checklist de inspeção da placa, fotos, responsáveis) |
+| `AD_TGSAPI` | `API` | Credenciais e endpoints de APIs externas (cotação de frete — Rodonaves) |
+| `AD_TGSCTF` | `NUCTF` | Cabeçalho da cotação de frete (uma linha por embarque) |
+| `AD_TGSLCB` | `NUCTF, IDEMB` | Itens/pacotes da cotação de frete (dimensões e peso por embalagem) |
+| `AD_TGSIXN` | `NUCONF` | Apontamento de conferência de arquivo/nota importada (`TGFIXN`) |
+| `AD_TGSSGM` | `CODSGRU, ANO, MES` | Meta de venda por subgrupo e período |
+| `AD_TGSISGM` | `CODSGRU, ANO, MES, IDGRU` | Itens da meta por subgrupo (grupos de produto que a compõem) |
 
 ---
 
 ### 7.6 Componentes BI (pasta `componentes BI/`)
-> 75+ queries. Ver [`componentes BI/README.md`](componentes BI/README.md).
+> ~100 queries em 25 pastas. Ver [`componentes BI/README.md`](componentes BI/README.md).
 
 | Tema | Dashboard / Componente |
 |---|---|
@@ -210,7 +227,7 @@ Agrupadas por domínio:
 ---
 
 ### 7.7 Relatórios Jasper (pasta `reports/`)
-> 25 relatórios. Ver [`reports/README.md`](reports/README.md).
+> 32 pastas de relatórios. Ver [`reports/README.md`](reports/README.md).
 
 | Nº | Relatório | Tipo |
 |---|---|---|
@@ -239,6 +256,13 @@ Agrupadas por domínio:
 | 23 | Inadimplência por Vendedor | Financeiro |
 | 24 | Ordem de Compra | Compras |
 | 25 | O.S. Interna | Assistência |
+| 26 | Etiqueta de Compra — MKTP | Compras |
+| 27 | Ficha de Anomalia de Processo | Produção / Qualidade |
+| 28 | Etiqueta Compra Avulsa | Compras |
+| 29 | Tabela Spark Produtos | Vendas / Catálogo |
+| 30 | Etiqueta de Qualidade | Produção / Qualidade |
+| 31 | Etiqueta de Série Avulsa Manual | Logística |
+| 32 | Etiqueta Avulsa Manual | Logística |
 
 ---
 
@@ -248,6 +272,7 @@ Agrupadas por domínio:
 | Classe | Tipo | Descrição |
 |---|---|---|
 | `CotaFrete` | Botão de Ação | Consulta API externa para cotação de frete |
+| `CotaFreteRodonaves` | Botão de Ação | Cotação de frete via API REST da Rodonaves (OAuth2); grava `VLRFRETE` em `AD_TGSCTF`. Atualização de `TGFCAB`/impostos desativada (homologação) |
 | `GerarTransferencia` | Botão de Ação | Gera nota de transferência entre empresas via JAPE |
 | `GerarTransferenciaOriginal` | Referência | Versão original do `GerarTransferencia` (backup) |
 | `RecalFinanceiroEve` | Evento | Recálculo de lançamentos financeiros |
@@ -282,6 +307,27 @@ Agrupadas por domínio:
 | Objeto | Tabela | Descrição |
 |---|---|---|
 | `TRG_INC_TGFITE` | `TGFITE` | Trigger `BEFORE INSERT` customizada sobre a tabela de itens de nota. Realiza validações de agrupamento mínimo, lote, estoque e CFOP na inclusão de cada item |
+
+> Pasta não versionada (`.gitignore`).
+
+---
+
+### 7.12 Exemplos de Referência (pasta `exemplos/`)
+> Ver [`exemplos/README.md`](exemplos/README.md).
+
+Amostras reais de dados (`TGFCAB` + `TGFITE` + `TGFSER` de um lançamento de
+produção) e o script `EXEMPLO_LANCAMENTO_CAB_ITE_SER.sql` que as extrai. Material
+de apoio à documentação — não é objeto implantado no ERP.
+
+---
+
+### 7.13 Protótipos (pasta `teste_transf/`)
+> Ver [`teste_transf/README.md`](teste_transf/README.md).
+
+`GerarTransferenciaReformaTrib.java` + `util/ReformaTribUtils.java` — spike do
+fluxo de transferência entre empresas com impostos da Reforma Tributária
+(IBS/CBS), isolado do pacote de produção `br.com.spark.transferencia`. **Não
+implantado.**
 
 ---
 

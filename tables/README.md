@@ -2,8 +2,12 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de tabelas:** 2  
+**Total de tabelas:** 10  
 **Prefixo padrão:** `AD_` (customização Spark sobre o Sankhya)  
+
+> As duas primeiras tabelas abaixo têm dicionário de campos completo. As demais
+> (bloco **Demais tabelas**) estão catalogadas com finalidade, PK e dependências —
+> o DDL detalhado está no respectivo arquivo `.SQL`.
 
 ---
 
@@ -97,3 +101,91 @@ CREATE TABLE AD_MAP_SETOR_FUNC (
 - Manutenção dos registros via `INSERT/DELETE` direto na tabela — não há tela nativa no ERP para isso.
 - Novos setores de produção ou departamentos criados no ERP devem ser incluídos nesta tabela para que a validação de apontamentos continue funcionando.
 - A trigger dependente (`TRG_VAL_SETOR_CODFUNC_TPRAPA`) rejeita apontamentos de colaboradores de departamentos não mapeados.
+
+---
+
+## Demais tabelas
+
+### `AD_CORRNOTAPROD`
+
+**Arquivo:** `AD_CORRNOTAPROD.SQL` | **PK:** `NUCORR` | **Criação:** 09/07/2026
+
+Auditoria das verificações/correções de notas de produção feitas por
+`STP_CORRIGENOTAPROD_SPARK`. Cada linha registra uma divergência detectada (ou
+corrigida) ao comparar as conferências finalizadas (`TPRCONF` / `AD_TPRCOI`) com
+o lançamento da nota de produção (`TGFCAB` / `TGFITE` / `TGFSER`, TOP 800) da
+mesma OP. Conciliação por conferência (`NUCONF`). Valores de `TIPOCORR`:
+`NOTA_CRIADA`, `QTD_AJUSTADA`, `SERIE_INCLUIDA`, `DIVERG_NEGATIVA` (legado).
+Índices por `IDIPROC` e `NUCONF`. O arquivo traz um bloco `ALTER` comentado para
+bases anteriores a Jul/2026 (quando `NUCONF` foi adicionada).
+
+### `AD_TGFASS`
+
+**Arquivo:** `AD_TGFASS.SQL` | **PK:** `NUMOS`
+
+Cabeçalho da O.S. de assistência técnica da Spark (complementa `TGFCAB`/CAC).
+Guarda datas (recebimento, conclusão, envio), status, observações adm/técnico,
+valor de produto, número da série de entrada, notas de entrada/saída, endereço de
+entrega, dados de rastreamento (`TIPOENTREGA`, `RASTREIO`), o checklist técnico de
+inspeção da placa (campos `S/N`: `DISJUNTOR`, `COOLER`, `DISPLAY`, `SOLDA`,
+`INDUTOR`, `TRANSFORMADOR`, etc.) e os funcionários responsáveis
+(`FUNCSOLDA`, `FUNCSOLDA2`, `FUNCTESTE`, `FUNCINSERCAO`, `TECNICO`). Colunas `FOTO`
+e `COMPROVANTE` são BLOB (SecureFile). FKs para `TGFPAR` (cliente e parceiro
+assistência) e `AD_CADFUNC`.
+
+### `AD_TGSAPI`
+
+**Arquivo:** `AD_TGSAPI.SQL` | **PK:** `API`
+
+Registro de credenciais e endpoints de APIs externas consumidas pelas classes
+Java (`CotaFrete`, `CotaFreteRodonaves`). Colunas base: `ENDPOINT`, `USUARIO`,
+`PASSWORD`, `AMBIENTE`. Colunas adicionadas para a integração Rodonaves:
+`ENDPOINTAUTH` (URL do `/token` OAuth2), `ENDPOINTCIDADE` (busca-cidade por CEP) e
+`AUTH_TYPE` (usar `'DEV'` — ver [[integracao-rodonaves-status]]; `'PRD'` é inválido).
+
+### `AD_TGSCTF`
+
+**Arquivo:** `AD_TGSCTF.SQL` | **PK:** `NUCTF` | **FK:** `NUNOTA` → `TGFCAB`
+
+Cabeçalho da cotação de frete (uma linha por embarque a cotar). Guarda documentos
+de origem/destino/consignatário, modal, tipo de frete, CEPs, volume/peso/valor
+totais e o resultado da cotação (`VLRFRETE`, `VLRFRETEPED`). `APIDEST` indica a
+transportadora/API usada. Alimentada e lida pelas classes de cotação de frete.
+
+### `AD_TGSISGM`
+
+**Arquivo:** `AD_TGSISGM.sql` | **PK composta:** `(CODSGRU, ANO, MES, IDGRU)`
+
+Itens da meta por subgrupo: associa cada meta de subgrupo (`AD_TGSSGM`) aos grupos
+de produto (`CODGRUPOPROD`) que a compõem, por período (`ANO`/`MES`). `TIPO`
+classifica a linha. FK composta para `AD_TGSSGM`.
+
+### `AD_TGSIXN`
+
+**Arquivo:** `AD_TGSIXN.SQL` | **PK:** `NUCONF` | **FKs:** `CODUSUINC` → `TSIUSU`, `NUARQUIVO` → `TGFIXN`, `(CODEMP, CODFUNC)` → `TFPFUN`
+
+Apontamento de conferência de arquivo/nota importada. Como `TGFIXN` não aceita
+botão de ação, o usuário cria o apontamento nesta tela informando só o
+`NUARQUIVO`. Colunas: `DTINI`/`DTFIM`, `STATUS` (`1` = aberto, `2` = finalizado),
+`OBSERVACAO` (CLOB), `CODFUNC` (conferente, setável uma única vez), `NUMNOTA` e
+`DHEMISS` (copiados de `TGFIXN` no INSERT), `DURACAO_DIAS_UTEIS`. Restrição
+`UQ_AD_TGSIXN_NUARQUIVO` garante apontamento único por arquivo mesmo sob
+concorrência. Objetos que operam sobre ela: `STP_APONTACONFERENCIA_SPARK`
+(inativa), `TRG_INC_AD_TGSIXN_SPARK`, `TRG_INC_UPD_AD_TGSIXN_SPARK`,
+`TRG_UPD_AD_TGSIXN_SPARK`, `STP_ATUALIZADTFIM_TGSIXN_SPARK` (job agendado).
+
+### `AD_TGSLCB`
+
+**Arquivo:** `AD_TGSLCB.SQL` | **PK composta:** `(NUCTF, IDEMB)` | **FK:** `NUCTF` → `AD_TGSCTF`
+
+Itens (pacotes/volumes) da cotação de frete: dimensões (`COMPRIMENTO`, `ALTURA`,
+`LARGURA`), `VOLTOT` e `PESOITEM` (adicionada para a Rodonaves —
+`Packs[].Weight`). Uma linha por embalagem do embarque.
+
+### `AD_TGSSGM`
+
+**Arquivo:** `AD_TGSSGM.SQL` | **PK composta:** `(CODSGRU, ANO, MES)`
+
+Meta de venda por subgrupo e período: `VLRMET` (valor da meta) e `APELIDO`
+(rótulo do subgrupo). Cabeçalho de `AD_TGSISGM`; base dos componentes BI de
+acompanhamento de meta por subgrupo.

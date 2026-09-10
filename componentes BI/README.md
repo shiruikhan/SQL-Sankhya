@@ -2,8 +2,13 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de componentes:** 75+  
+**Total de componentes:** 25 pastas / ~100 arquivos `.sql`  
 **Ambiente:** Sankhya BI (SQL analítico Oracle)  
+
+> As pastas `PRODUCAO DIARIA POR SETOR/` e `PRODUCAO DIARIA POR COLABORADOR/`
+> têm o `README.md` e os arquivos de mapeamento **fora do versionamento**
+> (`.gitignore` — volumetria e nomes de colaboradores). Só os componentes de
+> query (`p1.sql`, `p2.sql`) dessas pastas estão no repositório.
 
 ---
 
@@ -59,6 +64,12 @@ Planejamento de necessidade de estoque por produto acabado, considerando ordens 
 
 #### `Produção diária por colaborador.sql`
 Versão flat (sem subpastas) da query de produção por colaborador.
+
+#### `PRODUCAO DIARIA POR SETOR/`
+- `p1.sql`, `p2.sql` — Painel de produção diária agrupada por setor. `README.md` e `00_MAPEAMENTO_TABELAS.sql` desta pasta **não são versionados** (`.gitignore`).
+
+#### `01 - Gráfico Qualidade por Operador/`
+- `p2.sql`, `p3.sql` — Indicadores de qualidade da produção por operador (índice de aprovação/reprovação no apontamento de qualidade).
 
 ---
 
@@ -185,6 +196,12 @@ Relação de itens expedidos (saídas) por período, cliente e produto.
 - `painelcomponentes.sql` — Painel de componentes usados em assistência externa
 - `painelprodutos.sql` — Painel de produtos atendidos externamente
 
+#### `CARD - OS POR PRODUTO MENSAL/CARD.SQL`
+Card numérico: quantidade de O.S. de assistência abertas no mês corrente por produto.
+
+#### `CARD - OS POR TECNICO MENSAL/CARD.SQL`
+Card numérico: quantidade de O.S. de assistência atendidas no mês corrente por técnico.
+
 #### `INFORMATIVO DE GESTÃO ASSISTÊNCIA (DETALHES)/`
 - `BARRAS.sql` — Gráfico de barras: distribuição de atendimentos
 - `Bolota.sql` — Gráfico bolha/scatter: volume vs. custo
@@ -224,6 +241,10 @@ Verifica naturezas financeiras inconsistentes ou sem parametrização.
 
 #### `TEST_JSON_NUFIN_TGFECQ.SQL`
 Query de teste/diagnóstico para validar estrutura JSON em `TGFECQ`.
+
+#### `DASH - QUANTIDADE DE BOLETOS/`
+- `p1.sql`, `p2.sql` — Dashboard de quantidade de boletos por status (em aberto, vencidos, protestados), apurando a posição na data de referência `DTREF` (última data útil anterior — ver memória `francesinha-data-referencia-d1`).
+- `p1.html` — Título HTML customizado do componente.
 
 ---
 

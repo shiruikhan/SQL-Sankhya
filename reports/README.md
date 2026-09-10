@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de relatórios:** 25  
+**Total de relatórios:** 32 pastas  
 **Tecnologia:** JasperReports — arquivos `.jrxml` (XML de definição de relatório)  
 
 ---
@@ -42,6 +42,13 @@ Os relatórios são templates JasperReports configurados e compilados pelo Sankh
 | 23 | `23 - Inadimplência por Vendedor` | *(ver pasta)* | Financeiro | Relatório de títulos vencidos por vendedor |
 | 24 | `24 - Ordem de Compra` | *(ver pasta)* | Compras | Ordem de compra para envio ao fornecedor |
 | 25 | `25 - O.S. Interna` | *(ver pasta)* | Assistência | Ordem de serviço interna impressa |
+| 26 | `26 - Etiqueta de Compra - MKTP` | `ETQ_Compra_MKTP.jrxml` | Compras | Etiqueta de itens recebidos de compra para marketplace |
+| 27 | `27 - Ficha de Anomalia de Processo` | `FichaAnomalia.jrxml` | Produção / Qualidade | Ficha de registro de anomalia de processo produtivo |
+| 28 | `28 - Etiqueta Compra Avulsa` | `EtiquetaComprasAvulsa.jrxml` | Compras | Etiqueta avulsa de compra (revisão da nº 14) |
+| 29 | `29 - Tabela Spark Produtos` | `TabSparkProdutos.jrxml` | Vendas / Catálogo | Tabela de produtos Spark para divulgação |
+| 30 | `30 - Etiqueta de Qualidade` | `Etiqueta APOQLD.jrxml`, `Etiqueta APOQLD AVULSA.jrxml` | Produção / Qualidade | Etiqueta de aprovação de qualidade (por apontamento e avulsa) |
+| 31 | `31 - Etiqueta de Série Avulsa Manual` | `ETIQUETAS DANIELA.jrxml` | Logística | Etiqueta de série avulsa gerada manualmente |
+| 32 | `32 - ETIQUETA AVULSA MANUAL` | `ETIQUETA AVULSA ALTERADA.jrxml`, `ETIQUETA AVULSA ORIGINAL.jrxml` | Logística | Etiqueta avulsa manual (versão alterada vigente + original) |
 
 ---
 

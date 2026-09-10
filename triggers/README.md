@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de triggers:** 82  
+**Total de triggers:** 87  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -42,6 +42,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_INC_TPRCOI_SPARK2.SQL` | `TRG_INC_TPRCOI_SPARK2` | `TPRCOI` | INSERT | Complementa validação de componentes de O.I. |
 | `TRG_INC_TPRLPA_SPARK.SQL` | `TRG_INC_TPRLPA_SPARK` | `TPRLPA` | INSERT | Valida inclusão de lote padrão de produção |
 | `TRG_APOQLD_INS_SPARK.SQL` | `TRG_APOQLD_INS_SPARK` | `TPRAPOQLD` | INSERT | Controla quantidade de lote no apontamento |
+| `TRG_TPRCOI_REPLICA_PA.sql` | `TRG_TPRCOI_REPLICA_PA` | `TPRCOI` | INSERT, UPDATE | Replica `CODBARRA`/`CODPROD` para `CONTROLEPA`/`CODPRODPA` na própria linha (padrão *PA* das tabelas de produção). Trigger puramente atribuidora; `TRG_INC_TPRCOI_SPARK`/`SPARK2` usam `FOLLOWS` para rodar depois dela |
 
 ---
 
@@ -68,6 +69,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_INC_UPD_TGFVAR_SPARK.SQL` | `TRG_INC_UPD_TGFVAR_SPARK` | `TGFVAR` | INSERT, UPDATE | Controla variáveis customizadas de nota |
 | `TRG_UPD_TGFCAB_MOEDA_SPARK2.sql` | `TRG_UPD_TGFCAB_MOEDA_SPARK2` | `TGFCAB` | UPDATE (COMPOUND) | Recalcula `VLRUNITMOE`/`VLRTOTMOE` dos itens quando `VLRMOEDA` é alterado no cabeçalho (TOPs 1008/1009). Usa compound trigger para evitar ORA-04091; comunica valores via `PKG_SPARK_MOEDA` |
 | `TRG_TGFNCT_SPARK.SQL` | `TRG_TGFNCT_SPARK` | `TGFNCT` | INSERT, UPDATE | Controla naturezas de nota |
+| `TRG_UPD_DIFALPB_SPARK.sql` | `TRG_UPD_DIFALPB_SPARK` | `TGFCAB` | AFTER UPDATE OF `STATUSNFE` | Após aprovação da NF-e (`STATUSNFE` → `'A'`), recalcula base (`BASEDIFAL`) e valor (`VLRDIFALDEST`) do DIFAL destino em `TGFDIN`, para destinatários da UF configurada (`V_CODUF_PB = 17`, PB) classificados como consumo (`TGFPAR.CLASSIFICMS = 'C'`). Alíquotas fixas (interna 20%, DIFAL 13%). Loga em `AD_LOG_ERROS` e relança o erro (bloqueia a aprovação) |
 
 ---
 
@@ -153,6 +155,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_UPD_AVISOSPARK.SQL` | `TRG_UPD_AVISOSPARK` | `[avisos]` | UPDATE | Atualiza status de aviso após ação do destinatário |
 | `TRG_INC_TGFIXN_EMAIL_SPARK.SQL` | `TRG_INC_TGFIXN_EMAIL_SPARK` | `TGFIXN` | INSERT | Dispara envio de e-mail na inclusão de XML de CT-e/NF-e importado |
 | `SPK_INS_UPD_CODLOCALDEST.SQL` | `TRG_INS_UPD_CODLOCALDEST` | `TGFITE` | INSERT, UPDATE | Controla código de local de destino em itens com notificação associada |
+| `TRG_NOTIF_PARCERIA_SPARK.sql` | `TRG_NOTIF_PARCERIA_SPARK` | `AD_TGSTPP` | AFTER INSERT, UPDATE | Notificações por e-mail do fluxo de triagem de parceria (influenciadores/patrocínio): nova solicitação → SAC; 1º parecer do SAC → Comercial; 1ª decisão comercial → SAC. Traduz campos multi-escolha via `TDDCAM`/`TDDOPC`; grava na fila via `STP_GRAVA_FILA_BI2`; loga em `AD_LOG_ERROS` |
 
 ---
 
@@ -187,7 +190,20 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 
 ---
 
-### 13. Trigger Nativa (pasta `trigger_nativa/`)
+### 13. Conferência de Importação de XML (`AD_TGSIXN`)
+
+Apontamento de conferência de notas importadas, criado direto na tela de
+`AD_TGSIXN` (ver `tables/AD_TGSIXN.SQL` e `procedures/README.md` §14).
+
+| Arquivo | Trigger | Tabela | Evento | Descrição |
+|---|---|---|---|---|
+| `TRG_INC_AD_TGSIXN_SPARK.SQL` | `TRG_INC_AD_TGSIXN_SPARK` | `AD_TGSIXN` | BEFORE INSERT | Preenche a identidade do apontamento: `CODUSUINC`, `DTINI`, `CODEMP = 1`, e busca `NUMNOTA`/`DHEMISS` em `TGFIXN` pelo `NUARQUIVO`; inicializa `DURACAO_DIAS_UTEIS` |
+| `TRG_INC_UPD_AD_TGSIXN_SPARK.SQL` | `TRG_INC_UPD_AD_TGSIXN_SPARK` | `AD_TGSIXN` | BEFORE INSERT, UPDATE | Mantém `STATUS` coerente com `DTFIM`: `1` (aberto) enquanto `DTFIM` nula, `2` (finalizado) quando preenchida — sempre recalculado, sobrepõe valor manual |
+| `TRG_UPD_AD_TGSIXN_SPARK.SQL` | `TRG_UPD_AD_TGSIXN_SPARK` | `AD_TGSIXN` | BEFORE UPDATE | Torna imutáveis os campos de identidade (`NUCONF`, `CODUSUINC`, `NUARQUIVO`, `DTINI`, `CODEMP`, `NUMNOTA`, `DHEMISS`); `CODFUNC` (conferente) só pode ser setado uma vez; `OBSERVACAO` livre |
+
+---
+
+### 14. Trigger Nativa (pasta `trigger_nativa/`)
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|

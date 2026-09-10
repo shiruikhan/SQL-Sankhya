@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de procedures:** 68  
+**Total de procedures:** 78  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -91,6 +91,7 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 | `STP_VALIDACAMPONOTA_SPARK.SQL` | `STP_VALIDACAMPONOTA_SPARK` | Valida campos obrigatórios da nota antes da confirmação |
 | `STP_MARCAEFD08_TGFITE.SQL` | `STP_MARCAEFD08_TGFITE` | Marca itens para EFD registro 08 (escrituração fiscal) |
 | `STP_PREENCHEVLRUNIT_SPARK.SQL` | `STP_PREENCHEVLRUNIT_SPARK` | Preenche valor unitário dos itens conforme tabela de preço |
+| `STP_ALT_CFOP_TGFITE.sql` | `STP_ALT_CFOP_TGFITE` | Botão de ação que altera o CFOP (`TGFITE.CODCFO`) dos itens selecionados para o novo CFOP informado no formulário; localiza cada item por `NUNOTA` + `SEQUENCIA` e valida o CFOP (máx. 4 dígitos) |
 
 ---
 
@@ -143,6 +144,8 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 | `STP_TPRIPROC_CANC_SPARK.SQL` | `STP_TPRIPROC_CANC_SPARK` | Cancela item de processo de produção |
 | `STP_INICIADATA_SPARK.SQL` | `STP_INICIADATA_SPARK` | Define data de início de processo de produção |
 | `STP_CALCULAPROPORCAO_SPARK.SQL` | `STP_CALCULAPROPORCAO_SPARK` | Calcula proporcionalidade de componentes entre ordens |
+| `STP_REABRIR_PA_SPARK.SQL` | `STP_REABRIR_PA_SPARK` | Botão de ação na grade de atividades (`TPRIATV`): reabre o(s) PA(s) do lote (`TPRIPA.CONCLUIDO = 'N'`) para destravar apontamentos travados por conclusão indevida; o `NROLOTE` é obtido automaticamente de `TPRIPROC` |
+| `STP_CORRIGENOTAPROD_SPARK.SQL` | `STP_CORRIGENOTAPROD_SPARK` | Rede de segurança executada por agendador externo: verifica se cada conferência de produção finalizada (`TPRCONF` `STATUS='F'`) gerou corretamente a sua nota de produção (TOP 800) e corrige divergências — nota ausente, séries faltantes em `TGFSER` e quantidade divergente em `TGFITE` (ajustando `TGFEST` no mesmo delta). Audita em `AD_CORRNOTAPROD` |
 
 ---
 
@@ -172,6 +175,7 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 |---|---|---|
 | `EVP_CLASSIFICACTE_SPARK.sql` | `EVP_CLASSIFICACTE_SPARK` | Evento de visão externa que classifica CT-e importado conforme regras de tipo e situação |
 | `EVP_TGFIXN_EMAIL_SPARK.sql` | `EVP_TGFIXN_EMAIL_SPARK` | Evento de visão externa que dispara envio de e-mail ao importar CT-e/NF-e |
+| `STP_CLASSIFICACTE_SPARK.sql` | `STP_CLASSIFICACTE_SPARK` | Sucessora agendada de `EVP_CLASSIFICACTE_SPARK` (roda a cada 5 min). Classifica automaticamente o `CODTIPOPER` de CT-e **pendentes** (`TGFIXN.STATUS = 0`) a partir do `CODTIPOPER` das NF-e referenciadas no XML, via `VW_CTE_AUTORIZADOS`. Mapeamento por prioridade para as TOPs 225 / 226 / 242 / 234. Registra `CTE_OK` / `CTE_SKIP` / `CTE_ERR` em `AD_LOG_ERROS`. Complementada pela regra `formulas/regra_processa_xml_cte.sql` |
 
 ---
 
@@ -181,6 +185,19 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 |---|---|---|
 | `STP_AVISOINC_SPARK.SQL` | `STP_AVISOINC_SPARK` | Inclui aviso no sistema para usuário ou grupo |
 | `STP_INCEMB_SPARK.sql` | `STP_INCEMB_SPARK` | Inclui nota no embarque de expedição |
+
+---
+
+### 14. Conferência de Importação de XML (`AD_TGSIXN`)
+
+Apontamento de conferência de notas importadas. Como `TGFIXN` não aceita botão de
+ação, o fluxo migrou para a tela de `AD_TGSIXN` — parte do papel destas procedures
+passou para as triggers `TRG_*_AD_TGSIXN_SPARK` (ver `tables/AD_TGSIXN.SQL`).
+
+| Arquivo | Procedure | Descrição |
+|---|---|---|
+| `STP_APONTACONFERENCIA_SPARK.SQL` | `STP_APONTACONFERENCIA_SPARK` | *(uso legado)* Botão de ação sobre `TGFIXN` que gravava o apontamento em `AD_TGSIXN` (novo `NUCONF`, usuário, arquivo), bloqueando duplicidade por `NUARQUIVO`. Substituída pela criação direta na tela + `TRG_INC_AD_TGSIXN_SPARK` |
+| `STP_ATUALIZADTFIM_TGSIXN_SPARK.sql` | `STP_ATUALIZADTFIM_TGSIXN_SPARK` | Procedure **agendada**: reavalia apontamentos em aberto (`STATUS = 1`), localiza a nota lançada correspondente (`TGFIXN.CHAVEACESSO` → `TGFCAB.CHAVENFE`, `STATUSNOTA = 'L'`), grava `TGFCAB.DTMOV` em `DTFIM` e recalcula `DURACAO_DIAS_UTEIS` (dias úteis, sem sábado/domingo). Erros por apontamento vão para `AD_LOG_ERROS` sem abortar o lote |
 
 ---
 
