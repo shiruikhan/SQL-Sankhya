@@ -1,81 +1,89 @@
 /*==============================================================================
-  Nome do Script : RESUMO DE VENDAS POR VENDEDOR — P2 (Detalhe)
+  Nome do Script : RESUMO DE VENDAS POR VENDEDOR — P1 (Resumo)
   Tipo           : Componente BI — Tabela
   Dashboard      : Resumo de Vendas por Vendedor
-  Descrição      : Lista nota a nota as vendas do vendedor selecionado em P1.
-                   É o detalhe (drill-down) de P1: recebe o vendedor
-                   selecionado em :A_CODVEND (clique na linha) e honra o
-                   mesmo período do painel. Mesmo critério de venda de P1
-                   (TIPMOV, STATUSNOTA, CODTIPOPER, USOPROD). Repete o
-                   vendedor e o gerente (TGFVEN.CODGER) em cada linha para
-                   identificação sem depender do contexto de P1.
+  Descrição      : Consolida, por vendedor, o total de notas faturadas, o total
+                   de produtos vendidos e o total faturado no período.
+                   Identifica também o gerente responsável pelo vendedor
+                   (TGFVEN.CODGER, auto-relacionamento para outro CODVEND).
+                   É a consulta "master"; o detalhe nota a nota está em P2,
+                   acionado pelo clique sobre o vendedor (:A_CODVEND).
 
   Parâmetros     : :P_PERIODO.INI / :P_PERIODO.FIN — período sobre DTNEG
                    (obrigatório)
-                   :A_CODVEND — vendedor selecionado na linha de P1
-                   (obrigatório, vindo do clique)
-
-  Colunas        : NUNOTA / NUMNOTA / DTNEG — identificação da nota
-                   PARCEIRO             — código + razão social do cliente
-                   CODPROD / DESCRPROD / CODVOL — produto e unidade
-                   QTDNEG               — quantidade vendida do item
-                   VLRTOTALITEM         — valor líquido do item (VLRTOT -
-                                          VLRDESC + AD_VLROUTROS)
-                   VENDEDOR / GERENTE   — nome do vendedor da nota e do seu
-                                          gerente (TGFVEN.CODGER)
+                   :P_VENDEDOR — filtra um vendedor específico (opcional)
+                   :P_GERENTE — filtra pelos vendedores subordinados a um
+                   gerente (TGFVEN.CODGER), opcional
 
   Tabelas        : TGFCAB -- cabeçalho da nota (período, tipo de operação, status)
-                   TGFPAR -- cadastro de parceiros (razão social)
                    TGFITE -- itens da nota (quantidade e valores)
-                   TGFPRO -- cadastro de produtos (descrição, unidade, filtro USOPROD)
-                   TGFVEN -- cadastro de vendedores; auto-relacionada por
-                            CODGER para identificar o gerente
+                   TGFPRO -- cadastro de produtos (filtro USOPROD)
+                   TGFVEN -- cadastro de vendedores (nome); auto-relacionada
+                            por CODGER para identificar o gerente
 
-  Uso            : Painel BI "Resumo de Vendas por Vendedor" — detalhe
-                   acionado pelo clique em P1 sobre o vendedor.
+  Uso            : Painel BI "Resumo de Vendas por Vendedor" — linha de
+                   resumo; drill para P2 pelo campo CODVEND (:A_CODVEND).
 
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 14/09/2026
-  Última Revisão : Setembro/2026 — Adicionadas colunas VENDEDOR e GERENTE
-                   (TGFVEN.CODGER) em cada linha do detalhe.
+  Última Revisão : Setembro/2026 — Adicionada identificação do gerente do
+                   vendedor via TGFVEN.CODGER.
+                   Setembro/2026 — Adicionado parâmetro :P_GERENTE para
+                   filtrar por gerente.
 
-  Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' idênticos a P1;
-                     SUM(VLRTOTALITEM) deste detalhe deve fechar com
-                     TOTALFATURAMENTO da linha correspondente em P1.
-                   - Como o vendedor já vem fixado por :A_CODVEND, os
-                     parâmetros :P_VENDEDOR e :P_GERENTE do painel não são
-                     reaplicados aqui — o gerente do vendedor selecionado já
-                     está implícito na cadeia CODVEND -> CODGER.
+  Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' seguem o mesmo
+                     critério usado nos demais componentes de faturamento do
+                     repositório (ex.: RESUMO DE RESULTADO DE VENDAS,
+                     FATURAMENTO POR PERIODO).
+                   - TOTALFATURAMENTO soma valor líquido do item (VLRTOT -
+                     VLRDESC) mais outros valores (AD_VLROUTROS), mesma regra
+                     usada em Faturamento por período Gestão/p2.sql.
+                   - Lista ordenada por faturamento decrescente para
+                     facilitar o ranking de vendedores.
                    - GER é o próprio TGFVEN relacionado por CODGER = CODVEND
                      do gerente; LEFT JOIN porque nem todo vendedor tem
                      gerente cadastrado (CODGER pode ser NULL).
+                   - :P_GERENTE filtra por VEN.CODGER (o gerente do
+                     vendedor), não pelo próprio CODVEND do gerente — um
+                     vendedor que também seja gerente de outros não aparece
+                     sozinho ao filtrar por ele, a menos que também tenha um
+                     CODGER preenchido igual ao parâmetro.
 ==============================================================================*/
 
+WITH VENDAS AS (
+    SELECT
+         CAB.NUNOTA
+        ,CAB.CODVEND
+        ,ITE.QTDNEG
+        ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRITEM
+    FROM TGFCAB CAB
+    INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+    WHERE CAB.DTNEG >= :P_PERIODO.INI
+      AND CAB.DTNEG <= :P_PERIODO.FIN
+      AND CAB.TIPMOV = 'V'
+      AND CAB.STATUSNOTA = 'L'
+      AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+      AND PRO.USOPROD = 'V'
+      AND (CAB.CODVEND = :P_VENDEDOR OR :P_VENDEDOR IS NULL)
+)
 SELECT
-     CAB.NUNOTA
-    ,CAB.NUMNOTA
-    ,CAB.DTNEG
-    ,PAR.CODPARC || ' - ' || PAR.RAZAOSOCIAL AS PARCEIRO
-    ,ITE.CODPROD
-    ,PRO.DESCRPROD
-    ,PRO.CODVOL
-    ,ITE.QTDNEG
-    ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRTOTALITEM
-    ,VEN.APELIDO AS VENDEDOR
+     VEN.CODVEND
+    ,VEN.APELIDO
+    ,GER.CODVEND AS CODGER
     ,GER.APELIDO AS GERENTE
-FROM TGFCAB CAB
-INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
-INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
-INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
-INNER JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+    ,COUNT(DISTINCT VND.NUNOTA) AS TOTALNOTAS
+    ,SUM(VND.QTDNEG)            AS TOTALPRODUTOS
+    ,SUM(VND.VLRITEM)           AS TOTALFATURAMENTO
+FROM VENDAS VND
+INNER JOIN TGFVEN VEN ON VEN.CODVEND = VND.CODVEND
 LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
-WHERE CAB.DTNEG >= :P_PERIODO.INI
-  AND CAB.DTNEG <= :P_PERIODO.FIN
-  AND CAB.CODVEND = :A_CODVEND
-  AND CAB.TIPMOV = 'V'
-  AND CAB.STATUSNOTA = 'L'
-  AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
-  AND PRO.USOPROD = 'V'
-ORDER BY CAB.DTNEG, CAB.NUNOTA
+WHERE (VEN.CODGER = :P_GERENTE OR :P_GERENTE IS NULL)
+GROUP BY
+     VEN.CODVEND
+    ,VEN.APELIDO
+    ,GER.CODVEND
+    ,GER.APELIDO
+ORDER BY TOTALFATURAMENTO DESC
