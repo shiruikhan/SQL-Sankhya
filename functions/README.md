@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de functions:** 5  
+**Total de functions:** 6  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -173,3 +173,33 @@ OBTEM_TOTAIS_MRP(
 **Uso:** Utilizada nas queries analíticas de BI e no componente `CRONOGRAMA GERAL DE PRODUCAO` para construir visão consolidada do plano de produção por produto.
 
 > **Observação:** Saldo negativo em `P_TIPO = 'S'` indica que o PA já foi produzido acima da meta; neste caso o valor não deve influenciar no cálculo de MP a comprar.
+
+---
+
+### `SNK_PRECO` (nativa Sankhya)
+
+**Arquivo:** `SNK_PRECO.SQL`  
+**Tipo de retorno:** `FLOAT`  
+**Captura:** 17/09/2026 (via `DBA_SOURCE`)
+
+**Assinatura:**
+```sql
+SNK_PRECO(P_CODTAB IN INTEGER, P_CODPROD IN INTEGER) RETURN FLOAT
+```
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `P_CODTAB` | `INTEGER` | Código da tabela de preços (ex.: `14` = tabela padrão de serviços, `15` = tabela usada em `AD_TGFASS`) |
+| `P_CODPROD` | `INTEGER` | Código do produto a precificar |
+
+**Retorno:** Preço do produto vigente na tabela informada, resolvendo primeiro a `NUTAB` com `DTVIGOR` mais recente `<= SYSDATE` em `TGFTAB` e delegando o cálculo para `STP_OBTEM_PRECO2`. Se não houver tabela vigente, `V_NUTAB = 0` é passado adiante.
+
+**Tabela consultada:** `TGFTAB`  
+**Dependência:** `STP_OBTEM_PRECO2` (procedure nativa Sankhya)  
+**Uso:**
+- `TRG_SPKCAE_VLRCONSERTO_SPARK` e `scripts/AD_SPKCAE_BACKFILL_VLRCONSERTO.SQL` — calcula `VLRCONSERTO` a partir do preço de serviço do produto (`CODTAB = 14`).
+- `TRG_TGFASS_VLRCONSERTO_SPARK` — calcula `VLRCONSERTO` a partir do preço do produto (`CODTAB = 15`).
+
+> **Atenção:** function **nativa** do ERP, não uma customização Spark — armazenada aqui só como referência. Atualizações do Sankhya podem sobrescrevê-la; revisar após cada upgrade (mesmo cuidado de `trigger_nativa/README.md`).

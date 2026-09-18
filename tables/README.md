@@ -128,10 +128,14 @@ Guarda datas (recebimento, conclusão, envio), status, observações adm/técnic
 valor de produto, número da série de entrada, notas de entrada/saída, endereço de
 entrega, dados de rastreamento (`TIPOENTREGA`, `RASTREIO`), o checklist técnico de
 inspeção da placa (campos `S/N`: `DISJUNTOR`, `COOLER`, `DISPLAY`, `SOLDA`,
-`INDUTOR`, `TRANSFORMADOR`, etc.) e os funcionários responsáveis
-(`FUNCSOLDA`, `FUNCSOLDA2`, `FUNCTESTE`, `FUNCINSERCAO`, `TECNICO`). Colunas `FOTO`
-e `COMPROVANTE` são BLOB (SecureFile). FKs para `TGFPAR` (cliente e parceiro
-assistência) e `AD_CADFUNC`.
+`INDUTOR`, `TRANSFORMADOR`, etc.), os funcionários responsáveis
+(`FUNCSOLDA`, `FUNCSOLDA2`, `FUNCTESTE`, `FUNCINSERCAO`, `TECNICO`), `DTLANC`
+(data de lançamento — adicionada em Set/2026) e `VLRCONSERTO` (valor do
+conserto — adicionada em Set/2026, preenchida automaticamente por
+`TRG_TGFASS_VLRCONSERTO_SPARK` via `SNK_PRECO`). Colunas `FOTO` e
+`COMPROVANTE` são BLOB (SecureFile). FKs para `TGFPAR` (cliente e parceiro
+assistência) e `AD_CADFUNC` (`TECNICO` — FK recriada em Set/2026, coluna foi
+dropada/readicionada e por isso hoje aparece ao final do DDL).
 
 ### `AD_TGSAPI`
 

@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de triggers:** 87  
+**Total de triggers:** 88  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -109,6 +109,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `SPK_TRG_OSINTERNA.SQL` | `SPK_TRG_OSINTERNA` | `[O.S.]` | INSERT, UPDATE | Controles adicionais na O.S. Interna (versão legada) |
 | `SPK_TGFASS_INC.SQL` | `SPK_TGFASS_INC` | `TGFASS` | INSERT | Automação na inclusão de registros de assistência |
 | `SPK_TGFASS_INCUPD.SQL` | `SPK_TGFASS_INCUPD` | `TGFASS` | INSERT, UPDATE | Validações adicionais na assistência (inclusão e alteração) |
+| `TRG_TGFASS_VLRCONSERTO_SPARK.SQL` | `TRG_TGFASS_VLRCONSERTO_SPARK` | `AD_TGFASS` | INSERT, UPDATE | Preenche `VLRCONSERTO` (valor do conserto) via `SNK_PRECO(15, T_CODPROD)` quando o campo está nulo/zerado. `FOLLOWS SPK_TGFASS_INC` para garantir `T_CODPROD` já preenchido |
 
 ---
 
