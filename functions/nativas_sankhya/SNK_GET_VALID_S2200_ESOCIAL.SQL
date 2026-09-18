@@ -1,0 +1,173 @@
+/*==============================================================================
+  Nome do Script : SNK_GET_VALID_S2200_ESOCIAL
+  Tipo           : Function Nativa Sankhya (referencia -- nao customizada)
+  Descricao      : Verifica se ha divergencia entre os dados cadastrais atuais e o ultimo
+                  evento S-2200 enviado ao eSocial (comparacao extensa de mais de 100
+                  campos).
+  Assinatura     : SNK_GET_VALID_S2200_ESOCIAL (P_CODEMPMATRIZ NUMBER, P_DTREF DATE, P_SEQUENCIA NUMBER)
+                   RETURN BOOLEAN
+  Observacoes    : - Objeto nativo do ERP -- atualizacoes do Sankhya podem
+                     sobrescrever esta function. Revisar apos cada upgrade
+                     (mesmo cuidado descrito em trigger_nativa/README.md).
+                   - Capturado do banco em 18/09/2026, via:
+                     SELECT DBMS_METADATA.GET_DDL('FUNCTION', 'SNK_GET_VALID_S2200_ESOCIAL', 'SPARKPRD') FROM dual;
+==============================================================================*/
+  create or replace FUNCTION SNK_GET_VALID_S2200_ESOCIAL (P_CODEMPMATRIZ      NUMBER,
+                                                        P_DTREF             DATE,
+                                                        P_SEQUENCIA         NUMBER)
+   RETURN BOOLEAN
+IS
+   P_RESULT            BOOLEAN := FALSE;
+   P_COUNT             NUMBER(10);          
+BEGIN
+                               
+            SELECT COUNT(1) INTO P_COUNT
+             FROM TFPS2200 V
+                 INNER JOIN VGF_EVENTO_S2200 N ON V.CODEMP = N.CODEMP AND  V.CHAVE = N.CHAVE
+             WHERE V.CODEMP = P_CODEMPMATRIZ
+               AND V.DTREF = P_DTREF
+               AND V.SEQUENCIA = P_SEQUENCIA
+               AND (N.DTVALIDOC <> V.DTVALIDOC
+             OR N.NRREGCNH <> V.NRREGCNH
+             OR N.DTEXPEDCNH <> V.DTEXPEDCNH
+             OR N.UFCNH <> V.UFCNH
+             OR N.DTVALIDCNH <> V.DTVALIDCNH
+             OR N.DTPRIHAB <> V.DTPRIHAB
+             OR N.CATEGORIACNH <> V.CATEGORIACNH
+             OR N.TPLOGRADBRASIL <> V.TPLOGRADBRASIL
+             OR N.DSCLOGRADBRASIL <> V.DSCLOGRADBRASIL
+             OR N.NRLOGRADBRASIL <> V.NRLOGRADBRASIL
+             OR N.COMPLEMENTOBRASIL <> V.COMPLEMENTOBRASIL
+             OR N.BAIRROBRASIL <> V.BAIRROBRASIL
+             OR N.CEPBRASIL <> V.CEPBRASIL
+             OR N.CODMUNICBRASIL <> V.CODMUNICBRASIL
+             OR N.UFBRASIL <> V.UFBRASIL
+             OR N.PAISRESID <> V.PAISRESID
+             OR N.DSCLOGRADEXTERIOR <> V.DSCLOGRADEXTERIOR
+             OR N.NRLOGRADEXTERIOR <> V.NRLOGRADEXTERIOR
+             OR N.COMPLEMENTOEXTERIOR <> V.COMPLEMENTOEXTERIOR
+             OR N.BAIRROEXTERIOR <> V.BAIRROEXTERIOR
+             OR N.NMCIDEXTERIOR <> V.NMCIDEXTERIOR
+             OR N.CODPOSTALEXTERIOR <> V.CODPOSTALEXTERIOR
+             OR N.DTCHEGADA <> V.DTCHEGADA
+             OR N.CLASSTRABESTRANG <> V.CLASSTRABESTRANG
+             OR N.CASADOBR <> V.CASADOBR
+             OR N.FILHOSBR <> V.FILHOSBR
+             OR N.DEFFISICA <> V.DEFFISICA
+             OR N.DEFVISUAL <> V.DEFVISUAL
+             OR N.DEFAUDITIVA <> V.DEFAUDITIVA
+             OR N.DEFMENTAL <> V.DEFMENTAL
+             OR N.DEFINTELECTUAL <> V.DEFINTELECTUAL
+             OR N.REABREADAP <> V.REABREADAP
+             OR N.INFOCOTA <> V.INFOCOTA
+             OR N.OBSERVACAO <> V.OBSERVACAO
+             OR N.TRABAPOSENT <> V.TRABAPOSENT
+             OR N.FONEPRINC <> V.FONEPRINC
+             OR N.FONEALTERNAT <> V.FONEALTERNAT
+             OR N.EMAILPRINC <> V.EMAILPRINC
+             OR N.MATRICULA <> V.MATRICULA
+             OR N.TPREGTRAB <> V.TPREGTRAB
+             OR N.TPREGPREV <> V.TPREGPREV
+             OR N.NRRECINFPRELIM <> V.NRRECINFPRELIM
+             OR N.CADINI <> V.CADINI
+             OR N.DTADM <> V.DTADM
+             OR N.TPADMISSAO <> V.TPADMISSAO
+             OR N.INDADMISSAO <> V.INDADMISSAO
+             OR N.TPREGJOR <> V.TPREGJOR
+             OR N.NATATIVIDADE <> V.NATATIVIDADE
+             OR N.DTBASE <> V.DTBASE
+             OR N.CNPJSINDCATEGPROF <> V.CNPJSINDCATEGPROF
+             OR N.OPCFGTS <> V.OPCFGTS
+             OR N.DTOPCFGTS <> V.DTOPCFGTS
+             OR N.HIPLEG <> V.HIPLEG
+             OR N.JUSTCONTR <> V.JUSTCONTR
+             OR N.TPINCLCONTR <> V.TPINCLCONTR
+             OR N.TPINSCIDETOMADORSERV <> V.TPINSCIDETOMADORSERV
+             OR N.NRINSCIDETOMADORSERV <> V.NRINSCIDETOMADORSERV
+             OR N.TPINSCIDEESTABVINC <> V.TPINSCIDEESTABVINC
+             OR N.NRINSCIDEESTABVINC <> V.NRINSCIDEESTABVINC
+             OR N.CPFTRABSUBST <> V.CPFTRABSUBST
+             OR N.INDPROVIM <> V.INDPROVIM
+             OR N.TPPROV <> V.TPPROV
+             OR N.DTNOMEACAO <> V.DTNOMEACAO
+             OR N.DTPOSSE <> V.DTPOSSE
+             OR N.DTEXERCICIO <> V.DTEXERCICIO
+             OR N.TPPLANRP <> V.TPPLANRP
+             OR N.NRPROCJUDINFODECJUD <> V.NRPROCJUDINFODECJUD
+             OR N.CODCARGO <> V.CODCARGO
+             OR N.CODFUNCAO <> V.CODFUNCAO
+             OR N.CODCATEG <> V.CODCATEG
+             OR N.CODCATEG2 <> V.CODCATEG2
+             OR N.CODCARREIRA <> V.CODCARREIRA
+             OR N.DTINGRCARR <> V.DTINGRCARR
+             OR N.VRSALFX <> V.VRSALFX
+             OR N.UNDSALFIXO <> V.UNDSALFIXO
+             OR N.DSCSALVAR <> V.DSCSALVAR
+             OR N.TPCONTR <> V.TPCONTR
+             OR N.DTTERM <> V.DTTERM
+             OR N.CLAUASSEG <> V.CLAUASSEG
+             OR N.TPINSCLOCALTRABGERAL <> V.TPINSCLOCALTRABGERAL
+             OR N.NRINSCLOCALTRABGERAL <> V.NRINSCLOCALTRABGERAL
+             OR N.TPLOGRADLOCALTRABDOM <> V.TPLOGRADLOCALTRABDOM
+             OR N.DSCLOGRADLOCALTRABDOM <> V.DSCLOGRADLOCALTRABDOM
+             OR N.NRLOGRADLOCALTRABDOM <> V.NRLOGRADLOCALTRABDOM
+             OR N.COMPLEMENTOLOCALTRABDOM <> V.COMPLEMENTOLOCALTRABDOM
+             OR N.BAIRROLOCALTRABDOM <> V.BAIRROLOCALTRABDOM
+             OR N.CEPLOCALTRABDOM <> V.CEPLOCALTRABDOM
+             OR N.CODMUNICLOCALTRABDOM <> V.CODMUNICLOCALTRABDOM
+             OR N.UFLOCALTRABDOM <> V.UFLOCALTRABDOM
+             OR N.QTDHRSSEM <> V.QTDHRSSEM
+             OR N.TPJORNADA <> V.TPJORNADA
+             OR N.DSCTPJORN <> V.DSCTPJORN
+             OR N.TMPPARC <> V.TMPPARC
+             OR N.CNPJSINDTRAB <> V.CNPJSINDTRAB
+             OR N.NRPROCJUDALVARAJUDICIAL <> V.NRPROCJUDALVARAJUDICIAL
+             OR N.CNPJEMPREGANT <> V.CNPJEMPREGANT
+             OR N.MATRICANT <> V.MATRICANT
+             OR N.DTINIVINCULO <> V.DTINIVINCULO
+             OR N.OBSERVACAOSUCESSAOVINC <> V.OBSERVACAOSUCESSAOVINC
+             OR N.DTINIAFAST <> V.DTINIAFAST
+             OR N.CODMOTAFAST <> V.CODMOTAFAST
+             OR N.DTDESLIG <> V.DTDESLIG
+             OR N.CHAVE <> V.CHAVE
+             OR N.TPINSCEMPREGADOR <> V.TPINSCEMPREGADOR
+             OR N.NRINSCEMPREGADOR <> V.NRINSCEMPREGADOR
+             OR N.CPFTRAB <> V.CPFTRAB
+             OR N.NISTRAB <> V.NISTRAB
+             OR N.NMTRAB <> V.NMTRAB
+             OR N.SEXO <> V.SEXO
+             OR N.RACACOR <> V.RACACOR
+             OR N.ESTCIV <> V.ESTCIV
+             OR N.GRAUINSTR <> V.GRAUINSTR
+             OR N.INDPRIEMPR <> V.INDPRIEMPR
+             OR N.NMSOC <> V.NMSOC
+             OR N.DTNASCTONASCIMENTO <> V.DTNASCTONASCIMENTO
+             OR N.CODMUNICNASCIMENTO <> V.CODMUNICNASCIMENTO
+             OR N.UFNASCIMENTO <> V.UFNASCIMENTO
+             OR N.PAISNASCTONASCIMENTO <> V.PAISNASCTONASCIMENTO
+             OR N.PAISNACNASCIMENTO <> V.PAISNACNASCIMENTO
+             OR N.NMMAENASCIMENTO <> V.NMMAENASCIMENTO
+             OR N.NMPAINASCIMENTO <> V.NMPAINASCIMENTO
+             OR N.NRCTPS <> V.NRCTPS
+             OR N.SERIECTPS <> V.SERIECTPS
+             OR N.UFCTPS <> V.UFCTPS
+             OR N.NRRIC <> V.NRRIC
+             OR N.ORGAOEMISSORRIC <> V.ORGAOEMISSORRIC
+             OR N.DTEXPEDRIC <> V.DTEXPEDRIC
+             OR N.NRRG <> V.NRRG
+             OR N.ORGAOEMISSORRG <> V.ORGAOEMISSORRG
+             OR N.DTEXPEDRG <> V.DTEXPEDRG
+             OR N.NRRNE <> V.NRRNE
+             OR N.ORGAOEMISSORRNE <> V.ORGAOEMISSORRNE
+             OR N.DTEXPEDRNE <> V.DTEXPEDRNE
+             OR N.NROC <> V.NROC
+             OR N.ORGAOEMISSOROC <> V.ORGAOEMISSOROC
+             OR N.DTEXPEDOC <> V.DTEXPEDOC);
+                
+        
+        IF P_COUNT > 0THEN
+            P_RESULT := TRUE;
+        END IF;
+
+  RETURN P_RESULT;
+END;

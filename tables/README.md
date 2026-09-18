@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de tabelas:** 10  
+**Total de tabelas:** 38  
 **Prefixo padrão:** `AD_` (customização Spark sobre o Sankhya)  
 
 > As duas primeiras tabelas abaixo têm dicionário de campos completo. As demais
@@ -193,3 +193,232 @@ Itens (pacotes/volumes) da cotação de frete: dimensões (`COMPRIMENTO`, `ALTUR
 Meta de venda por subgrupo e período: `VLRMET` (valor da meta) e `APELIDO`
 (rótulo do subgrupo). Cabeçalho de `AD_TGSISGM`; base dos componentes BI de
 acompanhamento de meta por subgrupo.
+
+### `AD_APOQLD`
+
+**Arquivo:** `AD_APOQLD.SQL` | **PK:** `NUAPO` | **FK:** `CODPROD` → `TGFPRO`
+
+Checklist de defeitos de qualidade por apontamento de produção (`NUAPO`), com
+contadores por tipo de ocorrência (`QUEIMADO`, `CURTO`, `SOLDAFRIA`,
+`CHICOTE`, `DISPLAY`, `LED`, `CONSUMO`, `CORRENTE`, `PROGRAMACAO`,
+`ADESIVOTROC/TORT`, `GABARRANHADO/MASSADO`, `TAMPATROCA/AMASS`, etc.) e os
+operadores/revisores envolvidos (`FUNCOPERADOR`, `FUNCOPERADOR2`,
+`FUNCREVISOR`, `FUNCREVISOR2`). Base do componente BI `01 - Gráfico Qualidade
+por Operador`.
+
+### `AD_CADFUNC`
+
+**Arquivo:** `AD_CADFUNC.SQL` | **PK:** `IDFUNC`
+
+Cadastro auxiliar simplificado de funcionários (`NOME`, `SETOR`, `ATIVO`,
+`REVISOR`) — não é o `TFPFUN` nativo, é usado pelos componentes BI de
+produção/qualidade para exibir nome/setor sem depender da folha de pagamento.
+
+### `AD_DBFECHCOMFIN`
+
+**Arquivo:** `AD_DBFECHCOMFIN.SQL` | **PK composta:** `(NUFECH, SEQUENCIA)` | **FKs:** `NUFECH` → `AD_DBFECHCOM`, `CODPARC` → `TGFPAR`
+
+Itens financeiros (`TIPO`, `VALOR`, `NUFIN`) vinculados a um fechamento de
+comissão (`AD_DBFECHCOM` — ainda sem DDL capturado). Usada por
+`STP_EXCLUIRFINCOM_SPARK`.
+
+### `AD_EMBPED`
+
+**Arquivo:** `AD_EMBPED.SQL` | **PK composta:** `(NUNOTA, SEQ)` | **FKs:** `CODPROD`, `CODPRODEMB` → `TGFPRO`
+
+Itens de embalagem gerados na expedição de uma nota: vincula o produto físico
+(`CODPROD`) à embalagem usada (`CODPRODEMB`, `IDCAIXA`), com peso bruto
+(`PESOBRUTO`) e cubagem (`M3`). Usada por `STP_GERARVOLUMES_SPARK`,
+`STP_INCEMB_SPARK` e `TRG_AD_EMBPED_SPARK`.
+
+### `AD_FRETE`
+
+**Arquivo:** `AD_FRETE.SQL` | **PK:** nenhuma constraint definida (`NUNOTA` + `VLRFRETE`, ambos `NOT NULL`)
+
+Valor de frete rateado (`VLRFRETE`) por nota (`NUNOTA`). Usada por
+`TRG_UPD_TGFCAB_TRANSP_SPARK`.
+
+### `AD_OSINTERNA`
+
+**Arquivo:** `AD_OSINTERNA.SQL` | **PK:** `NUMOS` | **FKs:** `CODCENCUS` → `TSICUS`, `CODPARC` → `TGFPAR`, `CODUSUCRI` → `TSIUSU`
+
+Cabeçalho de Ordem de Serviço **interna** (manutenção de equipamentos/
+patrimônio da empresa — diferente da assistência técnica ao cliente em
+`AD_TGFASS`). Guarda problema apontado (`PROBAPONTADO`, CLOB), setor,
+status, prioridade, datas (criação/alteração/programada/deadline/fim),
+custo, tipo e natureza de manutenção, executante/manutentor, patrimônio
+(`CODPAT`) e fotos (`IMAGEM`, `ANTES`, `DEPOIS`, BLOB). Usada por
+`STP_INCMOVOSINT_SPARK` e `STP_OSINTERNA_INC_SPARK`.
+
+### `AD_PRVCTR`
+
+**Arquivo:** `AD_PRVCTR.SQL` | **PK:** `NUPREV` | **FK:** `CODBEM` → `AD_ADCADBENS` (ainda sem DDL capturado)
+
+Programação de manutenção preventiva de um bem do imobilizado/patrimônio
+(`CODBEM`): data prevista, tipo/natureza de manutenção, operador e custo.
+Usada por `STP_INCLUIRLANCTO_SPARK`.
+
+### `AD_SPKICAE`
+
+**Arquivo:** `AD_SPKICAE.SQL` | **PK composta:** `(NUMOS, IDCOMP)` | **FKs:** `NUMOS` → `AD_SPKCAE`, `CODPROD` → `TGFPRO`
+
+Componentes/peças consumidos numa O.S. de conserto (`AD_SPKCAE`):
+quantidade movimentada (`QTDMOV`), unidade (`CODVOL`) e a nota de
+movimentação de estoque gerada (`NUNOTAMOV`).
+
+### `AD_TGFIASS`
+
+**Arquivo:** `AD_TGFIASS.SQL` | **PK composta:** `(NUMOS, IDCOMP)` | **FKs:** `NUMOS` → `AD_TGFASS`, `CODPROD` → `TGFPRO`
+
+Mesma estrutura de `AD_SPKICAE`, mas para a O.S. de assistência técnica
+(`AD_TGFASS`): componentes/peças consumidos no conserto.
+
+### `AD_TGFMET`
+
+**Arquivo:** `AD_TGFMET.SQL` | **PK composta:** `(CODMETA, DTREF, CODEMP, CODPROD)` | **FKs:** `CODUSU` → `TSIUSU`, `CODPROD` → `TGFPRO`, `CODEMP` → `TSIEMP`
+
+Meta de vendas/produção por produto, empresa e período — complementa a
+`TGMMET` nativa com `QTDPREV` (quantidade prevista) e `QTDREDMET` (redução de
+meta). Usada por `STP_ALTERAMETA_SPARK` e `STP_PCPMETA_SPARK`.
+
+### `AD_TGFNCO`
+
+**Arquivo:** `AD_TGFNCO.SQL` | **PK:** `NUNCO` | **FKs:** `CODUSU`/`TRANSP` → `TSIUSU`/`TGFPAR`, `CODCENCUS` → `TGFLOC`, `NCOAPO` → `AD_CADNCO` (ainda sem DDL capturado)
+
+Registro de **Não Conformidade** (NC): produto/nota/parceiro envolvidos,
+causa (`CAUSA`), técnico responsável, ação imediata e corretiva
+(`ACAOIMED`/`ACAOCORRET`, com responsáveis e datas), validação
+(`DTVALID`/`RESPVALID`), eficácia (`EFICACIA`) e até 4 fotos (BLOB). Usada
+por `STP_INCNCONFORM_SPARK`.
+
+### `AD_TGFPIM`
+
+**Arquivo:** `AD_TGFPIM.SQL` | **PK:** `IDIMP`
+
+Parâmetro de ICMS por ano/mês (`ANO`, `MES`, `ICMS`) usado no rateio de
+proporção por `STP_CALCULAPROPORCAO_SPARK`.
+
+### `AD_TGSCAB`
+
+**Arquivo:** `AD_TGSCAB.SQL` | **PK:** `NUPED` | **FKs:** `ID` → `AD_TGSPAR`, `CODPARCTRANSP` → `TGFPAR`
+
+Cabeçalho de pedido vindo de integração externa (site/marketplace): parceiro
+(`AD_TGSPAR`), data, forma de pagamento, frete, transportadora e a
+`NUNOTA` gerada no Sankhya após a integração. Usada por
+`STP_INTEGRAPEDIDO_AGENDADA` e `STP_INTEGRAPEDIDO_SITESPARK`.
+
+### `AD_TGSCIT`
+
+**Arquivo:** `AD_TGSCIT.SQL` | **PK composta:** `(CODREG, SEQUENCIA)` | **FKs:** `CODREG` → `AD_TGSCUS`, `CODPROD` → `TGFPRO`
+
+Itens de um registro de custo importado externamente (cabeçalho em
+`AD_TGSCUS`): custo, custo relativo, ICMS, IPI, moeda, custo fiscal e custo
+de frete por produto. Usada por `FC_GETPRECO_TRASF_SP` e pelas triggers de
+custo (`SPK_TRG_TGFCUS`, `SPK_TRG_INS_TGFCUS`).
+
+### `AD_TGSCUS`
+
+**Arquivo:** `AD_TGSCUS.SQL` | **PK:** `CODREG` | **FK:** `CODUSU` → `TSIUSU`
+
+Cabeçalho do registro de custo importado externamente (data de referência,
+data de importação, usuário) — pai de `AD_TGSCIT`.
+
+### `AD_TGSCUSBLOCOH`
+
+**Arquivo:** `AD_TGSCUSBLOCOH.SQL` | **PK:** `ID`
+
+Tabela de staging/conferência de custo por produto (carga externa "Bloco
+H"): descrição, unidade, valor de custo e data de referência. Usada por
+`STP_VERCORCUSTO_SPARK`.
+
+### `AD_TGSIOSI`
+
+**Arquivo:** `AD_TGSIOSI.SQL` | **PK composta:** `(NUMOS, ID)` | **FKs:** `NUMOS` → `AD_OSINTERNA`, `CODPROD` → `TGFPRO`, `NUNOTA` → `TGFCAB`, `CODVOL` → `TGFVOL`
+
+Itens de material/peça consumidos numa Ordem de Serviço interna
+(`AD_OSINTERNA`): produto, quantidade, unidade e a nota de movimentação
+gerada. Usada por `STP_INCMOVOSINT_SPARK`.
+
+### `AD_TGSISCP`
+
+**Arquivo:** `AD_TGSISCP.SQL` | **PK composta:** `(NUSOL, SEQUENCIA)` | **FKs:** `NUSOL` → `AD_TGSSCP`, `CODVOL` → `TGFVOL`, `CODPROD` → `TGFPRO`
+
+Itens de uma Solicitação de Compra interna (`AD_TGSSCP`): produto (cadastrado
+ou só descrito em `PRODUTO`/`MARCA`), quantidade em estoque, estoque mínimo e
+observação adicional. Usada por `STP_NOTIFICASOLICCOMPRA_SPARK` e
+`TRG_NOTIFICA_SOLIC_COMPRA`.
+
+### `AD_TGSITE`
+
+**Arquivo:** `AD_TGSITE.SQL` | **PK composta:** `(NUPED, IDITEM)` | **FKs:** `NUPED` → `AD_TGSCAB`, `CODPROD` → `TGFPRO`
+
+Itens do pedido de integração externa (`AD_TGSCAB`): quantidade, valor
+unitário/liquido, desconto e total.
+
+### `AD_TGSMDF`
+
+**Arquivo:** `AD_TGSMDF.SQL` | **PK:** `ID`
+
+Tabela de apoio de município/UF para o MDF-e (Manifesto de Documentos
+Fiscais). Usada por `TRG_INC_UPD_CMF_SPARK`.
+
+### `AD_TGSPAR`
+
+**Arquivo:** `AD_TGSPAR.SQL` | **PK:** `ID` | **FKs:** `CODPARC` → `TGFPAR`, `CODCID` → `TSICID`, `CODEND` → `TSIEND`, `CODBAI` → `TSIBAI`, `CODUF` → `TSIUFS`
+
+Cadastro de parceiro vindo de integração externa (site/marketplace) —
+razão social, contato, endereço completo e documento — antes/depois de
+vinculado ao `TGFPAR` nativo (`CODPARC`). Usada por
+`STP_INTEGRAPEDIDO_AGENDADA` e `STP_INTEGRAPEDIDO_SITESPARK`.
+
+### `AD_TGSSCP`
+
+**Arquivo:** `AD_TGSSCP.SQL` | **PK:** `NUSOL` | **FKs:** `CODCENCUS` → `TSICUS`, `APROVADOR` → `TSIUSU`, `NUNOTA` → `TGFCAB`
+
+Cabeçalho de Solicitação de Compra interna, com workflow de aprovação:
+solicitante, centro de custo, justificativa (CLOB), prazo, status,
+aprovador e observação da aprovação (CLOB). Usada por
+`STP_APROVA_SOLIC_COMPRA` e `STP_NOTIFICASOLICCOMPRA_SPARK`.
+
+### `AD_TGSSER`
+
+**Arquivo:** `AD_TGSSER.SQL` | **PK composta:** `(NUPED, IDITEM, IDSERIE)` | **FKs:** `(NUPED, IDITEM)` → `AD_TGSITE`, `CODPROD` → `TGFPRO`
+
+Números de série vinculados a um item de pedido de integração externa
+(`AD_TGSITE`).
+
+### `AD_TPRCOI`
+
+**Arquivo:** `AD_TPRCOI.SQL` | **PK composta:** `(NUCONF, CODBARRA, CODPROD)` | **FK:** `CODUSU` → `TSIUSU`
+
+Itens conferidos por código de barras numa conferência de produção
+(`NUCONF`). Usada por `STP_CORRIGENOTAPROD_SPARK` e pelas triggers de
+conferência de item (`TRG_INC_TPRCOI_SPARK`, `TRG_INC_UPD_TGFITE_SPARK`).
+
+### `AD_TPRSERAPO`
+
+**Arquivo:** `AD_TPRSERAPO.SQL` | **PK composta:** `(NUAPO, SEQAPA, SEQ)` | **FK:** `CODUSUINC` → `TSIUSU`
+
+Números de série vinculados a um apontamento de produção (`NUAPO`/`SEQAPA`).
+Usada pelas triggers `TRG_INC_UPD_DLT_TPRAPA_SPARK` /
+`TRG_INC_UPD_DLT_TPRIPA_SPARK`.
+
+### `AD_TPRSERPA`
+
+**Arquivo:** `AD_TPRSERPA.SQL` | **PK composta:** `(IDIPROC, SERIEPA)` | **FK:** `CODPRODPA` → `TGFPRO`
+
+Vincula um número de série ao produto acabado (`CODPRODPA`) de um processo
+de produção (`IDIPROC`). Usada por `STP_LIBERASERIE_SPARK`.
+
+### `AD_TSIBLOCK`
+
+**Arquivo:** `AD_TSIBLOCK.SQL` | **PK:** `IDBLOCK`
+
+Registro de bloqueio de sistema por tipo (`TIPBLOCK`) e data (`DTBLOCK`).
+Usada por `SPK_TGFCAB_TSIBLOCK`.
+
+> **Não capturadas nesta rodada:** `AD_CADMKTATRIB` e `AD_MKTPMELIATRIB`
+> (atributos de marketplace) e `AD_MKTPMELI` não retornaram na consulta
+> `DBMS_METADATA.GET_DDL` — provavelmente foram renomeadas, removidas ou o
+> nome em `TABELAS_FALTANTES.md` está desatualizado. Confirmar o nome atual
+> no banco antes de tentar capturar novamente.

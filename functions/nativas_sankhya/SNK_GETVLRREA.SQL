@@ -1,0 +1,104 @@
+/*==============================================================================
+  Nome do Script : SNK_GETVLRREA
+  Tipo           : Function Nativa Sankhya (referencia -- nao customizada)
+  Descricao      : Calcula o valor de ICMS por reavaliacao/pauta fiscal (TGFREA), usando
+                  aliquota interna ou externa conforme UF de origem/destino.
+  Assinatura     : SNK_GETVLRREA ( P_NUNOTA NUMBER, P_SEQUENCIA NUMBER, P_CODPROD NUMBER, P_CODCFO NUMBER, P_TEMREAEMP VARCHAR, P_BASE NUMBER, P_VLRICMS NUMBER)
+                   RETURN NUMBER
+  Observacoes    : - Objeto nativo do ERP -- atualizacoes do Sankhya podem
+                     sobrescrever esta function. Revisar apos cada upgrade
+                     (mesmo cuidado descrito em trigger_nativa/README.md).
+                   - Capturado do banco em 18/09/2026, via:
+                     SELECT DBMS_METADATA.GET_DDL('FUNCTION', 'SNK_GETVLRREA', 'SPARKPRD') FROM dual;
+==============================================================================*/
+  create or replace FUNCTION SNK_GETVLRREA (
+    P_NUNOTA    NUMBER,
+    P_SEQUENCIA NUMBER,
+    P_CODPROD   NUMBER,
+    P_CODCFO    NUMBER,
+    P_TEMREAEMP VARCHAR,
+    P_BASE      NUMBER,
+    P_VLRICMS   NUMBER)
+RETURN NUMBER
+
+ IS P_ALIQEXT    TGFREA.ALIQEXT%TYPE; 
+    P_ALIQINT    TGFREA.ALIQINT%TYPE; 
+    P_VLRAUX     NUMBER;
+    P_COUNT      INTEGER;
+    P_TEMREATOP  VARCHAR2(1);
+    P_DTNEG      DATE;
+    P_CIDPARC    SMALLINT;
+    P_CIDEMP     SMALLINT;
+    P_CODPARC    TGFCAB.CODPARC%TYPE;
+    P_CODEMP     TGFCAB.CODEMP%TYPE;
+    P_CODUFORIG  TSICID.UF%TYPE;
+    P_CODUFDEST  TSICID.UF%TYPE;
+
+BEGIN
+  IF (P_VLRICMS = 0) OR (P_TEMREAEMP <> 'S')THEN
+     RETURN( P_VLRICMS );
+  END IF;
+
+  SELECT SUM(VALOR), COUNT(*)
+  INTO P_VLRAUX, P_COUNT
+  FROM TGFLREA
+  WHERE NUNOTA = P_NUNOTA
+  AND SEQUENCIA = P_SEQUENCIA;
+       
+  IF P_COUNT > 0 THEN
+    RETURN (P_VLRAUX);
+  END IF;
+  
+  SELECT TPO.TEMREAICMS, CAB.DTNEG, CAB.CODPARC, CAB.CODEMP
+  INTO P_TEMREATOP, P_DTNEG, P_CODPARC, P_CODEMP
+  FROM TGFCAB CAB
+  , TGFTOP TPO
+  WHERE CAB.NUNOTA = P_NUNOTA
+  AND CAB.CODTIPOPER = TPO.CODTIPOPER
+  AND CAB.DHTIPOPER = TPO.DHALTER;
+
+  IF P_TEMREATOP <> 'S' THEN
+    RETURN (P_VLRICMS);
+  END IF;
+  
+  SELECT MIN(REA.ALIQEXT), MIN(REA.ALIQINT), COUNT(*) 
+  INTO P_ALIQEXT, P_ALIQINT, P_COUNT
+  FROM TGFPRO PRO
+  , TGFREA REA
+  WHERE PRO.CODPROD = P_CODPROD
+  AND REA.NUMITEMREA = PRO.NUMITEMREA
+  AND REA.ATIVO = 'S'
+  AND REA.DHCAD = (SELECT MAX(DHCAD) FROM TGFREA R2
+                   WHERE R2.NUMITEMREA = REA.NUMITEMREA
+                   AND R2.DHCAD <= P_DTNEG);
+  IF P_COUNT = 0 THEN
+    RETURN (P_VLRICMS);
+  END IF;
+
+  IF P_CODCFO BETWEEN 5000 AND 5999 OR P_CODCFO BETWEEN 1000 AND 1999 THEN
+    RETURN ( ROUND(P_BASE * P_ALIQINT / 100, 2) ); 
+  ELSIF P_CODCFO BETWEEN 6000 AND 6999 OR P_CODCFO BETWEEN 2000 AND 2999 THEN
+    RETURN ( ROUND(P_BASE * P_ALIQEXT / 100, 2) ); 
+  END IF;
+
+  Stp_End_Icms(P_CODPARC, P_CODEMP, P_CIDPARC, P_CIDEMP);
+
+  SELECT C.UF 
+  INTO P_CODUFDEST
+  FROM TSICID C
+  WHERE C.CODCID = P_CIDPARC;
+
+  SELECT C.UF 
+  INTO P_CODUFORIG
+  FROM TSICID C
+  WHERE C.CODCID = P_CIDEMP;
+
+  IF P_CODUFORIG = P_CODUFDEST  THEN
+    RETURN ( ROUND(P_BASE * P_ALIQINT / 100, 2) ); 
+  ELSE
+    RETURN ( ROUND(P_BASE * P_ALIQEXT / 100, 2) ); 
+  END IF;
+END;
+
+ 
+ 
