@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de componentes:** 25 pastas / ~100 arquivos `.sql`  
+**Total de componentes:** 28 pastas / ~113 arquivos `.sql`  
 **Ambiente:** Sankhya BI (SQL analítico Oracle)  
 
 > As pastas `PRODUCAO DIARIA POR SETOR/` e `PRODUCAO DIARIA POR COLABORADOR/`

@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Versão:** 2.2  
+**Versão:** 2.3  
 **Data:** Setembro/2026  
 **Plataforma-alvo:** Sankhya ERP (Oracle Database)
 
@@ -116,7 +116,7 @@ SQL Sankhya/
 ## 7. Inventário de Objetos
 
 ### 7.1 Triggers (pasta `triggers/`)
-> 87 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
+> 89 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
 
 Agrupadas por domínio:
 
@@ -212,7 +212,7 @@ Agrupadas por domínio:
 ---
 
 ### 7.6 Componentes BI (pasta `componentes BI/`)
-> ~100 queries em 25 pastas. Ver [`componentes BI/README.md`](componentes BI/README.md).
+> ~113 queries em 28 pastas. Ver [`componentes BI/README.md`](componentes BI/README.md).
 
 | Tema | Dashboard / Componente |
 |---|---|
@@ -227,7 +227,7 @@ Agrupadas por domínio:
 ---
 
 ### 7.7 Relatórios Jasper (pasta `reports/`)
-> 32 pastas de relatórios. Ver [`reports/README.md`](reports/README.md).
+> 33 pastas de relatórios. Ver [`reports/README.md`](reports/README.md).
 
 | Nº | Relatório | Tipo |
 |---|---|---|
@@ -263,6 +263,7 @@ Agrupadas por domínio:
 | 30 | Etiqueta de Qualidade | Produção / Qualidade |
 | 31 | Etiqueta de Série Avulsa Manual | Logística |
 | 32 | Etiqueta Avulsa Manual | Logística |
+| 33 | Orçamento de Venda Lucas | Vendas |
 
 ---
 
