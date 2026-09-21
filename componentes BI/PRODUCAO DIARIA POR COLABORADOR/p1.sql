@@ -1,82 +1,85 @@
 /*==============================================================================
   Nome do Script : P1
-  Tipo           : Componente BI — Tabela (detalhe diário)
+  Tipo           : Componente BI ? Tabela
   Dashboard      : [SPARK] - PRODUÇÃO DIÁRIA POR COLABORADOR
   Componente     : P1
-  Descrição      : Produção diária de cada colaborador em seu respectivo setor
-                   dentro do intervalo informado. Uma linha por
-                   colaborador x setor x dia (granularidade definida no
-                   mapeamento — Bloco 6: há rodízio de setor no mesmo dia).
+  Descrição      : Detalha os processos/atividades de produção que tiveram
+                   apontamento dentro do período informado, exibindo a
+                   quantidade apontada, perdas e saldo a produzir.
+                   O período (sobre APO.DHAPO) define quais linhas aparecem, de
+                   forma idêntica nos dois modos de :P_FINAL ? garantindo
+                   resultado consistente entre 'S' e 'N'. Só entram atividades
+                   com apontamento confirmado (SITUACAO='C') no período.
 
-                   Regras de negócio:
-                   - Somente apontamentos concluídos (APO.SITUACAO = 'C').
-                   - Setor vem do apontamento (TPREFX via TPRIATV), não do
-                     departamento cadastral do colaborador (Bloco 4).
-                   - Colaborador via TPRAPA.AD_CODFUNC (LEFT JOIN) — nulos
-                     exibidos como 'NAO IDENTIFICADO' (concentrados em
-                     EXPEDIÇÃO/CONFERENCIA no período recente — Bloco 8).
-                   - 'EXPEDICAO/CONF' é typo legado, somado a
-                     'EXPEDIÇÃO/CONFERENCIA' (decisão do mapeamento por setor).
-                   - Setores-ruído ('INSERÇÃO 2', 'MONTAGEM FINAL 3') excluídos.
+  Parâmetros     : :P_PERIODO    ? período do apontamento (INI/FIN), aplicado
+                                   sobre APO.DHAPO
+                   :P_FINAL      ? 'N' lista apenas atividades não finalizadas
+                                   (TV.DHFINAL IS NULL); 'S' inclui também as
+                                   finalizadas (TV.DHFINAL IS NOT NULL)
+                   :P_STATUSPROC ? status do processo (array)
+                   :P_IDIPROD    ? ID do processo de produção (opcional)
+                   :P_CODPRC     ? código do processo (array)
 
-  Parâmetros     : :P_PERIODO.INI  — data inicial do intervalo
-                   :P_PERIODO.FIN  — data final do intervalo
-                   :P_SETOR        — filtro opcional por setor (contém)
-                   :P_COLABORADOR  — filtro opcional por colaborador (contém)
-
-  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TFPFUN
+  Tabelas        : TPRIPROC, TPRPRC, TPRIPA, TPRIATV, TPREFX, TPRAPO, TPRAPA,
+                   TGFPRO, TGFGRU
 
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: Junho/2026
-  Última Revisão : Junho/2026 — Criação inicial
-
-  Observações    : Períodos anteriores a ~2026 retornam maioria
-                   'NAO IDENTIFICADO' (93% do histórico sem AD_CODFUNC —
-                   adoção do campo é recente). Aliases sem aspas/acento
-                   (CORE_E05294); rótulos de exibição no construtor.
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 ? Padronização de cabeçalho e comentários
+                   Junho/2026 ? Refatoração total: a produção do período é
+                   agregada por atividade numa subconsulta (TPRAPO/TPRAPA) e
+                   ligada por INNER JOIN, de modo que o período (APO.DHAPO)
+                   filtra as linhas igualmente para :P_FINAL 'S' e 'N'. O
+                   :P_FINAL passa a controlar apenas a inclusão das atividades
+                   finalizadas (TV.DHFINAL), eliminando a inconsistência
 ==============================================================================*/
 
-WITH PRODUCAO AS (
-    -- Produção concluída por dia, setor normalizado e colaborador
-    SELECT  TRUNC(APO.DHAPO)                                AS DT_PRODUCAO
-           ,CASE
-                WHEN FX.DESCRICAO = 'EXPEDICAO/CONF'
-                     THEN 'EXPEDIÇÃO/CONFERENCIA'
-                ELSE FX.DESCRICAO
-            END                                             AS SETOR
-           ,NVL(FUN.NOMEFUNC, 'NAO IDENTIFICADO')           AS COLABORADOR
-           ,SUM(APA.QTDAPONTADA)                            AS QTD
-           ,COUNT(DISTINCT APA.NUAPO)                       AS APONTAMENTOS
-      FROM  TPRAPA APA
-            INNER JOIN TPRAPO  APO ON APA.NUAPO      = APO.NUAPO
-            INNER JOIN TPRIATV TV  ON APO.IDIATV     = TV.IDIATV
-            INNER JOIN TPREFX  FX  ON TV.IDEFX       = FX.IDEFX
-            LEFT  JOIN TFPFUN  FUN ON APA.AD_CODFUNC = FUN.CODFUNC
-     WHERE  APO.SITUACAO = 'C'
-       AND  TRUNC(APO.DHAPO) BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN
-       AND  FX.DESCRICAO NOT IN ('INSERÇÃO 2', 'MONTAGEM FINAL 3')
-     GROUP  BY
-            TRUNC(APO.DHAPO)
-           ,CASE
-                WHEN FX.DESCRICAO = 'EXPEDICAO/CONF'
-                     THEN 'EXPEDIÇÃO/CONFERENCIA'
-                ELSE FX.DESCRICAO
-            END
-           ,NVL(FUN.NOMEFUNC, 'NAO IDENTIFICADO')
+SELECT *
+FROM (
+    SELECT  PRC.CODPRC                                            AS CODIGO
+           ,PRC.DESCRABREV                                        AS DESCRICAO
+           ,PROC.IDIPROC                                          AS IDIPROC
+           ,TV.DHINCLUSAO                                         AS DTINICO
+           ,TV.DHFINAL                                            AS DHFINAL
+           ,PROC.DTPREVENT
+           ,PROC.NROLOTE
+           ,IPA.QTDPRODUZIR                                       AS TAMLOTE
+           ,IPA.QTDPRODUZIR - (APT.QTDAPON + APT.QTDPERDA)        AS QTDPRODUZIR
+           ,APT.QTDAPON
+           ,APT.QTDPERDA
+           ,PRO.CODPROD
+           ,PRO.DESCRPROD
+           ,CASE WHEN PRO.AD_LINHA = 1 THEN 'Linha 1'
+                 WHEN PRO.AD_LINHA = 2 THEN 'Linha 2'
+                 ELSE 'Linha N/E'
+            END                                                   AS LINHA
+           ,(SELECT DISTINCT G.DESCRGRUPOPROD
+               FROM TGFGRU G
+              WHERE G.CODGRUPOPROD = PRO.CODGRUPOPROD)            AS DESCRGRUPOPROD
+           ,OPTION_LABEL('TPRIPROC','STATUSPROC',PROC.STATUSPROC) AS STATUSPROD
+           ,EFX.DESCRICAO                                         AS ATIVIDADE
+      FROM TPRIPROC PROC
+           INNER JOIN TPRPRC  PRC ON PRC.IDPROC = PROC.IDPROC
+           INNER JOIN TPRIPA  IPA ON IPA.IDIPROC = PROC.IDIPROC
+           INNER JOIN TPRIATV TV  ON TV.IDIPROC = PROC.IDIPROC
+           INNER JOIN TPREFX  EFX ON EFX.IDEFX = TV.IDEFX
+           INNER JOIN TGFPRO  PRO ON PRO.CODPROD = IPA.CODPRODPA
+           INNER JOIN (
+                  SELECT  APO.IDIATV
+                         ,NVL(SUM(APA.QTDAPONTADA),0) AS QTDAPON
+                         ,NVL(SUM(APA.QTDPERDA),0)    AS QTDPERDA
+                    FROM TPRAPO APO
+                         INNER JOIN TPRAPA APA ON APA.NUAPO = APO.NUAPO
+                   WHERE APO.SITUACAO = 'C'
+                     AND TRUNC(APO.DHAPO) BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN
+                   GROUP BY APO.IDIATV
+                ) APT ON APT.IDIATV = TV.IDIATV
+     WHERE EFX.DESCRICAO IN ('APONTAMENTO INSERSORA','APONTAMENTO REVISORA','INSERÇÃO','SOLDA','TESTE','DISSIPADOR','TAMPA/GABINETE','MONTAGEM FINAL','EXPEDIÇÃO/CONFERENCIA','DISPLAY','PRODUÇÃO KIT IBM')
+       AND PROC.STATUSPROC IN :P_STATUSPROC
+       AND (PROC.IDIPROC = :P_IDIPROD OR :P_IDIPROD IS NULL)
+       AND (TV.DHFINAL IS NULL OR :P_FINAL = 'S')
+       AND PRC.CODPRC IN :P_CODPRC
+     ORDER BY PROC.DTPREVENT, PROC.NROLOTE
 )
-SELECT  PRD.DT_PRODUCAO     AS DATAPROD
-       ,PRD.SETOR           AS SETOR
-       ,PRD.COLABORADOR     AS COLABORADOR
-       ,PRD.QTD             AS QTDPRODUZIDA
-       ,PRD.APONTAMENTOS    AS QTDAPONTAMENTOS
-  FROM  PRODUCAO PRD
- WHERE  (PRD.SETOR LIKE '%' || UPPER(:P_SETOR) || '%'
-            OR :P_SETOR IS NULL)
-   AND  (PRD.COLABORADOR LIKE '%' || UPPER(:P_COLABORADOR) || '%'
-            OR :P_COLABORADOR IS NULL)
- ORDER  BY
-        PRD.DT_PRODUCAO DESC
-       ,PRD.SETOR
-       ,PRD.QTD DESC
