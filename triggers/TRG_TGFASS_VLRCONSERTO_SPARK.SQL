@@ -5,12 +5,15 @@ FOLLOWS SPK_TGFASS_INC
 /*==============================================================================
   Nome do Script : TRG_TGFASS_VLRCONSERTO_SPARK
   Tipo           : Trigger
-  Descrição      : Preenche o valor do conserto (VLRCONSERTO) da O.S. de
-                   assistência técnica, buscando o preço vigente do produto
-                   (T_CODPROD) via a function nativa SNK_PRECO, informando a
-                   tabela de preços CODTAB = 15. A function já resolve o NUTAB
-                   vigente (DTVIGOR <= SYSDATE) e obtém o preço através de
-                   STP_OBTEM_PRECO2.
+  Descrição      : Preenche dois valores da O.S. de assistência técnica a
+                   partir do preço vigente do produto (T_CODPROD), via a
+                   function nativa SNK_PRECO:
+                     - VLRCONSERTO      via SNK_PRECO(14, T_CODPROD) — tabela
+                       de preços padrão de serviços.
+                     - VLRSERVTECNICO   via SNK_PRECO(15, T_CODPROD) — tabela
+                       de preços específica de AD_TGFASS.
+                   A function já resolve o NUTAB vigente (DTVIGOR <= SYSDATE)
+                   e obtém o preço através de STP_OBTEM_PRECO2.
   Tabela         : AD_TGFASS
   Evento         : BEFORE INSERT OR UPDATE
   Escopo         : FOR EACH ROW
@@ -27,25 +30,40 @@ FOLLOWS SPK_TGFASS_INC
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 17/09/2026
-  Última Revisão : Setembro/2026 — Criação
+  Última Revisão : Setembro/2026 — CODTAB de VLRCONSERTO corrigido para 14
+                   (tabela padrão de serviços) e adicionado preenchimento de
+                   VLRSERVTECNICO (novo campo) via CODTAB = 15.
 
-  Observações    : - Só atua com VLRCONSERTO nulo ou zerado (não sobrescreve
-                     valor já preenchido/ajustado).
-                   - Exige T_CODPROD preenchido; sem produto, o campo permanece
-                     inalterado.
-                   - Tabela de preços é fixa: CODTAB = 15.
+  Observações    : - Cada campo só é preenchido se estiver nulo ou zerado
+                     (não sobrescreve valor já preenchido/ajustado); os dois
+                     são avaliados de forma independente.
+                   - Exige T_CODPROD preenchido; sem produto, os campos
+                     permanecem inalterados.
+                   - Tabelas de preços são fixas: CODTAB = 14 (VLRCONSERTO) e
+                     CODTAB = 15 (VLRSERVTECNICO).
                    - Se SNK_PRECO retornar 0 (sem NUTAB vigente ou sem preço
-                     cadastrado para o produto), o campo permanece inalterado.
+                     cadastrado para o produto), o respectivo campo permanece
+                     inalterado.
 ==============================================================================*/
 DECLARE
-    V_VLRCONSERTO FLOAT;
+    V_PRECO AD_TGFASS.VLRCONSERTO%TYPE;
 BEGIN
-    IF :NEW.T_CODPROD IS NOT NULL AND NVL(:NEW.VLRCONSERTO, 0) = 0 THEN
+    IF :NEW.T_CODPROD IS NOT NULL THEN
 
-        V_VLRCONSERTO := SNK_PRECO(15, :NEW.T_CODPROD);
+        IF NVL(:NEW.VLRCONSERTO, 0) = 0 THEN
+            V_PRECO := SNK_PRECO(14, :NEW.T_CODPROD);
 
-        IF NVL(V_VLRCONSERTO, 0) > 0 THEN
-            :NEW.VLRCONSERTO := V_VLRCONSERTO;
+            IF NVL(V_PRECO, 0) > 0 THEN
+                :NEW.VLRCONSERTO := V_PRECO;
+            END IF;
+        END IF;
+
+        IF NVL(:NEW.VLRSERVTECNICO, 0) = 0 THEN
+            V_PRECO := SNK_PRECO(15, :NEW.T_CODPROD);
+
+            IF NVL(V_PRECO, 0) > 0 THEN
+                :NEW.VLRSERVTECNICO := V_PRECO;
+            END IF;
         END IF;
 
     END IF;

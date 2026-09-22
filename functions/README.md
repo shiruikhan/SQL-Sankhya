@@ -191,7 +191,7 @@ SNK_PRECO(P_CODTAB IN INTEGER, P_CODPROD IN INTEGER) RETURN FLOAT
 
 | Parâmetro | Tipo | Descrição |
 |---|---|---|
-| `P_CODTAB` | `INTEGER` | Código da tabela de preços (ex.: `14` = tabela padrão de serviços, `15` = tabela usada em `AD_TGFASS`) |
+| `P_CODTAB` | `INTEGER` | Código da tabela de preços (ex.: `14` = tabela padrão de serviços, `15` = tabela usada para `VLRSERVTECNICO` em `AD_TGFASS`) |
 | `P_CODPROD` | `INTEGER` | Código do produto a precificar |
 
 **Retorno:** Preço do produto vigente na tabela informada, resolvendo primeiro a `NUTAB` com `DTVIGOR` mais recente `<= SYSDATE` em `TGFTAB` e delegando o cálculo para `STP_OBTEM_PRECO2`. Se não houver tabela vigente, `V_NUTAB = 0` é passado adiante.
@@ -200,6 +200,6 @@ SNK_PRECO(P_CODTAB IN INTEGER, P_CODPROD IN INTEGER) RETURN FLOAT
 **Dependência:** `STP_OBTEM_PRECO2` (procedure nativa Sankhya)  
 **Uso:**
 - `TRG_SPKCAE_VLRCONSERTO_SPARK` e `scripts/AD_SPKCAE_BACKFILL_VLRCONSERTO.SQL` — calcula `VLRCONSERTO` a partir do preço de serviço do produto (`CODTAB = 14`).
-- `TRG_TGFASS_VLRCONSERTO_SPARK` — calcula `VLRCONSERTO` a partir do preço do produto (`CODTAB = 15`).
+- `TRG_TGFASS_VLRCONSERTO_SPARK` — calcula `VLRCONSERTO` (`CODTAB = 14`) e `VLRSERVTECNICO` (`CODTAB = 15`) a partir do preço do produto.
 
 > **Atenção:** function **nativa** do ERP, não uma customização Spark — armazenada aqui só como referência. Atualizações do Sankhya podem sobrescrevê-la; revisar após cada upgrade (mesmo cuidado de `trigger_nativa/README.md`).

@@ -130,12 +130,17 @@ entrega, dados de rastreamento (`TIPOENTREGA`, `RASTREIO`), o checklist técnico
 inspeção da placa (campos `S/N`: `DISJUNTOR`, `COOLER`, `DISPLAY`, `SOLDA`,
 `INDUTOR`, `TRANSFORMADOR`, etc.), os funcionários responsáveis
 (`FUNCSOLDA`, `FUNCSOLDA2`, `FUNCTESTE`, `FUNCINSERCAO`, `TECNICO`), `DTLANC`
-(data de lançamento — adicionada em Set/2026) e `VLRCONSERTO` (valor do
-conserto — adicionada em Set/2026, preenchida automaticamente por
-`TRG_TGFASS_VLRCONSERTO_SPARK` via `SNK_PRECO`). Colunas `FOTO` e
-`COMPROVANTE` são BLOB (SecureFile). FKs para `TGFPAR` (cliente e parceiro
-assistência) e `AD_CADFUNC` (`TECNICO` — FK recriada em Set/2026, coluna foi
-dropada/readicionada e por isso hoje aparece ao final do DDL).
+(data de lançamento — adicionada em Set/2026), `VLRCONSERTO` e
+`VLRSERVTECNICO` (valores de conserto e de serviço técnico — adicionadas em
+Set/2026, ambas preenchidas automaticamente por
+`TRG_TGFASS_VLRCONSERTO_SPARK` via `SNK_PRECO`, com `CODTAB` 14 e 15
+respectivamente). Colunas `FOTO` e `COMPROVANTE` são BLOB (SecureFile). FKs
+para `TGFPAR` (cliente e parceiro assistência) e `AD_CADFUNC` (`TECNICO` — FK
+recriada em Set/2026, coluna foi dropada/readicionada e por isso hoje aparece
+ao final do DDL).
+
+> **Nota:** `VLRSERVTECNICO` ainda não consta no DDL local (`AD_TGFASS.SQL`)
+> — recapturar via o workflow de captura de DDL quando possível.
 
 ### `AD_TGSAPI`
 
