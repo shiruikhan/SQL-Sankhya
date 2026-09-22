@@ -200,6 +200,6 @@ SNK_PRECO(P_CODTAB IN INTEGER, P_CODPROD IN INTEGER) RETURN FLOAT
 **Dependência:** `STP_OBTEM_PRECO2` (procedure nativa Sankhya)  
 **Uso:**
 - `TRG_SPKCAE_VLRCONSERTO_SPARK` e `scripts/AD_SPKCAE_BACKFILL_VLRCONSERTO.SQL` — calcula `VLRCONSERTO` a partir do preço de serviço do produto (`CODTAB = 14`).
-- `TRG_TGFASS_VLRCONSERTO_SPARK` — calcula `VLRCONSERTO` (`CODTAB = 14`) e `VLRSERVTECNICO` (`CODTAB = 15`) a partir do preço do produto.
+- `TRG_TGFASS_VLRCONSERTO_SPARK` e `scripts/AD_TGFASS_BACKFILL_VLRCONSERTO_VLRSERVTECNICO.SQL` — calculam `VLRCONSERTO` (`CODTAB = 14`) e `VLRSERVTECNICO` (`CODTAB = 15`) a partir do preço do produto.
 
 > **Atenção:** function **nativa** do ERP, não uma customização Spark — armazenada aqui só como referência. Atualizações do Sankhya podem sobrescrevê-la; revisar após cada upgrade (mesmo cuidado de `trigger_nativa/README.md`).
