@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de procedures:** 78  
+**Total de procedures:** 79  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -112,6 +112,7 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 | Arquivo | Procedure | Descrição |
 |---|---|---|
 | `STP_INCLUIRLANCTO_SPARK.SQL` | `STP_INCLUIRLANCTO_SPARK` | Inclui lançamento financeiro avulso vinculado a nota |
+| `STP_INCFINASSIST_SPARK.sql` | `STP_INCFINASSIST_SPARK` | Gera lançamento financeiro avulso (TGFFIN, sem NUNOTA) a partir de O.S. de assistência técnica selecionadas em `AD_SPKCAE`, aglutinando por parceiro (soma VLRCONSERTO) e marcando `AD_SPKCAE.NUFIN` como idempotência |
 | `STP_EXCLUIRFINCOM_SPARK.sql` | `STP_EXCLUIRFINCOM_SPARK` | Exclui lançamento financeiro complementar |
 | `STP_ATUALIZARVLRMOEDA_SPARK.sql` | `STP_ATUALIZARVLRMOEDA_SPARK` | Atualiza valor monetário convertendo pela taxa de câmbio vigente |
 | `STP_REGRA_VALID_FINAN_SPARK.sql` | `STP_REGRA_VALID_FINAN_SPARK` | Regra de validação financeira: verifica condições de pagamento e natureza |
