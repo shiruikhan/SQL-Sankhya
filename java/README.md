@@ -22,11 +22,40 @@ Os arquivos `.class` compilados devem ser empacotados em `.jar` e deployados no 
 
 ## Catálogo de Classes
 
-### `CotaFrete.java`
+### `CotaFreteMultiTransp.java`
 
 **Pacote:** `botaoAcao`  
 **Interface:** `AcaoRotinaJava`  
 **Tipo:** Botão de Ação  
+
+**Descrição:** Botão único de cotação de frete, que **substitui** `CotaFrete.java` (Braspress) e `CotaFreteRodonaves.java` (Rodonaves) — ver notas de depreciação abaixo. Para cada linha selecionada, lê o cabeçalho de `AD_TGSCTF` (incluindo `APIDEST`, já preenchida pela trigger `TRG_COTAFRETE_SPARK` a partir de `TGFCAB.CODPARCTRANSP`) e despacha para a estratégia da transportadora correspondente:
+
+| `APIDEST` | Transportadora | Classe |
+|---|---|---|
+| `B` | Braspress | `BraspressCotador` |
+| `R` | Rodonaves | `RodonavesCotador` |
+
+As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a gravação de `AD_TGSCTF.VLRFRETE`/`TGFCAB.VLRFRETE`/`AD_ESTENTR` e o recálculo de impostos via `ImpostosHelpper` são **únicos para todas as transportadoras** — lógica copiada fielmente do `CotaFrete.java` de produção, agora também aplicada a cotações Rodonaves (que antes nunca tocavam `TGFCAB` nem recalculavam impostos). Cada `Cotador` cuida apenas de autenticação, endpoint, payload e parse de resposta da sua própria API.
+
+**Classes de apoio (mesmo pacote `botaoAcao`):**
+- `CotadorTransportadora` — interface da estratégia por transportadora.
+- `DadosCotacaoLinha` / `PacoteDimensao` — DTOs de entrada (cabeçalho de `AD_TGSCTF` + pacotes de `AD_TGSLCB`).
+- `CotacaoResultado` — DTO de saída (valor do frete, prazo opcional, detalhe opcional para a mensagem de retorno).
+- `BraspressCotador` / `RodonavesCotador` — implementações extraídas de `CotaFrete.java`/`CotaFreteRodonaves.java`, sem alteração de comportamento na parte de cotação.
+- `FreteUtils` — helpers compartilhados (antes duplicados nos dois botões antigos).
+
+**Tabelas acessadas:** `AD_TGSCTF`, `AD_TGSLCB`, `AD_TGSAPI`, `TGFCAB`, `TGFPAR`, `TSICID`, `TSIUFS`  
+**Alteração de schema:** `AD_TGSCTF.APIDEST` já existia e já identifica a transportadora por linha (nenhuma mudança necessária). Foi adicionado `AD_TGSAPI.ENDPOINTPRAZO` (URL do endpoint de prazo de entrega da Rodonaves) — ver `tables/AD_TGSAPI.SQL`.  
+**Prazo de entrega (`TGFCAB.AD_ESTENTR`):** a Braspress retorna prazo estimado na própria resposta da cotação. A Rodonaves expõe isso num endpoint separado (`POST .../prazo-entrega`, configurado em `AD_TGSAPI.ENDPOINTPRAZO`), que recebe nome de cidade + UF (não CEP): origem fixa (`SACRAMENTO`/`MG`, matriz da empresa) e destino resolvido do parceiro da nota (`TGFCAB.CODPARC → TGFPAR.CODCID → TSICID.NOMECID/UF → TSIUFS.UF`). Essa busca é *best-effort*: qualquer falha (config ausente, parceiro sem cidade cadastrada, erro HTTP) não impede a gravação do valor do frete — só deixa o prazo em branco e acrescenta um aviso na mensagem de retorno.  
+**Aviso operacional:** após o deploy do `.jar`, é preciso reapontar (ou cadastrar) o botão de ação no Sankhya para a classe `CotaFreteMultiTransp` e decidir se os dois botões antigos ficam ocultos/desativados na tela — isso é feito na UI do ERP, fora deste repositório.
+
+---
+
+### `CotaFrete.java` — ⚠️ Substituído por `CotaFreteMultiTransp.java`
+
+**Pacote:** `botaoAcao`  
+**Interface:** `AcaoRotinaJava`  
+**Tipo:** Botão de Ação (mantido apenas como referência histórica; não é mais o botão a cadastrar)
 
 **Descrição:** Consulta uma API externa de cotação de frete via HTTP, a partir dos dados da nota selecionada no Sankhya. Calcula o frete com base no peso, volume e CEP de destino, e atualiza o valor na nota.
 
@@ -36,17 +65,17 @@ Os arquivos `.class` compilados devem ser empacotados em `.jar` e deployados no 
 
 ---
 
-### `CotaFreteRodonaves.java`
+### `CotaFreteRodonaves.java` — ⚠️ Substituído por `CotaFreteMultiTransp.java`
 
 **Pacote:** `botaoAcao`  
 **Interface:** `AcaoRotinaJava`  
-**Tipo:** Botão de Ação  
+**Tipo:** Botão de Ação (mantido apenas como referência histórica; não é mais o botão a cadastrar)
 
 **Descrição:** Cotação de frete via API REST da Rodonaves para os embarques selecionados. Fluxo por registro em `AD_TGSCTF`: (1) autentica via OAuth2 no `ENDPOINTAUTH` de `AD_TGSAPI` e obtém Bearer token; (2) resolve `OriginCityId`/`DestinationCityId` chamando `ENDPOINTCIDADE` com os CEPs (usados só em memória); (3) monta payload JSON com remetente, destinatário, peso, valor e dimensões (`AD_TGSLCB`) e chama `ENDPOINT` (gera-cotação); (4) grava `VLRFRETE` em `AD_TGSCTF`.
 
 **Tabelas acessadas:** `AD_TGSCTF`, `AD_TGSLCB`, `AD_TGSAPI`  
 **API externa:** Rodonaves — OAuth2 Bearer token (`AUTH_TYPE = 'DEV'`)  
-**Observação:** a atualização de `TGFCAB` e o recálculo de impostos (`ImpostosHelpper`) estão **desativados** no código (bloco comentado em `processarLinha`) enquanto a integração está em homologação. Ver memória `integracao-rodonaves-status`.
+**Observação:** a atualização de `TGFCAB` e o recálculo de impostos (`ImpostosHelpper`) estavam **desativados** no código (bloco comentado em `processarLinha`) enquanto a integração estava em homologação; esse bloco nunca foi reaproveitado — `CotaFreteMultiTransp` usa a lógica fiscal do `CotaFrete.java` para todas as transportadoras. Ver memória `integracao-rodonaves-status`.
 
 ---
 

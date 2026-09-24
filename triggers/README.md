@@ -90,7 +90,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
-| `TRG_COTAFRETE_SPARK.SQL` | `TRG_COTAFRETE_SPARK` | `TGFCAB` | INSERT, UPDATE | Dispara cotação de frete ao salvar cabeçalho de nota de saída |
+| `TRG_COTAFRETE_SPARK.SQL` | `TRG_COTAFRETE_SPARK` | `TGFCAB` | INSERT, UPDATE | Dispara cotação de frete ao salvar cabeçalho de nota de saída; se `CODPARCREDESPACHO` estiver preenchido, cota até a transportadora de redespacho em vez do parceiro de destino |
 | `TRG_COTAFRETE_EMB_SPARK.SQL` | `TRG_COTAFRETE_EMB_SPARK` | `AD_TGSCTF` | INSERT, UPDATE | Grava dimensões e peso por caixa (`PESOITEM`) em `AD_TGSLCB`, agrupando por embalagem; rateia `PESOTOT` proporcionalmente entre os grupos |
 | `TRG_FRETE_CIF_MTKPL_SPARK.sql` | `TRG_FRETE_CIF_MTKPL_SPARK` | `TGFCAB` | INSERT, UPDATE | Força `CIF_FOB = 'C'` e `TIPFRETE = 'N'` em notas da empresa 2 com tipo de venda 78, TOP 1005 e vendedor 5 (vendas marketplace) |
 | `TRG_AD_EMBPED_SPARK.SQL` | `TRG_AD_EMBPED_SPARK` | `AD_EMBPED` | INSERT, UPDATE | Controla associação de pedidos ao embarque |

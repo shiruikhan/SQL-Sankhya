@@ -147,10 +147,13 @@ ao final do DDL).
 **Arquivo:** `AD_TGSAPI.SQL` | **PK:** `API`
 
 Registro de credenciais e endpoints de APIs externas consumidas pelas classes
-Java (`CotaFrete`, `CotaFreteRodonaves`). Colunas base: `ENDPOINT`, `USUARIO`,
-`PASSWORD`, `AMBIENTE`. Colunas adicionadas para a integração Rodonaves:
-`ENDPOINTAUTH` (URL do `/token` OAuth2), `ENDPOINTCIDADE` (busca-cidade por CEP) e
-`AUTH_TYPE` (usar `'DEV'` — ver [[integracao-rodonaves-status]]; `'PRD'` é inválido).
+Java (`CotaFreteMultiTransp`, antes `CotaFrete`/`CotaFreteRodonaves`). Colunas
+base: `ENDPOINT`, `USUARIO`, `PASSWORD`, `AMBIENTE`. Colunas adicionadas para a
+integração Rodonaves: `ENDPOINTAUTH` (URL do `/token` OAuth2), `ENDPOINTCIDADE`
+(busca-cidade por CEP), `AUTH_TYPE` (usar `'DEV'` — ver
+[[integracao-rodonaves-status]]; `'PRD'` é inválido) e `ENDPOINTPRAZO` (URL do
+endpoint de cálculo de prazo de entrega, que recebe nome de cidade + UF de
+origem/destino e devolve `DeliveryTime` em dias).
 
 ### `AD_TGSCTF`
 

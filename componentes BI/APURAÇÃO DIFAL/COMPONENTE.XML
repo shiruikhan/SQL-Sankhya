@@ -1,0 +1,123 @@
+<gadget >
+  <prompt-parameters>
+    <parameter  id="NOTA" description="Nr. Nota Fiscal" metadata="integer" required="false" keep-last="false" keep-date="false" label="NOTA : Número Inteiro"/>
+    <parameter  id="TIPMOV" description="Tipo" metadata="singleList:Text" listType="text" required="true" keep-last="false" keep-date="false" order="0" label="TIPMOV : singleList:Text">
+      <item value="D" label="Devolução"/>
+      <item value="V" label="Venda"/>
+    </parameter>
+    <parameter  id="PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="true" order="1" label="PERIODO : Período"/>
+    <parameter  id="EMPRESA" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="2" label="EMPRESA : Entidade/Tabela"/>
+    <parameter  id="UF" description="Estado" metadata="entity:UnidadeFederativa@CODUF" required="false" keep-last="false" keep-date="false" order="3" label="UF : Entidade/Tabela"/>
+    <parameter  id="CIDADE" description="Cidade" metadata="entity:Cidade@CODCID" required="false" keep-last="false" keep-date="false" order="4" label="CIDADE : Entidade/Tabela"/>
+    <parameter  id="P_TIPOIMPOSTO" description="Tipo de Imposto" metadata="singleList:Text" listType="text" required="false" keep-last="false" keep-date="false" order="5" label="P_TIPOIMPOSTO : singleList:Text">
+      <item value="R" label="Remetente"/>
+      <item value="D" label="Destinatário"/>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_wjppjj" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_wjppjk" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS">
+          <![CDATA[SELECT CAB.NUNOTA, 
+	CAB.NUMNOTA,
+	CAB.TIPMOV,
+	CAB.CODEMP,
+	CAB.DTNEG,
+	PAR.CODPARC,
+	PAR.NOMEPARC,
+	PAR.RAZAOSOCIAL, 
+	PAR.CGC_CPF,
+	UFS.UF,
+	UFS.DESCRICAO,
+	(SELECT MAX(ITE.CODCFO) FROM TGFITE ITE WHERE ITE.NUNOTA = CAB.NUNOTA) AS COFCFO,
+	CAB.VLRNOTA,
+	CAB.VLRICMSDIFALDEST,
+	CAB.VLRICMSDIFALREM,
+	CAB.VLRICMSFCP,
+	CAB.VLRICMS,
+	AEM.GRUPOICMS,
+	MAX((SELECT IE.INSCRICAO
+	  FROM TSIIUF IE
+	WHERE IE.CODUF = UFS.CODUF
+	  AND IE.CODEMP = CAB.CODEMP)) AS INSCRICAO 
+
+FROM TGFCAB CAB 
+	INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
+	INNER JOIN TSICID CID ON CID.CODCID = PAR.CODCID
+	INNER JOIN TSIUFS UFS ON UFS.CODUF = CID.UF
+	LEFT JOIN TGFPAEM AEM ON AEM.CODPARC = PAR.CODPARC
+WHERE CAB.STATUSNOTA = 'L' 
+    AND CAB.STATUSNFE = 'A'
+    AND (trunc(CAB.DTFATUR) >= :PERIODO.INI AND TRUNC(CAB.DTFATUR) <= :PERIODO.FIN)
+    AND ((CAB.CODEMP = :EMPRESA) OR (:EMPRESA IS NULL))
+    AND (CAB.TIPMOV = :TIPMOV) 
+    AND ((CID.CODCID = :CIDADE) OR (:CIDADE IS NULL))
+    AND ((UFS.CODUF = :UF) OR (:UF IS NULL))
+    AND ((CAB.NUMNOTA = :NOTA) OR (:NOTA IS NULL))
+	AND (CASE WHEN :P_TIPOIMPOSTO = 'D' THEN CAB.VLRICMSDIFALDEST WHEN :P_TIPOIMPOSTO = 'R' THEN CAB.VLRICMSDIFALREM END) > 0
+GROUP BY CAB.NUNOTA,
+	CAB.NUMNOTA,
+	CAB.TIPMOV,
+	CAB.CODEMP,
+	CAB.DTNEG,
+	PAR.CODPARC,
+	PAR.NOMEPARC,
+	PAR.RAZAOSOCIAL, 
+	PAR.CGC_CPF,
+	UFS.UF,
+	UFS.DESCRICAO,
+	CAB.VLRNOTA,
+	CAB.VLRICMSDIFALDEST,
+	CAB.VLRICMSDIFALREM,
+	CAB.VLRICMSFCP,
+	CAB.VLRICMS,
+	AEM.GRUPOICMS 
+ORDER BY CAB.NUMNOTA]]>
+        </expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false">
+          </field>
+          <field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false">
+          </field>
+          <field name="TIPMOV" label="Tipo" type="S" visible="true" useFooter="false">
+          </field>
+          <field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false">
+          </field>
+          <field name="DTNEG" label="Data" type="D" visible="true" useFooter="false">
+          </field>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false">
+          </field>
+          <field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false">
+          </field>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false">
+          </field>
+          <field name="CGC_CPF" label="CNPJ" type="S" visible="true" useFooter="false">
+          </field>
+          <field name="UF" label="UF" type="S" visible="true" useFooter="false">
+          </field>
+          <field name="DESCRICAO" label="Estado" type="S" visible="true" useFooter="false">
+          </field>
+          <field name="COFCFO" label="CFOP" type="I" visible="true" useFooter="false">
+          </field>
+          <field name="VLRNOTA" label="Vlr. Nota" type="C" visible="true" useFooter="true">
+          </field>
+          <field name="VLRICMSDIFALDEST" label="Vlr. Difal Destinatário" type="C" visible="true" useFooter="true">
+          </field>
+          <field name="VLRICMSDIFALREM" label="Vlr. Difal Remetente" type="C" visible="true" useFooter="true">
+          </field>
+          <field name="VLRICMSFCP" label="Vlr. FCP" type="C" visible="true" useFooter="true">
+          </field>
+          <field name="VLRICMS" label="Vlr. ICMS" type="C" visible="true" useFooter="true">
+          </field>
+          <field name="GRUPOICMS" label="Tipo ICMS" type="I" visible="true" useFooter="false">
+          </field>
+          <field name="INSCRICAO" label="Inscrição Estadual" type="S" visible="true" useFooter="false">
+          </field>
+        </metadata>
+        <on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

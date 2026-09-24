@@ -9,6 +9,10 @@ FOR EACH ROW
                   Transportadoras suportadas:
                     CODPARCTRANSP = 1085 → APIDEST = 'B' (Braspress)
                     CODPARCTRANSP = 1086 → APIDEST = 'R' (Rodonaves)
+                  Quando TGFCAB.CODPARCREDESPACHO estiver preenchido (<> 0), o
+                  destino físico da cotação (CEPDEST/DOCDEST) passa a ser a
+                  transportadora de redespacho em vez do parceiro de destino
+                  da nota (CODPARC).
   Tabela         : TGFCAB
   Evento         : AFTER INSERT OR UPDATE OR DELETE
   Escopo         : FOR EACH ROW / STATEMENT
@@ -17,7 +21,12 @@ FOR EACH ROW
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
-  Última Revisão : Junho/2026 — Suporte à transportadora Rodonaves (CODPARCTRANSP=1086)
+  Última Revisão : Setembro/2026 — Suporte a redespacho (CODPARCREDESPACHO):
+                  cotação passa a usar o parceiro de redespacho como destino
+                  físico quando informado; corrigido filtro de limpeza nos
+                  ramos UPDATING/DELETING para aceitar STATUSNOTA 'A' ou 'L'
+                  (igual ao filtro de inserção), evitando registros órfãos em
+                  AD_TGSCTF/AD_TGSLCB
 ==============================================================================*/
 DECLARE
   V_NUCTF     AD_TGSCTF.NUCTF%TYPE;
@@ -58,7 +67,14 @@ BEGIN
         END;
 
         BEGIN
-            SELECT CEP, CGC_CPF INTO V_CEPDEST, V_DOCDEST FROM TGFPAR WHERE CODPARC = :NEW.CODPARC;
+            -- Havendo redespacho, a cotação é feita até a transportadora de redespacho
+            -- (destino físico da entrega); sem redespacho, usa o parceiro de destino da nota
+            SELECT CEP, CGC_CPF INTO V_CEPDEST, V_DOCDEST
+              FROM TGFPAR
+             WHERE CODPARC = CASE WHEN NVL(:NEW.CODPARCREDESPACHO, 0) <> 0
+                                   THEN :NEW.CODPARCREDESPACHO
+                                   ELSE :NEW.CODPARC
+                              END;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
                 V_CEPDEST := NULL;
@@ -118,6 +134,7 @@ BEGIN
         OR NVL(:NEW.PESOBRUTO, 0)    <> NVL(:OLD.PESOBRUTO, 0)
         OR NVL(:NEW.QTDVOL, 0)       <> NVL(:OLD.QTDVOL, 0)
         OR NVL(:NEW.CODPARCTRANSP,0) <> NVL(:OLD.CODPARCTRANSP,0)
+        OR NVL(:NEW.CODPARCREDESPACHO,0) <> NVL(:OLD.CODPARCREDESPACHO,0)
         OR NVL(:NEW.VLRFRETE,0) = 0) THEN
 
       -- Caso o NOVO registro esteja dentro do filtro, limpa e reinsere
@@ -151,7 +168,14 @@ BEGIN
         END;
 
         BEGIN
-            SELECT CEP, CGC_CPF INTO V_CEPDEST, V_DOCDEST FROM TGFPAR WHERE CODPARC = :NEW.CODPARC;
+            -- Havendo redespacho, a cotação é feita até a transportadora de redespacho
+            -- (destino físico da entrega); sem redespacho, usa o parceiro de destino da nota
+            SELECT CEP, CGC_CPF INTO V_CEPDEST, V_DOCDEST
+              FROM TGFPAR
+             WHERE CODPARC = CASE WHEN NVL(:NEW.CODPARCREDESPACHO, 0) <> 0
+                                   THEN :NEW.CODPARCREDESPACHO
+                                   ELSE :NEW.CODPARC
+                              END;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
                 V_CEPDEST := NULL;
@@ -204,7 +228,7 @@ BEGIN
 
       -- Caso o NOVO registro não esteja no filtro, mas o ANTIGO estava, limpa para evitar dados obsoletos
       ELSIF :OLD.TIPMOV = 'P'
-            AND :OLD.STATUSNOTA = 'A'
+            AND (:OLD.STATUSNOTA = 'A' OR :OLD.STATUSNOTA = 'L')
             AND :OLD.CODPARCDEST = 0
             AND :OLD.CIF_FOB = 'C'
             AND :OLD.CODPARCTRANSP IN (1085, 1086) THEN
@@ -216,7 +240,7 @@ BEGIN
   ELSIF DELETING THEN
     -- Mantém consistência ao remover a nota apenas quando ela atendia ao filtro
     IF :OLD.TIPMOV = 'P'
-       AND :OLD.STATUSNOTA = 'A'
+       AND (:OLD.STATUSNOTA = 'A' OR :OLD.STATUSNOTA = 'L')
        AND :OLD.CODPARCDEST = 0
        AND :OLD.CIF_FOB = 'C'
        AND :OLD.CODPARCTRANSP IN (1085, 1086) THEN
