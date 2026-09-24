@@ -1,0 +1,440 @@
+<gadget >
+  <prompt-parameters>
+    <parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="P_PERIODO : Período"/>
+    <parameter  id="P_SETOR" description="Setor" metadata="multiList:Text" listType="text" required="false" keep-last="true" keep-date="false" order="1" label="P_SETOR : multiList:Text">
+      <item value="S" label="Solda"/>
+      <item value="T" label="Teste"/>
+      <item value="I" label="Inserção"/>
+      <item value="TF" label="Transformador/Indutor"/>
+      <item value="D" label="Display"/>
+      <item value="MF" label="Montagem Final"/>
+      <item value="C" label="Capacitor"/>
+      <item value="DP" label="Dissipador"/>
+      <item value="IN" label="Insersora"/>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_55wt9j" description="Principal">
+    <args>
+      <arg  id="A_DEFEITO" type="text" label="A_DEFEITO : Texto"/>
+      <arg  id="A_IDFUNC" type="integer" label="A_IDFUNC : Número Inteiro"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_55wt9l" type="column" nroColuna="6">
+            <title>
+              <![CDATA[Não Conformidades por Setor - Revisão]]>
+            </title>
+            <expression type="sql" data-source="MGEDS">
+              <![CDATA[SELECT FUNCREVISOR,
+	SUM(DEFEITO) AS DEFEITO,
+	CODFUNC
+FROM (
+	SELECT SUBSTR(CAD.NOMEFUNC, 1, INSTR(CAD.NOMEFUNC, ' ') - 1) AS FUNCREVISOR,
+		CAD.CODFUNC,
+		(SUM(APO.MINSERIDO) + 
+		SUM(APO.FALTANDO) + 
+		SUM(APO.INVERTIDO) + 
+		SUM(APO.TROCADO) + 
+		SUM(APO.QUEIMADO) + 
+		SUM(APO.CURTO) + 
+		SUM(APO.SOLDAFRIA) + 
+		SUM(APO.DEFEITOMP) + 
+		SUM(APO.CHICOTE) + 
+		SUM(APO.DISPLAY) + 
+		SUM(APO.AJUTENSAO) + 
+		SUM(APO.ACORRENTE) + 
+		SUM(APO.LED) + 
+		SUM(APO.CONSUMO) + 
+		SUM(APO.CORRENTE) + 
+		SUM(APO.PROGRAMACAO) + 
+		SUM(APO.OUTROSDEFEITOS) + 
+		SUM(APO.ADESIVOTROC) + 
+		SUM(APO.ADESIVOTORT) + 
+		SUM(APO.GABARRANHADO) + 
+		SUM(APO.GABAMASSADO) + 
+		SUM(APO.TAMPATROCA) + 
+		SUM(APO.TAMPAAMASS)) AS DEFEITO
+	FROM AD_APOQLD APO
+		INNER JOIN TFPFUN CAD ON APO.FUNCREVISOR2 = CAD.CODFUNC
+	WHERE APO.DTAPO >= :P_PERIODO.INI
+		AND APO.DTAPO <= :P_PERIODO.FIN
+	GROUP BY SUBSTR(CAD.NOMEFUNC, 1, INSTR(CAD.NOMEFUNC, ' ') - 1), CAD.CODFUNC
+	)
+GROUP BY FUNCREVISOR, CODFUNC
+HAVING SUM(DEFEITO) > 0
+ORDER BY DEFEITO DESC]]>
+            </expression>
+            <metadata>
+              <field name="FUNCREVISOR" label="FUNCREVISOR" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="DEFEITO" label="DEFEITO" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="CODFUNC" label="CODFUNC" type="I" visible="true" useFooter="false">
+              </field>
+            </metadata>
+            <horizontal-axis>
+              <category field="REVISOR" rotation="-50" dropLabel="false">
+                <initView value="disabled">
+                </initView>
+              </category>
+            </horizontal-axis>
+            <series>
+              <serie type="column">
+                <xField>$FUNCREVISOR</xField>
+                <yField>$DEFEITO</yField>
+                <display>
+                  <![CDATA[Operador]]>
+                </display>
+                <color>0xFF9999</color>
+                <on-click  navigate-to="lvl_55wud6">
+                  <param id="A_IDFUNC">$IDFUNC</param>
+                </on-click>
+              </serie>
+            </series>
+          </chart>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_55wuc1" type="column" nroColuna="6">
+            <title>
+              <![CDATA[Não Conformidades por Setor - Operação]]>
+            </title>
+            <expression type="sql" data-source="MGEDS">
+              <![CDATA[SELECT FUNCOPERADOR,
+	SUM(DEFEITO) AS DEFEITO,
+	CODFUNC
+FROM (
+	SELECT SUBSTR(CAD.NOMEFUNC, 1, INSTR(CAD.NOMEFUNC, ' ') - 1) || ' ' || (CASE WHEN INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) > 0 THEN SUBSTR(CAD.NOMEFUNC, INSTR(CAD.NOMEFUNC, ' ') + 1, INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) - INSTR(CAD.NOMEFUNC, ' ') - 1) ELSE ' ' END)  AS FUNCOPERADOR,
+		CAD.CODFUNC,
+		(NVL(SUM(APO.MINSERIDO),0) + 
+		NVL(SUM(APO.FALTANDO),0) + 
+		NVL(SUM(APO.INVERTIDO),0) + 
+		NVL(SUM(APO.TROCADO),0) + 
+		NVL(SUM(APO.QUEIMADO),0) + 
+		NVL(SUM(APO.CURTO),0) + 
+		NVL(SUM(APO.SOLDAFRIA),0) + 
+		NVL(SUM(APO.DEFEITOMP),0) + 
+		NVL(SUM(APO.CHICOTE),0) + 
+		NVL(SUM(APO.DISPLAY),0) + 
+		NVL(SUM(APO.AJUTENSAO),0) + 
+		NVL(SUM(APO.ACORRENTE),0) + 
+		NVL(SUM(APO.LED),0) + 
+		NVL(SUM(APO.CONSUMO),0) + 
+		NVL(SUM(APO.CORRENTE),0) + 
+		NVL(SUM(APO.PROGRAMACAO),0) + 
+		NVL(SUM(APO.OUTROSDEFEITOS),0) + 
+		NVL(SUM(APO.ADESIVOTROC),0) + 
+		NVL(SUM(APO.ADESIVOTORT),0) + 
+		NVL(SUM(APO.GABARRANHADO),0) + 
+		NVL(SUM(APO.GABAMASSADO),0) + 
+		NVL(SUM(APO.TAMPATROCA),0) + 
+		NVL(SUM(APO.TAMPAAMASS),0)) AS DEFEITO
+	FROM AD_APOQLD APO
+		INNER JOIN TFPFUN CAD ON APO.FUNCOPERADOR2 = CAD.CODFUNC
+	WHERE APO.DTAPO >= :P_PERIODO.INI
+		AND APO.DTAPO <= :P_PERIODO.FIN		
+	GROUP BY SUBSTR(CAD.NOMEFUNC, 1, INSTR(CAD.NOMEFUNC, ' ') - 1) || ' ' || (CASE WHEN INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) > 0 THEN SUBSTR(CAD.NOMEFUNC, INSTR(CAD.NOMEFUNC, ' ') + 1, INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) - INSTR(CAD.NOMEFUNC, ' ') - 1) ELSE ' ' END) ,
+        CAD.CODFUNC
+	UNION ALL
+	SELECT SUBSTR(CAD.NOMEFUNC, 1, INSTR(CAD.NOMEFUNC, ' ') - 1) || ' ' || (CASE WHEN INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) > 0 THEN SUBSTR(CAD.NOMEFUNC, INSTR(CAD.NOMEFUNC, ' ') + 1, INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) - INSTR(CAD.NOMEFUNC, ' ') - 1) ELSE ' ' END) AS FUNCOPERADOR,
+		CAD.CODFUNC,
+		(NVL(SUM(APO.MINSERIDO),0) + 
+		NVL(SUM(APO.FALTANDO),0) + 
+		NVL(SUM(APO.INVERTIDO),0) + 
+		NVL(SUM(APO.TROCADO),0) + 
+		NVL(SUM(APO.QUEIMADO),0) + 
+		NVL(SUM(APO.CURTO),0) + 
+		NVL(SUM(APO.SOLDAFRIA),0) + 
+		NVL(SUM(APO.DEFEITOMP),0) + 
+		NVL(SUM(APO.CHICOTE),0) + 
+		NVL(SUM(APO.DISPLAY),0) + 
+		NVL(SUM(APO.AJUTENSAO),0) + 
+		NVL(SUM(APO.ACORRENTE),0) + 
+		NVL(SUM(APO.LED),0) + 
+		NVL(SUM(APO.CONSUMO),0) + 
+		NVL(SUM(APO.CORRENTE),0) + 
+		NVL(SUM(APO.PROGRAMACAO),0) + 
+		NVL(SUM(APO.OUTROSDEFEITOS),0) + 
+		NVL(SUM(APO.ADESIVOTROC),0) + 
+		NVL(SUM(APO.ADESIVOTORT),0) + 
+		NVL(SUM(APO.GABARRANHADO),0) + 
+		NVL(SUM(APO.GABAMASSADO),0) + 
+		NVL(SUM(APO.TAMPATROCA),0) + 
+		NVL(SUM(APO.TAMPAAMASS),0)) AS DEFEITO
+	FROM AD_APOQLD APO
+		INNER JOIN TFPFUN CAD ON APO.FUNCOPERADOR = CAD.CODFUNC
+	WHERE APO.DTAPO >= :P_PERIODO.INI
+		AND APO.DTAPO <= :P_PERIODO.FIN
+	GROUP BY SUBSTR(CAD.NOMEFUNC, 1, INSTR(CAD.NOMEFUNC, ' ') - 1) || ' ' || (CASE WHEN INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) > 0 THEN SUBSTR(CAD.NOMEFUNC, INSTR(CAD.NOMEFUNC, ' ') + 1, INSTR(CAD.NOMEFUNC, ' ', INSTR(CAD.NOMEFUNC, ' ') + 1) - INSTR(CAD.NOMEFUNC, ' ') - 1) ELSE ' ' END) ,
+        CAD.CODFUNC
+	)
+GROUP BY FUNCOPERADOR, CODFUNC
+HAVING SUM(DEFEITO) > 0
+ORDER BY DEFEITO DESC]]>
+            </expression>
+            <metadata>
+              <field name="FUNCOPERADOR" label="FUNCOPERADOR" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="DEFEITO" label="DEFEITO" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="CODFUNC" label="CODFUNC" type="I" visible="true" useFooter="false">
+              </field>
+            </metadata>
+            <horizontal-axis>
+              <category field="" rotation="-50" dropLabel="false">
+                <initView value="disabled">
+                </initView>
+              </category>
+            </horizontal-axis>
+            <vertical-axis>
+              <linear resultRotation="-90" vResizing="false">
+                <mask>
+                </mask>
+                <showStackLabels />
+              </linear>
+            </vertical-axis>
+            <series>
+              <serie type="column">
+                <xField>$OPERADOR</xField>
+                <yField>$DEFEITO</yField>
+                <display>
+                  <![CDATA[Operador]]>
+                </display>
+                <color>0x66ccff</color>
+                <on-click  navigate-to="lvl_55wud6">
+                  <param id="A_IDFUNC">$IDFUNC</param>
+                </on-click>
+              </serie>
+            </series>
+          </chart>
+        </container>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_55wud6" description="Detalhamento">
+    <args >
+      <arg id="A_IDFUNC" type="integer"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="140">
+        <container orientacao="H" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="50">
+            <chart id="cht_55wuez" type="pizza" tamTexto="18">
+              <title>
+                <![CDATA[Não Conformidades do Operador]]>
+              </title>
+              <expression type="sql" data-source="MGEDS">
+                <![CDATA[SELECT TIPODEFEITO, 
+	SUM(QUANTIDADE) AS Total
+FROM (
+	SELECT 'Mal Inserido' AS TIPODEFEITO, NVL(SUM(APO.MINSERIDO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Faltando' AS TIPODEFEITO, NVL(SUM(APO.FALTANDO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Invertido' AS TIPODEFEITO, NVL(SUM(APO.INVERTIDO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Trocado' AS TIPODEFEITO, NVL(SUM(APO.TROCADO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Queimado' AS TIPODEFEITO, NVL(SUM(APO.QUEIMADO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Curto' AS TIPODEFEITO, NVL(SUM(APO.CURTO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Solda Fria' AS TIPODEFEITO, NVL(SUM(APO.SOLDAFRIA),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Defeito de MP' AS TIPODEFEITO, NVL(SUM(APO.DEFEITOMP),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Chicote' AS TIPODEFEITO, NVL(SUM(APO.CHICOTE),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Display' AS TIPODEFEITO, NVL(SUM(APO.DISPLAY),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Não Ajusta Tensão' AS TIPODEFEITO, NVL(SUM(APO.AJUTENSAO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Não Ajusta Corrent' AS TIPODEFEITO, NVL(SUM(APO.ACORRENTE),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'LED' AS TIPODEFEITO, NVL(SUM(APO.LED),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Consumo' AS TIPODEFEITO, NVL(SUM(APO.CONSUMO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Corrente Zerada' AS TIPODEFEITO, NVL(SUM(APO.CORRENTE),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Não Programa' AS TIPODEFEITO, NVL(SUM(APO.PROGRAMACAO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Outros Defeitos' AS TIPODEFEITO, NVL(SUM(APO.OUTROSDEFEITOS),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Adesivo Trocado' AS TIPODEFEITO, NVL(SUM(APO.ADESIVOTROC),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Adesivo Torto' AS TIPODEFEITO, NVL(SUM(APO.ADESIVOTORT),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Gabinete Arranhado' AS TIPODEFEITO, NVL(SUM(APO.GABARRANHADO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Gabinete Amassado' AS TIPODEFEITO, NVL(SUM(APO.GABAMASSADO),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Tampa Trocada' AS TIPODEFEITO, NVL(SUM(APO.TAMPATROCA),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN
+	UNION ALL
+	SELECT 'Tampa Amassada' AS TIPODEFEITO, NVL(SUM(APO.TAMPAAMASS),0) AS QUANTIDADE 
+	FROM AD_APOQLD APO
+    WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC) AND APO.DTAPO >= :P_PERIODO.INI AND APO.DTAPO <= :P_PERIODO.FIN) DEFEITOS
+GROUP BY TIPODEFEITO
+HAVING SUM(QUANTIDADE) > 0]]>
+              </expression>
+              <metadata>
+                <field name="TIPODEFEITO" label="TIPODEFEITO" type="S" visible="true" useFooter="false">
+                </field>
+                <field name="TOTAL" label="TOTAL" type="I" visible="true" useFooter="false">
+                </field>
+              </metadata>
+              <series>
+                <serie type="pizza">
+                  <field>TOTAL</field>
+                  <nameField>TIPODEFEITO</nameField>
+                </serie>
+              </series>
+              <legend position="left" direction="v">
+              </legend>
+            </chart>
+          </container>
+          <container orientacao="V" tamanhoRelativo="50">
+            <grid id="grd_7majlo" multiplaSelecao="S" useNewGrid="S">
+              <title>
+                <![CDATA[Detalhamento da Não Conformidades do Operador]]>
+              </title>
+              <expression type="sql" data-source="MGEDS">
+                <![CDATA[SELECT APO.NUAPO,
+	APO.OBSERVACAO,
+	APO.DTAPO,
+	APO.MINSERIDO,
+	APO.FALTANDO,
+	APO.INVERTIDO,
+	APO.TROCADO,
+	APO.QUEIMADO,
+	APO.CURTO,
+	APO.SOLDAFRIA,
+	APO.DEFEITOMP,
+	APO.CHICOTE,
+	APO.DISPLAY,
+	APO.AJUTENSAO,
+	APO.ACORRENTE,
+	APO.LED,
+	APO.CONSUMO,
+	APO.CORRENTE,
+	APO.PROGRAMACAO,
+	APO.OUTROSDEFEITOS,
+	APO.ADESIVOTROC,
+	APO.ADESIVOTORT,
+	APO.GABARRANHADO,
+	APO.GABAMASSADO,
+	APO.TAMPATROCA,
+	APO.TAMPAAMASS
+FROM AD_APOQLD APO
+WHERE (APO.OPERADOR = :A_IDFUNC OR APO.OPERADOR2 = :A_IDFUNC OR APO.REVISOR2 = :A_IDFUNC)
+	AND APO.DTAPO >= :P_PERIODO.INI
+	AND APO.DTAPO <= :P_PERIODO.FIN]]>
+              </expression>
+              <metadata>
+                <field name="NUAPO" label="Nr. do Apontamento" type="I" visible="true" useFooter="false">
+                </field>
+                <field name="OBSERVACAO" label="Observação" type="S" visible="true" useFooter="false">
+                </field>
+                <field name="DTAPO" label="Dt. do Apontamento" type="D" visible="true" useFooter="false">
+                </field>
+                <field name="MINSERIDO" label="Mal Inserido" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="FALTANDO" label="Faltando" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="INVERTIDO" label="Invertido" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="TROCADO" label="Trocado" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="QUEIMADO" label="Queimado" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="CURTO" label="Curto" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="SOLDAFRIA" label="Solda Fria" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="DEFEITOMP" label="Defeito de MP" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="CHICOTE" label="Chicote" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="DISPLAY" label="Display" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="AJUTENSAO" label="Ajuste de Tensão" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="ACORRENTE" label="Ajuste de Corrente" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="LED" label="LED" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="CONSUMO" label="Consumo" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="CORRENTE" label="Corrente Zerada" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="PROGRAMACAO" label="Não Programa" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="OUTROSDEFEITOS" label="Outros Defeitos" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="ADESIVOTROC" label="Adesivo Trocado" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="ADESIVOTORT" label="Adesivo Torto" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="GABARRANHADO" label="Gabinete Amassado" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="GABAMASSADO" label="Gabinte Arranhado" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="TAMPATROCA" label="Tampa Trocada" type="I" visible="true" useFooter="SUM">
+                </field>
+                <field name="TAMPAAMASS" label="Tampa Amassada" type="I" visible="true" useFooter="SUM">
+                </field>
+              </metadata>
+              <on-click-launcher  resource-id="br.com.sankhya.menu.adicional.AD_APOQLD">
+                <NUAPO>$NUAPO</NUAPO>
+              </on-click-launcher>
+            </grid>
+          </container>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>
