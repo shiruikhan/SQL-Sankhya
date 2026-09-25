@@ -19,14 +19,19 @@ CREATE OR REPLACE PROCEDURE STP_INCFINASSIST_SPARK (
                    usuário é avisado.
 
   Parâmetros     : P_CODUSU     — código do usuário logado
-                   P_IDSESSAO   — identificador da execução (usado por ACT_DTA_PARAM / ACT_INT_FIELD)
+                   P_IDSESSAO   — identificador da execução (usado por ACT_DTA_PARAM / ACT_TXT_PARAM / ACT_INT_FIELD)
                    P_QTDLINHAS  — quantidade de O.S. selecionadas em AD_SPKCAE
                    P_MENSAGEM   — mensagem de retorno ao usuário (OUT)
 
-  Parâmetro de tela (ACT_DTA_PARAM):
+  Parâmetro de tela (ACT_DTA_PARAM / ACT_TXT_PARAM):
                    DTVENC — data de vencimento informada uma única vez no
                             clique do botão, aplicada a DTVENCINIC e DTVENC
                             de todos os títulos gerados nesta execução
+                   INFOPAG — texto obrigatório com os dados de pagamento do
+                            parceiro (ex. banco/PIX/agência/conta) informado
+                            uma única vez no clique do botão, gravado em
+                            TGFFIN.HISTORICO de todos os títulos gerados
+                            nesta execução
 
   Tabelas        : AD_SPKCAE    -- leitura (CODPARC, VLRCONSERTO, NUFIN) e atualização (NUFIN)
                    TGFFIN       -- inserção do lançamento financeiro avulso
@@ -39,7 +44,8 @@ CREATE OR REPLACE PROCEDURE STP_INCFINASSIST_SPARK (
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 23/09/2026
-  Última Revisão : Setembro/2026 — Criação
+  Última Revisão : Setembro/2026 — Inclusão do parâmetro INFOPAG, gravado em
+                   TGFFIN.HISTORICO junto com o vencimento informado
 
   Observações    : - Lançamento é avulso: NUNOTA não é preenchido, não gera
                      TGFCAB/TGFITE (diferente de TRG_INCDEVCH_SPARK).
@@ -56,9 +62,15 @@ CREATE OR REPLACE PROCEDURE STP_INCFINASSIST_SPARK (
                      aceitável — definição do usuário, pois cada parceiro tem
                      seu próprio NUFIN e não há, por regra de processo, dois
                      lançamentos para o mesmo parceiro no mesmo mês.
+                   - TGFFIN.HISTORICO recebe o vencimento (PARAM_DTVENC) e o
+                     conteúdo de INFOPAG, para que o financeiro fique com os
+                     dados de pagamento do parceiro visíveis no título.
 ==============================================================================*/
 
     PARAM_DTVENC DATE;
+    PARAM_INFOPAG TGFFIN.HISTORICO%TYPE;
+
+    V_HISTORICO TGFFIN.HISTORICO%TYPE;
 
     FIELD_NUMOS   AD_SPKCAE.NUMOS%TYPE;
     V_CODPARC     AD_SPKCAE.CODPARC%TYPE;
@@ -106,12 +118,20 @@ CREATE OR REPLACE PROCEDURE STP_INCFINASSIST_SPARK (
     END LOG_ERRO;
 
 BEGIN
-    PARAM_DTVENC := ACT_DTA_PARAM(P_IDSESSAO, 'DTVENC');
+    PARAM_DTVENC  := ACT_DTA_PARAM(P_IDSESSAO, 'DTVENC');
+    PARAM_INFOPAG := ACT_TXT_PARAM(P_IDSESSAO, 'INFOPAG');
 
     IF PARAM_DTVENC IS NULL THEN
         RAISE_APPLICATION_ERROR(-20001,
             'Informe a data de vencimento (DTVENC) antes de gerar o financeiro.');
     END IF;
+
+    IF PARAM_INFOPAG IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20005,
+            'Informe as informações de pagamento (INFOPAG) antes de gerar o financeiro.');
+    END IF;
+
+    V_HISTORICO := 'Vencimento: ' || TO_CHAR(PARAM_DTVENC, 'DD/MM/YYYY') || ' - ' || PARAM_INFOPAG;
 
     ---------------------------------------------------------------------------
     -- 1. Le as O.S. selecionadas, valida idempotencia (NUFIN) e acumula o
@@ -167,12 +187,12 @@ BEGIN
             NUFIN, CODEMP, NUMNOTA, NOSSONUM, DTNEG, DHMOV,
             DTVENCINIC, DTVENC, DTENTSAI, CODPARC, CODTIPOPER, DHTIPOPER,
             CODNAT, CODCENCUS, VLRDESDOB, RECDESP, PROVISAO, ORIGEM,
-            CODTIPTIT, DTALTER, CODUSU
+            CODTIPTIT, HISTORICO, DTALTER, CODUSU
         ) VALUES (
             V_NUFIN, 501, V_NUMNOTA, TO_CHAR(V_NUMNOTA), TRUNC(SYSDATE), SYSDATE,
             PARAM_DTVENC, PARAM_DTVENC, TRUNC(SYSDATE), V_CODPARC_ATUAL, 1300, V_DHTIPOPER,
             505006, 30400, V_VLR_POR_PARC(V_CODPARC_ATUAL), -1, 'N', 'F',
-            39, TRUNC(SYSDATE), P_CODUSU
+            39, V_HISTORICO, TRUNC(SYSDATE), P_CODUSU
         );
 
         FOR J IN 1..P_QTDLINHAS LOOP

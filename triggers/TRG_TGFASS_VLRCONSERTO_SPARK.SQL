@@ -30,15 +30,16 @@ FOLLOWS SPK_TGFASS_INC
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 17/09/2026
-  Última Revisão : Setembro/2026 — CODTAB de VLRCONSERTO corrigido para 14
-                   (tabela padrão de serviços) e adicionado preenchimento de
-                   VLRSERVTECNICO (novo campo) via CODTAB = 15.
+  Última Revisão : Setembro/2026 — adicionadas restrições de cálculo: exige
+                   TECNICO preenchido e STATUS diferente de 'T', 'RT' ou 'D'.
 
   Observações    : - Cada campo só é preenchido se estiver nulo ou zerado
                      (não sobrescreve valor já preenchido/ajustado); os dois
                      são avaliados de forma independente.
-                   - Exige T_CODPROD preenchido; sem produto, os campos
-                     permanecem inalterados.
+                   - Exige T_CODPROD e TECNICO preenchidos; sem produto ou sem
+                     técnico atribuído, os campos permanecem inalterados.
+                   - Não calcula quando STATUS estiver em ('T', 'RT', 'D')
+                     (O.S. Terminada, Retornada ou Deletada/Descartada).
                    - Tabelas de preços são fixas: CODTAB = 14 (VLRCONSERTO) e
                      CODTAB = 15 (VLRSERVTECNICO).
                    - Se SNK_PRECO retornar 0 (sem NUTAB vigente ou sem preço
@@ -48,7 +49,9 @@ FOLLOWS SPK_TGFASS_INC
 DECLARE
     V_PRECO AD_TGFASS.VLRCONSERTO%TYPE;
 BEGIN
-    IF :NEW.T_CODPROD IS NOT NULL THEN
+    IF :NEW.T_CODPROD  IS NOT NULL
+       AND :NEW.TECNICO IS NOT NULL
+       AND NVL(:NEW.STATUS, 'X') NOT IN ('T', 'RT', 'D') THEN
 
         IF NVL(:NEW.VLRCONSERTO, 0) = 0 THEN
             V_PRECO := SNK_PRECO(14, :NEW.T_CODPROD);
