@@ -1,24 +1,3 @@
-/*==============================================================================
-  Nome do Script : Evolução Mensal de Vendas por Parceiro
-  Tipo           : Componente BI — Tabela
-  Dashboard      : Análise de Vendas
-  Descrição      : Evolução mensal de vendas por parceiro/cliente,
-                   incluindo matriz quando aplicável.
-
-  Parâmetros     : :P_ANO — Ano para filtro de análise
-                   :P_CODPARC — Código do parceiro (ou NULL para todos)
-                   :P_CODVEND — Código do vendedor (ou NULL para todos)
-                   :P_CODPARCMATRIZ — Código da matriz (ou NULL para todos)
-
-  Tabelas        : TGFPAR, TGFCAB, TGFVEN, TSIUFS, TSICID
-
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Empresa        : Spark Eletrônica
-  Data de Criação: A definir
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-==============================================================================*/
-
 SELECT T.*,
     T.JANEIRO+T.FEVEREIRO+T.MAR+T.ABRIL+T.MAIO+T.JUNHO+T.JULHO+T.AGOSTO+T.SETEMBRO+T.OUTUBRO+T.NOVEMBRO+T.DEZEMBRO AS TOTAL,
     (SELECT APELIDO FROM TGFVEN WHERE CODVEND = T.CODVEND) AS REPRESENTANTE,
@@ -53,9 +32,9 @@ FROM (SELECT V.CODPARC,
                     ROUND(SUM(CAB.VLRFRETE),2) AS VLRFRETE,
                     CAB.CODVEND,
 					PAR.CODCID,
-                    P.CODPARC || '-' || P.RAZAOSOCIAL AS MATRIZ
+                    P.CODPARC AS MATRIZ
                 FROM TGFPAR PAR
-                    LEFT JOIN TGFCAB CAB ON (CAB.CODPARC = PAR.CODPARC AND CAB.TIPMOV = 'V' AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202) AND EXTRACT(YEAR FROM CAB.DTNEG) = :P_ANO)
+                    LEFT JOIN TGFCAB CAB ON (CAB.CODPARC = PAR.CODPARC AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D') AND CAB.TIPMOV = 'V' AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202) AND EXTRACT(YEAR FROM CAB.DTNEG) = :P_ANO)
 					INNER JOIN TGFVEN VEN ON PAR.CODVEND = VEN.CODVEND
                     LEFT JOIN TGFPAR P ON PAR.CODPARCMATRIZ = P.CODPARC
                 WHERE (:P_CODPARC IS NULL OR PAR.CODPARC = :P_CODPARC)
