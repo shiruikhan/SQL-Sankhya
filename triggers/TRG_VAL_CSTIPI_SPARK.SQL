@@ -1,8 +1,20 @@
-CREATE OR REPLACE TRIGGER TRG_VAL_CSTIPI_SPARK
+/* TRIGGER OBSOLETA / INATIVADA EM PRODUÇÃO (28/09/2026)
+   Estava desativada (ALTER TRIGGER ... DISABLE) em produção antes da rodada de
+   otimização de performance de Setembro/2026. O CREATE OR REPLACE TRIGGER
+   feito durante a refatoração reativou-a silenciosamente — Oracle sempre
+   recria uma trigger em estado ENABLED, independente do estado anterior — o
+   que voltou a disparar a validação de CST IPI em processos legados (ex.:
+   UPDATE de QTDENTREGUE/QTDFIXADA via TRG_INC_TGFVAR nativa) sobre itens
+   antigos com CST IPI nulo/zero, bloqueando uma devolução de compra em
+   produção (ORA-20101).
+   Mantida aqui só como referência histórica. NÃO reativar (nem via
+   CREATE OR REPLACE) sem antes confirmar com quem a desativou originalmente
+   e sem tratar a causa raiz (itens legados sem CST IPI preenchido).
+
+create or replace TRIGGER TRG_VAL_CSTIPI_SPARK
 BEFORE INSERT OR UPDATE ON TGFITE
 FOR EACH ROW
-WHEN (NEW.CSTIPI IS NULL OR NEW.CSTIPI = 0)
-/*==============================================================================
+==============================================================================
   Nome do Script : TRG_VAL_CSTIPI_SPARK
   Tipo           : Trigger
   Descrição      : Valida obrigatoriedade de CST IPI para empresa 1 em
@@ -16,15 +28,10 @@ WHEN (NEW.CSTIPI IS NULL OR NEW.CSTIPI = 0)
   Empresa        : Spark Eletrônica
   Data de Criação: Março/2026
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-                   Setembro/2026 — Performance: adicionada cláusula WHEN no
-                   cabeçalho do trigger replicando exatamente a condição do IF
-                   interno (CSTIPI nulo ou zero), para que o Oracle não inicie
-                   o corpo PL/SQL (e o SELECT em TGFCAB) nas linhas em que
-                   CSTIPI já vem preenchido, que são a maioria. Comportamento
-                   observável inalterado: a mesma validação e a mesma mensagem
-                   de erro continuam disparando exatamente nos mesmos casos de
-                   antes.
-==============================================================================*/
+                   Setembro/2026 — trigger marcada OBSOLETA/INATIVADA (ver nota
+                   no topo do arquivo); nenhuma otimização de performance foi
+                   mantida.
+==============================================================================
 DECLARE
     P_CODEMP INT;
     P_TIPMOV VARCHAR2(1);
@@ -50,3 +57,4 @@ BEGIN
         END;
     END IF;
 END;
+*/

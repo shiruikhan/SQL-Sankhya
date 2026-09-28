@@ -1,7 +1,17 @@
+/* TRIGGER OBSOLETA / INATIVADA EM PRODUÇÃO (28/09/2026)
+   Estava desativada (ALTER TRIGGER ... DISABLE) em produção antes da rodada de
+   otimização de performance de Setembro/2026. O CREATE OR REPLACE TRIGGER
+   feito durante a refatoração reativou-a silenciosamente — Oracle sempre
+   recria uma trigger em estado ENABLED, independente do estado anterior —
+   contribuindo para o incidente de produção investigado em 28/09/2026 (ver
+   TRG_VAL_CSTIPI_SPARK.SQL para o detalhe do caso que motivou a apuração).
+   Mantida aqui só como referência histórica. NÃO reativar (nem via
+   CREATE OR REPLACE) sem antes confirmar com quem a desativou originalmente.
+
 create or replace TRIGGER TRG_INC_TGFIXN_EMAIL_SPARK
 AFTER INSERT OR UPDATE ON TGFIXN
 FOR EACH ROW
-/*==============================================================================
+==============================================================================
   Nome do Script : TRG_INC_TGFIXN_EMAIL_SPARK
   Tipo           : Trigger
   Descrição      : Dispara notificações por email para notas de devolução (CFOPs 5201, 5202, 6201, 6202, 5410, 6410)
@@ -22,7 +32,9 @@ FOR EACH ROW
                    eram executados somente após a confirmação do filtro de
                    CFOP em ambos os ramos INSERT e UPDATE, então não houve
                    necessidade de reordenação).
-==============================================================================*/
+                   Setembro/2026 — trigger marcada OBSOLETA/INATIVADA (ver nota
+                   no topo do arquivo).
+==============================================================================
 DECLARE
     V_TITULO       VARCHAR2(300);
     V_CONTEUDO     VARCHAR2(4000);
@@ -119,3 +131,4 @@ EXCEPTION
         LOG_ERRO(V_OPERACAO, SQLCODE, SQLERRM, DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, DBMS_UTILITY.FORMAT_CALL_STACK);
         RAISE_APPLICATION_ERROR(-20097, 'Erro na trigger TRG_INC_TGFIXN_EMAIL_SPARK: ' || SQLERRM);
 END;
+*/

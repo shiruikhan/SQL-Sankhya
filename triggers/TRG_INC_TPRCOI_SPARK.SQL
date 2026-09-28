@@ -14,16 +14,17 @@ create or replace TRIGGER TRG_INC_TPRCOI_SPARK
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: Abril/2025
-  Última Revisão : Setembro/2026 — Performance: removida a PRAGMA
-                   AUTONOMOUS_TRANSACTION, que não tinha função (não há
-                   COMMIT/ROLLBACK no corpo — só um SELECT de validação) e
-                   apenas gerava overhead de abrir/fechar uma transação
-                   separada a cada bipagem. Efeito colateral positivo: a
-                   validação de duplicidade passa a enxergar também os registros
-                   de AD_TPRCOI ainda não commitados na mesma transação (a
-                   autonomous transaction os ignorava), tornando o bloqueio de
-                   série duplicada mais rígido, nunca mais permissivo — nenhuma
-                   funcionalidade existente é perdida.
+  Última Revisão : Setembro/2026 — Performance: tentativa de remover a PRAGMA
+                   AUTONOMOUS_TRANSACTION foi REVERTIDA (28/09/2026) após
+                   causar ORA-04091 ("tabela TPRCONF é mutante") em produção.
+                   A pragma não existia por causa de COMMIT/ROLLBACK — servia
+                   para permitir que o SELECT desta trigger leia TPRCONF (via
+                   JOIN) mesmo quando ela é disparada em cascata de dentro de
+                   TRG_INC_UPD_TPRCONF_SPARK (que faz DML em TPRCOI a partir de
+                   um gatilho sobre a própria TPRCONF) — sem autonomous
+                   transaction, TPRCONF fica "mutante" para essa leitura e o
+                   Oracle bloqueia. Pragma restaurada; nenhuma otimização de
+                   performance foi mantida neste arquivo.
                    Julho/2026 — Adicionado FOLLOWS TRG_TPRCOI_REPLICA_PA para
                    garantir que essa trigger rode depois da réplica de
                    CONTROLEPA/CODPRODPA (ORA-25025 impede usar PRECEDES na
@@ -32,6 +33,7 @@ create or replace TRIGGER TRG_INC_TPRCOI_SPARK
 DECLARE
 P_COUNT  INT;
 P_IDIATV TPRIATV.IDIATV%TYPE;
+PRAGMA AUTONOMOUS_TRANSACTION;
 BEGIN
 
 SELECT COUNT(*), MAX(ATV.IDIATV) INTO P_COUNT, P_IDIATV  FROM TPRIATV ATV INNER JOIN TPRCONF CON ON (ATV.IDIATV = CON.IDIATV)
