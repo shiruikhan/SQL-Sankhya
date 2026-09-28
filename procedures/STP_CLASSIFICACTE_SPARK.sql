@@ -14,9 +14,7 @@ CREATE OR REPLACE PROCEDURE STP_CLASSIFICACTE_SPARK AS
                      CODTIPOPER_NFE IN (201, 221, 209)                            -> TOP 234
 
   Tabelas        : TGFIXN      -- portal de importacao de XML (CT-e e NF-e)
-  Tabela de Log  : AD_LOG_ERROS -- resultados e erros registrados por CT-e:
-                                   CTE_OK   = classificado com sucesso
-                                   CTE_SKIP = sem NF-e referenciada (mantido)
+  Tabela de Log  : AD_LOG_ERROS -- somente erros registrados por CT-e:
                                    CTE_ERR  = erro no processamento do CT-e
                                    LOOP_ERR = erro fatal no loop principal
   Dependencias   : VW_CTE_AUTORIZADOS -- lista CT-es autorizados com CODTIPOPER
@@ -26,17 +24,15 @@ CREATE OR REPLACE PROCEDURE STP_CLASSIFICACTE_SPARK AS
   Cargo          : Analista de Sistemas Senior
   Empresa        : Spark Eletronica
   Data de Criacao: Maio/2026
-  Ultima Revisao : Jun/2026 -- Adicao de log de resultados (CTE_OK / CTE_SKIP)
-                               para validacao das classificacoes; correcao dos
-                               valores de OPERACAO para caber em VARCHAR2(10)
+  Ultima Revisao : Set/2026 -- Remocao do log de resultado a cada iteracao
+                               (CTE_OK / CTE_SKIP); AD_LOG_ERROS passa a
+                               registrar apenas erros (CTE_ERR / LOOP_ERR).
                    Jun/2026 -- Correcao da chave de busca: NUNOTA -> NUARQUIVO.
                                TGFIXN.NUNOTA e nulo em CT-es nao processados
                                (DHPROCAG IS NULL), o que tornava a classificacao
                                inoperante (FN_CLASSIFICA nunca encontrava linhas
                                na view e o UPDATE nao atingia nenhum registro).
-                               CTE_SKIP agora e registrado uma unica vez por
-                               CT-e (anti-inundacao de AD_LOG_ERROS); COMMIT
-                               explicito ao final do lote.
+                               COMMIT explicito ao final do lote.
                    Jun/2026 -- Filtro STATUS = 0 (Pendente) no loop principal:
                                restringe a classificacao automatica aos CT-es
                                pendentes, preservando CODTIPOPERs ja definidos
@@ -61,11 +57,8 @@ CREATE OR REPLACE PROCEDURE STP_CLASSIFICACTE_SPARK AS
 
     -- Variaveis (devem preceder qualquer subprograma)
     V_NEW_TOP   NUMBER;
-    V_OLD_TOP   NUMBER;
-    V_JA_LOGADO NUMBER;
 
-    -- Registra eventos (resultados e erros) em AD_LOG_ERROS com transacao autonoma.
-    -- ERROR_CODE = 0 indica evento informativo (sucesso/skip); != 0 indica falha.
+    -- Registra erros em AD_LOG_ERROS com transacao autonoma.
     PROCEDURE LOG_ERRO(
         P_OPERACAO      VARCHAR2,
         P_NUNOTA        NUMBER,
@@ -123,7 +116,6 @@ BEGIN
     
     FOR CTE_REC IN (
         SELECT NUARQUIVO
-              ,CODTIPOPER
         FROM   TGFIXN
         WHERE  TIPO     = 'C'
           AND  DHPROCAG IS NULL
@@ -131,48 +123,12 @@ BEGIN
                                  -- manuais de documentos em outros status
     ) LOOP
         BEGIN
-            V_OLD_TOP := CTE_REC.CODTIPOPER;
             V_NEW_TOP := FN_CLASSIFICA(CTE_REC.NUARQUIVO);
 
             IF V_NEW_TOP IS NOT NULL THEN
                 UPDATE TGFIXN
                    SET CODTIPOPER = V_NEW_TOP
                  WHERE NUARQUIVO  = CTE_REC.NUARQUIVO;
-
-                -- Loga apenas quando o TOP de origem era 1301 (padrao do sistema)
-                IF V_OLD_TOP = 1301 THEN
-                    LOG_ERRO(
-                        P_OPERACAO      => 'CTE_OK',
-                        P_NUNOTA        => CTE_REC.NUARQUIVO,
-                        P_ERR_CODE      => 0,
-                        P_ERR_MSG       => 'TOP 1301 -> ' || V_NEW_TOP,
-                        P_ERR_BACKTRACE => NULL,
-                        P_CALL_STACK    => NULL
-                    );
-                END IF;
-            ELSE
-                -- Loga apenas quando permanece 1301, uma unica vez por CT-e
-                -- (evita inundacao de AD_LOG_ERROS a cada ciclo de 5 minutos)
-                IF V_OLD_TOP = 1301 THEN
-                    SELECT COUNT(*)
-                    INTO   V_JA_LOGADO
-                    FROM   AD_LOG_ERROS
-                    WHERE  TRIGGER_NAME = 'STP_CLASSIFICACTE_SPARK'
-                      AND  OPERACAO     = 'CTE_SKIP'
-                      AND  NUNOTA       = CTE_REC.NUARQUIVO
-                      AND  ROWNUM       = 1;
-
-                    IF V_JA_LOGADO = 0 THEN
-                        LOG_ERRO(
-                            P_OPERACAO      => 'CTE_SKIP',
-                            P_NUNOTA        => CTE_REC.NUARQUIVO,
-                            P_ERR_CODE      => 0,
-                            P_ERR_MSG       => 'Aguardando NF-e referenciada em TGFCAB. TOP mantido: 1301',
-                            P_ERR_BACKTRACE => NULL,
-                            P_CALL_STACK    => NULL
-                        );
-                    END IF;
-                END IF;
             END IF;
         EXCEPTION
             WHEN OTHERS THEN
