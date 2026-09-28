@@ -144,7 +144,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_INC_TGFPAR_SPARK.SQL` | `TRG_INC_TGFPAR_SPARK` | `TGFPAR` | INSERT | Em Pessoa Física sem vendedor associado (`TIPPESSOA = 'F'`, `CODVEND = 0`), força `APLICLEITRANSP = 'S'` e `IPIINCICMS = 'S'` e replica o e-mail principal em `EMAILNFE` |
 | `TRG_INC_UPD_CMF_SPARK.SQL` | `TRG_INC_UPD_CMF_SPARK` | `[CMF]` | INSERT, UPDATE | Atualiza nome de cidade (executa somente em INSERT ou quando `NOMECID` é alterado) |
 | `SPK_INS_UPD_TGFCAB_AVISOPARC.SQL` | `SPK_INS_UPD_TGFCAB_AVISOPARC` | `TGFCAB` | INSERT, UPDATE | Exibe aviso de restrições do parceiro ao movimentar nota |
-| `TRG_UPD_TGSLOGLIB_SPARK.SQL` | `TRG_UPD_TGSLOGLIB_SPARK` | `TGSLOGLIB` | UPDATE | Atualiza log de liberações do parceiro |
+| `TRG_UPD_TGSLOGLIB_SPARK.SQL` | *(INATIVADA)* | `TSILIB` | UPDATE | Atualizava log de liberações do parceiro — estava desativada em produção; reativada acidentalmente por `CREATE OR REPLACE` durante refatoração de performance de Set/2026 (ver §15) |
 
 ---
 
@@ -154,7 +154,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 |---|---|---|---|---|
 | `TRG_AVISOCONF_SPARK.sql` | `TRG_AVISOCONF_SPARK` | `TGFCAB` | UPDATE | Envia aviso quando pedido de venda tem conferência finalizada |
 | `TRG_UPD_AVISOSPARK.SQL` | `TRG_UPD_AVISOSPARK` | `[avisos]` | UPDATE | Atualiza status de aviso após ação do destinatário |
-| `TRG_INC_TGFIXN_EMAIL_SPARK.SQL` | `TRG_INC_TGFIXN_EMAIL_SPARK` | `TGFIXN` | INSERT | Dispara envio de e-mail na inclusão de XML de CT-e/NF-e importado |
+| `TRG_INC_TGFIXN_EMAIL_SPARK.SQL` | *(INATIVADA)* | `TGFIXN` | INSERT | Disparava envio de e-mail na inclusão de XML de CT-e/NF-e importado — estava desativada em produção; reativada acidentalmente por `CREATE OR REPLACE` durante refatoração de performance de Set/2026 (ver §15) |
 | `SPK_INS_UPD_CODLOCALDEST.SQL` | `TRG_INS_UPD_CODLOCALDEST` | `TGFITE` | INSERT, UPDATE | Controla código de local de destino em itens com notificação associada |
 | `TRG_NOTIF_PARCERIA_SPARK.sql` | `TRG_NOTIF_PARCERIA_SPARK` | `AD_TGSTPP` | AFTER INSERT, UPDATE | Notificações por e-mail do fluxo de triagem de parceria (influenciadores/patrocínio): nova solicitação → SAC; 1º parecer do SAC → Comercial; 1ª decisão comercial → SAC. Traduz campos multi-escolha via `TDDCAM`/`TDDOPC`; grava na fila via `STP_GRAVA_FILA_BI2`; loga em `AD_LOG_ERROS` |
 
@@ -185,7 +185,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
-| `TRG_VAL_CSTIPI_SPARK.SQL` | `TRG_VAL_CSTIPI_SPARK` | `TGFITE` | INSERT, UPDATE | Valida CST/IPI — bloqueia se campo for 0 ou nulo em operações que exigem |
+| `TRG_VAL_CSTIPI_SPARK.SQL` | *(INATIVADA)* | `TGFITE` | INSERT, UPDATE | Validava CST/IPI — bloqueava se campo fosse 0 ou nulo em operações que exigem. Estava desativada em produção; reativada acidentalmente por `CREATE OR REPLACE` durante refatoração de performance de Set/2026, bloqueando um UPDATE de rotina (`QTDENTREGUE`/`QTDFIXADA`) disparado pela nativa `TRG_INC_TGFVAR` sobre um item legado sem CST IPI preenchido (ver §15) |
 | `TRG_SPKCAE_INC_SPARK.SQL` | `TRG_SPKCAE_INC_SPARK` | `AD_SPKCAE` | INSERT | Preenche campos automáticos na inclusão de cadastro especial |
 | `SPK_TGFCAB_TSIBLOCK.SQL` | *(INATIVADA)* | `TGFCAB` | — | Bloqueava pedidos com data de previsão de entrega retroativa — desativada a pedido |
 
@@ -209,6 +209,17 @@ Apontamento de conferência de notas importadas, criado direto na tela de
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
 | `TRG_INC.TGFITE.sql` | `TRG_INC_TGFITE` | `TGFITE` | BEFORE INSERT | Trigger nativa do Sankhya com lógicas de validação de agrupamento mínimo, lote, CFOP e estoque adicionadas pela Spark |
+| `TRG_INC_TGFVAR.sql` | `TRG_INC_TGFVAR` | `TGFVAR` | BEFORE INSERT | Trigger nativa do Sankhya (não customizada pela Spark) que processa a inclusão de "nota de variação" (atendimento/entrega parcial): valida a existência da nota de origem, atualiza `QTDENTREGUE`/`QTDFIXADA` em `TGFITE` para o item de origem e replica compromissos em `TGMTRA`. Documentada aqui após investigação de incidente (ver §15) — não fazia parte do catálogo até Set/2026 |
+
+---
+
+### 15. Incidente de Produção — Set/2026 (refatoração de performance)
+
+Durante uma rodada de otimização de performance em 20 triggers (10 sobre TGFCAB/TGFITE/TPRAPA/TPRCOI/TSILIB/TGFIXN, ver histórico de commits de Set/2026), dois problemas de produção foram causados pelas próprias alterações — nenhum por erro de lógica de negócio, ambos por armadilhas específicas do Oracle que não são visíveis lendo só o texto SQL versionado aqui:
+
+1. **`CREATE OR REPLACE TRIGGER` sempre recria a trigger em estado `ENABLED`, independente do estado anterior.** Três triggers (`TRG_VAL_CSTIPI_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_UPD_TGSLOGLIB_SPARK`) estavam **desativadas em produção** por decisão de negócio, mas o repositório não registra status de habilitação (isso é uma propriedade de runtime do banco, não do arquivo `.sql`). Ao rodar `CREATE OR REPLACE` nelas durante a refatoração — mesmo para mudanças triviais de performance — elas voltaram a disparar, causando bloqueio inesperado em produção. **Lição:** antes de tocar em qualquer trigger de produção, confirmar `STATUS` em `USER_TRIGGERS` (ou pedir confirmação de quem mantém o ambiente); se estava `DISABLED`, ou não mexer, ou reaplicar o `DISABLE` logo após o `CREATE OR REPLACE`. As três foram marcadas `*(INATIVADA)*` no catálogo acima e comentadas por completo no arquivo `.sql` (mesmo padrão de `SPK_TGFCAB_TSIBLOCK.SQL`).
+
+2. **`PRAGMA AUTONOMOUS_TRANSACTION` sem `COMMIT`/`ROLLBACK` visível não é necessariamente código morto.** Em `TRG_INC_TPRCOI_SPARK.SQL`, a pragma existia para permitir que o `SELECT` da trigger leia `TPRCONF` mesmo quando ela é disparada em cascata de dentro de `TRG_INC_UPD_TPRCONF_SPARK` (que faz DML em `TPRCOI` a partir de um gatilho sobre a própria `TPRCONF`) — sem a autonomous transaction, `TPRCONF` fica "mutante" para essa leitura (`ORA-04091`). Remover a pragma por não achar `COMMIT`/`ROLLBACK` no corpo quebrou esse caso. **Lição:** antes de remover uma `PRAGMA AUTONOMOUS_TRANSACTION` aparentemente sem uso, verificar se alguma tabela lida pela trigger pode estar em cascata de outra trigger/procedure que modifica essa mesma tabela na mesma transação — esse é o uso mais comum da pragma além de isolar `COMMIT`/`ROLLBACK`.
 
 ---
 
@@ -218,3 +229,5 @@ Apontamento de conferência de notas importadas, criado direto na tela de
 - Triggers com sufixo `2` ou `3` são versões evolutivas que coexistem por compatibilidade com a plataforma Sankhya.
 - Triggers marcadas como **INATIVADAS** nos comentários do código não são executadas, mas são preservadas para referência histórica.
 - Erros críticos são registrados na tabela `AD_LOG_ERROS` (quando configurado na trigger).
+- Antes de rodar `CREATE OR REPLACE` em qualquer trigger de produção, confirmar se ela está `ENABLED`/`DISABLED` no banco — o `.sql` local não guarda esse estado, e o `REPLACE` sempre recria como `ENABLED` (ver §15).
+- Uma `PRAGMA AUTONOMOUS_TRANSACTION` sem `COMMIT`/`ROLLBACK` aparente pode existir só para evitar `ORA-04091` (tabela mutante) em leituras cross-trigger — não remover sem checar o grafo de disparo entre triggers das tabelas envolvidas (ver §15).

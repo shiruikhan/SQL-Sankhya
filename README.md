@@ -308,6 +308,7 @@ Agrupadas por domínio:
 | Objeto | Tabela | Descrição |
 |---|---|---|
 | `TRG_INC_TGFITE` | `TGFITE` | Trigger `BEFORE INSERT` customizada sobre a tabela de itens de nota. Realiza validações de agrupamento mínimo, lote, estoque e CFOP na inclusão de cada item |
+| `TRG_INC_TGFVAR` | `TGFVAR` | Trigger `BEFORE INSERT` 100% nativa (sem customização Spark), documentada aqui após investigação de incidente de produção (Set/2026). Processa "nota de variação" (atendimento/entrega parcial); entre outras coisas, atualiza `QTDENTREGUE`/`QTDFIXADA` do item de origem em `TGFITE`, o que dispara em cascata qualquer trigger de validação de `TGFITE` sobre esse item |
 
 > Pasta não versionada (`.gitignore`).
 
