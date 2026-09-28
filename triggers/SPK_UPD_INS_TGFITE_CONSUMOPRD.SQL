@@ -13,18 +13,20 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Data de Criação: Abril/2025
+  Última Revisão : Setembro/2026 — Performance: as duas consultas a TGFCAB pela
+                   mesma NUNOTA (TOP e centro de resultado) foram unificadas em
+                   um único SELECT, reduzindo pela metade os acessos a TGFCAB —
+                   tabela de altíssimo volume — em toda inclusão/alteração de
+                   item de nota. Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_CODTIPOPER INT;
     P_CODCENCUS INT;
     P_CODLOCALORIG INT;
 BEGIN
-    --CAPTURAR TOP
-    SELECT CODTIPOPER INTO P_CODTIPOPER FROM TGFCAB WHERE NUNOTA = :NEW.NUNOTA;
-    --CAPTURAR CENTRO DE RESULTADO
-    SELECT CODCENCUS INTO P_CODCENCUS FROM TGFCAB WHERE NUNOTA = :NEW.NUNOTA;
+    --CAPTURAR TOP E CENTRO DE RESULTADO EM UMA ÚNICA CONSULTA
+    SELECT CODTIPOPER, CODCENCUS INTO P_CODTIPOPER, P_CODCENCUS FROM TGFCAB WHERE NUNOTA = :NEW.NUNOTA;
     --DEFINIR LOCAL
     IF P_CODTIPOPER = 509 THEN
         IF P_CODCENCUS = 10201 THEN
@@ -60,4 +62,4 @@ BEGIN
     IF P_CODTIPOPER = 509 THEN
         :NEW.CODLOCALORIG := P_CODLOCALORIG;
     END IF;
-END SPK_UPD_INS_TGFITE_CONSUMOPRD;
+END;

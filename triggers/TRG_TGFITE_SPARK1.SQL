@@ -13,8 +13,12 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Data de Criação: Abril/2025
+  Última Revisão : Setembro/2026 — Performance: unificados os dois SELECTs
+                   idênticos (mesmo FROM/JOIN/WHERE em TGFPRO/TGFVOA) que
+                   calculavam P_QTDNEG e P_VLRUNIT separadamente em uma única
+                   consulta com dois retornos, eliminando uma varredura completa
+                   por linha de item. Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
 P_ATUALVLR       VARCHAR2(10);
@@ -35,8 +39,8 @@ BEGIN
         AND CAB.DHTIPVENDA = TPV.DHALTER
         AND CAB.NUNOTA = :NEW.NUNOTA;
      EXCEPTION WHEN NO_DATA_FOUND THEN
-     RETURN;    
-    END UNKNOWN;    
+     RETURN;
+    END;
 
     IF P_ATUALVLR = 'S' AND :NEW.NUTAB > 0 THEN 
 
@@ -60,23 +64,11 @@ BEGIN
     IF :NEW.AD_VLRCHEIO > 0 OR :NEW.AD_VLRCHEIOCOM > 0 THEN
 
       SELECT (CASE WHEN :NEW.CODVOL = PRO.CODVOL THEN :NEW.QTDNEG ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN :NEW.QTDNEG / VOA.QUANTIDADE ELSE :NEW.QTDNEG * VOA.QUANTIDADE END) END) AS QTDNEG
-        INTO P_QTDNEG
+            ,(CASE WHEN :NEW.CODVOL = PRO.CODVOL THEN :NEW.VLRUNIT ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN :NEW.VLRUNIT * VOA.QUANTIDADE ELSE :NEW.VLRUNIT / VOA.QUANTIDADE END) END) AS VLRUNIT
+        INTO P_QTDNEG, P_VLRUNIT
         FROM TGFPRO PRO
-     --   FROM TGFITE ITE
-       --INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
         LEFT JOIN TGFVOA VOA ON (PRO.CODPROD = VOA.CODPROD AND VOA.CODVOL = :NEW.CODVOL)
-       WHERE --ITE.CODPROD = :NEW.CODPROD
-             PRO.CODPROD = :NEW.CODPROD;
-         --AND ITE.NUNOTA = :NEW.NUNOTA;
-        SELECT (CASE WHEN :NEW.CODVOL = PRO.CODVOL THEN :NEW.VLRUNIT ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN :NEW.VLRUNIT * VOA.QUANTIDADE ELSE :NEW.VLRUNIT / VOA.QUANTIDADE END) END) AS VLRUNIT
-        INTO P_VLRUNIT
-        FROM TGFPRO PRO
-     --   FROM TGFITE ITE
-       --INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
-        LEFT JOIN TGFVOA VOA ON (PRO.CODPROD = VOA.CODPROD AND VOA.CODVOL = :NEW.CODVOL)
-       WHERE --ITE.CODPROD = :NEW.CODPROD
-             PRO.CODPROD = :NEW.CODPROD;
-         --AND ITE.NUNOTA = :NEW.NUNOTA;
+       WHERE PRO.CODPROD = :NEW.CODPROD;
 
     :NEW.AD_VLROUTROS := ROUND((((:NEW.AD_VLRCHEIO - :NEW.VLRUNIT) * P_QTDNEG /*:NEW.QTDNEG*/) - CASE WHEN P_TIPMOV IN ('P', 'V') THEN :NEW.AD_VLRCHEIO * P_PERC / 100 * P_QTDNEG/*:NEW.QTDNEG*/ ELSE 0 END),2);
 

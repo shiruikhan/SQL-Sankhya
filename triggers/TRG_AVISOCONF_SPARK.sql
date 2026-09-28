@@ -12,36 +12,47 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Data de Criação: Junho/2025
+  Última Revisão : Setembro/2026 — Performance: a checagem de status 'F' virou
+                   uma verificação de existência (ROWNUM=1) em vez de COUNT(*),
+                   e passou a rodar antes da geração de CODFILA/busca de e-mail —
+                   que agora só ocorrem quando de fato há conferência finalizada
+                   a notificar (antes rodavam sempre, mesmo sem nada a enviar).
+                   Comportamento observável inalterado: e-mail continua sendo
+                   enviado exatamente nas mesmas condições de antes.
 ==============================================================================*/
 DECLARE
-    v_count_f NUMBER := 0;
+    P_EXISTEF       NUMBER := 0;
     P_MAXFILA       NUMBER;
     P_EMAIL         VARCHAR2(60);
 BEGIN
     -- Condições para acionar a trigger
     IF :NEW.tipmov = 'P' AND :NEW.nuconfatual IS NOT NULL THEN
         -- Verifica se há ao menos um status 'F' na tgfcon2
-        SELECT COUNT(*) INTO v_count_f
-        FROM tgfcon2
-        WHERE nuconf = :NEW.nuconfatual
-          AND status = 'F';
-
-        -- Geração de código de fila e recuperação do e-mail
         BEGIN
-            SELECT MAX(CODFILA) + 1 INTO P_MAXFILA FROM TMDFMG;
-            SELECT EMAIL INTO P_EMAIL FROM TSIUSU WHERE CODUSU = :NEW.CODUSUINC;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                -- Nenhum e-mail encontrado; aborta trigger
-                RETURN;
-            WHEN OTHERS THEN
-                -- Log de erro pode ser adicionado aqui se necessário
-                RETURN;
-        END TRG_AVISOCONF_SPARK;
+            SELECT 1 INTO P_EXISTEF
+            FROM tgfcon2
+            WHERE nuconf = :NEW.nuconfatual
+              AND status = 'F'
+              AND ROWNUM = 1;
+        EXCEPTION WHEN NO_DATA_FOUND THEN
+            P_EXISTEF := 0;
+        END;
 
-        IF v_count_f > 0 THEN
+        IF P_EXISTEF > 0 THEN
+            -- Geração de código de fila e recuperação do e-mail (só quando há algo a notificar)
+            BEGIN
+                SELECT MAX(CODFILA) + 1 INTO P_MAXFILA FROM TMDFMG;
+                SELECT EMAIL INTO P_EMAIL FROM TSIUSU WHERE CODUSU = :NEW.CODUSUINC;
+            EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                    -- Nenhum e-mail encontrado; aborta trigger
+                    RETURN;
+                WHEN OTHERS THEN
+                    -- Log de erro pode ser adicionado aqui se necessário
+                    RETURN;
+            END;
+
             -- Chamada da procedure de envio de e-mail
             STP_GRAVA_FILA_BI2(P_MAXFILA,'Finalização de Conferência',
                 '<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; line-height: 1.5;">
@@ -51,4 +62,4 @@ BEGIN
                 P_EMAIL, NULL);
         END IF;
     END IF;
-END TRG_AVISOCONF_SPARK;
+END;

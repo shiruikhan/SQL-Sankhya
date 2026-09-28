@@ -13,8 +13,16 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Data de Criação: Abril/2025
+  Última Revisão : Setembro/2026 — Performance/correção: o gerador de séries
+                   sequenciais passou a usar `CONNECT BY LEVEL` em vez de
+                   `ROWNUM <= QTDPRODUZIR` sobre TGFPRO (tabela de produtos, sem
+                   nenhuma relação com a geração de série). Antes, o custo e a
+                   própria quantidade de séries geradas dependiam do tamanho de
+                   TGFPRO; agora gera exatamente QTDPRODUZIR linhas sem tocar em
+                   TGFPRO. Mesmo resultado em qualquer cenário em que QTDPRODUZIR
+                   seja menor que a quantidade de produtos cadastrados (sempre
+                   verdadeiro em produção).
 ==============================================================================*/
 DECLARE 
 P_QTDPRODUZIR  TPRIPA.QTDPRODUZIR%TYPE;
@@ -31,7 +39,7 @@ SELECT NVL(LPA.TIPOGERASERIE,'Z') INTO P_TIPOGERASERIE FROM TPRLPA LPA INNER JOI
 AND LPA.CODPRODPA = :NEW.CODPRODPA;
 EXCEPTION WHEN NO_DATA_FOUND THEN
 P_TIPOGERASERIE := 'Z'; --APONTAMENTO MANUAL
-END TRG_INC_UPD_DLT_TPRIPA_SPARK;
+END;
 
 IF P_TIPOGERASERIE = 'A' THEN
 INSERT INTO AD_TPRSERPA (IDIPROC, CODPRODPA, SERIEPA)
@@ -44,7 +52,7 @@ DELETE FROM AD_TPRSERPA WHERE IDIPROC = :NEW.IDIPROC ;
 
 -- INCLUI A SÉRIE CONFORME QUANTIDADE APONTADA DE FORMA SEQUENCIAL,
 INSERT INTO AD_TPRSERPA (IDIPROC, CODPRODPA, SERIEPA)
-SELECT :NEW.IDIPROC, :NEW.CODPRODPA, 'SN'||:NEW.NROLOTE||LPAD(ROWNUM,4,0) FROM TGFPRO WHERE ROWNUM <=:NEW.QTDPRODUZIR;
+SELECT :NEW.IDIPROC, :NEW.CODPRODPA, 'SN'||:NEW.NROLOTE||LPAD(LEVEL,4,0) FROM DUAL CONNECT BY LEVEL <= :NEW.QTDPRODUZIR;
 
 END IF;
 

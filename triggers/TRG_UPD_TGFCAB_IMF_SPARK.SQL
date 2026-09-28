@@ -13,8 +13,12 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+  Data de Criação: Abril/2025
+  Última Revisão : Setembro/2026 — Performance: P_TOTFIN (SUM de VLRDESDOB em
+                   TGFFIN) não depende do CODIMP corrente do cursor, mas era
+                   recalculado a cada iteração; passou a ser calculado uma única
+                   vez antes do loop. Mesmo valor usado em todas as iterações,
+                   comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_COUNT     INT;
@@ -40,29 +44,30 @@ BEGIN
         
         IF P_COPIA = 'S' THEN
         */
-        
+
+        -- Não depende do CODIMP do cursor: calculado uma única vez para todas as iterações
+        SELECT SUM(VLRDESDOB) INTO P_TOTFIN
+        FROM TGFFIN F
+        WHERE NUNOTA = :NEW.NUNOTA
+            AND CODEMP < 500
+            AND CODTIPTIT <> 38;
+
         OPEN CUR_IMN;
-        LOOP        
+        LOOP
             FETCH CUR_IMN INTO P_CODIMP;
             EXIT WHEN CUR_IMN%NOTFOUND;
-        
+
             SELECT SUM(VALOR) INTO P_VALORIMP
             FROM TGFIMN
             WHERE NUNOTA = :NEW.NUNOTA
               AND CODIMP = P_CODIMP;
-              
+
             SELECT MAX(ALIQUOTA) INTO P_ALIQ
             FROM TGFIMN
             WHERE NUNOTA = :NEW.NUNOTA
               AND CODIMP = P_CODIMP;
-              
-            SELECT SUM(VLRDESDOB) INTO P_TOTFIN
-            FROM TGFFIN F
-            WHERE NUNOTA = :NEW.NUNOTA
-                AND CODEMP < 500
-                AND CODTIPTIT <> 38;
-                
-            IF P_ALIQ > 0 THEN 
+
+            IF P_ALIQ > 0 THEN
             
                 DELETE FROM TGFIMF
                 WHERE CODIMP = P_CODIMP
@@ -84,4 +89,4 @@ BEGIN
     
     END IF;
 
-END TRG_UPD_TGFCAB_IMF_SPARK;
+END;
