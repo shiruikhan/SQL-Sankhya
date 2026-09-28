@@ -16,7 +16,7 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: Abril/2025
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
                    Julho/2026 — Inserção de séries passa a ocorrer somente no
                    primeiro preenchimento (nota ainda sem séries do item) e com
@@ -26,6 +26,17 @@ FOR EACH ROW
                    PK_TGFSER e misturando séries de conferências diferentes na
                    mesma nota (conflito com a STP_CORRIGENOTAPROD_SPARK, que
                    mantém uma nota por conferência).
+                   Setembro/2026 — Performance: o SELECT COUNT(*) em TGFSER
+                   usado apenas para checar existência (P_COUNTSER, comparado
+                   somente a "= 0") recebeu AND ROWNUM = 1, permitindo ao Oracle
+                   parar no primeiro registro em vez de contar todas as séries
+                   do item. A consulta a TGFCAB (AD_CODLOCALDEST/TIPMOV) não foi
+                   movida para dentro de um IF porque seu próprio resultado
+                   (P_TIPMOV) é que decide qual bloco do trigger a usa — não há
+                   coluna de TGFITE disponível antes da consulta que permita
+                   antecipar essa decisão sem executá-la, diferente do caso de
+                   TRG_INC_UPD_TGFCAB_PROD_SPARK (onde IDIPROC já vem em :NEW).
+                   Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_CODLOCAL NUMBER;
@@ -60,7 +71,8 @@ BEGIN
         INTO    P_COUNTSER
         FROM    TGFSER
         WHERE   NUNOTA  = :NEW.NUNOTA
-        AND     CODPROD = :NEW.CODPROD;
+        AND     CODPROD = :NEW.CODPROD
+        AND     ROWNUM  = 1;
 
         IF P_COUNTSER = 0 THEN
             BEGIN

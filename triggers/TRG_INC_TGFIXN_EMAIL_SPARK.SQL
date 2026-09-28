@@ -12,8 +12,16 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: 01/2026
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: corrigido rótulo de END da
+                   procedure interna LOG_ERRO, que estava indevidamente
+                   rotulado com o nome da trigger (END TRG_INC_TGFIXN_EMAIL_SPARK;)
+                   em vez de um END simples; comportamento observável
+                   inalterado (a busca de CODFILA e o envio de notificação já
+                   eram executados somente após a confirmação do filtro de
+                   CFOP em ambos os ramos INSERT e UPDATE, então não houve
+                   necessidade de reordenação).
 ==============================================================================*/
 DECLARE
     V_TITULO       VARCHAR2(300);
@@ -31,7 +39,7 @@ DECLARE
     EXCEPTION
         WHEN OTHERS THEN
             NULL;
-    END TRG_INC_TGFIXN_EMAIL_SPARK;
+    END;
 BEGIN
     IF INSERTING THEN
         IF :NEW.CFOPXML IS NOT NULL AND (

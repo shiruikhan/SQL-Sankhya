@@ -13,8 +13,21 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: 04/2025
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: avaliada a inclusão de cláusula
+                   WHEN no cabeçalho da trigger para evitar entrar no corpo
+                   PL/SQL em gravações irrelevantes de TGFCAB (com base em
+                   NEW.STATUSNOTA), mas NÃO aplicada: o bloco que zera
+                   :NEW.VLRFRETE (trecho de gravação em AD_FRETE) só executa
+                   quando :NEW.STATUSNOTA NOT IN ('L'), enquanto o restante da
+                   trigger depende de STATUSNOTA = 'L' — não existe uma única
+                   pré-condição baseada só em :NEW/:OLD que preserve as duas
+                   ramificações, então nenhuma WHEN foi adicionada. Corrigido
+                   apenas o rótulo legado do END do bloco interno (linha do
+                   SELECT em TGFTOP), de "END TRG_UPD_TGFCAB_TRANSP_SPARK;"
+                   para "END;" simples — sem qualquer alteração de
+                   comportamento observável.
 ==============================================================================*/
 DECLARE
 P_COUNT              INT;
@@ -33,7 +46,7 @@ BEGIN
 
     EXCEPTION WHEN OTHERS THEN
       RAISE_APPLICATION_ERROR (-20101, 'Cód. Operacao: ' || :NEW.CODTIPOPER || ' Data operacao: ' || :NEW.DHTIPOPER); 
-  END TRG_UPD_TGFCAB_TRANSP_SPARK;      
+  END;
     IF :NEW.CIF_FOB = 'S' AND :NEW.CODPARCTRANSP <> 0 AND P_VALIDA = 'S' AND :NEW.STATUSNOTA = 'L' THEN
 		RAISE_APPLICATION_ERROR (-20101, 'CIF_FOB com marcação igual a "Sem Frete" não deve ter "Paceiro Transportadora" informada!');
     END IF;

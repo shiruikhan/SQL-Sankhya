@@ -12,8 +12,22 @@ BEFORE UPDATE ON TGFITE FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: 08/2025
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionado ROWNUM = 1 aos
+                   SELECT COUNT usados apenas como checagem de existência
+                   (TCBINT, TGFLIV, TGFLIS, TSIPAR, TGFCCX, TGFSER, TGFVEN,
+                   TGFEMP, TGFLOC, TGFPRO, TCIIBE, TGFVAR, TGFPAL); corrigido
+                   rótulo de END interno divergente para "END;". Avaliada e
+                   REJEITADA a antecipação do check STP_GET_ATUALIZANDO para
+                   antes dos SELECTs de TGFCAB/TGFTOP: revisão adversarial
+                   observou que TGFITE.NUNOTA não tem FK para TGFCAB neste
+                   schema, então um item órfão/dessincronizado durante
+                   sincronização em massa (o próprio cenário em que
+                   STP_GET_ATUALIZANDO=TRUE) deixaria de levantar NO_DATA_FOUND
+                   se o check saísse primeiro — mudança real de comportamento
+                   observável. Mantida a ordem original (check após os
+                   SELECTs) para preservar esse efeito.
 ==============================================================================*/
 DECLARE
     P_VALEST               TGFGRU.VALEST%TYPE;
@@ -74,11 +88,11 @@ DECLARE
 BEGIN
 
   /* CAMPOS DA CAB */
-  SELECT C.TIPMOV, C.CODTIPOPER, C.DHTIPOPER, C.CODPARC, C.STATUSNOTA, C.CODEMP, C.CODEMPNEGOC, NVL(C.NUREM,0) 
-  INTO P_TIPMOV, P_CODTIPOPER, P_DHTIPOPER, P_CODPARC, P_STATUSNOTA, P_CODEMPCAB, P_CODEMPNEGOC, P_NUREM 
+  SELECT C.TIPMOV, C.CODTIPOPER, C.DHTIPOPER, C.CODPARC, C.STATUSNOTA, C.CODEMP, C.CODEMPNEGOC, NVL(C.NUREM,0)
+  INTO P_TIPMOV, P_CODTIPOPER, P_DHTIPOPER, P_CODPARC, P_STATUSNOTA, P_CODEMPCAB, P_CODEMPNEGOC, P_NUREM
   FROM TGFCAB C
   WHERE C.NUNOTA = :NEW.NUNOTA;
-  
+
   /* CAMPOS DA TOP */
   SELECT T.PENDENTE, T.CODCFO_ENTRADA, T.CODCFO_SAIDA, T.CODCFO_ENTRADA_FORA, T.CODCFO_SAIDA_FORA,
          ATUALEST, ATUALESTMP, VALIDAAGRUPMIN, ADIARATUALEST, ACEITAFATACIMA, CUPOMFISCAL, CODMODDOC, VALEST
@@ -91,7 +105,7 @@ BEGIN
   IF STP_GET_ATUALIZANDO THEN
     RETURN;
   END IF;
-  
+
   P_VALIDAR := Fpodevalidar('TGFITE'); -- sincronizac?o de dados
 
   P_ADIARATUALIZACAOESTOQUE := NVL(VARIAVEIS_PKG.V_ADIARATUALIZACAOESTOQUE, 'N');
@@ -118,31 +132,34 @@ BEGIN
        OR (:OLD.BASEISS <> :NEW.BASEISS) OR (:OLD.SEQUENCIAFISCAL <> :NEW.SEQUENCIAFISCAL) OR (:OLD.ORIGPROD <> :NEW.ORIGPROD) OR (:OLD.IDALIQICMS  <> :NEW.IDALIQICMS ))
   THEN
 
-    SELECT COUNT(1) 
-    INTO P_COUNT 
-    FROM  TCBINT C 
-    WHERE  C.NUNICO = :OLD.NUNOTA 
-    AND C.ORIGEM = 'E';
+    SELECT COUNT(1)
+    INTO P_COUNT
+    FROM  TCBINT C
+    WHERE  C.NUNICO = :OLD.NUNOTA
+    AND C.ORIGEM = 'E'
+    AND ROWNUM = 1;
     IF P_COUNT <> 0 THEN
       ERRMSG := 'Nota já foi contabilizada, não pode ser alterada.';
       RAISE ERROR;
     END IF;
 
-    SELECT COUNT(1) 
+    SELECT COUNT(1)
     INTO P_COUNT
     FROM TGFLIV
     WHERE NUNOTA = :OLD.NUNOTA
-    AND ORIGEM IN ('A', 'D', 'E');
+    AND ORIGEM IN ('A', 'D', 'E')
+    AND ROWNUM = 1;
     IF P_COUNT <> 0 THEN
       ERRMSG := 'Nota já foi gerada no Livro Fiscal de ICMS/IPI, não pode ser alterada. Nota de Nro único: '|| TO_CHAR(:OLD.NUNOTA) ||'';
       RAISE ERROR;
     END IF;
   
-    SELECT COUNT(1) 
+    SELECT COUNT(1)
     INTO P_COUNT
     FROM TGFLIS
     WHERE NUNOTA = :OLD.NUNOTA
-    AND ORIGEM = 'E';
+    AND ORIGEM = 'E'
+    AND ROWNUM = 1;
     IF P_COUNT <> 0 THEN
       ERRMSG := 'Nota já foi gerada no Livro Fiscal de ISS, não pode ser alterada. Nota de Nro único: '|| TO_CHAR(:OLD.NUNOTA) ||'';
       RAISE ERROR;
@@ -163,7 +180,8 @@ BEGIN
   
   SELECT COUNT(1) INTO P_COUNT
   FROM TSIPAR
-  WHERE CHAVE = 'SBPRODUTO';
+  WHERE CHAVE = 'SBPRODUTO'
+  AND ROWNUM = 1;
   
   IF (P_COUNT <> 0) THEN
     RETURN;
@@ -173,7 +191,8 @@ BEGIN
      SELECT COUNT(1)
      INTO P_COUNT
      FROM TGFCCX
-     WHERE NUNOTA = :OLD.NUNOTA;
+     WHERE NUNOTA = :OLD.NUNOTA
+     AND ROWNUM = 1;
      IF P_COUNT <> 0 THEN
        ERRMSG := 'Item não pode ser alterado, existe referencia na TGFCCX-Tabela de Coletor';
      RAISE ERROR;
@@ -186,7 +205,7 @@ BEGIN
          AND SEQUENCIAORIG = :NEW.SEQUENCIA;
      EXCEPTION WHEN NO_DATA_FOUND THEN
        P_QTDTCEVAR := 0;
-     END TRG_UPT_TGFITE;
+     END;
      IF :NEW.QTDNEG > 0 AND NVL(P_QTDTCEVAR, 0) > :NEW.QTDNEG THEN
        ERRMSG := 'A QTDNEG não pode ser menor que a quantidade('||TO_CHAR(P_QTDTCEVAR)||') utilizada no processo de importação.';
        RAISE ERROR;
@@ -201,7 +220,8 @@ BEGIN
    FROM TGFSER SER
    WHERE SER.NUNOTA = :NEW.NUNOTA
      AND SER.SEQUENCIA = :NEW.SEQUENCIA
-     AND (SER.ATUALESTOQUE <> 0 OR GET_TSIPAR_LOGICO('USACBGLOBAL') = 'S');
+     AND (SER.ATUALESTOQUE <> 0 OR GET_TSIPAR_LOGICO('USACBGLOBAL') = 'S')
+     AND ROWNUM = 1;
      IF (P_COUNT<>0) THEN
        ERRMSG := 'Produto ja possui Serie lancada, não pode ser alterado.';
      RAISE ERROR;
@@ -249,7 +269,8 @@ BEGIN
      SELECT COUNT(1) INTO P_COUNT
        FROM TGFVEN
       WHERE ATIVO = 'S'
-        AND CODVEND = :NEW.CODVEND;
+        AND CODVEND = :NEW.CODVEND
+        AND ROWNUM = 1;
      IF (P_COUNT = 0 ) THEN
        ERRMSG := Erros_Pkg.ERRO_VENDEDOR_NAOATIVO;
      RAISE ERROR;
@@ -259,7 +280,8 @@ BEGIN
      SELECT COUNT(1) INTO P_COUNT
        FROM TGFEMP
       WHERE CODEMP = :NEW.CODEMP
-        AND ATIVO = 'S';
+        AND ATIVO = 'S'
+        AND ROWNUM = 1;
      IF  ( P_COUNT = 0) THEN
        ERRMSG := 'Empresa não esta ativa. ';
      RAISE ERROR;
@@ -276,7 +298,8 @@ BEGIN
        FROM TGFLOC L
       WHERE L.CODLOCAL = :NEW.CODLOCALORIG
         AND L.ATIVO = 'S'
-        AND L.ANALITICO = 'S';
+        AND L.ANALITICO = 'S'
+        AND ROWNUM = 1;
      IF ( P_COUNT = 0) THEN
        Stp_Popula_Msg('TGFLOC');
      END IF;
@@ -286,7 +309,8 @@ BEGIN
     SELECT COUNT(1) INTO P_COUNT
       FROM TGFPRO P
      WHERE P.CODPROD = :NEW.CODPROD
-       AND P.ATIVO = 'S';
+       AND P.ATIVO = 'S'
+       AND ROWNUM = 1;
     IF ( P_COUNT = 0)  THEN
        ERRMSG := Erros_Pkg.ERRO_PRODUTO_NAOATIVO;
      RAISE ERROR;
@@ -295,7 +319,8 @@ BEGIN
     SELECT COUNT(1) INTO P_COUNT
       FROM TCIIBE T
      WHERE T.NUNOTA = :OLD.NUNOTA
-       AND T.SEQUENCIA = :OLD.SEQUENCIA;
+       AND T.SEQUENCIA = :OLD.SEQUENCIA
+       AND ROWNUM = 1;
     IF ( P_COUNT <> 0)  THEN
      ERRMSG := 'Para alterar o produto, voce deve excluir os bens lancados para o mesmo. ';
      RAISE ERROR;
@@ -327,16 +352,19 @@ BEGIN
     FROM TGFVAR
     WHERE NUNOTA <> NUNOTAORIG
     AND ((NUNOTA = :NEW.NUNOTA AND SEQUENCIA = :NEW.SEQUENCIA)
-          OR  (NUNOTAORIG = :NEW.NUNOTA AND SEQUENCIAORIG = :NEW.SEQUENCIA));
+          OR  (NUNOTAORIG = :NEW.NUNOTA AND SEQUENCIAORIG = :NEW.SEQUENCIA))
+    AND ROWNUM = 1;
     IF (P_COUNT <> 0) THEN
        SELECT COUNT(1) INTO P_COUNT
        FROM TSIPAR
-       WHERE CHAVE = 'SBPRODUTO';
+       WHERE CHAVE = 'SBPRODUTO'
+       AND ROWNUM = 1;
        IF (P_COUNT = 0) AND NOT (VARIAVEIS_PKG.V_SBPRODUTO)THEN
          SELECT COUNT(1) INTO P_COUNT
          FROM TGFPAL
-         WHERE (CODPROD = :NEW.CODPROD AND CODPRODALT = :OLD.CODPROD)
-         OR (CODPROD = :OLD.CODPROD AND CODPRODALT = :NEW.CODPROD);
+         WHERE ((CODPROD = :NEW.CODPROD AND CODPRODALT = :OLD.CODPROD)
+         OR (CODPROD = :OLD.CODPROD AND CODPRODALT = :NEW.CODPROD))
+         AND ROWNUM = 1;
          IF (P_COUNT = 0 ) THEN
            ERRMSG := 'O produto referenciado por este pedido ou nota ja esta associado a outro pedido ou nota, não se pode atualiza-lo.';
            RAISE ERROR;
@@ -520,8 +548,9 @@ BEGIN
         INTO P_COUNT
       FROM TGFSER
       WHERE NUNOTA = :OLD.NUNOTA
-        AND SEQUENCIA = :OLD.SEQUENCIA;
-      
+        AND SEQUENCIA = :OLD.SEQUENCIA
+        AND ROWNUM = 1;
+
       IF P_COUNT > 0 THEN
         UPDATE TGFSER SET
           CODPROD = :NEW.CODPROD
@@ -536,8 +565,9 @@ BEGIN
       INTO P_COUNT
     FROM TGFSER
     WHERE NUNOTA = :OLD.NUNOTA
-      AND SEQUENCIA = :OLD.SEQUENCIA;
-    
+      AND SEQUENCIA = :OLD.SEQUENCIA
+      AND ROWNUM = 1;
+
     IF (P_COUNT > 0) AND (:NEW.RESERVA = 'N') THEN
       UPDATE TGFSER SET
         ATUALESTOQUE = :NEW.ATUALESTOQUE

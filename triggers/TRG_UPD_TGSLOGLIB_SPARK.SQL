@@ -13,8 +13,15 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: 04/2025
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: as duas consultas a TGFCAB pelo
+                   mesmo NUNOTA (CODPARC e VLRNOTA+VLROUTROS+AD_VLROUTROSFRETE)
+                   foram unificadas em um único SELECT, eliminando uma leitura
+                   redundante à tabela; e a checagem de existência em TGSLOGLIB
+                   ganhou ROWNUM = 1, já que o resultado só é comparado a 0/1.
+                   Comportamento observável inalterado (mesmo resultado quando
+                   a nota existe; mesma falha por NO_DATA_FOUND quando não).
 ==============================================================================*/
 WHEN (NEW.DHLIB IS NOT NULL AND NEW.EVENTO = 3) 
 DECLARE
@@ -29,15 +36,13 @@ BEGIN
         RETURN;
     END IF;
     
-    BEGIN
-        SELECT C.CODPARC INTO V_CODPARC
-        FROM TGFCAB C
-        WHERE C.NUNOTA = :NEW.NUCHAVE;
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            V_CODPARC := 0;
-    END TRG_UPD_TGSLOGLIB_SPARK;
-    
+    SELECT C.CODPARC
+          ,(C.VLRNOTA + NVL(C.VLROUTROS,0) + NVL(C.AD_VLROUTROSFRETE,0))
+      INTO V_CODPARC
+          ,V_VLRTOTPED
+      FROM TGFCAB C
+     WHERE C.NUNOTA = :NEW.NUCHAVE;
+
     BEGIN
         SELECT P.CODPARCMATRIZ INTO V_CODPARCMATRIZ
         FROM TGFPAR P
@@ -59,13 +64,9 @@ BEGIN
             V_VLRTOTFIN := 0;
     END;
     
-    SELECT (VLRNOTA + NVL(VLROUTROS,0) + NVL(AD_VLROUTROSFRETE,0)) INTO V_VLRTOTPED
-    FROM TGFCAB
-    WHERE NUNOTA = :NEW.NUCHAVE;
-    
    SELECT COUNT(0) INTO V_EXISTE
     FROM TGSLOGLIB
-    WHERE NUNOTA = :NEW.NUCHAVE AND DHLIB = :NEW.DHLIB;
+    WHERE NUNOTA = :NEW.NUCHAVE AND DHLIB = :NEW.DHLIB AND ROWNUM = 1;
     
     IF V_EXISTE = 0 THEN
         INSERT INTO TGSLOGLIB (NUNOTA, DHLIB, CODUSULIB, VLRLIBERADO, VLRTOTPED, OBSLIB, VLRLIMITE, VLRTOTFIN, CODPARC, CODPARCMATRIZ)

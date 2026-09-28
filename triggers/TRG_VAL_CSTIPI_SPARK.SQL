@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_VAL_CSTIPI_SPARK
 BEFORE INSERT OR UPDATE ON TGFITE
 FOR EACH ROW
+WHEN (NEW.CSTIPI IS NULL OR NEW.CSTIPI = 0)
 /*==============================================================================
   Nome do Script : TRG_VAL_CSTIPI_SPARK
   Tipo           : Trigger
@@ -13,8 +14,16 @@ FOR EACH ROW
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: Março/2026
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN no
+                   cabeçalho do trigger replicando exatamente a condição do IF
+                   interno (CSTIPI nulo ou zero), para que o Oracle não inicie
+                   o corpo PL/SQL (e o SELECT em TGFCAB) nas linhas em que
+                   CSTIPI já vem preenchido, que são a maioria. Comportamento
+                   observável inalterado: a mesma validação e a mesma mensagem
+                   de erro continuam disparando exatamente nos mesmos casos de
+                   antes.
 ==============================================================================*/
 DECLARE
     P_CODEMP INT;
@@ -38,6 +47,6 @@ BEGIN
             WHEN NO_DATA_FOUND THEN
                 -- Caso não encontre a nota (ex: carga de dados inconsistente), não valida
                 NULL;
-        END TRG_VAL_CSTIPI_SPARK;
+        END;
     END IF;
 END;
