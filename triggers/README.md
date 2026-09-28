@@ -106,7 +106,6 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_UPD_OSINTERNA.SQL` | `TRG_UPD_OSINTERNA` | `[O.S.]` | UPDATE | Envia e-mail ao criador da O.S. quando há mudança de status |
 | `TRG_UPD_OSINTERNA_DHFIM.SQL` | `TRG_UPD_OSINTERNA_DHFIM` | `[O.S.]` | UPDATE | Grava data e hora de finalização (`DHFIM`) quando status muda para finalizado |
 | `TRG_INS_OSSTATUS_SPARK.SQL` | `TRG_INS_OSSTATUS_SPARK` | `[O.S.]` | INSERT | Define status inicial da Ordem de Serviço |
-| `SPK_TRG_OSINTERNA.SQL` | `SPK_TRG_OSINTERNA` | `[O.S.]` | INSERT, UPDATE | Controles adicionais na O.S. Interna (versão legada) |
 | `SPK_TGFASS_INC.SQL` | `SPK_TGFASS_INC` | `TGFASS` | INSERT | Automação na inclusão de registros de assistência |
 | `SPK_TGFASS_INCUPD.SQL` | `SPK_TGFASS_INCUPD` | `TGFASS` | INSERT, UPDATE | Validações adicionais na assistência (inclusão e alteração) |
 | `TRG_TGFASS_VLRCONSERTO_SPARK.SQL` | `TRG_TGFASS_VLRCONSERTO_SPARK` | `AD_TGFASS` | INSERT, UPDATE | Preenche `VLRCONSERTO` via `SNK_PRECO(14, T_CODPROD)` e `VLRSERVTECNICO` via `SNK_PRECO(15, T_CODPROD)`, cada um quando o respectivo campo está nulo/zerado. `FOLLOWS SPK_TGFASS_INC` para garantir `T_CODPROD` já preenchido |
@@ -166,7 +165,6 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 |---|---|---|---|---|
 | `TRG_INC_UPT_TGFPRO_SPARK.SQL` | `TRG_INC_UPT_TGFPRO_SPARK` | `TGFPRO` | INSERT, UPDATE | Valida e sincroniza campos do cadastro de produto |
 | `TRG_INC_UPD_AD_TPRSERPA_SPARK.SQL` | `TRG_INC_UPD_AD_TPRSERPA_SPARK` | `AD_TPRSERPA` | INSERT, UPDATE | Controla séries de PA no processo produtivo |
-| `TRG_INC_ATUALIZAATRIB_SPARK.sql` | `TRG_INC_ATUALIZAATRIB_SPARK` | `[atributos]` | INSERT | Atualiza atributos customizados na inclusão |
 | `SPK_TRG_INS_TGFCUS.SQL` | `SPK_TRG_INS_TGFCUS` | `TGFCUS` | INSERT | Controla inserção de custos de produto |
 | `SPK_TRG_TGFCUS.SQL` | `SPK_TRG_TGFCUS` | `TGFCUS` | INSERT, UPDATE | Valida atualizações de custo |
 
@@ -220,6 +218,17 @@ Durante uma rodada de otimização de performance em 20 triggers (10 sobre TGFCA
 1. **`CREATE OR REPLACE TRIGGER` sempre recria a trigger em estado `ENABLED`, independente do estado anterior.** Três triggers (`TRG_VAL_CSTIPI_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_UPD_TGSLOGLIB_SPARK`) estavam **desativadas em produção** por decisão de negócio, mas o repositório não registra status de habilitação (isso é uma propriedade de runtime do banco, não do arquivo `.sql`). Ao rodar `CREATE OR REPLACE` nelas durante a refatoração — mesmo para mudanças triviais de performance — elas voltaram a disparar, causando bloqueio inesperado em produção. **Lição:** antes de tocar em qualquer trigger de produção, confirmar `STATUS` em `USER_TRIGGERS` (ou pedir confirmação de quem mantém o ambiente); se estava `DISABLED`, ou não mexer, ou reaplicar o `DISABLE` logo após o `CREATE OR REPLACE`. As três foram marcadas `*(INATIVADA)*` no catálogo acima e comentadas por completo no arquivo `.sql` (mesmo padrão de `SPK_TGFCAB_TSIBLOCK.SQL`).
 
 2. **`PRAGMA AUTONOMOUS_TRANSACTION` sem `COMMIT`/`ROLLBACK` visível não é necessariamente código morto.** Em `TRG_INC_TPRCOI_SPARK.SQL`, a pragma existia para permitir que o `SELECT` da trigger leia `TPRCONF` mesmo quando ela é disparada em cascata de dentro de `TRG_INC_UPD_TPRCONF_SPARK` (que faz DML em `TPRCOI` a partir de um gatilho sobre a própria `TPRCONF`) — sem a autonomous transaction, `TPRCONF` fica "mutante" para essa leitura (`ORA-04091`). Remover a pragma por não achar `COMMIT`/`ROLLBACK` no corpo quebrou esse caso. **Lição:** antes de remover uma `PRAGMA AUTONOMOUS_TRANSACTION` aparentemente sem uso, verificar se alguma tabela lida pela trigger pode estar em cascata de outra trigger/procedure que modifica essa mesma tabela na mesma transação — esse é o uso mais comum da pragma além de isolar `COMMIT`/`ROLLBACK`.
+
+---
+
+### 16. Levantamento de baseline de STATUS — Set/2026
+
+Como consequência direta da lição do §15 item 1, foi criado [`scripts/CHECK_STATUS_TRIGGERS_SPARK.SQL`](../scripts/CHECK_STATUS_TRIGGERS_SPARK.SQL): um `SELECT` sobre `ALL_TRIGGERS` cobrindo todas as triggers do repositório, para rodar antes de cada novo lote de otimização. A primeira execução (Set/2026) não encontrou nenhuma `DISABLED` além das 3 já conhecidas, mas revelou um segundo tipo de gap de documentação: **duas triggers cujo `.sql` continuava em `triggers/`, com aparência de código ativo, mas que não existem mais em `ALL_TRIGGERS`** — ou seja, já foram removidas do banco (não apenas desabilitadas), sem que o arquivo fosse movido para `inativos/`:
+
+- `SPK_TRG_OSINTERNA.SQL` — tabela `AD_OSINTERNA` segue ativa (outras 3 triggers da tabela confirmadas `ENABLED`), mas esta trigger específica não existe mais no banco.
+- `TRG_INC_ATUALIZAATRIB_SPARK.sql` — tabela `AD_MKTPMELIATRIB`, mesma família `AD_MKTPMELI*` de `VGF_ESTOQUEMELI_SPARK.sql` (já em `inativos/`, descontinuada com a migração da integração Mercado Livre) — indício de que esta trigger é resquício da mesma integração antiga.
+
+Ambas foram movidas para `inativos/` (ver `inativos/README.md`). **Lição:** `STATUS = DISABLED` não é o único jeito de uma trigger estar "morta" sem o repositório saber — ela pode ter sido **dropada** do banco. O baseline de `ALL_TRIGGERS` cobre os dois casos: `DISABLED` (não mexer sem confirmação) e ausência de linha (confirmar se foi removida e mover para `inativos/`).
 
 ---
 
