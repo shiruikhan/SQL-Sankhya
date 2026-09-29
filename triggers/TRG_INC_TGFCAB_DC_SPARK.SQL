@@ -14,30 +14,32 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: eliminada a checagem de
+                   existência (SELECT COUNT(*)) que só servia para decidir se
+                   rodava um segundo SELECT idêntico em TPRIPROC — agora é um
+                   único SELECT protegido por NO_DATA_FOUND. O IF interno
+                   (P_DTPRODUCAO IS NOT NULL) também foi removido: como
+                   P_DTPRODUCAO vem de NVL(AD_DTPRODUCAO, SYSDATE), nunca é
+                   NULL quando o SELECT encontra a linha, então o IF já era
+                   sempre verdadeiro nesse ponto. Comportamento observável
+                   inalterado.
 ==============================================================================*/
-DECLARE 
+DECLARE
 
-P_COUNT         INT;
 P_DTPRODUCAO   DATE;
 
 BEGIN
 
-    SELECT COUNT(*) INTO P_COUNT FROM TPRIPROC OP WHERE OP.IDIPROC = :NEW.IDIPROC;
+    BEGIN
+        SELECT NVL(OP.AD_DTPRODUCAO, SYSDATE) INTO P_DTPRODUCAO
+        FROM TPRIPROC OP
+        WHERE OP.IDIPROC = :NEW.IDIPROC;
 
-    IF P_COUNT > 0 THEN
-
-			SELECT NVL(OP.AD_DTPRODUCAO, SYSDATE) INTO P_DTPRODUCAO
-			FROM TPRIPROC OP 
-			WHERE OP.IDIPROC = :NEW.IDIPROC;
-
-			IF P_DTPRODUCAO IS NOT NULL
-				THEN
-
-                :NEW.DTNEG := P_DTPRODUCAO;
-                :NEW.DTENTSAI := P_DTPRODUCAO;
-                :NEW.HRENTSAI := P_DTPRODUCAO;
-
-                       --    RAISE_APPLICATION_ERROR(-20191,'RESULT: ' || :NEW.NUNOTA);
-            END IF;					
-     END IF;
+        :NEW.DTNEG := P_DTPRODUCAO;
+        :NEW.DTENTSAI := P_DTPRODUCAO;
+        :NEW.HRENTSAI := P_DTPRODUCAO;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            NULL;
+    END;
 END TRG_INC_TGFCAB_DC_SPARK;

@@ -47,6 +47,9 @@ WHEN (NEW.STATUSNFE = 'A' AND (OLD.STATUSNFE IS NULL OR OLD.STATUSNFE <> 'A'))
                    'A'; adicionado handler EXCEPTION com log em AD_LOG_ERROS;
                    removido join redundante com TSIUFS; padronizacao de
                    cabecalho e nomenclatura.
+                   09/2026 - Performance: checagem de existencia (SELECT
+                   COUNT(0)) ganhou ROWNUM = 1, ja que o resultado so e
+                   comparado a 0. Comportamento observavel inalterado.
 
   Observacoes    : - V_CODUF_PB = 17: codigo da UF de destino (PB) conforme
                      cadastro de TSICID.UF nesta base. Confirmar o codigo
@@ -123,7 +126,8 @@ BEGIN
              ON CID.CODCID = PAR.CODCID
      WHERE PAR.CODPARC     = :NEW.CODPARC
        AND CID.UF          = V_CODUF_PB
-       AND PAR.CLASSIFICMS = 'C';
+       AND PAR.CLASSIFICMS = 'C'
+       AND ROWNUM = 1;
 
     IF V_COUNT = 0 THEN
         RETURN;

@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_FRETE_CIF_MTKPL_SPARK
 BEFORE INSERT OR UPDATE ON TGFCAB
 FOR EACH ROW
+WHEN (NEW.CODEMP = 2 AND NEW.CODTIPVENDA = 78 AND NEW.CODTIPOPER = 1005 AND NEW.CODVEND IN (5,42,43,44))
 /*==============================================================================
   Nome do Script : TRG_FRETE_CIF_MTKPL_SPARK
   Tipo           : Trigger
@@ -15,6 +16,12 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: Maio/2026
   Última Revisão : Maio/2026
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo da trigger, para não disparar
+                   em nenhuma nota fora do filtro (empresa/tipo de
+                   venda/operação/vendedor) — a grande maioria dos
+                   INSERT/UPDATE em TGFCAB. Comportamento observável
+                   inalterado (fora do filtro, o corpo era um no-op).
 ==============================================================================*/
 DECLARE
     V_OPERACAO VARCHAR2(10);

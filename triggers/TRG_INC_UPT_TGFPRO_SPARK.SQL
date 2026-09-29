@@ -1,8 +1,8 @@
-create or replace TRIGGER "SPARKPRD"."TRG_INC_UPT_TGFPRO_SPARK" 
+create or replace TRIGGER "SPARKPRD"."TRG_INC_UPT_TGFPRO_SPARK"
 BEFORE INSERT OR UPDATE ON TGFPRO
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : UNKNOWN
+  Nome do Script : TRG_INC_UPT_TGFPRO_SPARK
   Tipo           : Trigger
   Descrição      : Define uso de local para produtos da Spark, exceto para serviços
   Tabela         : TGFPRO
@@ -14,18 +14,23 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance/limpeza: corrigido cabeçalho
+                   ("Nome do Script: UNKNOWN") e END sem rótulo (END UNKNOWN;)
+                   para o padrão do repositório; removidas P_COUNT/P_CODPROD,
+                   declaradas mas nunca usadas no corpo. Nenhuma consulta SQL
+                   própria nesta trigger além de STP_GET_ATUALIZANDO — sem
+                   oportunidade adicional de performance. Comportamento
+                   observável inalterado.
 ==============================================================================*/
-      DECLARE 
-  P_COUNT             NUMBER(5);
-  P_CODPROD           TGFPRO.CODPROD%TYPE;
-  BEGIN
+DECLARE
+BEGIN
   IF STP_GET_ATUALIZANDO THEN
     RETURN;
   END IF;
 
   /*OBJETIVO: CRIAR REGRAS CADASTRO PRODUTO DA SPARK
    AUTOR: DIONE SANTOS - SK
-   DATA: 15/10/21 
+   DATA: 15/10/21
    */
 
   /* MARCA PRODUTO PARA USAR LOCAL, EXCETO SERVIÇO */
@@ -33,11 +38,4 @@ FOR EACH ROW
  :NEW.USALOCAL := 'N';
  END IF;
 
-END UNKNOWN;
-
-
-
-
-
-
-
+END;

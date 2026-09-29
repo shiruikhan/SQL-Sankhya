@@ -14,6 +14,13 @@ create or replace TRIGGER TRG_CMP_TGFCAB_NFE_SPARK
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: a checagem de existência
+                   (SELECT COUNT(0)) e a busca do NUNOTA de entrada (SELECT
+                   MAX(AD_NUNOTAENT)) sobre a mesma TGFCAB/AD_NUNOTASAI foram
+                   unificadas em um único SELECT, eliminando uma leitura
+                   redundante à tabela. Comportamento observável inalterado
+                   (MAX sobre zero linhas é NULL e V_NUNOTA_ENT só é usado
+                   quando V_COUNT > 0).
 ==============================================================================*/
 COMPOUND TRIGGER
 
@@ -72,17 +79,14 @@ AFTER STATEMENT IS
 BEGIN
   
            SELECT COUNT(0)
+                 ,MAX(AD_NUNOTAENT)
                  INTO V_COUNT
+                 ,V_NUNOTA_ENT
                 FROM TGFCAB
               WHERE AD_NUNOTASAI = V_NUNOTA;
-              
-             IF V_COUNT > 0 THEN 
-                          
-                   SELECT MAX(AD_NUNOTAENT)
-                     INTO V_NUNOTA_ENT
-                     FROM TGFCAB
-                    WHERE AD_NUNOTASAI = V_NUNOTA;
-                 
+
+             IF V_COUNT > 0 THEN
+
                  UPDATE TGFCAB SET NUMNOTA = V_NUMNOTA
                                                , CHAVENFE = V_CHAVENFE
                                                , VLRNOTA =  V_VLRNOTA

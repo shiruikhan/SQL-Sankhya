@@ -15,6 +15,10 @@ COMPOUND TRIGGER
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: as duas checagens de
+                   existência (SELECT COUNT(0)) ganharam ROWNUM = 1, já que
+                   o resultado só é comparado a 0. Comportamento observável
+                   inalterado.
 ==============================================================================*/
     V_PEDORIG          INTEGER:=0;
     V_CODEMP           INTEGER:=0;
@@ -36,15 +40,17 @@ END BEFORE EACH ROW;
 AFTER STATEMENT IS
 BEGIN
      
-     SELECT COUNT(0) 
+     SELECT COUNT(0)
         INTO V_COUNT
       FROM TGFCAB
-     WHERE AD_NUNOTAENT = V_NUNOTA;
-     
+     WHERE AD_NUNOTAENT = V_NUNOTA
+       AND ROWNUM = 1;
+
     SELECT COUNT(0)
        INTO V_COUNT2
       FROM TGFCAB
-     WHERE AD_NUNOTASAI = V_NUNOTA;
+     WHERE AD_NUNOTASAI = V_NUNOTA
+       AND ROWNUM = 1;
      
      IF V_COUNT > 0 AND V_TIPMOV IN ('C', 'V') THEN     
              UPDATE TGFCAB SET AD_NUNOTAENT = NULL

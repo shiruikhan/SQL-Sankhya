@@ -14,13 +14,16 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: removido DISTINCT do SELECT
+                   INTO (redundante — NUNOTA é PK de TGFCAB, sempre uma
+                   única linha). Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_CODTIPOPER INT;
     P_SEQUENCIA NUMBER;
 BEGIN
-    SELECT DISTINCT CAB.CODTIPOPER INTO P_CODTIPOPER 
-    FROM TGFCAB CAB 
+    SELECT CAB.CODTIPOPER INTO P_CODTIPOPER
+    FROM TGFCAB CAB
     WHERE CAB.NUNOTA = :NEW.NUNOTA;
     
     P_SEQUENCIA := :NEW.SEQUENCIA;
