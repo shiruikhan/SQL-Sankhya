@@ -1,7 +1,8 @@
 create or replace TRIGGER SPK_TGFFIN_LOG
-BEFORE INSERT OR UPDATE OR DELETE 
+BEFORE INSERT OR UPDATE OR DELETE
 ON TGFFIN
 FOR EACH ROW
+WHEN (NEW.NUFIN IS NULL OR OLD.NUFIN IS NULL)
 /*==============================================================================
   Nome do Script : SPK_TGFFIN_LOG
   Tipo           : Trigger
@@ -16,6 +17,15 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR] — Última atualização Abril/2026
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: o corpo só trata INSERTING e
+                   DELETING (apesar do nome/descrição mencionarem UPDATE, não
+                   há ramo UPDATING) — todo UPDATE em TGFFIN já era um no-op
+                   aqui, mas ainda pagava o custo de STP_GET_CODUSULOGADO() e
+                   montagem de string. Adicionada WHEN (NEW.NUFIN IS NULL OR
+                   OLD.NUFIN IS NULL) — NUFIN é PK NOT NULL de TGFFIN, então
+                   essa condição é verdadeira só em INSERT (OLD indefinido) e
+                   DELETE (NEW indefinido), nunca em UPDATE. Comportamento
+                   observável inalterado (UPDATE continua sem nenhum efeito).
 ==============================================================================*/
 DECLARE
   P_ACAO VARCHAR2(10);

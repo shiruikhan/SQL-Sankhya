@@ -14,6 +14,11 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Corrigido END sem rótulo válido num bloco
+                   interno não rotulado (END TRG_INC_UPD_INTEGRA;) para END;.
+                   Nenhuma oportunidade de performance adicional: já usa
+                   FETCH FIRST 1 ROWS ONLY em todas as buscas de existência.
+                   Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     v_codparc TGFPAR.CODPARC%TYPE;
@@ -39,7 +44,7 @@ BEGIN
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             :NEW.CODUF := NULL;
-    END TRG_INC_UPD_INTEGRA;
+    END;
     
     -- Busca parceiro existente com o mesmo documento (ignorando máscara)
     BEGIN

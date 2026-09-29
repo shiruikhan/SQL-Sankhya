@@ -1,6 +1,16 @@
 CREATE OR REPLACE TRIGGER TRG_UPD_AD_TGSIXN_SPARK
 BEFORE UPDATE ON AD_TGSIXN
 FOR EACH ROW
+WHEN (
+    NEW.NUCONF != OLD.NUCONF
+    OR NVL(NEW.CODUSUINC, -1) != NVL(OLD.CODUSUINC, -1)
+    OR NVL(NEW.NUARQUIVO, -1) != NVL(OLD.NUARQUIVO, -1)
+    OR NVL(NEW.DTINI, DATE '0001-01-01') != NVL(OLD.DTINI, DATE '0001-01-01')
+    OR NVL(NEW.CODEMP, -1) != NVL(OLD.CODEMP, -1)
+    OR NVL(NEW.NUMNOTA, -1) != NVL(OLD.NUMNOTA, -1)
+    OR NVL(NEW.DHEMISS, DATE '0001-01-01') != NVL(OLD.DHEMISS, DATE '0001-01-01')
+    OR (OLD.CODFUNC IS NOT NULL AND NVL(NEW.CODFUNC, -1) != OLD.CODFUNC)
+)
 /*==============================================================================
   Nome do Script : TRG_UPD_AD_TGSIXN_SPARK
   Tipo           : Trigger
@@ -24,6 +34,12 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: 02/07/2026
   Última Revisão : Julho/2026 — Inclusão de DHEMISS na checagem de imutabilidade
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   equivalente ao OR das duas checagens do corpo (a trigger
+                   só faz algo quando pelo menos uma delas seria violada) —
+                   evita disparar em toda edição que só toca OBSERVACAO
+                   (livremente editável). Comportamento observável
+                   inalterado.
 ==============================================================================*/
 BEGIN
     IF :NEW.NUCONF != :OLD.NUCONF

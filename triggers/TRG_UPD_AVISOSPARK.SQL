@@ -1,12 +1,13 @@
 create or replace TRIGGER TRG_UPD_AVISOSPARK
 BEFORE UPDATE ON SPARKPRD.TGFCON2
 FOR EACH ROW
+WHEN (NEW.STATUS = 'F' AND NEW.QTDVOL = 1)
 /*==============================================================================
   Nome do Script : TRG_UPD_AVISOSPARK
   Tipo           : Trigger
   Descrição      : Alerta sobre necessidade de corrigir quantidade de volumes
                    ao finalizar conferência
-  Tabela         : SPARKPRD
+  Tabela         : TGFCON2
   Evento         : BEFORE UPDATE
   Escopo         : FOR EACH ROW / STATEMENT
 
@@ -15,6 +16,10 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance/limpeza: adicionada cláusula
+                   WHEN idêntica ao único IF do corpo; corrigido campo
+                   "Tabela" do cabeçalho (dizia "SPARKPRD", o schema, em vez
+                   de "TGFCON2"). Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     v_message VARCHAR2(100);
