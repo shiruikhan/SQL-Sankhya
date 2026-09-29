@@ -1,8 +1,8 @@
-create or replace TRIGGER SPK_INS_UPD_TWFIVAR_CODIGONOVO 
+create or replace TRIGGER TRG_INS_UPD_TWFIVAR_CODIGONOVO 
 BEFORE INSERT OR UPDATE ON TWFIVAR 
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : SPK_INS_UPD_TWFIVAR_CODIGONOVO
+  Nome do Script : TRG_INS_UPD_TWFIVAR_CODIGONOVO
   Tipo           : Trigger
   Descrição      : Atualiza código de produto na tabela TGFPRO_WF quando NOME='CODPROD_NEW' e NUMINT é fornecido na variável de workflow.
   Tabela         : TWFIVAR

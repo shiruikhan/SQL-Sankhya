@@ -2,7 +2,7 @@ create or replace TRIGGER TRG_INS_UPD_CODLOCALDEST
 BEFORE INSERT OR UPDATE ON TGFITE 
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : SPK_INS_UPD_CODLOCALDEST
+  Nome do Script : TRG_INS_UPD_CODLOCALDEST
   Tipo           : Trigger
   Descrição      : Define automaticamente o CODLOCALORIG para 199 em itens de operação tipo 712 com sequência maior que zero.
   Tabela         : TGFITE
