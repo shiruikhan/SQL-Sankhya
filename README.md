@@ -116,7 +116,7 @@ SQL Sankhya/
 ## 7. Inventário de Objetos
 
 ### 7.1 Triggers (pasta `triggers/`)
-> 89 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
+> 88 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
 
 Agrupadas por domínio:
 
@@ -132,7 +132,7 @@ Agrupadas por domínio:
 | Financeiro | 4 | `TRG_REFORCA_NAT_FIN`, `SPK_TGFFIN_LOG`, `TRG_INCDEVCH_SPARK` |
 | Parceiro / Cadastro | 6 | `TRG_UPD_TGFPAR_UF_SPARK`, `TRG_INC_TSICID_SPARK`, `TRG_INC_TGFPAR_SPARK` |
 | Séries / Conferência | 4 | `TRG_INC_TGFSER_SPARK`, `TRG_DLT_TGFSER_SPARK`, `TRG_TGFCON2_SPARK` |
-| Notificações / Avisos | 5 | `TRG_AVISOCONF_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_NOTIF_PARCERIA_SPARK` |
+| Notificações / Avisos | 4 | `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_NOTIF_PARCERIA_SPARK`, `TRG_UPD_AVISOSPARK` |
 | Conferência de XML (`AD_TGSIXN`) | 3 | `TRG_INC_AD_TGSIXN_SPARK`, `TRG_INC_UPD_AD_TGSIXN_SPARK`, `TRG_UPD_AD_TGSIXN_SPARK` |
 | Demais | 3 | Integrações, produto, custo |
 

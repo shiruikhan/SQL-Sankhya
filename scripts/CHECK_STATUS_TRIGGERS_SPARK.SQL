@@ -107,7 +107,7 @@ SELECT t.owner
         'TRG_VAL_CSTIPI_SPARK',
         'TRG_VAL_SETOR_CODFUNC_TPRAPA',
         'TRG_ATUALIZA_STATUS_NUNOTA',
-        'TRG_AVISOCONF_SPARK',
+        -- (TRG_AVISOCONF_SPARK removido: desativada por descontinuidade do projeto em 29/09/2026, movido para inativos/)
         'TRG_BLOQUEIA_DELETE_SC',
         'TRG_BLOQUEIA_EDICAO_STATUS_CR',
         'TRG_FRETE_CIF_MTKPL_SPARK',

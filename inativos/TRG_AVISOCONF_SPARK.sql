@@ -20,6 +20,10 @@ FOR EACH ROW
                    a notificar (antes rodavam sempre, mesmo sem nada a enviar).
                    Comportamento observável inalterado: e-mail continua sendo
                    enviado exatamente nas mesmas condições de antes.
+  *** DESATIVADA em 29/09/2026 — descontinuidade do projeto ***
+                   Aviso por e-mail de finalização de conferência descontinuado.
+                   Arquivo movido de triggers/ para inativos/ sem alteração de
+                   lógica. Mantido apenas para referência histórica.
 ==============================================================================*/
 DECLARE
     P_EXISTEF       NUMBER := 0;

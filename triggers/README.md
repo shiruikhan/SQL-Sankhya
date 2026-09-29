@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de triggers:** 88  
+**Total de triggers:** 87  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -151,7 +151,6 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
-| `TRG_AVISOCONF_SPARK.sql` | `TRG_AVISOCONF_SPARK` | `TGFCAB` | UPDATE | Envia aviso quando pedido de venda tem conferência finalizada |
 | `TRG_UPD_AVISOSPARK.SQL` | `TRG_UPD_AVISOSPARK` | `[avisos]` | UPDATE | Atualiza status de aviso após ação do destinatário |
 | `TRG_INC_TGFIXN_EMAIL_SPARK.SQL` | *(INATIVADA)* | `TGFIXN` | INSERT | Disparava envio de e-mail na inclusão de XML de CT-e/NF-e importado — estava desativada em produção; reativada acidentalmente por `CREATE OR REPLACE` durante refatoração de performance de Set/2026 (ver §15) |
 | `TRG_INS_UPD_CODLOCALDEST.SQL` | `TRG_INS_UPD_CODLOCALDEST` | `TGFITE` | INSERT, UPDATE | Controla código de local de destino em itens com notificação associada |
