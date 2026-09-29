@@ -1,8 +1,8 @@
-create or replace TRIGGER SPK_TGFASS_INC 
+create or replace TRIGGER TRG_TGFASS_INC_SPARK
 BEFORE INSERT /* OR UPDATE*/ ON AD_TGFASS 
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : SPK_TGFASS_INC
+  Nome do Script : TRG_TGFASS_INC_SPARK
   Tipo           : Trigger
   Descrição      : Popula automaticamente atributos de série (produto, descrição, referência, data fabricação, lote) consultando view VGFSERIES na inserção.
   Tabela         : AD_TGFASS
@@ -112,4 +112,4 @@ BEGIN
 	:NEW.T_DTFABRICACAO := P_DTFABRICACAO;
 	:NEW.T_TIPO := P_TIPO;
 	:NEW.T_LOTE := P_LOTE;
-END SPK_TGFASS_INC;
+END TRG_TGFASS_INC_SPARK;

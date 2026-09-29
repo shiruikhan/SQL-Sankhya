@@ -1,7 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_TGFASS_VLRCONSERTO_SPARK
 BEFORE INSERT OR UPDATE ON AD_TGFASS
 FOR EACH ROW
-FOLLOWS SPK_TGFASS_INC
+FOLLOWS TRG_TGFASS_INC_SPARK
 WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 'X') NOT IN ('T', 'RT', 'D'))
 /*==============================================================================
   Nome do Script : TRG_TGFASS_VLRCONSERTO_SPARK
@@ -21,7 +21,7 @@ WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 
 
   Tabelas        : AD_TGFASS -- cadastro de O.S. de assistência (alterado via :NEW)
 
-  Dependencias   : SPK_TGFASS_INC -- popula T_CODPROD na inclusão; esta trigger
+  Dependencias   : TRG_TGFASS_INC_SPARK -- popula T_CODPROD na inclusão; esta trigger
                    usa FOLLOWS para garantir que T_CODPROD já esteja
                    preenchido antes de buscar o preço
                    SNK_PRECO (function nativa Sankhya) -- resolve o preço

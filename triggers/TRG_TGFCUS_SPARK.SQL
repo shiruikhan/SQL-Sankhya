@@ -1,28 +1,14 @@
-create or replace TRIGGER SPK_TRG_TGFCUS
+create or replace TRIGGER TRG_TGFCUS_SPARK
 BEFORE INSERT OR UPDATE ON TGFCUS
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : SPK_TRG_TGFCUS
+  Nome do Script : TRG_TGFCUS_SPARK
   Tipo           : Trigger
   Descrição      : Insere registros em AD_TGSCIT e AD_TGSCUS ao criar custo de produto.
                   Mantém rastreabilidade de custo médio e data de referência.
   Tabela         : TGFCUS
   Evento         : BEFORE INSERT OR UPDATE
   Escopo         : FOR EACH ROW / STATEMENT
-
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-                   Setembro/2026 — Performance: checagem de existência
-                   (SELECT COUNT(CODPROD)) ganhou ROWNUM = 1, já que o
-                   resultado só é comparado a 0. As demais consultas desta
-                   trigger não foram tocadas: P_MAXCODREG é mutado
-                   condicionalmente (P_EXISTE > 0) antes de ser usado no
-                   IF P_REGISTRO < P_MAXCODREG mais abaixo, então adiar ou
-                   reordenar qualquer uma delas mudaria esse resultado.
-                   Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_INICIAL NUMBER;
@@ -70,4 +56,4 @@ BEGIN
 	IF SUBSTR(TO_CHAR(P_CODPROD), 1, 1) = '3' THEN
 		INSERT INTO AD_TGSCIT (CODREG, SEQUENCIA, CODPROD, CUSTO) VALUES (P_MAXCODREG, P_MAXSEQUENCIA, P_CODPROD, P_VLRCUSTO);
 	END IF;
-END SPK_TRG_TGFCUS;
+END TRG_TGFCUS_SPARK;

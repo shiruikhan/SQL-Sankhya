@@ -1,8 +1,8 @@
-create or replace TRIGGER SPK_TGFASS_INCUPD 
+create or replace TRIGGER TRG_TGFASS_INCUPD_SPARK
 BEFORE INSERT OR UPDATE ON AD_TGFASS 
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : SPK_TGFASS_INCUPD
+  Nome do Script : TRG_TGFASS_INCUPD_SPARK
   Tipo           : Trigger
   Descrição      : Popula automaticamente dados de endereço (rua, número, CEP, estado, cidade, bairro) do parceiro consultando tabelas relacionadas.
   Tabela         : AD_TGFASS
@@ -49,4 +49,4 @@ BEGIN
     :NEW.ESTADO := P_ESTADO;
     :NEW.CIDADE := P_CIDADE;   
     :NEW.BAIRRO := P_BAIRRO;
-END SPK_TGFASS_INCUPD;
+END TRG_TGFASS_INCUPD_SPARK;

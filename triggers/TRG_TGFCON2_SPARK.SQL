@@ -1,4 +1,4 @@
-create or replace TRIGGER "SPARKPRD"."TRG_TGFCON2_SPARK"
+create or replace TRIGGER TRG_TGFCON2_SPARK
 BEFORE INSERT OR UPDATE ON TGFCON2
 FOR EACH ROW
 WHEN (NEW.STATUS = 'F' AND OLD.STATUS <> NEW.STATUS)
@@ -9,19 +9,6 @@ WHEN (NEW.STATUS = 'F' AND OLD.STATUS <> NEW.STATUS)
   Tabela         : TGFCON2
   Evento         : BEFORE INSERT OR UPDATE
   Escopo         : FOR EACH ROW / STATEMENT
-
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-                   Setembro/2026 — Performance: adicionada cláusula WHEN
-                   idêntica ao único IF do corpo (em INSERT, OLD.STATUS é
-                   NULL e a comparação já era sempre falsa antes, então o
-                   comportamento no INSERT não muda); checagem de existência
-                   (SELECT COUNT(*)) ganhou ROWNUM = 1; corrigido END sem
-                   rótulo válido (END UNKNOWN;). Comportamento observável
-                   inalterado.
 ==============================================================================*/
 DECLARE
 P_COUNT      INT;
