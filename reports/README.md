@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de relatórios:** 33 pastas  
+**Total de relatórios:** 34 pastas  
 **Tecnologia:** JasperReports — arquivos `.jrxml` (XML de definição de relatório)  
 
 ---
@@ -50,6 +50,7 @@ Os relatórios são templates JasperReports configurados e compilados pelo Sankh
 | 31 | `31 - Etiqueta de Série Avulsa Manual` | `ETIQUETAS DANIELA.jrxml` | Logística | Etiqueta de série avulsa gerada manualmente |
 | 32 | `32 - ETIQUETA AVULSA MANUAL` | `ETIQUETA AVULSA ALTERADA.jrxml`, `ETIQUETA AVULSA ORIGINAL.jrxml` | Logística | Etiqueta avulsa manual (versão alterada vigente + original) |
 | 33 | `33 - ORÇAMENTO DE VENDA LUCAS` | `ORCAMENTO V04.jrxml` | Vendas | Orçamento de venda em layout customizado (paisagem) |
+| 34 | `34 - Fechamento Assistência` | `FechamentoAssistencia.jrxml` | Assistência / Financeiro | Lista as O.S. de um título gerado por `STP_INCFINASSIST_SPARK` (parâmetro `PK_NUFIN`), com dados do parceiro e total |
 
 ---
 
