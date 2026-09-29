@@ -1,6 +1,7 @@
-create or replace TRIGGER "SPARKPRD"."TRG_TGFCON2_SPARK" 
+create or replace TRIGGER "SPARKPRD"."TRG_TGFCON2_SPARK"
 BEFORE INSERT OR UPDATE ON TGFCON2
 FOR EACH ROW
+WHEN (NEW.STATUS = 'F' AND OLD.STATUS <> NEW.STATUS)
 /*==============================================================================
   Nome do Script : TRG_TGFCON2_SPARK
   Tipo           : Trigger
@@ -14,19 +15,25 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo (em INSERT, OLD.STATUS é
+                   NULL e a comparação já era sempre falsa antes, então o
+                   comportamento no INSERT não muda); checagem de existência
+                   (SELECT COUNT(*)) ganhou ROWNUM = 1; corrigido END sem
+                   rótulo válido (END UNKNOWN;). Comportamento observável
+                   inalterado.
 ==============================================================================*/
 DECLARE
 P_COUNT      INT;
 
 BEGIN
 
-    IF :NEW.STATUS = 'F' AND :OLD.STATUS <> :NEW.STATUS THEN 
-
     SELECT COUNT(*) INTO P_COUNT
       FROM TGFSER
-    WHERE NUNOTA = :NEW.NUNOTAORIG;
+    WHERE NUNOTA = :NEW.NUNOTAORIG
+      AND ROWNUM = 1;
 
-        IF P_COUNT = 0 THEN 
+        IF P_COUNT = 0 THEN
 
         INSERT INTO TGFSER ( NUNOTA, CODPROD , SEQUENCIA, SERIE, ATUALESTOQUE, TIPCONTEST, CODUSU, DTALTER)
         (SELECT :NEW.NUNOTAORIG, S.CODPROD, (SELECT MAX(SEQUENCIA) FROM TGFITE WHERE NUNOTA = :NEW.NUNOTAORIG AND CODPROD = S.CODPROD), S.CODBARRA, 0, 'N', STP_GET_CODUSULOGADO(), SYSDATE
@@ -35,6 +42,4 @@ BEGIN
 
         END IF;
 
-    END IF;
-
-END UNKNOWN;
+END;

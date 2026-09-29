@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_INC_TGFPAR_SPARK
 BEFORE INSERT ON TGFPAR
 FOR EACH ROW
+WHEN (NEW.TIPPESSOA = 'F' AND NVL(NEW.CODVEND, 0) = 0)
 /*==============================================================================
   Nome do Script : TRG_INC_TGFPAR_SPARK
   Tipo           : Trigger
@@ -22,6 +23,10 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: 25/05/2026
   Última Revisão : Maio/2026 — Criação
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo, para não disparar em
+                   nenhum INSERT em TGFPAR fora do filtro (PJ ou PF com
+                   vendedor). Comportamento observável inalterado.
 
   Observações    : - Atua apenas quando TIPPESSOA = 'F' e CODVEND = 0.
                    - Não interfere em pessoas jurídicas nem em PF com vendedor.

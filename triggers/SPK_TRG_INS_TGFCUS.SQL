@@ -15,6 +15,16 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: as duas consultas a AD_TGSCIT
+                   (MAX(CODREG) em toda a tabela + COUNT de existência) só
+                   são usadas para montar o INSERT final, que só roda quando
+                   P_INICIAL = 3 — condição que não depende de nenhuma delas.
+                   Movidas para dentro do IF P_INICIAL = 3, evitando 2
+                   consultas (uma delas sem filtro, varrendo a tabela
+                   inteira) em toda inclusão/alteração de TGFCUS que não
+                   atende a esse filtro. COUNT também ganhou ROWNUM = 1, já
+                   que o resultado só é comparado a 0. Comportamento
+                   observável inalterado.
 ==============================================================================*/
 DECLARE
     P_INICIAL NUMBER;
@@ -25,29 +35,30 @@ DECLARE
 	P_EXISTE NUMBER;
 
 BEGIN
-    
+
     P_VLRCUSTO := :NEW.CUSMED;
 	P_CODPROD := :NEW.CODPROD;
 	P_EXISTE := 0;
 	P_INICIAL := 0;
 
-	SELECT MAX(CODREG) INTO P_MAXCODREG 
-	FROM AD_TGSCIT;
-	
-	SELECT COUNT(CODPROD) INTO P_EXISTE 
-	FROM AD_TGSCIT 
-	WHERE CODREG = P_MAXCODREG 
-		AND CODPROD = P_CODPROD;
-	
-	IF P_EXISTE > 0 THEN
-		P_MAXCODREG := P_MAXCODREG+1;
-		P_MAXSEQUENCIA := 1;
-	END IF;
-	
 	SELECT SUBSTR(P_CODPROD,1) INTO P_INICIAL
 	FROM DUAL;
-	
+
 	IF P_INICIAL = 3 THEN
+		SELECT MAX(CODREG) INTO P_MAXCODREG
+		FROM AD_TGSCIT;
+
+		SELECT COUNT(CODPROD) INTO P_EXISTE
+		FROM AD_TGSCIT
+		WHERE CODREG = P_MAXCODREG
+			AND CODPROD = P_CODPROD
+			AND ROWNUM = 1;
+
+		IF P_EXISTE > 0 THEN
+			P_MAXCODREG := P_MAXCODREG+1;
+			P_MAXSEQUENCIA := 1;
+		END IF;
+
 		INSERT INTO AD_TGSCIT (CODREG, SEQUENCIA, CODPROD, CUSTO) VALUES (P_MAXCODREG, P_MAXSEQUENCIA, P_CODPROD, P_VLRCUSTO);
 	END IF;
 END SPK_TRG_INS_TGFCUS;

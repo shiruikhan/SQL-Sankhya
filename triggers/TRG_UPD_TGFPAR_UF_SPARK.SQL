@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_UPD_TGFPAR_UF_SPARK
 BEFORE UPDATE ON TGFPAR
 FOR EACH ROW
+WHEN (NVL(TO_CHAR(OLD.CODCID), '~') <> NVL(TO_CHAR(NEW.CODCID), '~'))
 /*==============================================================================
   Nome do Script : TRG_UPD_TGFPAR_UF_SPARK
   Tipo           : Trigger
@@ -14,6 +15,14 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   equivalente às duas checagens RETURN do corpo (ambas
+                   CODCID nulos, ou mesmo CODCID) — verificado caso a caso
+                   (nulo/nulo, nulo/preenchido, preenchido/nulo, igual,
+                   diferente) que produz exatamente o mesmo resultado. Os
+                   dois RETURN internos foram mantidos (ficam inalcançáveis,
+                   mas inofensivos) para minimizar o diff. Comportamento
+                   observável inalterado.
 ==============================================================================*/
 DECLARE
     V_UF_OLD VARCHAR2(10);

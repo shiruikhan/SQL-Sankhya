@@ -15,6 +15,14 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: checagem de existência
+                   (SELECT COUNT(CODPROD)) ganhou ROWNUM = 1, já que o
+                   resultado só é comparado a 0. As demais consultas desta
+                   trigger não foram tocadas: P_MAXCODREG é mutado
+                   condicionalmente (P_EXISTE > 0) antes de ser usado no
+                   IF P_REGISTRO < P_MAXCODREG mais abaixo, então adiar ou
+                   reordenar qualquer uma delas mudaria esse resultado.
+                   Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_INICIAL NUMBER;
@@ -40,10 +48,11 @@ BEGIN
 	SELECT MAX(CODREG) INTO P_REGISTRO
 	FROM AD_TGSCUS;
 	
-	SELECT COUNT(CODPROD) INTO P_EXISTE 
-	FROM AD_TGSCIT 
-	WHERE CODREG = P_MAXCODREG 
-		AND CODPROD = P_CODPROD;
+	SELECT COUNT(CODPROD) INTO P_EXISTE
+	FROM AD_TGSCIT
+	WHERE CODREG = P_MAXCODREG
+		AND CODPROD = P_CODPROD
+		AND ROWNUM = 1;
 	
 	IF P_EXISTE > 0 THEN
 		P_MAXCODREG := P_MAXCODREG+1;

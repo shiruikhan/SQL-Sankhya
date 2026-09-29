@@ -23,22 +23,11 @@ BEGIN
 IF INSERTING
  THEN
 
-    SELECT MAX(DHALTER)
-      INTO V_DHTIPOPER
-      FROM TGFTOP
-     WHERE CODTIPOPER = V_CODTIPOPER;
-
-    SELECT MAX(DHALTER)
-      INTO V_DHTIPOPERNEW
-      FROM TGFTOP
-     WHERE CODTIPOPER = V_CODTIPOPERNEW;
-
-    SELECT MAX(DHALTER)
-      INTO V_DHTIPVENDA
-      FROM TGFTPV
-     WHERE CODTIPVENDA = V_CODTIPVENDA;
-
 	 /********RODAR PARA OS VENDEDOR APENAS COM COMISSÃO*******/
+	 /* Performance (Setembro/2026): checagem de vendedor/comissão movida
+	    para antes das 3 consultas MAX(DHALTER) em TGFTOP/TGFTPV — essas 3
+	    só são usadas no laço abaixo, que não roda quando esta checagem
+	    retorna cedo. Comportamento observável inalterado. */
 
 	BEGIN
 
@@ -54,9 +43,9 @@ IF INSERTING
 			AND ROWNUM = 1;
 
 		EXCEPTION
-			WHEN NO_DATA_FOUND 
+			WHEN NO_DATA_FOUND
 				THEN
-			RETURN; 
+			RETURN;
 		END;
 
 		IF NVL(V_CODFORM,0) = 0
@@ -65,6 +54,21 @@ IF INSERTING
 		END IF;
 
 	END;
+
+    SELECT MAX(DHALTER)
+      INTO V_DHTIPOPER
+      FROM TGFTOP
+     WHERE CODTIPOPER = V_CODTIPOPER;
+
+    SELECT MAX(DHALTER)
+      INTO V_DHTIPOPERNEW
+      FROM TGFTOP
+     WHERE CODTIPOPER = V_CODTIPOPERNEW;
+
+    SELECT MAX(DHALTER)
+      INTO V_DHTIPVENDA
+      FROM TGFTPV
+     WHERE CODTIPVENDA = V_CODTIPVENDA;
 
 
     FOR R_DADOS IN (

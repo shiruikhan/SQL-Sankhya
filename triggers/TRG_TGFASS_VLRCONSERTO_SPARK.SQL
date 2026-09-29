@@ -2,6 +2,7 @@ CREATE OR REPLACE TRIGGER TRG_TGFASS_VLRCONSERTO_SPARK
 BEFORE INSERT OR UPDATE ON AD_TGFASS
 FOR EACH ROW
 FOLLOWS SPK_TGFASS_INC
+WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 'X') NOT IN ('T', 'RT', 'D'))
 /*==============================================================================
   Nome do Script : TRG_TGFASS_VLRCONSERTO_SPARK
   Tipo           : Trigger
@@ -32,6 +33,10 @@ FOLLOWS SPK_TGFASS_INC
   Data de Criação: 17/09/2026
   Última Revisão : Setembro/2026 — adicionadas restrições de cálculo: exige
                    TECNICO preenchido e STATUS diferente de 'T', 'RT' ou 'D'.
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo, para não disparar em
+                   nenhum INSERT/UPDATE de AD_TGFASS fora do filtro.
+                   Comportamento observável inalterado.
 
   Observações    : - Cada campo só é preenchido se estiver nulo ou zerado
                      (não sobrescreve valor já preenchido/ajustado); os dois
