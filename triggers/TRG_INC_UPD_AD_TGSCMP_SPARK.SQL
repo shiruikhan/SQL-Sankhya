@@ -14,6 +14,12 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Corrigido END sem rótulo válido num bloco
+                   interno não rotulado (END TRG_INC_UPD_AD_TGSCMP_SPARK;)
+                   para END;. Nenhuma oportunidade de performance segura: as
+                   duas ramificações (IF/ELSE) sempre fazem trabalho real,
+                   sem caso de no-op para reduzir via WHEN. Comportamento
+                   observável inalterado.
 ==============================================================================*/
 DECLARE
     v_referencia   TGFPRO.REFERENCIA%TYPE;
@@ -39,7 +45,7 @@ BEGIN
                 v_largura    := NULL;
                 v_espessura  := NULL;
                 v_unidade    := NULL;
-        END TRG_INC_UPD_AD_TGSCMP_SPARK;
+        END;
 
         :NEW.REFERENCIA := v_referencia;
         :NEW.MARCA      := v_marca;

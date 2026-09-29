@@ -15,24 +15,30 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance/limpeza: removido o DISTINCT
+                   e o wrapper externo (WHERE ROWNUM = 1 já garantia só 1
+                   linha; o DISTINCT interno forçava um sort/dedup sobre
+                   todo o resultado antes desse corte, mesmo quando só a
+                   primeira linha importa) — ROWNUM = 1 movido direto para a
+                   consulta, permitindo ao Oracle parar no primeiro match do
+                   join. Corrigido também END sem rótulo válido num bloco
+                   interno (END TRG_APOQLD_INS_SPARK;) para END;.
+                   Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
-    P_CODPROD INTEGER;	
+    P_CODPROD INTEGER;
     P_FICPRO TPRIPROC.NROLOTE%TYPE;
 BEGIN
     P_FICPRO := :NEW.FICPRO;
 
     BEGIN
-        SELECT CODPRODPA
+        SELECT IPA.CODPRODPA
         INTO P_CODPROD
-        FROM (
-            SELECT DISTINCT IPA.CODPRODPA
-            FROM TPRIPROC OP
-            INNER JOIN TPRIPA IPA ON OP.IDIPROC = IPA.IDIPROC
-            WHERE OP.NROLOTE = P_FICPRO
-              AND SUBSTR(IPA.CODPRODPA,1,1) IN ('2','3')
-        )
-        WHERE ROWNUM = 1; -- Garante que só retorna 1 linha
+        FROM TPRIPROC OP
+        INNER JOIN TPRIPA IPA ON OP.IDIPROC = IPA.IDIPROC
+        WHERE OP.NROLOTE = P_FICPRO
+          AND SUBSTR(IPA.CODPRODPA,1,1) IN ('2','3')
+          AND ROWNUM = 1; -- Garante que só retorna 1 linha
 
         :NEW.CODPROD := P_CODPROD;
 
@@ -45,5 +51,5 @@ BEGIN
         WHEN OTHERS THEN
             -- Log ou tratamento adicional se necessário
             :NEW.CODPROD := NULL;
-    END TRG_APOQLD_INS_SPARK;
+    END;
 END;

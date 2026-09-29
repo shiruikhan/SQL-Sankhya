@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_INC_UPD_CMF_SPARK
 BEFORE INSERT OR UPDATE OF NOMECID ON TSICID
 FOR EACH ROW
+WHEN (NVL(NEW.NOMECID, '§') <> NVL(OLD.NOMECID, '§'))
 /*==============================================================================
   Nome do Script : TRG_INC_UPD_CMF_SPARK
   Tipo           : Trigger
@@ -22,6 +23,14 @@ FOR EACH ROW
   Data de Criação: Jun/2026
   Última Revisão : Jun/2026 — Adiciona LOG_ERRO autônoma; trata NO_DATA_FOUND
                               e TOO_MANY_ROWS sem bloquear a operação
+                    Setembro/2026 — Performance: adicionada cláusula WHEN
+                    equivalente ao IF externo (INSERTING OR NOMECID
+                    alterado) — verificado caso a caso (insert com/sem
+                    NOMECID, update com valor igual/diferente/nulo) que
+                    produz o mesmo resultado. O IF externo foi removido do
+                    corpo; o IF interno (NOMECID IS NOT NULL) foi mantido,
+                    pois ainda é necessário para o caso "alterado para
+                    NULL". Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     V_SORT_RAW   RAW(2000);
@@ -70,9 +79,6 @@ DECLARE
     END LOG_ERRO;
 
 BEGIN
-    -- Executa somente em INSERT ou quando o campo NOMECID for alterado
-    IF INSERTING OR (UPDATING('NOMECID') AND NVL(:NEW.NOMECID, '§') <> NVL(:OLD.NOMECID, '§')) THEN
-
         IF :NEW.NOMECID IS NOT NULL THEN
 
             -- Normaliza o NOMECID removendo caracteres nao alfanumericos e aplicando comparacao accent-insensitive
@@ -105,8 +111,6 @@ BEGIN
             END IF;
 
         END IF;
-
-    END IF;
 
 EXCEPTION
     WHEN OTHERS THEN

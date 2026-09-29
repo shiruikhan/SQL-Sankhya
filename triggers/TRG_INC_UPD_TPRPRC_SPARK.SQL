@@ -22,6 +22,12 @@ FOR EACH ROW
                    edição do processo. Os blocos de INSERT (P_COUNT=0) foram mantidos
                    para que novos PIs adicionados ao processo recebam o valor inicial
                    correto de AD_TIPOPI. Registros já existentes não são mais tocados.
+                   Setembro/2026 — Performance: checagem de existência
+                   (SELECT COUNT(*), dentro do laço aninhado) ganhou
+                   ROWNUM = 1, já que o resultado só é comparado a 0 (os
+                   ramos que comparavam a 1 já estavam inativados). PRAGMA
+                   AUTONOMOUS_TRANSACTION e o COMMIT explícito não foram
+                   tocados. Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
 P_COUNT INT;
@@ -45,7 +51,7 @@ FOR MP IN (SELECT LPA.IDPROC,MP.CODPRODPA, MP.CODPRODMP AS CODPRODPI
 LOOP
 
 -- TIPO GERAÇÃO PI COMO SUB-ORDEM
-SELECT COUNT(*) INTO P_COUNT FROM TPRLPI WHERE CODPRODPA = MP.CODPRODPA AND CODPRODPI = MP.CODPRODPI AND IDPROC = MP.IDPROC;
+SELECT COUNT(*) INTO P_COUNT FROM TPRLPI WHERE CODPRODPA = MP.CODPRODPA AND CODPRODPI = MP.CODPRODPI AND IDPROC = MP.IDPROC AND ROWNUM = 1;
 
 IF NVL(:NEW.AD_TIPOPI,'N')= 'O' AND P_COUNT=0 THEN
 

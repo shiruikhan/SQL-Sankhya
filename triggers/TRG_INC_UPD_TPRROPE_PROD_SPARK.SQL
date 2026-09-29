@@ -2,7 +2,7 @@ CREATE OR REPLACE TRIGGER SPARKPRD.TRG_INC_UPD_TPRROPE_PROD_SPARK
 BEFORE INSERT OR UPDATE ON TPRROPE
 FOR EACH ROW
 /*==============================================================================
-  Nome do Script : SPARKPRD
+  Nome do Script : TRG_INC_UPD_TPRROPE_PROD_SPARK
   Tipo           : Trigger
   Descrição      : Define local destino em operações baseado em tipo de item e centro de custo
   Tabela         : TPRROPE
@@ -14,6 +14,13 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance/limpeza: corrigido cabeçalho
+                   ("Nome do Script: SPARKPRD") e END sem rótulo válido num
+                   bloco interno (END SPARKPRD;) para END;. Checagem de
+                   existência (SELECT COUNT(*)) ganhou ROWNUM = 1, já que o
+                   resultado só é comparado a 1 e NUNOTA é PK de TGFCAB
+                   (nunca mais que 1 linha). Comportamento observável
+                   inalterado.
 ==============================================================================*/
 DECLARE
   -- Variáveis auxiliares
@@ -42,7 +49,7 @@ BEGIN
       -- Evita falha total da trigger por erro inesperado
       P_CODLOCALORIG := 0;
       V_TIPOITENS := NULL;
-  END SPARKPRD;
+  END;
 
   ----------------------------------------------------------------------
   -- 2. Se não encontrou CODLOCALORIG e TIPOITENS for 'MT', tenta obter pelo centro de custo
@@ -89,7 +96,8 @@ BEGIN
       INTO P_COUNT
       FROM TGFCAB
      WHERE NUNOTA = :NEW.NUNOTA
-       AND TIPMOV = 'J';
+       AND TIPMOV = 'J'
+       AND ROWNUM = 1;
   EXCEPTION
     WHEN OTHERS THEN
       P_COUNT := 0;

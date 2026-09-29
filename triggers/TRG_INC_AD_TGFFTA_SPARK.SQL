@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_INC_AD_TGFFTA_SPARK
 BEFORE INSERT ON AD_TGFFTA
 FOR EACH ROW
+WHEN (NEW.INDICADOR = 'OTR' AND NEW.INDICADORORT IS NULL)
 /*==============================================================================
   Nome do Script : TRG_INC_AD_TGFFTA_SPARK
   Tipo           : Trigger
@@ -14,6 +15,9 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado.
 ==============================================================================*/
 BEGIN
     IF :NEW.INDICADOR = 'OTR' AND :NEW.INDICADORORT IS NULL THEN
