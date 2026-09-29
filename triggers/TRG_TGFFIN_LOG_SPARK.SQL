@@ -1,10 +1,10 @@
-create or replace TRIGGER SPK_TGFFIN_LOG
+create or replace TRIGGER TRG_TGFFIN_LOG_SPARK
 BEFORE INSERT OR UPDATE OR DELETE
 ON TGFFIN
 FOR EACH ROW
 WHEN (NEW.NUFIN IS NULL OR OLD.NUFIN IS NULL)
 /*==============================================================================
-  Nome do Script : SPK_TGFFIN_LOG
+  Nome do Script : TRG_TGFFIN_LOG_SPARK
   Tipo           : Trigger
   Descrição      : Registra auditoriae histórico de alterações na tabela TGFFIN.
                   Log de INSERT, UPDATE e DELETE em campos financeiros.
@@ -82,4 +82,4 @@ BEGIN
     END IF;
     RETURN;
   END IF;            
-END SPK_TGFFIN_LOG;
+END TRG_TGFFIN_LOG_SPARK;
