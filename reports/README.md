@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de relatórios:** 34 pastas  
+**Total de relatórios:** 35 pastas  
 **Tecnologia:** JasperReports — arquivos `.jrxml` (XML de definição de relatório)  
 
 ---
@@ -51,6 +51,7 @@ Os relatórios são templates JasperReports configurados e compilados pelo Sankh
 | 32 | `32 - ETIQUETA AVULSA MANUAL` | `ETIQUETA AVULSA ALTERADA.jrxml`, `ETIQUETA AVULSA ORIGINAL.jrxml` | Logística | Etiqueta avulsa manual (versão alterada vigente + original) |
 | 33 | `33 - ORÇAMENTO DE VENDA LUCAS` | `ORCAMENTO V04.jrxml` | Vendas | Orçamento de venda em layout customizado (paisagem) |
 | 34 | `34 - Fechamento Assistência` | `FechamentoAssistencia.jrxml` | Assistência / Financeiro | Lista as O.S. de um título gerado por `STP_INCFINASSIST_SPARK` (parâmetro `PK_NUFIN`), com dados do parceiro e total |
+| 35 | `35 - Fechamento Assistência Interna` | `FechamentoAssistenciaInterna.jrxml` | Assistência Técnica | Lista as O.S. de `AD_TGFASS` com nota de serviço vinculada (`AD_TGFASS.NUNOTA`, gravado por `STP_GRAVANOTA_ASSISTENCIA`), agrupadas por Nro. Único da nota, com subtotal por nota e total geral. Parâmetro opcional `P_NUNOTA`; STATUS/DEFEITO traduzidos via `TDDCAM`/`TDDOPC`; cabeçalho da empresa 1 |
 
 ---
 

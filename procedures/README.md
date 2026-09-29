@@ -104,6 +104,7 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 | `STP_INCMOVOSINT_SPARK.SQL` | `STP_INCMOVOSINT_SPARK` | Inclui movimentação em O.S. interna |
 | `STP_OSINTERNA_INC_SPARK.sql` | `STP_OSINTERNA_INC_SPARK` | Cria nova O.S. Interna via botão de ação |
 | `STP_ENVIAEMAILOS_SPARK.SQL` | `STP_ENVIAEMAILOS_SPARK` | Envia e-mail aos setores responsáveis quando nova O.S. é criada |
+| `STP_GRAVANOTA_ASSISTENCIA.sql` | `STP_GRAVANOTA_ASSISTENCIA` | Botão de ação: vincula a nota de serviço à O.S. selecionada em `AD_TGFASS` — valida o Nro. Único informado (`NUNOTA`) em `TGFCAB` e grava em `AD_TGFASS.NUNOTA`, ou aborta com erro. Nome sem sufixo `_SPARK` por já estar vinculado ao botão |
 
 ---
 
