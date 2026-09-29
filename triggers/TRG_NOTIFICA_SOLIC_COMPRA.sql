@@ -14,6 +14,16 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: a busca de nome/e-mail em
+                   TSIUSU só é usada dentro dos 4 blocos IF abaixo — passou a
+                   rodar apenas quando pelo menos um deles vai disparar (OR
+                   das mesmas 4 condições, copiadas ao pé da letra). O
+                   V_CODFILA inicial (SELECT MAX(CODFILA) FROM TMDFMG) só era
+                   usado dentro do bloco INSERTING — os blocos 2/3/4 sempre
+                   recalculavam o seu próprio — então foi movido para dentro
+                   desse bloco, eliminando uma consulta a TMDFMG em toda
+                   atualização de AD_TGSSCP. Comportamento observável
+                   inalterado.
 ==============================================================================*/
 DECLARE
     V_TITULO       VARCHAR2(300);
@@ -29,18 +39,24 @@ DECLARE
         WHERE NUSOL = :NEW.NUSOL
         ORDER BY CODPROD;
 BEGIN
-    -- Busca nome e e-mail do solicitante
-    SELECT NOMEUSU, EMAIL INTO V_NOME_USU, V_EMAIL_USU
-    FROM TSIUSU
-    WHERE CODUSU = :NEW.SOLICITANTE;
-
-    -- Gera código único para a fila de e-mail
-    SELECT NVL(MAX(CODFILA), 0) + 1 INTO V_CODFILA FROM TMDFMG;
+    -- Busca nome e e-mail do solicitante — só é usado pelos 4 blocos abaixo
+    IF (INSERTING) OR
+       (UPDATING AND :OLD.STATUS = 'EA' AND :NEW.STATUS = 'A') OR
+       (UPDATING AND :OLD.STATUS = 'EA' AND :NEW.STATUS = 'C') OR
+       (UPDATING AND :OLD.NUNOTA IS NULL AND :NEW.NUNOTA IS NOT NULL AND :NEW.STATUS = 'CR')
+    THEN
+        SELECT NOMEUSU, EMAIL INTO V_NOME_USU, V_EMAIL_USU
+        FROM TSIUSU
+        WHERE CODUSU = :NEW.SOLICITANTE;
+    END IF;
 
     -------------------------------------------------------------------
     -- 1. Inclusão da solicitação
     -------------------------------------------------------------------
     IF INSERTING THEN
+        -- Gera código único para a fila de e-mail
+        SELECT NVL(MAX(CODFILA), 0) + 1 INTO V_CODFILA FROM TMDFMG;
+
         V_TITULO := 'Nova Solicitação de Compra - #' || :NEW.NUSOL;
         V_CONTEUDO := '
             <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #ddd; max-width: 700px; margin: auto;">

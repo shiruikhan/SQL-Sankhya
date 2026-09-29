@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_BLOQUEIA_EDICAO_STATUS_CR
 BEFORE UPDATE ON AD_TGSSCP
 FOR EACH ROW
+WHEN (OLD.STATUS = 'CR')
 /*==============================================================================
   Nome do Script : TRG_BLOQUEIA_EDICAO_STATUS_CR
   Tipo           : Trigger
@@ -14,6 +15,9 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado.
 ==============================================================================*/
 BEGIN
   IF :OLD.STATUS = 'CR' THEN

@@ -2,6 +2,7 @@ CREATE OR REPLACE TRIGGER TRG_SPKCAE_VLRCONSERTO_SPARK
 BEFORE INSERT OR UPDATE ON AD_SPKCAE
 FOR EACH ROW
 FOLLOWS TRG_SPKCAE_INC_SPARK
+WHEN (NEW.STATUS = 'C' AND NVL(NEW.VLRCONSERTO, 0) = 0 AND NEW.T_CODPROD IS NOT NULL)
 /*==============================================================================
   Nome do Script : TRG_SPKCAE_VLRCONSERTO_SPARK
   Tipo           : Trigger
@@ -32,6 +33,9 @@ FOLLOWS TRG_SPKCAE_INC_SPARK
                    em VGFTAB/TGFEXC (sem considerar vigência) para a function
                    nativa SNK_PRECO(14, T_CODPROD), que resolve o NUTAB vigente
                    e aplica a regra de preço de STP_OBTEM_PRECO2.
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado.
 
   Observações    : - Só atua quando STATUS = 'C' e VLRCONSERTO está nulo ou
                      zerado (não sobrescreve valor já preenchido/ajustado).

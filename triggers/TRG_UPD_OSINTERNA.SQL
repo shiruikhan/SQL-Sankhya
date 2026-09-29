@@ -8,6 +8,14 @@ DECLARE
   Revisor        : Silvio Vieira | Analista de Sistemas Sênior | Spark Eletrônica
   Data Criação   : 13/03/2025
   Última Revisão : 30/04/2025
+                   Setembro/2026 — Performance: as consultas a TMDFMG
+                   (MAX(CODFILA), tabela inteira) e TSIUSU (e-mail) só eram
+                   úteis quando o status muda de mãos para outro usuário e o
+                   e-mail existe. Movidas para dentro do IF que já checava
+                   essa condição (agora aninhado), evitando as 2 consultas em
+                   toda alteração de AD_OSINTERNA que não representa essa
+                   troca de status por outro usuário. Comportamento
+                   observável inalterado.
 ==============================================================================*/
     P_CODUSUCRI     AD_OSINTERNA.CODUSUCRI%TYPE := :OLD.CODUSUCRI;
     P_CODUSUALT     AD_OSINTERNA.CODUSUALT%TYPE := :NEW.CODUSUALT;
@@ -20,9 +28,11 @@ DECLARE
     P_MAXFILA       NUMBER;
     P_EMAIL         VARCHAR2(60);
 BEGIN
+    -- Envia e-mail se o status foi alterado por outro usuário e existe e-mail válido
+    IF P_CODUSUCRI <> P_CODUSUALT AND P_STATUSOLD <> P_STATUSNEW THEN
+
     -- Geração de código de fila e recuperação do e-mail
     BEGIN
-        SELECT MAX(CODFILA) + 1 INTO P_MAXFILA FROM TMDFMG;
         SELECT EMAIL INTO P_EMAIL FROM TSIUSU WHERE CODUSU = P_CODUSUCRI;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
@@ -33,8 +43,9 @@ BEGIN
             RETURN;
     END;
 
-    -- Envia e-mail se o status foi alterado por outro usuário e existe e-mail válido
-    IF P_CODUSUCRI <> P_CODUSUALT AND P_STATUSOLD <> P_STATUSNEW AND P_EMAIL IS NOT NULL THEN
+    IF P_EMAIL IS NOT NULL THEN
+        SELECT MAX(CODFILA) + 1 INTO P_MAXFILA FROM TMDFMG;
+
         CASE P_STATUSNEW
             WHEN 'A' THEN
                 IF P_STATUSOLD = 'I' THEN
@@ -80,6 +91,8 @@ BEGIN
                     </div>',
                     P_EMAIL, NULL);
         END CASE;
+    END IF;
+
     END IF;
 
 EXCEPTION

@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_UPD_OSINTERNA_DHFIM
 BEFORE UPDATE ON AD_OSINTERNA
 FOR EACH ROW
+WHEN (NEW.STATUS = 'F' AND OLD.STATUS <> 'F')
 DECLARE
 /*==============================================================================
   Nome do Script : TRG_UPD_OSINTERNA_DHFIM
@@ -9,6 +10,9 @@ DECLARE
   Revisor        : Silvio Vieira | Analista de Sistemas Sênior | Spark Eletrônica
   Data Criação   : 30/03/2026
   Última Revisão : 30/03/2026
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado.
 ==============================================================================*/
     P_STATUSOLD  AD_OSINTERNA.STATUS%TYPE := :OLD.STATUS;
     P_STATUSNEW  AD_OSINTERNA.STATUS%TYPE := :NEW.STATUS;

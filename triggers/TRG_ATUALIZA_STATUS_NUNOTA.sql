@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_ATUALIZA_STATUS_NUNOTA
 BEFORE UPDATE ON AD_TGSSCP
 FOR EACH ROW
+WHEN (NEW.NUNOTA IS NOT NULL AND OLD.NUNOTA IS NULL)
 /*==============================================================================
   Nome do Script : TRG_ATUALIZA_STATUS_NUNOTA
   Tipo           : Trigger
@@ -14,6 +15,9 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado.
 ==============================================================================*/
 BEGIN
   -- Executa somente se o campo NUNOTA for preenchido e estiver diferente de NULL

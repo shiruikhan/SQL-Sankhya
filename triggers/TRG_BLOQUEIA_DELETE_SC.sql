@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_BLOQUEIA_DELETE_SC
 BEFORE DELETE ON AD_TGSSCP
 FOR EACH ROW
+WHEN (OLD.STATUS IN ('A', 'C', 'CR'))
 /*==============================================================================
   Nome do Script : TRG_BLOQUEIA_DELETE_SC
   Tipo           : Trigger
@@ -14,6 +15,10 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado (fora do filtro, o DELETE já prosseguia sem
+                   erro).
 ==============================================================================*/
 BEGIN
   IF :OLD.STATUS IN ('A', 'C', 'CR') THEN
