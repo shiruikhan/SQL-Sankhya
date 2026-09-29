@@ -6,8 +6,8 @@ CREATE OR REPLACE PROCEDURE STP_REGRA_VALID_AVISTA_SPARK (P_NUNOTA INT, P_SUCESS
                    vencidos no dia são recebimento à vista ou requerem confirmação.
                    Exceções (não exigem liberação do financeiro):
                    - títulos com CODTIPTIT 34, 35 e 36;
-                   - notas do e-commerce (TGFCAB.CODVEND = 6): sempre à vista,
-                     já validadas pela plataforma.
+                   - notas de marketplace/e-commerce (TGFCAB.CODVEND 5, 6, 42, 43
+                     e 44): sempre à vista, já validadas pela plataforma.
 
   Parâmetros     : P_NUNOTA      — número único da nota fiscal
                    P_SUCESSO     — indicador de sucesso da regra (OUT)
@@ -21,14 +21,17 @@ CREATE OR REPLACE PROCEDURE STP_REGRA_VALID_AVISTA_SPARK (P_NUNOTA INT, P_SUCESS
   Empresa        : Spark Eletrônica
   Data de Criação: Abril/2025
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-                   Setembro/2026 — Exceção para vendas do e-commerce (CODVEND = 6)
+                   Setembro/2026 — Exceção para vendas de marketplace/e-commerce
+                   (CODVEND 5, 6, 42, 43 e 44)
 
-  Observações    : CODVEND do e-commerce (6) e CODTIPTIT 34, 35 e 36 são valores
-                   fixos no código. P_CODUSULIB não é preenchido por esta regra.
+  Observações    : Valores fixos no código:
+                   - CODVEND: 5 (Mercado Livre), 6 (e-commerce), 42 (Shopee),
+                     43 (Mercado Livre 2) e 44 (TikTok);
+                   - CODTIPTIT: 34, 35 e 36.
+                   P_CODUSULIB não é preenchido por esta regra.
 ==============================================================================*/
-    V_CODVEND_ECOMMERCE CONSTANT TGFCAB.CODVEND%TYPE := 6;
-    V_CODVEND           TGFCAB.CODVEND%TYPE;
-    V_VALIDO            BOOLEAN := TRUE;
+    V_CODVEND TGFCAB.CODVEND%TYPE;
+    V_VALIDO  BOOLEAN := TRUE;
 
     CURSOR C_DTVENC IS
         SELECT  FIN.DTVENC
@@ -37,7 +40,7 @@ CREATE OR REPLACE PROCEDURE STP_REGRA_VALID_AVISTA_SPARK (P_NUNOTA INT, P_SUCESS
         WHERE   FIN.NUNOTA = P_NUNOTA;
 BEGIN
     ---------------------------------------------------------------------------
-    -- 1. Identifica o vendedor da nota (CODVEND = 6 => venda do e-commerce)
+    -- 1. Identifica o vendedor da nota (5, 6, 42, 43, 44 => marketplace/e-commerce)
     ---------------------------------------------------------------------------
     BEGIN
         SELECT  CAB.CODVEND
@@ -50,9 +53,10 @@ BEGIN
     END;
 
     ---------------------------------------------------------------------------
-    -- 2. Valida os títulos com vencimento no dia (e-commerce dispensa a regra)
+    -- 2. Valida os títulos com vencimento no dia (marketplace dispensa a regra)
     ---------------------------------------------------------------------------
-    IF NVL(V_CODVEND, -1) <> V_CODVEND_ECOMMERCE THEN
+    -- 5 Mercado Livre | 6 E-commerce | 42 Shopee | 43 Mercado Livre 2 | 44 TikTok
+    IF NVL(V_CODVEND, -1) NOT IN (5, 6, 42, 43, 44) THEN
         FOR R_FIN IN C_DTVENC LOOP
             IF TRUNC(R_FIN.DTVENC) = TRUNC(SYSDATE) AND R_FIN.CODTIPTIT NOT IN (34,35,36) THEN
                 V_VALIDO := FALSE;
