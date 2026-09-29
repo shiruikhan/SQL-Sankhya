@@ -33,16 +33,16 @@ SELECT t.owner
       ,t.trigger_type
   FROM all_triggers t
  WHERE t.trigger_name IN (
-        'TRG_INS_UPD_CODLOCALDEST', -- nome real dentro do arquivo SPK_INS_UPD_CODLOCALDEST.SQL
+        'TRG_INS_UPD_CODLOCALDEST', -- renomeado de SPK_INS_UPD_CODLOCALDEST.SQL em 29/09/2026
         'SPK_INS_UPD_TGFCAB_AVISOPARC',
-        'SPK_INS_UPD_TWFIVAR_CODIGONOVO',
-        'SPK_TGFASS_INC',
-        'SPK_TGFASS_INCUPD',
+        'TRG_INS_UPD_TWFIVAR_CODIGONOVO', -- renomeado de SPK_INS_UPD_TWFIVAR_CODIGONOVO em 29/09/2026
+        'TRG_TGFASS_INC_SPARK', -- renomeado de SPK_TGFASS_INC em 29/09/2026
+        'TRG_TGFASS_INCUPD_SPARK', -- renomeado de SPK_TGFASS_INCUPD em 29/09/2026
         'SPK_TGFCAB_TSIBLOCK',
-        'SPK_TGFFIN_LOG',
-        'SPK_TRG_INS_TGFCUS',
+        'TRG_TGFFIN_LOG_SPARK', -- renomeado de SPK_TGFFIN_LOG em 29/09/2026
+        'TRG_INS_TGFCUS_SPARK', -- renomeado de SPK_TRG_INS_TGFCUS em 29/09/2026
         -- (SPK_TRG_OSINTERNA removido: confirmado ausente do banco em 28/09/2026, movido para inativos/)
-        'SPK_TRG_TGFCUS',
+        'TRG_TGFCUS_SPARK', -- renomeado de SPK_TRG_TGFCUS em 29/09/2026
         'SPK_UPD_INS_TGFITE_CONSUMOPRD',
         'TRG_AD_EMBPED_SPARK',
         'TRG_APOQLD_INS_SPARK',

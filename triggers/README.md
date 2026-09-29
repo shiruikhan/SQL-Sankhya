@@ -106,9 +106,9 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_UPD_OSINTERNA.SQL` | `TRG_UPD_OSINTERNA` | `[O.S.]` | UPDATE | Envia e-mail ao criador da O.S. quando há mudança de status |
 | `TRG_UPD_OSINTERNA_DHFIM.SQL` | `TRG_UPD_OSINTERNA_DHFIM` | `[O.S.]` | UPDATE | Grava data e hora de finalização (`DHFIM`) quando status muda para finalizado |
 | `TRG_INS_OSSTATUS_SPARK.SQL` | `TRG_INS_OSSTATUS_SPARK` | `[O.S.]` | INSERT | Define status inicial da Ordem de Serviço |
-| `SPK_TGFASS_INC.SQL` | `SPK_TGFASS_INC` | `TGFASS` | INSERT | Automação na inclusão de registros de assistência |
-| `SPK_TGFASS_INCUPD.SQL` | `SPK_TGFASS_INCUPD` | `TGFASS` | INSERT, UPDATE | Validações adicionais na assistência (inclusão e alteração) |
-| `TRG_TGFASS_VLRCONSERTO_SPARK.SQL` | `TRG_TGFASS_VLRCONSERTO_SPARK` | `AD_TGFASS` | INSERT, UPDATE | Preenche `VLRCONSERTO` via `SNK_PRECO(14, T_CODPROD)` e `VLRSERVTECNICO` via `SNK_PRECO(15, T_CODPROD)`, cada um quando o respectivo campo está nulo/zerado. `FOLLOWS SPK_TGFASS_INC` para garantir `T_CODPROD` já preenchido |
+| `TRG_TGFASS_INC_SPARK.SQL` | `TRG_TGFASS_INC_SPARK` | `TGFASS` | INSERT | Automação na inclusão de registros de assistência |
+| `TRG_TGFASS_INCUPD_SPARK.SQL` | `TRG_TGFASS_INCUPD_SPARK` | `TGFASS` | INSERT, UPDATE | Validações adicionais na assistência (inclusão e alteração) |
+| `TRG_TGFASS_VLRCONSERTO_SPARK.SQL` | `TRG_TGFASS_VLRCONSERTO_SPARK` | `AD_TGFASS` | INSERT, UPDATE | Preenche `VLRCONSERTO` via `SNK_PRECO(14, T_CODPROD)` e `VLRSERVTECNICO` via `SNK_PRECO(15, T_CODPROD)`, cada um quando o respectivo campo está nulo/zerado. `FOLLOWS TRG_TGFASS_INC_SPARK` para garantir `T_CODPROD` já preenchido |
 
 ---
 
@@ -128,7 +128,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
 | `TRG_REFORCA_NAT_FIN.sql` | `TRG_REFORCA_NAT_FIN` | `TGFFIN` | INSERT, UPDATE | Reforça natureza financeira e centro de custo baseado no cabeçalho da nota |
-| `SPK_TGFFIN_LOG.SQL` | `SPK_TGFFIN_LOG` | `TGFFIN` | INSERT, UPDATE, DELETE | Log de alterações nos lançamentos financeiros |
+| `TRG_TGFFIN_LOG_SPARK.SQL` | `TRG_TGFFIN_LOG_SPARK` | `TGFFIN` | INSERT, UPDATE, DELETE | Log de alterações nos lançamentos financeiros |
 | `TRG_INCDEVCH_SPARK.SQL` | `TRG_INCDEVCH_SPARK` | `[cheque/dev]` | INSERT | Controla inclusão de devolução/cheque |
 | `TRG_INC_AD_TGFFTA_SPARK.SQL` | `TRG_INC_AD_TGFFTA_SPARK` | `AD_TGFFTA` | INSERT | Controla lançamento de adiantamento financeiro |
 
@@ -154,7 +154,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_AVISOCONF_SPARK.sql` | `TRG_AVISOCONF_SPARK` | `TGFCAB` | UPDATE | Envia aviso quando pedido de venda tem conferência finalizada |
 | `TRG_UPD_AVISOSPARK.SQL` | `TRG_UPD_AVISOSPARK` | `[avisos]` | UPDATE | Atualiza status de aviso após ação do destinatário |
 | `TRG_INC_TGFIXN_EMAIL_SPARK.SQL` | *(INATIVADA)* | `TGFIXN` | INSERT | Disparava envio de e-mail na inclusão de XML de CT-e/NF-e importado — estava desativada em produção; reativada acidentalmente por `CREATE OR REPLACE` durante refatoração de performance de Set/2026 (ver §15) |
-| `SPK_INS_UPD_CODLOCALDEST.SQL` | `TRG_INS_UPD_CODLOCALDEST` | `TGFITE` | INSERT, UPDATE | Controla código de local de destino em itens com notificação associada |
+| `TRG_INS_UPD_CODLOCALDEST.SQL` | `TRG_INS_UPD_CODLOCALDEST` | `TGFITE` | INSERT, UPDATE | Controla código de local de destino em itens com notificação associada |
 | `TRG_NOTIF_PARCERIA_SPARK.sql` | `TRG_NOTIF_PARCERIA_SPARK` | `AD_TGSTPP` | AFTER INSERT, UPDATE | Notificações por e-mail do fluxo de triagem de parceria (influenciadores/patrocínio): nova solicitação → SAC; 1º parecer do SAC → Comercial; 1ª decisão comercial → SAC. Traduz campos multi-escolha via `TDDCAM`/`TDDOPC`; grava na fila via `STP_GRAVA_FILA_BI2`; loga em `AD_LOG_ERROS` |
 
 ---
@@ -165,8 +165,8 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 |---|---|---|---|---|
 | `TRG_INC_UPT_TGFPRO_SPARK.SQL` | `TRG_INC_UPT_TGFPRO_SPARK` | `TGFPRO` | INSERT, UPDATE | Valida e sincroniza campos do cadastro de produto |
 | `TRG_INC_UPD_AD_TPRSERPA_SPARK.SQL` | `TRG_INC_UPD_AD_TPRSERPA_SPARK` | `AD_TPRSERPA` | INSERT, UPDATE | Controla séries de PA no processo produtivo |
-| `SPK_TRG_INS_TGFCUS.SQL` | `SPK_TRG_INS_TGFCUS` | `TGFCUS` | INSERT | Controla inserção de custos de produto |
-| `SPK_TRG_TGFCUS.SQL` | `SPK_TRG_TGFCUS` | `TGFCUS` | INSERT, UPDATE | Valida atualizações de custo |
+| `TRG_INS_TGFCUS_SPARK.SQL` | `TRG_INS_TGFCUS_SPARK` | `TGFCUS` | INSERT | Controla inserção de custos de produto |
+| `TRG_TGFCUS_SPARK.SQL` | `TRG_TGFCUS_SPARK` | `TGFCUS` | INSERT, UPDATE | Valida atualizações de custo |
 
 ---
 
@@ -175,7 +175,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
 | `TRG_INC_UPD_INTEGRA.sql` | `TRG_INC_UPD_INTEGRA` | `[integração]` | INSERT, UPDATE | Sincroniza dados para integração com sistemas externos |
-| `SPK_INS_UPD_TWFIVAR_CODIGONOVO.SQL` | `SPK_INS_UPD_TWFIVAR_CODIGONOVO` | `TWFIVAR` | INSERT, UPDATE | Mantém código novo em variáveis de integração WFI |
+| `TRG_INS_UPD_TWFIVAR_CODIGONOVO.SQL` | `TRG_INS_UPD_TWFIVAR_CODIGONOVO` | `TWFIVAR` | INSERT, UPDATE | Mantém código novo em variáveis de integração WFI |
 
 ---
 
