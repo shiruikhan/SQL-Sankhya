@@ -15,6 +15,10 @@ DECLARE
   Revisor        : Silvio Vieira | Analista de Sistemas Sênior | Spark Eletrônica
   Data Criação   : 31/03/2026
   Última Revisão : 02/04/2026
+                   Setembro/2026 — Performance: as duas checagens de
+                   existência (SELECT COUNT(1)) ganharam ROWNUM = 1, já que o
+                   resultado só é comparado a 0. Comportamento observável
+                   inalterado.
 ==============================================================================*/
     P_SETOR_APO   TPREFX.DESCRICAO%TYPE;
     P_SETOR_FUNC  TFPDEP.DESCRDEP%TYPE;
@@ -45,7 +49,8 @@ BEGIN
     SELECT COUNT(1)
       INTO P_TEM_MAPA
       FROM AD_MAP_SETOR_FUNC
-     WHERE DESCIDEFX = P_SETOR_APO;
+     WHERE DESCIDEFX = P_SETOR_APO
+       AND ROWNUM = 1;
 
     IF P_TEM_MAPA = 0 THEN
         RETURN;
@@ -74,7 +79,8 @@ BEGIN
       INTO P_TEM_MATCH
       FROM AD_MAP_SETOR_FUNC
      WHERE DESCDEP   = P_SETOR_FUNC
-       AND DESCIDEFX = P_SETOR_APO;
+       AND DESCIDEFX = P_SETOR_APO
+       AND ROWNUM = 1;
 
     IF P_TEM_MATCH = 0 THEN
         RAISE_APPLICATION_ERROR(-20111,

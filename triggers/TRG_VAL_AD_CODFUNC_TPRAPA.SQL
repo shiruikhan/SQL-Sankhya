@@ -15,6 +15,12 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Corrigido END sem rótulo válido num bloco
+                   interno não rotulado (END TRG_VAL_AD_CODFUNC_TPRAPA;) para
+                   END;. Nenhuma oportunidade de performance identificada: a
+                   única consulta é indispensável para a validação (não pode
+                   virar WHEN, pois depende de join com outras tabelas) e não
+                   há duplicação. Comportamento observável inalterado.
 ==============================================================================*/
 DECLARE
     P_DESCRICAO VARCHAR2(100);
@@ -30,7 +36,7 @@ BEGIN
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             P_DESCRICAO := NULL;
-    END TRG_VAL_AD_CODFUNC_TPRAPA;
+    END;
 
     -- Valida se o campo AD_CODFUNC está preenchido, EXCETO se for 'EXPEDIÇÃO/CONFERENCIA'
     IF NVL(P_DESCRICAO, ' ') <> 'EXPEDIÇÃO/CONFERENCIA' AND NVL(P_DESCRICAO, ' ') <> 'EXPEDICAO/CONF' THEN

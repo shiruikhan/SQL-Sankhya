@@ -1,6 +1,7 @@
 CREATE OR REPLACE TRIGGER TRG_VALIDA_PRAZO_SC
 BEFORE INSERT OR UPDATE ON AD_TGSSCP
 FOR EACH ROW
+WHEN (NEW.PRAZO <= TRUNC(SYSDATE))
 /*==============================================================================
   Nome do Script : TRG_VALIDA_PRAZO_SC
   Tipo           : Trigger
@@ -14,6 +15,9 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: adicionada cláusula WHEN
+                   idêntica ao único IF do corpo. Comportamento observável
+                   inalterado.
 ==============================================================================*/
 BEGIN
   IF :NEW.PRAZO <= TRUNC(SYSDATE) THEN

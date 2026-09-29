@@ -15,8 +15,11 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Setembro/2026 — Performance: checagem de existência
+                   (SELECT COUNT(*)) ganhou ROWNUM = 1, já que o resultado só
+                   é comparado a 0. Comportamento observável inalterado.
 ==============================================================================*/
-DECLARE 
+DECLARE
 P_COUNT     INT;
 P_CODVOL    VARCHAR2(100);
 
@@ -25,7 +28,8 @@ BEGIN
     SELECT COUNT(*) INTO P_COUNT
       FROM TGFBAR
      WHERE CODBARRA = :OLD.SERIEPA
-       AND CODPROD = :OLD.CODPRODPA;
+       AND CODPROD = :OLD.CODPRODPA
+       AND ROWNUM = 1;
        
        IF P_COUNT = 0 THEN 
        

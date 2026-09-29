@@ -18,28 +18,29 @@ FOLLOWS TRG_TPRCOI_REPLICA_PA
                    garantir que essa trigger rode depois da réplica de
                    CONTROLEPA/CODPRODPA (ORA-25025 impede usar PRECEDES na
                    trigger de réplica, então a ordenação foi movida para cá).
+                   Setembro/2026 — Performance: as 3 consultas sequenciais
+                   (TPRCONF -> TPRIATV -> TPRIPA, cada uma usando o MAX da
+                   anterior como filtro) foram unificadas em um único SELECT
+                   com subqueries aninhadas, eliminando 2 idas ao banco. P_
+                   IDIATV/P_IDIPROC não eram usadas em mais nenhum lugar do
+                   corpo. PRAGMA AUTONOMOUS_TRANSACTION comentada NÃO foi
+                   tocada — mantida exatamente como estava.
 ==============================================================================*/
-DECLARE 
+DECLARE
 P_COUNT  INT;
-P_IDIATV TPRIATV.IDIATV%TYPE;
-P_IDIPROC      INT;
 P_LOTE         VARCHAR2(100);
 
 --PRAGMA AUTONOMOUS_TRANSACTION;
 BEGIN
 
-    SELECT MAX(IDIATV) INTO P_IDIATV
-      FROM TPRCONF
-    WHERE NUCONF = :NEW.NUCONF;
-    
-    SELECT MAX(IDIPROC) INTO P_IDIPROC
-      FROM TPRIATV
-     WHERE IDIATV = P_IDIATV;
-
     SELECT MAX(NROLOTE) INTO P_LOTE
       FROM TPRIPA
-     WHERE IDIPROC = P_IDIPROC;
-     
+     WHERE IDIPROC = (
+        SELECT MAX(IDIPROC) FROM TPRIATV WHERE IDIATV = (
+            SELECT MAX(IDIATV) FROM TPRCONF WHERE NUCONF = :NEW.NUCONF
+        )
+     );
+
      IF LENGTH(:NEW.CODBARRA) = 14 THEN
         IF SUBSTR(:NEW.CODBARRA, 3, 8) <> LTRIM(P_LOTE) THEN
             RAISE_APPLICATION_ERROR(-20101, 'Esse Código de Barras não pertence a esse Lote!');
