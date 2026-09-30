@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : SepTransfAssistExterna
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 37 - Separação Transferência Assistência
+  Descrição      : Lista de separação física das transferências de reposição da
+                   assistência externa geradas por STP_MOVMATASSIST_SPARK (TOP
+                   708, local 201 -> local do parceiro). O usuário usa a lista
+                   para separar os componentes antes de enviá-los ao local do
+                   parceiro.
+                   Os itens são lidos da própria nota de transferência (TGFITE,
+                   itens de saída, SEQUENCIA > 0) e UNIFICADOS POR PARCEIRO:
+                   uma seção (página nova) por parceiro, com uma linha por
+                   produto + unidade (CODPROD | DESCRPROD | CODVOL | QTD), com
+                   a quantidade somada de todas as transferências do período.
+                   Cabeçalho padrão com os dados da empresa 1 (Spark Eletrônica
+                   — TSIEMP) e logo.
+
+  Parâmetros     : P_CODPARC — parceiro da assistência externa (opcional). Em
+                               branco, uma seção para cada parceiro.
+                   P_DTINI   — data inicial da nota de transferência (opcional;
+                               padrão = hoje)
+                   P_DTFIN   — data final da nota de transferência (opcional;
+                               padrão = hoje)
+
+  Tabelas        : AD_SPKCAE : O.S. de conserto externo (NUNOTATRF, CODPARC)
+                   TGFCAB / TGFITE : nota de transferência e seus itens
+                   TGFPRO / TGFPAR / TGFLOC : descrição do produto, parceiro
+                                   (AD_CODLOCAL) e locais
+                   TSIEMP / TSIEND / TSIBAI / TSICID / TSIUFS : dados da empresa 1
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Data de Criação: 30/09/2026
+  Última Revisão : Setembro/2026 — Criação
+
+  Observações    : - O relatório NÃO usa PK_ da tela: lista por período/parceiro
+                     (parâmetros acima). Se for chamado de uma tela com N
+                     registros selecionados, o Sankhya executa o relatório N
+                     vezes com os mesmos parâmetros e sai o mesmo conteúdo N
+                     vezes — imprimir com um único registro selecionado.
+                   - O período filtra TGFCAB.DTNEG da nota de transferência
+                     (gravada como a data da execução do botão). Limpar as
+                     datas lista todo o histórico — cuidado ao reimprimir.
+                   - Só entram O.S. com NUNOTATRF preenchido e TOP 708.
+                   - O local de origem exibido vem do próprio item da nota
+                     (TGFITE.CODLOCALORIG); o de destino, de TGFPAR.AD_CODLOCAL.
+                   - Itens iguais (mesmo produto e unidade) de O.S. diferentes do
+                     mesmo parceiro são somados numa única linha.
+  ==============================================================================
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SepTransfAssistExterna" language="groovy" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" whenNoDataType="NoDataSection">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="P_CODPARC" class="java.math.BigDecimal">
+		<property name="NOMETABELA" value="TGFPAR"/>
+		<parameterDescription><![CDATA[Parceiro da assistência externa (opcional; em branco lista todos)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTINI" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data inicial da transferência (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTFIN" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data final da transferência (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT X.CODPARC,
+    X.NOMEPARC,
+    X.CODLOCALORIG,
+    X.DESCRLOCALORIG,
+    X.CODLOCALDEST,
+    X.DESCRLOCALDEST,
+    X.CODPROD,
+    X.DESCRPROD,
+    X.CODVOL,
+    X.QTD,
+    EMP.RAZAOSOCIAL AS EMP_RAZAO,
+    EMPEDN.NOMEEND || ', ' || EMP.NUMEND
+        || CASE WHEN EMP.COMPLEMENTO IS NOT NULL THEN ' - ' || EMP.COMPLEMENTO END
+        || CASE WHEN EMPBAI.NOMEBAI IS NOT NULL THEN ' - ' || EMPBAI.NOMEBAI END AS EMP_ENDERECO,
+    EMPCID.NOMECID || '/' || EMPUFS.UF || ' - CEP ' || EMP.CEP AS EMP_CIDADE,
+    'CNPJ: ' ||
+    CASE
+        WHEN LENGTH(REGEXP_REPLACE(EMP.CGC, '[^0-9]', '')) = 14 THEN
+            REGEXP_REPLACE(REGEXP_REPLACE(EMP.CGC, '[^0-9]', ''),
+                '^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$', '\1.\2.\3/\4-\5')
+        ELSE EMP.CGC
+    END
+    || '   IE: ' || EMP.INSCESTAD
+    || '   Fone: ' || EMP.TELEFONE AS EMP_DOC
+FROM (
+    SELECT CAE.CODPARC,
+        PAR.NOMEPARC,
+        ITE.CODLOCALORIG,
+        LOR.DESCRLOCAL AS DESCRLOCALORIG,
+        PAR.AD_CODLOCAL AS CODLOCALDEST,
+        LDE.DESCRLOCAL AS DESCRLOCALDEST,
+        ITE.CODPROD,
+        PRO.DESCRPROD,
+        ITE.CODVOL,
+        SUM(ITE.QTDNEG) AS QTD
+    FROM AD_SPKCAE CAE
+        INNER JOIN TGFCAB CAB ON CAB.NUNOTA = CAE.NUNOTATRF
+        INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+        INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+        INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAE.CODPARC
+        LEFT JOIN TGFLOC LOR ON LOR.CODLOCAL = ITE.CODLOCALORIG
+        LEFT JOIN TGFLOC LDE ON LDE.CODLOCAL = PAR.AD_CODLOCAL
+    WHERE CAB.CODTIPOPER = 708
+      AND ITE.SEQUENCIA > 0
+      AND DECODE(CAE.CODPARC, NVL($P{P_CODPARC}, CAE.CODPARC), 1, 0) = 1
+      AND CAB.DTNEG >= TRUNC(NVL($P{P_DTINI}, CAB.DTNEG))
+      AND CAB.DTNEG < TRUNC(NVL($P{P_DTFIN}, CAB.DTNEG)) + 1
+    GROUP BY CAE.CODPARC,
+        PAR.NOMEPARC,
+        ITE.CODLOCALORIG,
+        LOR.DESCRLOCAL,
+        PAR.AD_CODLOCAL,
+        LDE.DESCRLOCAL,
+        ITE.CODPROD,
+        PRO.DESCRPROD,
+        ITE.CODVOL
+) X
+    INNER JOIN TSIEMP EMP ON EMP.CODEMP = 1
+    LEFT JOIN TSIEND EMPEDN ON EMPEDN.CODEND = EMP.CODEND
+    LEFT JOIN TSIBAI EMPBAI ON EMPBAI.CODBAI = EMP.CODBAI
+    LEFT JOIN TSICID EMPCID ON EMPCID.CODCID = EMP.CODCID
+    LEFT JOIN TSIUFS EMPUFS ON EMPUFS.CODUF = EMPCID.UF
+ORDER BY X.NOMEPARC, X.CODPARC, X.CODPROD, X.CODVOL]]>
+	</queryString>
+	<field name="CODPARC" class="java.math.BigDecimal"/>
+	<field name="NOMEPARC" class="java.lang.String"/>
+	<field name="CODLOCALORIG" class="java.math.BigDecimal"/>
+	<field name="DESCRLOCALORIG" class="java.lang.String"/>
+	<field name="CODLOCALDEST" class="java.math.BigDecimal"/>
+	<field name="DESCRLOCALDEST" class="java.lang.String"/>
+	<field name="CODPROD" class="java.math.BigDecimal"/>
+	<field name="DESCRPROD" class="java.lang.String"/>
+	<field name="CODVOL" class="java.lang.String"/>
+	<field name="QTD" class="java.lang.Double"/>
+	<field name="EMP_RAZAO" class="java.lang.String"/>
+	<field name="EMP_ENDERECO" class="java.lang.String"/>
+	<field name="EMP_CIDADE" class="java.lang.String"/>
+	<field name="EMP_DOC" class="java.lang.String"/>
+	<variable name="QTD_ITENS" class="java.lang.Integer" resetType="Group" resetGroup="CODPARC" calculation="Count">
+		<variableExpression><![CDATA[$F{CODPROD}]]></variableExpression>
+	</variable>
+	<group name="CODPARC" isStartNewPage="true" isReprintHeaderOnEachPage="true">
+		<groupExpression><![CDATA[$F{CODPARC}]]></groupExpression>
+		<groupHeader>
+			<band height="92" splitType="Prevent">
+				<rectangle>
+					<reportElement mode="Opaque" x="0" y="4" width="535" height="62" backcolor="#F0F0F0"/>
+					<graphicElement>
+						<pen lineWidth="0.75"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="6" y="6" width="62" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Parceiro:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="68" y="6" width="460" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODPARC} + " - " + $F{NOMEPARC}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="6" y="22" width="62" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Separar do:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="68" y="22" width="460" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Local " + $F{CODLOCALORIG} + ($F{DESCRLOCALORIG} == null ? "" : " - " + $F{DESCRLOCALORIG})]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="6" y="38" width="62" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Levar para:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="68" y="38" width="460" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Local " + $F{CODLOCALDEST} + ($F{DESCRLOCALDEST} == null ? "" : " - " + $F{DESCRLOCALDEST})]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="6" y="50" width="62" height="14"/>
+					<textElement verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Período:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="68" y="50" width="250" height="14"/>
+					<textElement verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[($P{P_DTINI} == null ? "sem limite" : new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{P_DTINI})) + " a " + ($P{P_DTFIN} == null ? "sem limite" : new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{P_DTFIN}))]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="330" y="50" width="70" height="14"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Emissão:]]></text>
+				</staticText>
+				<textField pattern="dd/MM/yyyy HH:mm">
+					<reportElement x="404" y="50" width="124" height="14"/>
+					<textElement verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement mode="Opaque" x="0" y="72" width="70" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[CODPROD]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="70" y="72" width="290" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[DESCRPROD]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="360" y="72" width="55" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[CODVOL]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="415" y="72" width="120" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[QTD]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="80" splitType="Prevent">
+				<staticText>
+					<reportElement mode="Opaque" x="0" y="4" width="415" height="18" backcolor="#F0F0F0"/>
+					<box rightPadding="6">
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[TOTAL DE ITENS]]></text>
+				</staticText>
+				<textField pattern="#,##0" isBlankWhenNull="true">
+					<reportElement mode="Opaque" x="415" y="4" width="120" height="18" backcolor="#F0F0F0"/>
+					<box leftPadding="4" rightPadding="4">
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Integer"><![CDATA[$V{QTD_ITENS}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="60" width="250" height="1"/>
+				</line>
+				<staticText>
+					<reportElement x="0" y="62" width="250" height="14"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Separado por / data]]></text>
+				</staticText>
+				<line>
+					<reportElement x="285" y="60" width="250" height="1"/>
+				</line>
+				<staticText>
+					<reportElement x="285" y="62" width="250" height="14"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Conferido por / data]]></text>
+				</staticText>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="88" splitType="Stretch">
+			<image scaleImage="RetainShape" hAlign="Left" vAlign="Middle">
+				<reportElement x="0" y="0" width="110" height="50"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="0" width="415" height="16"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_RAZAO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="16" width="415" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_ENDERECO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="28" width="415" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_CIDADE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="40" width="415" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_DOC}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="56" width="535" height="1"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="62" width="535" height="22"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="13" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SEPARAÇÃO PARA TRANSFERÊNCIA - ASSISTÊNCIA EXTERNA]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="70" height="18"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CODPROD} == null ? "" : String.valueOf($F{CODPROD})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="70" y="0" width="290" height="18"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="360" y="0" width="55" height="18"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CODVOL}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.##" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="415" y="0" width="120" height="18"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.Double"><![CDATA[$F{QTD}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="18" splitType="Stretch">
+			<textField>
+				<reportElement x="435" y="2" width="100" height="14"/>
+				<textElement textAlignment="Right">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Página " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<noData>
+		<band height="40" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="10" width="535" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nenhuma transferência encontrada para os parâmetros informados.]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>
