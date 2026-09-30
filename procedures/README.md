@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de procedures:** 79  
+**Total de procedures:** 80  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -104,6 +104,7 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 | `STP_INCMOVOSINT_SPARK.SQL` | `STP_INCMOVOSINT_SPARK` | Inclui movimentação em O.S. interna |
 | `STP_OSINTERNA_INC_SPARK.sql` | `STP_OSINTERNA_INC_SPARK` | Cria nova O.S. Interna via botão de ação |
 | `STP_ENVIAEMAILOS_SPARK.SQL` | `STP_ENVIAEMAILOS_SPARK` | Envia e-mail aos setores responsáveis quando nova O.S. é criada |
+| `STP_MOVMATASSIST_SPARK.sql` | `STP_MOVMATASSIST_SPARK` | Botão de ação em `AD_SPKCAE`: por O.S., gera nota de consumo (TOP 503) baixando os componentes de `AD_SPKICAE` do local do parceiro (`TGFPAR.AD_CODLOCAL`) e nota de transferência (TOP 708) repondo do local 201 para o local do parceiro; grava `NUNOTADESC`/`NUNOTATRF` como idempotência, valida saldo antes e desfaz tudo em caso de erro |
 | `STP_GRAVANOTA_ASSISTENCIA.sql` | `STP_GRAVANOTA_ASSISTENCIA` | Botão de ação: vincula a nota de serviço à O.S. selecionada em `AD_TGFASS` — valida o Nro. Único informado (`NUNOTA`) em `TGFCAB` e grava em `AD_TGFASS.NUNOTA`, ou aborta com erro. Nome sem sufixo `_SPARK` por já estar vinculado ao botão |
 
 ---

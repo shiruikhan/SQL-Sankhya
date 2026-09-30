@@ -4,21 +4,19 @@
   Nome do Script : FechamentoAssistenciaInterna
   Tipo           : Relatório Jasper (.jrxml)
   Grupo          : 35 - Fechamento Assistência Interna
-  Descrição      : Pré-fechamento das O.S. de assistência técnica (AD_TGFASS)
-                   por assistência responsável e período. É impresso ANTES da
-                   emissão da nota de serviço — o usuário usa o total de cada
-                   assistência para emitir o Nro. Único — e por isso NÃO depende
-                   de AD_TGFASS.NUNOTA (gravado depois por
-                   STP_GRAVANOTA_ASSISTENCIA). O NUNOTA aparece apenas como
-                   coluna informativa (vazio enquanto a nota não foi vinculada).
+  Descrição      : Pré-fechamento resumido das O.S. de assistência técnica
+                   (AD_TGFASS) por assistência responsável, STATUS e DEFEITO.
+                   É impresso ANTES da emissão da nota de serviço — o usuário
+                   usa o total de cada assistência para emitir o Nro. Único — e
+                   por isso NÃO depende de AD_TGFASS.NUNOTA (gravado depois por
+                   STP_GRAVANOTA_ASSISTENCIA).
                    Cabeçalho padrão com os dados da empresa 1 (Spark Eletrônica
                    — TSIEMP) e logo; um grupo por assistência responsável
-                   (CODPARCASS) com subtotal do VLRCONSERTO e quantidade de
-                   O.S.; total geral no final.
-                   Colunas: NUMOS, SNENTRADA, DTCONCLUSAO, STATUS, DEFEITO,
-                   NUNOTA (informativo) e VLRCONSERTO. STATUS e DEFEITO são
-                   campos de lista e são exibidos pelo texto da opção
-                   (TDDCAM/TDDOPC), não pelo código.
+                   (CODPARCASS), com uma linha por combinação STATUS + DEFEITO
+                   (quantidade de O.S. e soma do VLRCONSERTO), total da
+                   assistência e total geral no final.
+                   STATUS e DEFEITO são campos de lista e são exibidos pelo
+                   texto da opção (TDDCAM/TDDOPC), não pelo código.
 
   Parâmetros     : P_CODPARCASS — assistência responsável (AD_TGFASS.CODPARCASS)
                                   (opcional). Em branco, lista todas.
@@ -35,8 +33,8 @@
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Data de Criação: 29/09/2026
-  Última Revisão : Setembro/2026 — Refatoração: seleção por assistência/período
-                   em vez de NUNOTA vinculado
+  Última Revisão : Setembro/2026 — Refatoração: resumo por STATUS/DEFEITO
+                   (sem listagem de O.S./SN), seleção por assistência/período
 
   Observações    : - O filtro de período usa DTCONCLUSAO; O.S. sem data de
                      conclusão não entram (fechamento considera só concluídas).
@@ -44,7 +42,7 @@
                    - A tradução de STATUS/DEFEITO localiza o NUCAMPO em TDDCAM
                      (NOMETAB = 'AD_TGFASS' e NOMECAMPO), então acompanha o
                      cadastro do campo. Código sem opção cadastrada é exibido
-                     como está (fallback).
+                     como está (fallback); vazio vira "NÃO INFORMADO".
                    - A empresa do cabeçalho é fixa (CODEMP = 1).
                    - O.S. sem CODPARCASS caem no grupo "SEM ASSISTÊNCIA".
   ==============================================================================
@@ -75,25 +73,12 @@
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
 	</parameter>
 	<queryString>
-		<![CDATA[SELECT NVL(ASS.CODPARCASS, 0) AS CODPARCASS,
-    NVL(PAR.NOMEPARC, 'SEM ASSISTÊNCIA') AS NOMEPARCASS,
-    ASS.NUMOS,
-    ASS.SNENTRADA,
-    ASS.DTCONCLUSAO,
-    NVL((SELECT MAX(OPC.OPCAO)
-           FROM TDDOPC OPC
-          INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
-          WHERE CAM.NOMETAB   = 'AD_TGFASS'
-            AND CAM.NOMECAMPO = 'STATUS'
-            AND OPC.VALOR     = ASS.STATUS), ASS.STATUS) AS STATUS,
-    NVL((SELECT MAX(OPC.OPCAO)
-           FROM TDDOPC OPC
-          INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
-          WHERE CAM.NOMETAB   = 'AD_TGFASS'
-            AND CAM.NOMECAMPO = 'DEFEITO'
-            AND OPC.VALOR     = ASS.DEFEITO), ASS.DEFEITO) AS DEFEITO,
-    ASS.NUNOTA,
-    ASS.VLRCONSERTO,
+		<![CDATA[SELECT X.CODPARCASS,
+    X.NOMEPARCASS,
+    X.STATUS,
+    X.DEFEITO,
+    X.QTDOS,
+    X.VLRCONSERTO,
     EMP.RAZAOSOCIAL AS EMP_RAZAO,
     EMPEDN.NOMEEND || ', ' || EMP.NUMEND
         || CASE WHEN EMP.COMPLEMENTO IS NOT NULL THEN ' - ' || EMP.COMPLEMENTO END
@@ -108,27 +93,46 @@
     END
     || '   IE: ' || EMP.INSCESTAD
     || '   Fone: ' || EMP.TELEFONE AS EMP_DOC
-FROM AD_TGFASS ASS
-    LEFT JOIN TGFPAR PAR ON PAR.CODPARC = ASS.CODPARCASS
+FROM (
+    SELECT NVL(ASS.CODPARCASS, 0) AS CODPARCASS,
+        NVL(PAR.NOMEPARC, 'SEM ASSISTÊNCIA') AS NOMEPARCASS,
+        NVL((SELECT MAX(OPC.OPCAO)
+               FROM TDDOPC OPC
+              INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
+              WHERE CAM.NOMETAB   = 'AD_TGFASS'
+                AND CAM.NOMECAMPO = 'STATUS'
+                AND OPC.VALOR     = ASS.STATUS), NVL(ASS.STATUS, 'NÃO INFORMADO')) AS STATUS,
+        NVL((SELECT MAX(OPC.OPCAO)
+               FROM TDDOPC OPC
+              INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
+              WHERE CAM.NOMETAB   = 'AD_TGFASS'
+                AND CAM.NOMECAMPO = 'DEFEITO'
+                AND OPC.VALOR     = ASS.DEFEITO), NVL(ASS.DEFEITO, 'NÃO INFORMADO')) AS DEFEITO,
+        COUNT(*) AS QTDOS,
+        SUM(NVL(ASS.VLRCONSERTO, 0)) AS VLRCONSERTO
+    FROM AD_TGFASS ASS
+        LEFT JOIN TGFPAR PAR ON PAR.CODPARC = ASS.CODPARCASS
+    WHERE DECODE(ASS.CODPARCASS, NVL($P{P_CODPARCASS}, ASS.CODPARCASS), 1, 0) = 1
+      AND DECODE(ASS.STATUS, NVL($P{P_STATUS}, ASS.STATUS), 1, 0) = 1
+      AND ASS.DTCONCLUSAO >= NVL($P{P_DTINI}, ASS.DTCONCLUSAO)
+      AND ASS.DTCONCLUSAO < NVL($P{P_DTFIN}, ASS.DTCONCLUSAO) + 1
+    GROUP BY NVL(ASS.CODPARCASS, 0),
+        NVL(PAR.NOMEPARC, 'SEM ASSISTÊNCIA'),
+        ASS.STATUS,
+        ASS.DEFEITO
+) X
     INNER JOIN TSIEMP EMP ON EMP.CODEMP = 1
     LEFT JOIN TSIEND EMPEDN ON EMPEDN.CODEND = EMP.CODEND
     LEFT JOIN TSIBAI EMPBAI ON EMPBAI.CODBAI = EMP.CODBAI
     LEFT JOIN TSICID EMPCID ON EMPCID.CODCID = EMP.CODCID
     LEFT JOIN TSIUFS EMPUFS ON EMPUFS.CODUF = EMPCID.UF
-WHERE DECODE(ASS.CODPARCASS, NVL($P{P_CODPARCASS}, ASS.CODPARCASS), 1, 0) = 1
-  AND DECODE(ASS.STATUS, NVL($P{P_STATUS}, ASS.STATUS), 1, 0) = 1
-  AND ASS.DTCONCLUSAO >= NVL($P{P_DTINI}, ASS.DTCONCLUSAO)
-  AND ASS.DTCONCLUSAO < NVL($P{P_DTFIN}, ASS.DTCONCLUSAO) + 1
-ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
+ORDER BY X.NOMEPARCASS, X.CODPARCASS, X.STATUS, X.DEFEITO]]>
 	</queryString>
 	<field name="CODPARCASS" class="java.math.BigDecimal"/>
 	<field name="NOMEPARCASS" class="java.lang.String"/>
-	<field name="NUMOS" class="java.math.BigDecimal"/>
-	<field name="SNENTRADA" class="java.lang.String"/>
-	<field name="DTCONCLUSAO" class="java.sql.Timestamp"/>
 	<field name="STATUS" class="java.lang.String"/>
 	<field name="DEFEITO" class="java.lang.String"/>
-	<field name="NUNOTA" class="java.math.BigDecimal"/>
+	<field name="QTDOS" class="java.math.BigDecimal"/>
 	<field name="VLRCONSERTO" class="java.lang.Double"/>
 	<field name="EMP_RAZAO" class="java.lang.String"/>
 	<field name="EMP_ENDERECO" class="java.lang.String"/>
@@ -137,14 +141,17 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 	<variable name="SUB_CONSERTO" class="java.lang.Double" resetType="Group" resetGroup="CODPARCASS" calculation="Sum">
 		<variableExpression><![CDATA[$F{VLRCONSERTO}]]></variableExpression>
 	</variable>
-	<variable name="SUB_QTD_OS" class="java.lang.Integer" resetType="Group" resetGroup="CODPARCASS" calculation="Count">
-		<variableExpression><![CDATA[$F{NUMOS}]]></variableExpression>
+	<variable name="SUB_QTD_OS" class="java.math.BigDecimal" resetType="Group" resetGroup="CODPARCASS" calculation="Sum">
+		<variableExpression><![CDATA[$F{QTDOS}]]></variableExpression>
+	</variable>
+	<variable name="QTD_ASSISTENCIAS" class="java.lang.Integer" calculation="DistinctCount">
+		<variableExpression><![CDATA[$F{CODPARCASS}]]></variableExpression>
 	</variable>
 	<variable name="TOTAL_CONSERTO" class="java.lang.Double" calculation="Sum">
 		<variableExpression><![CDATA[$F{VLRCONSERTO}]]></variableExpression>
 	</variable>
-	<variable name="TOTAL_QTD_OS" class="java.lang.Integer" calculation="Count">
-		<variableExpression><![CDATA[$F{NUMOS}]]></variableExpression>
+	<variable name="TOTAL_QTD_OS" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{QTDOS}]]></variableExpression>
 	</variable>
 	<group name="CODPARCASS" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{CODPARCASS}]]></groupExpression>
@@ -171,49 +178,7 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODPARCASS}.intValue() == 0 ? $F{NOMEPARCASS} : $F{CODPARCASS} + " - " + $F{NOMEPARCASS}]]></textFieldExpression>
 				</textField>
 				<staticText>
-					<reportElement mode="Opaque" x="0" y="24" width="50" height="18" backcolor="#E0E0E0"/>
-					<box>
-						<pen lineWidth="0.5"/>
-						<topPen lineWidth="0.5"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.5"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="9" isBold="true"/>
-					</textElement>
-					<text><![CDATA[NUMOS]]></text>
-				</staticText>
-				<staticText>
-					<reportElement mode="Opaque" x="50" y="24" width="95" height="18" backcolor="#E0E0E0"/>
-					<box>
-						<pen lineWidth="0.5"/>
-						<topPen lineWidth="0.5"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.5"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="9" isBold="true"/>
-					</textElement>
-					<text><![CDATA[SN ENTRADA]]></text>
-				</staticText>
-				<staticText>
-					<reportElement mode="Opaque" x="145" y="24" width="65" height="18" backcolor="#E0E0E0"/>
-					<box>
-						<pen lineWidth="0.5"/>
-						<topPen lineWidth="0.5"/>
-						<leftPen lineWidth="0.5"/>
-						<bottomPen lineWidth="0.5"/>
-						<rightPen lineWidth="0.5"/>
-					</box>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="9" isBold="true"/>
-					</textElement>
-					<text><![CDATA[DT. CONCLUSÃO]]></text>
-				</staticText>
-				<staticText>
-					<reportElement mode="Opaque" x="210" y="24" width="90" height="18" backcolor="#E0E0E0"/>
+					<reportElement mode="Opaque" x="0" y="24" width="140" height="18" backcolor="#E0E0E0"/>
 					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -227,7 +192,7 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 					<text><![CDATA[STATUS]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="300" y="24" width="95" height="18" backcolor="#E0E0E0"/>
+					<reportElement mode="Opaque" x="140" y="24" width="195" height="18" backcolor="#E0E0E0"/>
 					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -241,7 +206,7 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 					<text><![CDATA[DEFEITO]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="395" y="24" width="55" height="18" backcolor="#E0E0E0"/>
+					<reportElement mode="Opaque" x="335" y="24" width="90" height="18" backcolor="#E0E0E0"/>
 					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -252,10 +217,10 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font size="9" isBold="true"/>
 					</textElement>
-					<text><![CDATA[NRO. ÚNICO]]></text>
+					<text><![CDATA[QTD. O.S.]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="450" y="24" width="85" height="18" backcolor="#E0E0E0"/>
+					<reportElement mode="Opaque" x="425" y="24" width="110" height="18" backcolor="#E0E0E0"/>
 					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -271,16 +236,37 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 			</band>
 		</groupHeader>
 		<groupFooter>
-			<band height="28" splitType="Prevent">
-				<textField>
-					<reportElement x="145" y="4" width="305" height="18"/>
+			<band height="30" splitType="Prevent">
+				<staticText>
+					<reportElement mode="Opaque" x="0" y="4" width="335" height="18" backcolor="#F0F0F0"/>
+					<box rightPadding="6">
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
 					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font size="9" isBold="true"/>
 					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA["Total da assistência (" + $V{SUB_QTD_OS} + " O.S.):"]]></textFieldExpression>
+					<text><![CDATA[TOTAL DA ASSISTÊNCIA]]></text>
+				</staticText>
+				<textField pattern="#,##0" isBlankWhenNull="true">
+					<reportElement mode="Opaque" x="335" y="4" width="90" height="18" backcolor="#F0F0F0"/>
+					<box leftPadding="4" rightPadding="4">
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{SUB_QTD_OS}]]></textFieldExpression>
 				</textField>
-				<textField pattern="#,##0.00" isBlankWhenNull="true">
-					<reportElement mode="Opaque" x="450" y="4" width="85" height="18" backcolor="#F0F0F0"/>
+				<textField pattern="R$ #,##0.00" isBlankWhenNull="true">
+					<reportElement mode="Opaque" x="425" y="4" width="110" height="18" backcolor="#F0F0F0"/>
 					<box leftPadding="4" rightPadding="4">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -348,49 +334,7 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 	<detail>
 		<band height="18" splitType="Stretch">
 			<textField isBlankWhenNull="true">
-				<reportElement x="0" y="0" width="50" height="18"/>
-				<box leftPadding="4" rightPadding="4">
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[$F{NUMOS} == null ? "" : String.valueOf($F{NUMOS})]]></textFieldExpression>
-			</textField>
-			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="50" y="0" width="95" height="18"/>
-				<box leftPadding="4" rightPadding="4">
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[$F{SNENTRADA}]]></textFieldExpression>
-			</textField>
-			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="145" y="0" width="65" height="18"/>
-				<box leftPadding="4" rightPadding="4">
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DTCONCLUSAO}]]></textFieldExpression>
-			</textField>
-			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="210" y="0" width="90" height="18"/>
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="140" height="18"/>
 				<box leftPadding="4" rightPadding="4">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -403,8 +347,8 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{STATUS}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="300" y="0" width="95" height="18"/>
+			<textField isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="140" y="0" width="195" height="18"/>
 				<box leftPadding="4" rightPadding="4">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -417,8 +361,8 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DEFEITO}]]></textFieldExpression>
 			</textField>
-			<textField isBlankWhenNull="true">
-				<reportElement x="395" y="0" width="55" height="18"/>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="335" y="0" width="90" height="18"/>
 				<box leftPadding="4" rightPadding="4">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -429,10 +373,10 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="9"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[$F{NUNOTA} == null ? "" : String.valueOf($F{NUNOTA})]]></textFieldExpression>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTDOS}]]></textFieldExpression>
 			</textField>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement x="450" y="0" width="85" height="18"/>
+			<textField pattern="R$ #,##0.00" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="425" y="0" width="110" height="18"/>
 				<box leftPadding="4" rightPadding="4">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -473,16 +417,38 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 		</band>
 	</pageFooter>
 	<summary>
-		<band height="32" splitType="Prevent">
-			<textField>
-				<reportElement x="145" y="6" width="305" height="18"/>
+		<band height="40" splitType="Prevent">
+			<printWhenExpression><![CDATA[$V{QTD_ASSISTENCIAS}.intValue() > 1]]></printWhenExpression>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="8" width="335" height="20" backcolor="#E0E0E0"/>
+				<box rightPadding="6">
+					<pen lineWidth="0.75"/>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
+					<font size="10" isBold="true"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA["TOTAL GERAL (" + $V{TOTAL_QTD_OS} + " O.S.):"]]></textFieldExpression>
+				<text><![CDATA[TOTAL GERAL]]></text>
+			</staticText>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="335" y="8" width="90" height="20" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{TOTAL_QTD_OS}]]></textFieldExpression>
 			</textField>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement mode="Opaque" x="450" y="6" width="85" height="18" backcolor="#E0E0E0"/>
+			<textField pattern="R$ #,##0.00" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="425" y="8" width="110" height="20" backcolor="#E0E0E0"/>
 				<box leftPadding="4" rightPadding="4">
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -491,7 +457,7 @@ ORDER BY NOMEPARCASS, CODPARCASS, ASS.NUMOS]]>
 					<rightPen lineWidth="0.5"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
+					<font size="10" isBold="true"/>
 				</textElement>
 				<textFieldExpression class="java.lang.Double"><![CDATA[$V{TOTAL_CONSERTO}]]></textFieldExpression>
 			</textField>
