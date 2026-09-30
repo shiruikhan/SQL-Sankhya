@@ -18,6 +18,10 @@ WHEN (NEW.PRAZO <= TRUNC(SYSDATE))
                    Setembro/2026 — Performance: adicionada cláusula WHEN
                    idêntica ao único IF do corpo. Comportamento observável
                    inalterado.
+  *** DESATIVADA em 30/09/2026 — descontinuidade do projeto ***
+                   Validação de prazo da solicitação de compra descontinuada.
+                   Arquivo movido de triggers/ para inativos/ sem alteração de
+                   lógica. Mantido apenas para referência histórica.
 ==============================================================================*/
 BEGIN
   IF :NEW.PRAZO <= TRUNC(SYSDATE) THEN

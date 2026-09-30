@@ -38,5 +38,6 @@ Ao mover um objeto para esta pasta, documentar aqui:
 | `TRG_INS_UPD_DLT_TPRIMPS_SPARK.SQL` | Trigger (`TPRIMPS`) | 29/09/2026 | Bloqueava alteração de `TPRIMPS` quando já existia Lista de Materiais gerada (`TGFCAB.AD_NUMPS`) para o plano. Descontinuada por descontinuidade do projeto proposto |
 | `TRG_TGFCAB_TRANSF_SPARK.SQL` | Trigger (`TGFCAB`) | 29/09/2026 | Variante não-compound (`BEFORE DELETE FOR EACH ROW` simples) da limpeza de referências de transferência ao deletar nota — mesma finalidade da versão compound ativa em `triggers/TRG_CMP_TRANFS_SPARK.SQL`. Descontinuada por descontinuidade do projeto proposto |
 | `TRG_AVISOCONF_SPARK.sql` | Trigger (`TGFCAB`) | 29/09/2026 | Enviava e-mail (via `STP_GRAVA_FILA_BI2`) ao usuário que incluiu o pedido quando a conferência era finalizada (`TGFCON2.STATUS = 'F'`). Desativada por descontinuidade do projeto |
+| `TRG_VALIDA_PRAZO_SC.sql` | Trigger (`AD_TGSSCP`) | 30/09/2026 | Bloqueava INSERT/UPDATE em `AD_TGSSCP` quando `PRAZO <= TRUNC(SYSDATE)` (ORA-20001 "O prazo de necessidade deve ser maior que a data atual"). Desativada por descontinuidade do projeto |
 
 > Para ver o histórico de quando cada arquivo foi movido para cá, use: `git log --follow -- inativos/<arquivo>`

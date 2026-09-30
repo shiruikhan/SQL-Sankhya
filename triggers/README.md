@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de triggers:** 87  
+**Total de triggers:** 86  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -81,7 +81,6 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_STATUS_PADRAO_SC.sql` | `TRG_STATUS_PADRAO_SC` | `AD_TGSSCP` | INSERT | Define status padrão `EA` (Em Aprovação) ao incluir nova solicitação |
 | `TRG_BLOQUEIA_EDICAO_STATUS_CR.sql` | `TRG_BLOQUEIA_EDICAO_STATUS_CR` | `AD_TGSSCP` | UPDATE | Impede qualquer alteração quando status = `CR` (Compra Realizada) |
 | `TRG_BLOQUEIA_DELETE_SC.sql` | `TRG_BLOQUEIA_DELETE_SC` | `AD_TGSSCP` | DELETE | Bloqueia exclusão de solicitações em estados que não permitem remoção |
-| `TRG_VALIDA_PRAZO_SC.sql` | `TRG_VALIDA_PRAZO_SC` | `AD_TGSSCP` | INSERT, UPDATE | Valida prazo informado na solicitação conforme regras de negócio |
 | `TRG_INC_UPD_AD_TGSCMP_SPARK.SQL` | `TRG_INC_UPD_AD_TGSCMP_SPARK` | `AD_TGSCMP` | INSERT, UPDATE | Controla campos de comparativo de preço no processo de compra |
 
 ---

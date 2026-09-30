@@ -120,8 +120,8 @@ SELECT t.owner
         'TRG_STATUS_PADRAO_SC',
         'TRG_TPRCOI_REPLICA_PA',
         'TRG_UPD_DIFALPB_SPARK',
-        'TRG_UPD_TGFCAB_MOEDA_SPARK2',
-        'TRG_VALIDA_PRAZO_SC'
+        'TRG_UPD_TGFCAB_MOEDA_SPARK2'
+        -- (TRG_VALIDA_PRAZO_SC removido: desativada por descontinuidade do projeto em 30/09/2026, movido para inativos/)
        )
  ORDER BY DECODE(t.status, 'DISABLED', 0, 1)
          ,t.table_name

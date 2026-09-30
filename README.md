@@ -84,7 +84,7 @@ SQL Sankhya/
 | Domínio | Objetos principais |
 |---|---|
 | **Planejamento de Produção (PCP/MRP)** | `STP_PCP_SPARK`, `STP_PCPMETA_SPARK`, `TRG_INC_UPD_TPRMPS_SPARK`, `OBTEM_TOTAIS_MRP` |
-| **Compras e Supply Chain** | `STP_APROVA_SOLIC_COMPRA`, `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC`, `TRG_VALIDA_PRAZO_SC` |
+| **Compras e Supply Chain** | `STP_APROVA_SOLIC_COMPRA`, `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC` |
 | **Vendas e Faturamento** | `TRG_CMP_TGFCAB_NFE_SPARK`, `STP_VALIDARCONF_SPARK`, `STP_VALIDARSERIE_SPARK`, `STP_NFREFDEV_SPARK` |
 | **Estoque** | `VGFEST`, `STP_GARANTEESTOQUE_SPARK`, `STP_TRANSFEMP_SPARK`, `OBTEMCUSTO_SPARK` |
 | **Financeiro** | `TRG_REFORCA_NAT_FIN`, `STP_INCLUIRLANCTO_SPARK`, `SPK_TGFFIN_LOG`, `STP_EXCLUIRFINCOM_SPARK` |
@@ -116,7 +116,7 @@ SQL Sankhya/
 ## 7. Inventário de Objetos
 
 ### 7.1 Triggers (pasta `triggers/`)
-> 88 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
+> 87 triggers. Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
 
 Agrupadas por domínio:
 
@@ -124,7 +124,7 @@ Agrupadas por domínio:
 |---|---|---|
 | Produção / PCP | 18 | `TRG_INC_UPD_TPRMPS_SPARK`, `TRG_INC_UPD_TPRIPROC_SPARK`, `TRG_TPRCOI_REPLICA_PA` |
 | Nota Fiscal / Movimentação | 20 | `TRG_CMP_TGFCAB_NFE_SPARK`, `TRG_UPD_TGFCAB_MOEDA_SPARK2`, `TRG_INC_TGFVAR_SPARK`, `TRG_UPD_DIFALPB_SPARK` |
-| Compras / SC | 6 | `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC`, `TRG_BLOQUEIA_EDICAO_STATUS_CR` |
+| Compras / SC | 5 | `TRG_NOTIFICA_SOLIC_COMPRA`, `TRG_STATUS_PADRAO_SC`, `TRG_BLOQUEIA_EDICAO_STATUS_CR` |
 | Logística / Frete | 5 | `TRG_COTAFRETE_SPARK`, `TRG_COTAFRETE_EMB_SPARK`, `TRG_FRETE_CIF_MTKPL_SPARK` |
 | Assistência / O.S. | 6 | `TRG_UPD_OSINTERNA`, `TRG_UPD_OSINTERNA_DHFIM`, `TRG_INS_OSSTATUS_SPARK` |
 | Itens de Nota | 5 | `TRG_INC_UPD_TGFITE_SPARK`, `TRG_UPD_INS_TGFITE_CONSUMOPRD`, `TRG_UPT_TGFITE` |
