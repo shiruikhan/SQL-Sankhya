@@ -135,7 +135,9 @@ inspeção da placa (campos `S/N`: `DISJUNTOR`, `COOLER`, `DISPLAY`, `SOLDA`,
 Set/2026, ambas preenchidas automaticamente por
 `TRG_TGFASS_VLRCONSERTO_SPARK` via `SNK_PRECO`, com `CODTAB` 14 e 15
 respectivamente), `NUNOTA` (Nro. Único Nota de Serviço — FK para `TGFCAB`,
-adicionada em Set/2026). Colunas `FOTO` e `COMPROVANTE` são BLOB (SecureFile). FKs
+adicionada em Set/2026), `MESFOLHA` (Id. Pagamento Técnico — texto, adicionada
+em Set/2026; tamanho `VARCHAR2(100)` é estimativa até recapturar o DDL real).
+Colunas `FOTO` e `COMPROVANTE` são BLOB (SecureFile). FKs
 para `TGFPAR` (cliente e parceiro assistência) e `AD_CADFUNC` (`TECNICO` — FK
 recriada em Set/2026, coluna foi dropada/readicionada e por isso hoje aparece
 ao final do DDL).
