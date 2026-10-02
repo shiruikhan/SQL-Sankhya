@@ -152,7 +152,7 @@ Agrupadas por domínio:
 | Financeiro | 4 | `STP_INCLUIRLANCTO_SPARK`, `STP_EXCLUIRFINCOM_SPARK`, `STP_ATUALIZARVLRMOEDA_SPARK`, `STP_REGRA_VALID_FINAN_SPARK` |
 | E-commerce / Integração | 3 | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA`, `STP_ATTESTML_SPARK` |
 | Cadastros / Produto | 6 | `STP_ALTDADOSPRO_SPARK`, `STP_MUDANCADECODIGO_SPARK`, `STP_ORIGPROD_SPARK`, `STP_CORCSTIPI_SPARK` |
-| Produção | 7 | `STP_TPRCOI_SPARK`, `STP_TPRIATV_SPARK`, `STP_REABRIR_PA_SPARK`, `STP_CORRIGENOTAPROD_SPARK` |
+| Produção | 8 | `STP_TPRCOI_SPARK`, `STP_TPRIATV_SPARK`, `STP_REABRIR_PA_SPARK`, `STP_CORRIGENOTAPROD_SPARK`, `STP_CORRIGEAPONTAMENTO_SPARK` |
 | CT-e / Conferência de XML | 3 | `STP_CLASSIFICACTE_SPARK`, `STP_APONTACONFERENCIA_SPARK`, `STP_ATUALIZADTFIM_TGSIXN_SPARK` |
 | Eventos de tela (EVP) | 2 | `EVP_CLASSIFICACTE_SPARK`, `EVP_TGFIXN_EMAIL_SPARK` |
 | Demais / Auxiliares | 17 | BI, impressão, agendamento, alteração de CFOP, etc. |
@@ -201,6 +201,7 @@ Agrupadas por domínio:
 | `AD_LOG_ERROS` | `IDLOG` | Log centralizado de erros gerados por triggers. Registra código de erro, backtrace e contexto da nota |
 | `AD_MAP_SETOR_FUNC` | `DESCDEP, DESCIDEFX` | Mapeamento entre departamento do colaborador e etapa de produção (suporte à validação de apontamentos) |
 | `AD_CORRNOTAPROD` | `NUCORR` | Auditoria das correções de notas de produção feitas por `STP_CORRIGENOTAPROD_SPARK` |
+| `AD_CORRAPONTAMENTO` | `NUCORR` | Auditoria das correções de apontamento (`TPRAPA`) feitas por `STP_CORRIGEAPONTAMENTO_SPARK`, com os valores anteriores |
 | `AD_TGFASS` | `NUMOS` | Cabeçalho da O.S. de assistência técnica da Spark (checklist de inspeção da placa, fotos, responsáveis) |
 | `AD_TGSAPI` | `API` | Credenciais e endpoints de APIs externas (cotação de frete — Rodonaves) |
 | `AD_TGSCTF` | `NUCTF` | Cabeçalho da cotação de frete (uma linha por embarque) |

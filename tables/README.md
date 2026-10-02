@@ -119,6 +119,17 @@ mesma OP. Conciliação por conferência (`NUCONF`). Valores de `TIPOCORR`:
 Índices por `IDIPROC` e `NUCONF`. O arquivo traz um bloco `ALTER` comentado para
 bases anteriores a Jul/2026 (quando `NUCONF` foi adicionada).
 
+### `AD_CORRAPONTAMENTO`
+
+**Arquivo:** `AD_CORRAPONTAMENTO.SQL` | **PK:** `NUCORR` | **Criação:** Outubro/2026
+
+Auditoria das correções de apontamento (`TPRAPA`) feitas por
+`STP_CORRIGEAPONTAMENTO_SPARK`. Guarda as quantidades anteriores
+(`QTDAPO_ANT`, `QTDFAT_ANT`) para desfazimento manual e o nº de séries de
+`AD_TPRCOI` usado como valor correto. Valores de `TIPOCORR`: `AJUSTADO`,
+`IGNORADO_MULTICONF`, `IGNORADO_MULTISEQ` (os dois últimos não alteram o
+apontamento e exigem análise manual). Índices por `IDIPROC` e `NUAPO`/`SEQAPA`.
+
 ### `AD_TGFASS`
 
 **Arquivo:** `AD_TGFASS.SQL` | **PK:** `NUMOS`
