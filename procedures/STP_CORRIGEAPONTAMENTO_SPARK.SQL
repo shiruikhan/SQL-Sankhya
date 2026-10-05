@@ -29,6 +29,12 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGEAPONTAMENTO_SPARK (
                    Conferências sem NUAPO vinculado, sem séries em AD_TPRCOI ou
                    sem linha em TPRAPA para o PA não geram ação (nada a corrigir).
 
+                   Escopo por etapa: só são corrigidos apontamentos realizados
+                   pela etapa de EXPEDIÇÃO/CONFERENCIA (TPREFX.DESCRICAO, incluindo
+                   o nome legado 'EXPEDICAO/CONF'), a única etapa que movimenta
+                   estoque. Apontamentos de qualquer outra etapa nunca são
+                   alterados, mesmo divergentes.
+
                    Ordens canceladas ('C'), em cancelamento ('C2') e finalizadas
                    ('F') — TPRIPROC.STATUSPROC — são sempre ignoradas: a
                    procedure nunca altera o apontamento de uma OP encerrada,
@@ -40,7 +46,7 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGEAPONTAMENTO_SPARK (
                                a janela P_DIAS NÃO é aplicada (opcional)
                    P_SIMULA  — S/N: com 'S' apenas lista no DBMS_OUTPUT o que
                                seria corrigido, sem UPDATE nem auditoria
-  Tabelas        : TPRCONF, TPRIATV, TPRIPROC, AD_TPRCOI (leitura)
+  Tabelas        : TPRCONF, TPRIATV, TPRIPROC, TPRAPO, TPREFX, AD_TPRCOI (leitura)
                    TPRAPA (leitura/escrita)
                    AD_CORRAPONTAMENTO (auditoria das correções)
   Tabela de Log  : AD_LOG_ERROS
@@ -65,6 +71,8 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGEAPONTAMENTO_SPARK (
                    em cancelamento ('C2')
                    Outubro/2026 — Janela padrão (P_DIAS) ampliada de 7 para 120
                    dias
+                   Outubro/2026 — Escopo restrito a apontamentos da etapa de
+                   expedição (TPREFX.DESCRICAO)
                    Outubro/2026 — Erro de um apontamento passa a ser registrado
                    em AD_LOG_ERROS uma única vez (mesma mensagem não repete);
                    linha de TPRAPA lida com FOR UPDATE NOWAIT: se bloqueada por
@@ -145,7 +153,13 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGEAPONTAMENTO_SPARK (
                                      ,COI.CODPROD) SER ON SER.NUCONF = CNF.NUCONF
                 INNER JOIN TPRAPA   APA  ON APA.NUAPO     = CNF.NUAPO
                                         AND APA.CODPRODPA = SER.CODPROD
+                INNER JOIN TPRAPO   APO  ON APO.NUAPO     = APA.NUAPO
+                INNER JOIN TPRIATV  ATA  ON ATA.IDIATV    = APO.IDIATV
+                INNER JOIN TPREFX   EFX  ON EFX.IDEFX     = ATA.IDEFX
         WHERE   CNF.STATUS       = 'F'
+        -- Só apontamentos da expedição (única etapa que movimenta estoque);
+        -- 'EXPEDICAO/CONF' é o nome legado da mesma etapa
+        AND     EFX.DESCRICAO   IN ('EXPEDIÇÃO/CONFERENCIA', 'EXPEDICAO/CONF')
         AND     PROC.STATUSPROC NOT IN ('C', 'C2', 'F')  -- cancelada, cancelando ou finalizada: não alterar
         AND     (   APA.QTDAPONTADA <> SER.QTD_SERIES
                  OR APA.QTDFAT      <> SER.QTD_SERIES)

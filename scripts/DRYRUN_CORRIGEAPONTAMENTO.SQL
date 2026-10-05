@@ -35,6 +35,8 @@
   Última Revisão : Outubro/2026 — Criação do script
                    Outubro/2026 — OP finalizada ('F') nunca recebe ação
                    (ACAO = OP_FINALIZADA); coluna STATUSPROC adicionada
+                   Outubro/2026 — Escopo restrito a apontamentos da etapa de
+                   expedição (TPREFX.DESCRICAO); coluna ETAPA adicionada
                    Outubro/2026 — Passa a listar somente as falhas (removidas
                    as situações OK, SEM_NUAPO, SEM_SERIES e SEM_TPRAPA)
 
@@ -69,6 +71,7 @@ BASE AS (
     SELECT  CNF.NUCONF
            ,ATV.IDIPROC
            ,PROC.STATUSPROC
+           ,EFX.DESCRICAO AS ETAPA
            ,CNF.NUAPO
            ,APA.SEQAPA
            ,SER.CODPROD
@@ -90,7 +93,12 @@ BASE AS (
             LEFT  JOIN SERIES_CONF SER  ON SER.NUCONF   = CNF.NUCONF
             LEFT  JOIN TPRAPA      APA  ON APA.NUAPO     = CNF.NUAPO
                                        AND APA.CODPRODPA = SER.CODPROD
+            INNER JOIN TPRAPO      APO  ON APO.NUAPO     = APA.NUAPO
+            INNER JOIN TPRIATV     ATA  ON ATA.IDIATV    = APO.IDIATV
+            INNER JOIN TPREFX      EFX  ON EFX.IDEFX     = ATA.IDEFX
     WHERE   CNF.STATUS       = 'F'
+    -- Só apontamentos da expedição (única etapa que movimenta estoque)
+    AND     EFX.DESCRICAO   IN ('EXPEDIÇÃO/CONFERENCIA', 'EXPEDICAO/CONF')
     AND     PROC.STATUSPROC NOT IN ('C', 'C2')
     -- Somente falhas: apontamento existente que diverge do nº de séries
     AND     SER.NUCONF IS NOT NULL
@@ -103,6 +111,7 @@ BASE AS (
 )
 SELECT  BAS.IDIPROC
        ,BAS.STATUSPROC
+       ,BAS.ETAPA
        ,BAS.NUCONF
        ,BAS.NUAPO
        ,BAS.SEQAPA
