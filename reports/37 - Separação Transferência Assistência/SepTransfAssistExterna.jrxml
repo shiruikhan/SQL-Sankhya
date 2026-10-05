@@ -13,16 +13,17 @@
                    itens de saída, SEQUENCIA > 0) e UNIFICADOS POR PARCEIRO:
                    uma seção (página nova) por parceiro, com uma linha por
                    produto + unidade (CODPROD | DESCRPROD | CODVOL | QTD), com
-                   a quantidade somada de todas as transferências do período.
+                   a quantidade somada de todas as O.S. concluídas no período
+                   (filtro por AD_SPKCAE.DTCONCLUSAO).
                    Cabeçalho padrão com os dados da empresa 1 (Spark Eletrônica
                    — TSIEMP) e logo.
 
   Parâmetros     : P_CODPARC — parceiro da assistência externa (opcional). Em
                                branco, uma seção para cada parceiro.
-                   P_DTINI   — data inicial da nota de transferência (opcional;
-                               padrão = hoje)
-                   P_DTFIN   — data final da nota de transferência (opcional;
-                               padrão = hoje)
+                   P_DTINI   — data inicial de conclusão da O.S. (DTCONCLUSAO;
+                               opcional; padrão = hoje)
+                   P_DTFIN   — data final de conclusão da O.S. (DTCONCLUSAO;
+                               opcional; padrão = hoje)
 
   Tabelas        : AD_SPKCAE : O.S. de conserto externo (NUNOTATRF, CODPARC)
                    TGFCAB / TGFITE : nota de transferência e seus itens
@@ -41,9 +42,10 @@
                      registros selecionados, o Sankhya executa o relatório N
                      vezes com os mesmos parâmetros e sai o mesmo conteúdo N
                      vezes — imprimir com um único registro selecionado.
-                   - O período filtra TGFCAB.DTNEG da nota de transferência
-                     (gravada como a data da execução do botão). Limpar as
-                     datas lista todo o histórico — cuidado ao reimprimir.
+                   - O período filtra AD_SPKCAE.DTCONCLUSAO (data de conclusão da
+                     O.S.). O.S. sem DTCONCLUSAO não entram quando há data
+                     informada. Limpar as datas lista todo o histórico —
+                     cuidado ao reimprimir.
                    - Só entram O.S. com NUNOTATRF preenchido e TOP 708.
                    - O local de origem exibido vem do próprio item da nota
                      (TGFITE.CODLOCALORIG); o de destino, de TGFPAR.AD_CODLOCAL.
@@ -62,11 +64,11 @@
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<parameter name="P_DTINI" class="java.sql.Timestamp">
-		<parameterDescription><![CDATA[Data inicial da transferência (opcional)]]></parameterDescription>
+		<parameterDescription><![CDATA[Data inicial de conclusão da O.S. (opcional)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
 	</parameter>
 	<parameter name="P_DTFIN" class="java.sql.Timestamp">
-		<parameterDescription><![CDATA[Data final da transferência (opcional)]]></parameterDescription>
+		<parameterDescription><![CDATA[Data final de conclusão da O.S. (opcional)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
 	</parameter>
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
@@ -118,8 +120,8 @@ FROM (
     WHERE CAB.CODTIPOPER = 708
       AND ITE.SEQUENCIA > 0
       AND DECODE(CAE.CODPARC, NVL($P{P_CODPARC}, CAE.CODPARC), 1, 0) = 1
-      AND CAB.DTNEG >= TRUNC(NVL($P{P_DTINI}, CAB.DTNEG))
-      AND CAB.DTNEG < TRUNC(NVL($P{P_DTFIN}, CAB.DTNEG)) + 1
+      AND CAE.DTCONCLUSAO >= TRUNC(NVL($P{P_DTINI}, CAE.DTCONCLUSAO))
+      AND CAE.DTCONCLUSAO < TRUNC(NVL($P{P_DTFIN}, CAE.DTCONCLUSAO)) + 1
     GROUP BY CAE.CODPARC,
         PAR.NOMEPARC,
         ITE.CODLOCALORIG,
