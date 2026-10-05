@@ -10,11 +10,12 @@ CREATE OR REPLACE PROCEDURE STP_MOVMATASSIST_SPARK (
   Descrição      : Automatiza a movimentação interna de estoque das O.S. de
                    conserto da assistência externa (AD_SPKCAE). Para cada O.S.
                    selecionada, em duas etapas:
-                   1) Consumo: gera nota de saída (TOP 503) baixando do local
-                      do parceiro (TGFPAR.AD_CODLOCAL) os componentes
-                      consumidos no conserto (AD_SPKICAE);
-                   2) Reposição: gera nota de transferência (TOP 708) levando
-                      os mesmos itens do local 201 para o local do parceiro.
+                   1) Transferência: gera nota de transferência (TOP 708)
+                      levando os componentes consumidos no conserto
+                      (AD_SPKICAE) do local 201 para o local do parceiro
+                      (TGFPAR.AD_CODLOCAL);
+                   2) Consumo: gera nota de saída (TOP 503) baixando os mesmos
+                      itens do local do parceiro.
                    Resultado líquido: o saldo do parceiro volta ao que era e o
                    local 201 fica reduzido pelo consumo.
                    É gerada 1 nota de consumo e 1 de transferência por O.S.
@@ -46,6 +47,14 @@ CREATE OR REPLACE PROCEDURE STP_MOVMATASSIST_SPARK (
   Empresa        : Spark Eletrônica
   Data de Criação: 30/09/2026
   Última Revisão : 30/09/2026 — Criação
+                   05/10/2026 — Inversão da ordem: transferência (TOP 708)
+                   passa a ser gerada antes do consumo (TOP 503)
+                   05/10/2026 — Correção do log de erro: OPERACAO limitada a
+                   10 caracteres (AD_LOG_ERROS.OPERACAO é VARCHAR2(10));
+                   mensagem de erro passa a trazer a linha de origem (backtrace)
+                   e o motivo, se a gravação do log falhar
+                   05/10/2026 — Transferência: espelho -N só é inserido se o
+                   banco não o gerou ao inserir a saída (ORA-00001 em TGFITE_I06)
 
   Observações    : - Movimento interno, não fiscal: NUMNOTA = 0 nas duas notas,
                      sem impostos, sem TGFSER (componentes simples, sem série),
@@ -67,7 +76,9 @@ CREATE OR REPLACE PROCEDURE STP_MOVMATASSIST_SPARK (
                      itens repetidos). Sem saldo: aborta informando produto,
                      local, saldo e quantidade necessária. O saldo é lido
                      O.S. a O.S., então considera o que as O.S. anteriores da
-                     mesma execução já movimentaram.
+                     mesma execução já movimentaram. Como a transferência
+                     é gerada antes do consumo, a validação do consumo já
+                     enxerga o saldo reposto no local do parceiro.
                    - Custo unitário: OBTEMCUSTO_SPARK (custo médio, por
                      empresa e local); nulo ou zero vira 0,01. Na transferência
                      o custo é sempre o do local 201, nas duas pontas.
@@ -106,11 +117,15 @@ CREATE OR REPLACE PROCEDURE STP_MOVMATASSIST_SPARK (
     V_QTD_LOCAL     PLS_INTEGER;
     V_QTD_ITENS     PLS_INTEGER;
     V_QTD_INVALIDOS PLS_INTEGER;
+    V_QTD_ESPELHO   PLS_INTEGER;
 
     V_NUNOTA_DESC   TGFCAB.NUNOTA%TYPE;
     V_NUNOTA_TRF    TGFCAB.NUNOTA%TYPE;
     V_QTD_OS        PLS_INTEGER := 0;
     V_DETALHE       VARCHAR2(4000);
+    V_SQLERRM       VARCHAR2(4000);
+    V_BACKTRACE     VARCHAR2(4000);
+    V_ERRO_LOG      VARCHAR2(4000);
 
     -- Interrompe a execução por regra de negócio (mensagem ao usuário, sem log de erro)
     PROCEDURE LEVANTA_REGRA(P_TEXTO VARCHAR2) IS
@@ -141,7 +156,9 @@ CREATE OR REPLACE PROCEDURE STP_MOVMATASSIST_SPARK (
         );
         COMMIT;
     EXCEPTION
-        WHEN OTHERS THEN NULL;
+        WHEN OTHERS THEN
+            -- Falha ao gravar o log não pode mascarar o erro original; é anexada à mensagem final
+            V_ERRO_LOG := SQLERRM;
     END LOG_ERRO;
 
     -- Confere o saldo disponível de cada produto da O.S. no local informado
@@ -342,37 +359,14 @@ BEGIN
     END LOOP;
 
     ---------------------------------------------------------------------------
-    -- 2. Gera, por O.S.: nota de consumo (TOP 503) e transferência (TOP 708)
+    -- 2. Gera, por O.S.: transferência (TOP 708) e nota de consumo (TOP 503)
     ---------------------------------------------------------------------------
     FOR I IN 1..P_QTDLINHAS LOOP
         V_NUMOS_ATUAL := V_NUMOS_SEL(I);
         V_CODPARC     := V_CODPARC_SEL(I);
         V_CODLOCAL    := V_LOCAL_SEL(I);
 
-        -- 2.1 Consumo: baixa do local do parceiro
-        VALIDA_SALDO(V_NUMOS_ATUAL, V_CODLOCAL, 'o consumo');
-
-        V_NUNOTA_DESC := SNK_GET_NUNOTA;
-
-        INSERE_CABECALHO(
-            P_NUNOTA       => V_NUNOTA_DESC,
-            P_CODTIPOPER   => V_TOP_CONSUMO,
-            P_TIPMOV       => 'Q',
-            P_CODPARC      => V_CODPARC,
-            P_OBSERVACAO   => 'MOVIMENTAÇÃO DE CONSUMO DA ASSISTÊNCIA EXTERNA REFERENTE À O.S. ' || V_NUMOS_ATUAL,
-            P_CODLOCALDEST => NULL
-        );
-
-        INSERE_ITENS(
-            P_NUNOTA        => V_NUNOTA_DESC,
-            P_NUMOS         => V_NUMOS_ATUAL,
-            P_CODLOCAL      => V_CODLOCAL,
-            P_CODLOCALCUSTO => V_CODLOCAL,
-            P_SINALSEQ      => 1,
-            P_ATUALESTOQUE  => -1
-        );
-
-        -- 2.2 Reposição: transferência do local 201 para o local do parceiro
+        -- 2.1 Reposição: transferência do local 201 para o local do parceiro
         VALIDA_SALDO(V_NUMOS_ATUAL, V_CODLOCALORIG, 'a reposição');
 
         V_NUNOTA_TRF := SNK_GET_NUNOTA;
@@ -396,14 +390,60 @@ BEGIN
             P_ATUALESTOQUE  => -1
         );
 
-        -- Entrada no local do parceiro (espelho -1..-N)
+        -- Entrada no local do parceiro (espelho -1..-N). O banco pode gerar o
+        -- espelho sozinho ao inserir a saída (ORA-00001 em TGFITE_I06 quando
+        -- o espelho era inserido por aqui): só insere se ele não existir.
+        SELECT COUNT(*) INTO V_QTD_ESPELHO
+          FROM TGFITE
+         WHERE NUNOTA = V_NUNOTA_TRF AND SEQUENCIA < 0;
+
+        IF V_QTD_ESPELHO = 0 THEN
+            INSERE_ITENS(
+                P_NUNOTA        => V_NUNOTA_TRF,
+                P_NUMOS         => V_NUMOS_ATUAL,
+                P_CODLOCAL      => V_CODLOCAL,
+                P_CODLOCALCUSTO => V_CODLOCALORIG,
+                P_SINALSEQ      => -1,
+                P_ATUALESTOQUE  => 1
+            );
+        ELSE
+            SELECT COUNT(*) INTO V_QTD_ITENS FROM AD_SPKICAE WHERE NUMOS = V_NUMOS_ATUAL;
+
+            IF V_QTD_ESPELHO <> V_QTD_ITENS THEN
+                LEVANTA_REGRA('Transferência da O.S. ' || V_NUMOS_ATUAL || ': o banco gerou ' || V_QTD_ESPELHO ||
+                    ' item(ns) de entrada, mas a O.S. possui ' || V_QTD_ITENS ||
+                    ' componente(s). Nenhuma nota foi gerada nesta execução.');
+            END IF;
+
+            -- Garante que a entrada fique no local do parceiro
+            UPDATE TGFITE
+               SET CODLOCALORIG = V_CODLOCAL
+             WHERE NUNOTA       = V_NUNOTA_TRF
+               AND SEQUENCIA    < 0
+               AND CODLOCALORIG <> V_CODLOCAL;
+        END IF;
+
+        -- 2.2 Consumo: baixa do local do parceiro
+        VALIDA_SALDO(V_NUMOS_ATUAL, V_CODLOCAL, 'o consumo');
+
+        V_NUNOTA_DESC := SNK_GET_NUNOTA;
+
+        INSERE_CABECALHO(
+            P_NUNOTA       => V_NUNOTA_DESC,
+            P_CODTIPOPER   => V_TOP_CONSUMO,
+            P_TIPMOV       => 'Q',
+            P_CODPARC      => V_CODPARC,
+            P_OBSERVACAO   => 'MOVIMENTAÇÃO DE CONSUMO DA ASSISTÊNCIA EXTERNA REFERENTE À O.S. ' || V_NUMOS_ATUAL,
+            P_CODLOCALDEST => NULL
+        );
+
         INSERE_ITENS(
-            P_NUNOTA        => V_NUNOTA_TRF,
+            P_NUNOTA        => V_NUNOTA_DESC,
             P_NUMOS         => V_NUMOS_ATUAL,
             P_CODLOCAL      => V_CODLOCAL,
-            P_CODLOCALCUSTO => V_CODLOCALORIG,
-            P_SINALSEQ      => -1,
-            P_ATUALESTOQUE  => 1
+            P_CODLOCALCUSTO => V_CODLOCAL,
+            P_SINALSEQ      => 1,
+            P_ATUALESTOQUE  => -1
         );
 
         -- 2.3 Marca a O.S. (idempotência)
@@ -416,7 +456,7 @@ BEGIN
 
         IF NVL(LENGTH(V_DETALHE), 0) < 3000 THEN
             V_DETALHE := V_DETALHE || CHR(10) || 'O.S. ' || V_NUMOS_ATUAL ||
-                ': consumo ' || V_NUNOTA_DESC || ' / transferência ' || V_NUNOTA_TRF;
+                ': transferência ' || V_NUNOTA_TRF || ' / consumo ' || V_NUNOTA_DESC;
         END IF;
     END LOOP;
 
@@ -429,15 +469,20 @@ EXCEPTION
         ROLLBACK;
         RAISE_APPLICATION_ERROR(-20001, V_MSG_REGRA);
     WHEN OTHERS THEN
+        V_SQLERRM   := SQLERRM;
+        V_BACKTRACE := DBMS_UTILITY.FORMAT_ERROR_BACKTRACE;
         ROLLBACK;
         LOG_ERRO(
-            P_OPERACAO      => 'MOV_MAT_OS ' || V_NUMOS_ATUAL,
+            P_OPERACAO      => SUBSTR('OS ' || V_NUMOS_ATUAL, 1, 10),
             P_NUNOTA        => NVL(V_NUNOTA_TRF, V_NUNOTA_DESC),
             P_ERR_CODE      => SQLCODE,
-            P_ERR_MSG       => SQLERRM,
-            P_ERR_BACKTRACE => DBMS_UTILITY.FORMAT_ERROR_BACKTRACE,
+            P_ERR_MSG       => V_SQLERRM,
+            P_ERR_BACKTRACE => V_BACKTRACE,
             P_CALL_STACK    => DBMS_UTILITY.FORMAT_CALL_STACK
         );
-        RAISE_APPLICATION_ERROR(-20002,
-            'Erro em STP_MOVMATASSIST_SPARK (O.S. ' || V_NUMOS_ATUAL || '): ' || SQLERRM);
+        RAISE_APPLICATION_ERROR(-20002, SUBSTR(
+            'Erro em STP_MOVMATASSIST_SPARK (O.S. ' || V_NUMOS_ATUAL || '): ' || V_SQLERRM ||
+            ' | Origem: ' || REPLACE(V_BACKTRACE, CHR(10), ' ') ||
+            CASE WHEN V_ERRO_LOG IS NOT NULL THEN ' | Falha ao gravar AD_LOG_ERROS: ' || V_ERRO_LOG END,
+            1, 2000));
 END STP_MOVMATASSIST_SPARK;
