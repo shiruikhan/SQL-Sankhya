@@ -4,31 +4,63 @@
   Nome do Script : FechamentoAssistencia
   Tipo           : Relatório Jasper (.jrxml)
   Grupo          : 34 - Fechamento Assistência
-  Descrição      : Lista as O.S. de assistência técnica (AD_SPKCAE) vinculadas a
-                   um título financeiro gerado por STP_INCFINASSIST_SPARK.
-                   Cabeçalho com os dados do parceiro prestador (código, razão
-                   social, CNPJ/CPF) e data de emissão; detalhe com NUMOS,
-                   SNENTRADA, DTCONCLUSAO, VLRCONSERTO e NUFIN; total do
-                   VLRCONSERTO no final.
+  Descrição      : Fechamento da assistência técnica externa: lista as O.S.
+                   (AD_SPKCAE) concluídas no período, UNIFICADAS POR PARCEIRO
+                   prestador. Uma seção (página nova) por parceiro, com os dados
+                   do parceiro (código, razão social, CNPJ/CPF), o período
+                   apurado e a data de emissão; detalhe com NUMOS, SNENTRADA,
+                   DTCONCLUSAO, VLRCONSERTO e NUFIN; quantidade de O.S. e total
+                   do VLRCONSERTO no rodapé de cada parceiro.
 
-  Parâmetro      : PK_NUFIN — NUFIN do título gerado (marcador gravado em
-                   AD_SPKCAE.NUFIN). Um relatório por título/parceiro; também
-                   serve para reimprimir fechamentos antigos.
+  Parâmetros     : P_CODPARC — parceiro da assistência externa (opcional). Em
+                               branco, uma seção para cada parceiro.
+                   P_DTINI   — data inicial de conclusão da O.S. (DTCONCLUSAO;
+                               opcional; padrão = hoje)
+                   P_DTFIN   — data final de conclusão da O.S. (DTCONCLUSAO;
+                               opcional; padrão = hoje)
+
+  Tabelas        : AD_SPKCAE : O.S. de conserto externo
+                   TGFPAR    : dados do parceiro prestador
 
   Empresa        : Spark Eletrônica
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Data de Criação: 29/09/2026
   Última Revisão : Setembro/2026 — Criação
+                   Outubro/2026 — Lógica trocada de PK_NUFIN para período/parceiro
+                   (P_CODPARC, P_DTINI, P_DTFIN): AD_SPKCAE só repassa NUMOS, que
+                   não identifica o título
+
+  Observações    : - O relatório NÃO usa PK_ da tela: lista por período/parceiro
+                     (parâmetros acima). Se for chamado de uma tela com N
+                     registros selecionados, o Sankhya executa o relatório N
+                     vezes com os mesmos parâmetros e sai o mesmo conteúdo N
+                     vezes — imprimir com um único registro selecionado.
+                   - O período filtra AD_SPKCAE.DTCONCLUSAO. O.S. sem
+                     DTCONCLUSAO não entram quando há data informada. Limpar as
+                     datas lista todo o histórico — cuidado ao reimprimir.
+                   - A coluna NUFIN mostra o título gerado por
+                     STP_INCFINASSIST_SPARK; em branco = O.S. ainda não
+                     fechada financeiramente. São listadas fechadas e abertas.
   ==============================================================================
 -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FechamentoAssistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FechamentoAssistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" whenNoDataType="NoDataSection">
 	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
-	<parameter name="PK_NUFIN" class="java.math.BigDecimal" isForPrompting="false">
+	<parameter name="P_CODPARC" class="java.math.BigDecimal">
+		<property name="NOMETABELA" value="TGFPAR"/>
+		<parameterDescription><![CDATA[Parceiro da assistência externa (opcional; em branco lista todos)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTINI" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data inicial de conclusão da O.S. (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTFIN" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data final de conclusão da O.S. (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
 	</parameter>
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
@@ -52,8 +84,10 @@
     END AS CGC_CPF
 FROM AD_SPKCAE CAE
     JOIN TGFPAR PAR ON PAR.CODPARC = CAE.CODPARC
-WHERE CAE.NUFIN = $P{PK_NUFIN}
-ORDER BY CAE.DTCONCLUSAO, CAE.NUMOS]]>
+WHERE DECODE(CAE.CODPARC, NVL($P{P_CODPARC}, CAE.CODPARC), 1, 0) = 1
+  AND CAE.DTCONCLUSAO >= TRUNC(NVL($P{P_DTINI}, CAE.DTCONCLUSAO))
+  AND CAE.DTCONCLUSAO < TRUNC(NVL($P{P_DTFIN}, CAE.DTCONCLUSAO)) + 1
+ORDER BY PAR.RAZAOSOCIAL, CAE.CODPARC, CAE.DTCONCLUSAO, CAE.NUMOS]]>
 	</queryString>
 	<field name="NUMOS" class="java.math.BigDecimal"/>
 	<field name="SNENTRADA" class="java.lang.String"/>
@@ -63,142 +97,190 @@ ORDER BY CAE.DTCONCLUSAO, CAE.NUMOS]]>
 	<field name="CODPARC" class="java.math.BigDecimal"/>
 	<field name="RAZAOSOCIAL" class="java.lang.String"/>
 	<field name="CGC_CPF" class="java.lang.String"/>
-	<variable name="TOTAL_CONSERTO" class="java.lang.Double" calculation="Sum">
+	<variable name="TOTAL_CONSERTO" class="java.lang.Double" resetType="Group" resetGroup="CODPARC" calculation="Sum">
 		<variableExpression><![CDATA[$F{VLRCONSERTO}]]></variableExpression>
 	</variable>
-	<title>
-		<band height="110" splitType="Stretch">
-			<staticText>
-				<reportElement x="0" y="0" width="535" height="24"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="14" isBold="true"/>
-				</textElement>
-				<text><![CDATA[FECHAMENTO DE ASSISTÊNCIA TÉCNICA]]></text>
-			</staticText>
-			<rectangle>
-				<reportElement x="0" y="32" width="535" height="70"/>
-				<graphicElement>
-					<pen lineWidth="0.75"/>
-				</graphicElement>
-			</rectangle>
-			<staticText>
-				<reportElement x="8" y="38" width="80" height="16"/>
-				<textElement verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Parceiro:]]></text>
-			</staticText>
-			<textField isBlankWhenNull="true">
-				<reportElement x="88" y="38" width="437" height="16"/>
-				<textElement verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[$F{CODPARC} + " - " + $F{RAZAOSOCIAL}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="8" y="56" width="80" height="16"/>
-				<textElement verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[CNPJ/CPF:]]></text>
-			</staticText>
-			<textField isBlankWhenNull="true">
-				<reportElement x="88" y="56" width="437" height="16"/>
-				<textElement verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[$F{CGC_CPF}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="8" y="74" width="80" height="16"/>
-				<textElement verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Data de emissão:]]></text>
-			</staticText>
-			<textField pattern="dd/MM/yyyy">
-				<reportElement x="88" y="74" width="437" height="16"/>
-				<textElement verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
-			</textField>
-		</band>
-	</title>
-	<columnHeader>
-		<band height="22" splitType="Stretch">
-			<staticText>
-				<reportElement mode="Opaque" x="0" y="2" width="70" height="18" backcolor="#E0E0E0"/>
-				<box>
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[NUMOS]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="70" y="2" width="170" height="18" backcolor="#E0E0E0"/>
-				<box>
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[SN ENTRADA]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="240" y="2" width="90" height="18" backcolor="#E0E0E0"/>
-				<box>
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[DT. CONCLUSÃO]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="330" y="2" width="110" height="18" backcolor="#E0E0E0"/>
-				<box>
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[VLR. CONSERTO]]></text>
-			</staticText>
-			<staticText>
-				<reportElement mode="Opaque" x="440" y="2" width="95" height="18" backcolor="#E0E0E0"/>
-				<box>
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[NUFIN]]></text>
-			</staticText>
-		</band>
-	</columnHeader>
+	<variable name="QTD_OS" class="java.lang.Integer" resetType="Group" resetGroup="CODPARC" calculation="Count">
+		<variableExpression><![CDATA[$F{NUMOS}]]></variableExpression>
+	</variable>
+	<group name="CODPARC" isStartNewPage="true" isReprintHeaderOnEachPage="true">
+		<groupExpression><![CDATA[$F{CODPARC}]]></groupExpression>
+		<groupHeader>
+			<band height="150" splitType="Prevent">
+				<staticText>
+					<reportElement x="0" y="0" width="535" height="24"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="14" isBold="true"/>
+					</textElement>
+					<text><![CDATA[FECHAMENTO DE ASSISTÊNCIA TÉCNICA]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="32" width="535" height="90"/>
+					<graphicElement>
+						<pen lineWidth="0.75"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="8" y="38" width="80" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Parceiro:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="88" y="38" width="437" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODPARC} + " - " + $F{RAZAOSOCIAL}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="8" y="56" width="80" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[CNPJ/CPF:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="88" y="56" width="437" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CGC_CPF}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="8" y="74" width="80" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Período:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="88" y="74" width="437" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Conclusão de " + ($P{P_DTINI} == null ? "(sem limite)" : new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{P_DTINI})) + " a " + ($P{P_DTFIN} == null ? "(sem limite)" : new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{P_DTFIN}))]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="8" y="92" width="80" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Data de emissão:]]></text>
+				</staticText>
+				<textField pattern="dd/MM/yyyy">
+					<reportElement x="88" y="92" width="437" height="16"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement mode="Opaque" x="0" y="128" width="70" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[NUMOS]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="70" y="128" width="170" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[SN ENTRADA]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="240" y="128" width="90" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[DT. CONCLUSÃO]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="330" y="128" width="110" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[VLR. CONSERTO]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="440" y="128" width="95" height="18" backcolor="#E0E0E0"/>
+					<box>
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[NUFIN]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="30" splitType="Prevent">
+				<textField>
+					<reportElement x="0" y="6" width="240" height="18"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Quantidade de O.S.: " + $V{QTD_OS}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="240" y="6" width="90" height="18"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<text><![CDATA[TOTAL:]]></text>
+				</staticText>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement mode="Opaque" x="330" y="6" width="110" height="18" backcolor="#E0E0E0"/>
+					<box leftPadding="4" rightPadding="4">
+						<pen lineWidth="0.5"/>
+						<topPen lineWidth="0.5"/>
+						<leftPen lineWidth="0.5"/>
+						<bottomPen lineWidth="0.5"/>
+						<rightPen lineWidth="0.5"/>
+					</box>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.Double"><![CDATA[$V{TOTAL_CONSERTO}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
 	<detail>
 		<band height="18" splitType="Stretch">
 			<textField isBlankWhenNull="true">
@@ -284,29 +366,15 @@ ORDER BY CAE.DTCONCLUSAO, CAE.NUMOS]]>
 			</textField>
 		</band>
 	</pageFooter>
-	<summary>
-		<band height="30" splitType="Stretch">
+	<noData>
+		<band height="40" splitType="Stretch">
 			<staticText>
-				<reportElement x="240" y="6" width="90" height="18"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
+				<reportElement x="0" y="10" width="535" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
 				</textElement>
-				<text><![CDATA[TOTAL:]]></text>
+				<text><![CDATA[Nenhuma O.S. encontrada para os parâmetros informados.]]></text>
 			</staticText>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement mode="Opaque" x="330" y="6" width="110" height="18" backcolor="#E0E0E0"/>
-				<box leftPadding="4" rightPadding="4">
-					<pen lineWidth="0.5"/>
-					<topPen lineWidth="0.5"/>
-					<leftPen lineWidth="0.5"/>
-					<bottomPen lineWidth="0.5"/>
-					<rightPen lineWidth="0.5"/>
-				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="9" isBold="true"/>
-				</textElement>
-				<textFieldExpression class="java.lang.Double"><![CDATA[$V{TOTAL_CONSERTO}]]></textFieldExpression>
-			</textField>
 		</band>
-	</summary>
+	</noData>
 </jasperReport>
