@@ -46,6 +46,9 @@ CREATE OR REPLACE PROCEDURE STP_INCFINASSIST_SPARK (
   Data de Criação: 23/09/2026
   Última Revisão : Setembro/2026 — Inclusão do parâmetro INFOPAG, gravado em
                    TGFFIN.HISTORICO junto com o vencimento informado
+                   Outubro/2026 — Correção de ORA-01403 na aglutinação por
+                   parceiro (leitura de elemento inexistente do array
+                   associativo; agora usa EXISTS)
 
   Observações    : - Lançamento é avulso: NUNOTA não é preenchido, não gera
                      TGFCAB/TGFITE (diferente de TRG_INCDEVCH_SPARK).
@@ -160,7 +163,12 @@ BEGIN
         V_NUMOS_SEL(I)   := FIELD_NUMOS;
         V_CODPARC_SEL(I) := V_CODPARC;
 
-        V_VLR_POR_PARC(V_CODPARC) := NVL(V_VLR_POR_PARC(V_CODPARC), 0) + NVL(V_VLRCONSERTO, 0);
+        -- Array associativo: ler elemento inexistente levanta NO_DATA_FOUND
+        IF V_VLR_POR_PARC.EXISTS(V_CODPARC) THEN
+            V_VLR_POR_PARC(V_CODPARC) := V_VLR_POR_PARC(V_CODPARC) + NVL(V_VLRCONSERTO, 0);
+        ELSE
+            V_VLR_POR_PARC(V_CODPARC) := NVL(V_VLRCONSERTO, 0);
+        END IF;
     END LOOP;
 
     ---------------------------------------------------------------------------
