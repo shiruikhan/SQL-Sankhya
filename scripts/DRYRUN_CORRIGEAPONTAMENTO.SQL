@@ -1,10 +1,11 @@
 /*==============================================================================
   Nome do Script : DRYRUN_CORRIGEAPONTAMENTO
   Tipo           : Script de simulação (somente leitura)
-  Descrição      : Simula a STP_CORRIGEAPONTAMENTO_SPARK sem alterar nada.
-                   Aplica exatamente o mesmo universo e as mesmas regras da
-                   procedure (conferências finalizadas, OP não cancelada,
-                   janela P_DIAS ou OP específica) e mostra, para cada
+  Descrição      : Simula a STP_CORRIGEAPO_PERIODO_SPARK (e, por
+                   consequência, a agendável STP_CORRIGEAPONTAMENTO_SPARK) sem
+                   alterar nada. Aplica exatamente o mesmo universo e as mesmas
+                   regras da procedure (conferências finalizadas, OP não
+                   encerrada, data inicial P_DTINI ou OP específica) e mostra, para cada
                    conferência, a AÇÃO que a procedure tomaria. Lista APENAS
                    as falhas (apontamento existente cuja QTDAPONTADA/QTDFAT
                    diverge do nº de séries); conferências corretas ou sem nada
@@ -23,9 +24,11 @@
                                           procedure NÃO altera, só informa aqui
 
   Parâmetros     : Editar a CTE PARAMS abaixo:
-                     P_DIAS    — janela em dias pela finalização da conferência
-                     P_IDIPROC — OP específica (NULL = varre pela janela; quando
-                                 informado a janela é ignorada, como na procedure)
+                     P_DTINI   — data inicial pela finalização da conferência
+                                 (inclusive). Para simular o job agendado use
+                                 TRUNC(SYSDATE) - 3
+                     P_IDIPROC — OP específica (NULL = varre pela data; quando
+                                 informado a data é ignorada, como na procedure)
   Tabelas        : TPRCONF, TPRIATV, TPRIPROC, AD_TPRCOI, TPRAPA (leitura)
 
   Autor          : Silvio Vieira
@@ -39,6 +42,9 @@
                    expedição (TPREFX.DESCRICAO); coluna ETAPA adicionada
                    Outubro/2026 — Passa a listar somente as falhas (removidas
                    as situações OK, SEM_NUAPO, SEM_SERIES e SEM_TPRAPA)
+                   Outubro/2026 — Janela passou de P_DIAS para a data inicial
+                   P_DTINI (procedure dividida em agendável sem parâmetros +
+                   STP_CORRIGEAPO_PERIODO_SPARK)
 
   Observações    : Ordens canceladas ('C') e em cancelamento ('C2') ficam fora
                    da listagem, como na procedure. Ordens finalizadas ('F') com falha são listadas
@@ -47,14 +53,14 @@
                    (SEM_NUAPO/SEM_SERIES/SEM_TPRAPA), use
                    scripts/DIAG_APONTAMENTO_VS_CONFERENCIA.SQL.
                    Manter a lógica sincronizada com o cursor C_DIVERG de
-                   procedures/STP_CORRIGEAPONTAMENTO_SPARK.SQL. Para um resumo
+                   procedures/STP_CORRIGEAPO_PERIODO_SPARK.SQL. Para um resumo
                    por ação, envolva a consulta em
                    SELECT ACAO, COUNT(*) FROM (...) GROUP BY ACAO.
 ==============================================================================*/
 
 WITH PARAMS AS (
-    SELECT  120  AS P_DIAS      -- janela de varredura em dias
-           ,NULL AS P_IDIPROC   -- ex.: 33743 para uma OP específica
+    SELECT  DATE '2026-10-02' AS P_DTINI     -- data inicial (carga); agendada = TRUNC(SYSDATE) - 3
+           ,NULL              AS P_IDIPROC   -- ex.: 33743 para uma OP específica
     FROM    DUAL
 ),
 SERIES_CONF AS (
@@ -107,7 +113,7 @@ BASE AS (
              OR APA.QTDFAT      <> SER.QTD_SERIES)
     AND     (   ATV.IDIPROC = PRM.P_IDIPROC
              OR (    PRM.P_IDIPROC IS NULL
-                 AND COALESCE(CNF.DHFINCONF, SER.DHINC) >= TRUNC(SYSDATE) - PRM.P_DIAS))
+                 AND COALESCE(CNF.DHFINCONF, SER.DHINC) >= TRUNC(PRM.P_DTINI)))
 )
 SELECT  BAS.IDIPROC
        ,BAS.STATUSPROC
