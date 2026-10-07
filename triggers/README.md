@@ -69,7 +69,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_INC_UPD_TGFVAR_SPARK.SQL` | `TRG_INC_UPD_TGFVAR_SPARK` | `TGFVAR` | INSERT, UPDATE | Controla variáveis customizadas de nota |
 | `TRG_UPD_TGFCAB_MOEDA_SPARK2.sql` | `TRG_UPD_TGFCAB_MOEDA_SPARK2` | `TGFCAB` | UPDATE (COMPOUND) | Recalcula `VLRUNITMOE`/`VLRTOTMOE` dos itens quando `VLRMOEDA` é alterado no cabeçalho (TOPs 1008/1009). Usa compound trigger para evitar ORA-04091; comunica valores via `PKG_SPARK_MOEDA` |
 | `TRG_TGFNCT_SPARK.SQL` | `TRG_TGFNCT_SPARK` | `TGFNCT` | INSERT, UPDATE | Controla naturezas de nota |
-| `TRG_UPD_DIFALPB_SPARK.sql` | `TRG_UPD_DIFALPB_SPARK` | `TGFCAB` | AFTER UPDATE OF `STATUSNFE` | Após aprovação da NF-e (`STATUSNFE` → `'A'`), recalcula base (`BASEDIFAL`) e valor (`VLRDIFALDEST`) do DIFAL destino em `TGFDIN`, para destinatários da UF configurada (`V_CODUF_PB = 17`, PB) classificados como consumo (`TGFPAR.CLASSIFICMS = 'C'`). Alíquotas fixas (interna 20%, DIFAL 13%). Loga em `AD_LOG_ERROS` e relança o erro (bloqueia a aprovação) |
+| `TRG_UPD_DIFALPB_SPARK.sql` | `TRG_UPD_DIFALPB_SPARK` | `TGFCAB` | BEFORE UPDATE OF `STATUSNFE` | Na aprovação da NF-e (`STATUSNFE` → `'A'`), recalcula base (`BASEDIFAL`) e valor (`VLRDIFALDEST`) do DIFAL destino em `TGFDIN` e totaliza o valor no cabeçalho (`TGFCAB.VLRICMSDIFALDEST`, via `:NEW`), para destinatários da UF configurada (`V_CODUF_PB = 17`, PB) classificados como consumo (`TGFPAR.CLASSIFICMS = 'C'`). Alíquotas fixas (interna 20%, DIFAL 13%). Loga em `AD_LOG_ERROS` e relança o erro (bloqueia a aprovação) |
 
 ---
 

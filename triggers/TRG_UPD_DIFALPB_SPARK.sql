@@ -1,5 +1,5 @@
 CREATE OR REPLACE TRIGGER TRG_UPD_DIFALPB_SPARK
-AFTER UPDATE OF STATUSNFE ON TGFCAB
+BEFORE UPDATE OF STATUSNFE ON TGFCAB
 FOR EACH ROW
 WHEN (NEW.STATUSNFE = 'A' AND (OLD.STATUSNFE IS NULL OR OLD.STATUSNFE <> 'A'))
 /*==============================================================================
@@ -21,14 +21,18 @@ WHEN (NEW.STATUSNFE = 'A' AND (OLD.STATUSNFE IS NULL OR OLD.STATUSNFE <> 'A'))
                      ignorados.
                    - Atua apenas na linha de ICMS (TGFDIN.CODIMP = 1) com base
                      reduzida e ICMS proprio preenchidos.
+                   - Apos o recalculo, totaliza o VLRDIFALDEST de TGFDIN no
+                     cabecalho da nota (TGFCAB.VLRICMSDIFALDEST).
 
                    Formula:
                      Nova base = (BASERED - VALOR) / (1 - aliquota interna)
                      DIFAL     = Nova base * aliquota do DIFAL
+                     Cabecalho = SUM(VLRDIFALDEST) dos impostos da nota
 
   Tabela         : TGFCAB
-  Evento         : AFTER UPDATE OF STATUSNFE
-  Tabelas        : TGFCAB  (leitura via :NEW)
+  Evento         : BEFORE UPDATE OF STATUSNFE
+  Tabelas        : TGFCAB  (leitura via :NEW; escrita de VLRICMSDIFALDEST
+                            via :NEW)
                    TGFPAR  (leitura - classificacao ICMS do parceiro)
                    TSICID  (leitura - UF da cidade do parceiro)
                    TGFDIN  (escrita - BASEDIFAL, VLRDIFALDEST)
@@ -50,6 +54,11 @@ WHEN (NEW.STATUSNFE = 'A' AND (OLD.STATUSNFE IS NULL OR OLD.STATUSNFE <> 'A'))
                    09/2026 - Performance: checagem de existencia (SELECT
                    COUNT(0)) ganhou ROWNUM = 1, ja que o resultado so e
                    comparado a 0. Comportamento observavel inalterado.
+                   10/2026 - Incluida a etapa 4: totalizacao do DIFAL destino
+                   no cabecalho (TGFCAB.VLRICMSDIFALDEST). Trigger passou de
+                   AFTER para BEFORE UPDATE para atribuir o total via :NEW,
+                   pois UPDATE na propria TGFCAB dentro de trigger de linha
+                   AFTER gera ORA-04091 (tabela mutante).
 
   Observacoes    : - V_CODUF_PB = 17: codigo da UF de destino (PB) conforme
                      cadastro de TSICID.UF nesta base. Confirmar o codigo
@@ -66,7 +75,8 @@ WHEN (NEW.STATUSNFE = 'A' AND (OLD.STATUSNFE IS NULL OR OLD.STATUSNFE <> 'A'))
 ==============================================================================*/
 DECLARE
 
-    V_COUNT NUMBER;
+    V_COUNT     NUMBER;
+    V_DIFALTOT  TGFDIN.VLRDIFALDEST%TYPE;
 
     -- Parametros utilizados no calculo:
     --   Aliquota interna do destino : 20%
@@ -150,10 +160,22 @@ BEGIN
        AND BASERED IS NOT NULL
        AND VALOR   IS NOT NULL;
 
+    ---------------------------------------------------------------------------
+    -- 4. Totaliza o valor no cabecalho
+    --    Atribuido via :NEW (trigger BEFORE) para evitar ORA-04091 ao
+    --    atualizar a propria TGFCAB.
+    ---------------------------------------------------------------------------
+    SELECT NVL(SUM(DIN.VLRDIFALDEST), 0)
+      INTO V_DIFALTOT
+      FROM TGFDIN DIN
+     WHERE DIN.NUNOTA = :NEW.NUNOTA;
+
+    :NEW.VLRICMSDIFALDEST := V_DIFALTOT;
+
 EXCEPTION
     WHEN OTHERS THEN
         LOG_ERRO(
-             'AFTER UPDATE STATUSNFE'
+             'BEFORE UPDATE STATUSNFE'
             ,:NEW.NUNOTA
             ,SQLCODE
             ,SQLERRM
