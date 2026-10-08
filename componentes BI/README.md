@@ -100,6 +100,12 @@ Painel comercial completo: pedidos abertos, faturados e em atraso por vendedor e
 #### `CARD - VENDAS MENSAL/CARD.SQL`
 Card numérico: total de vendas no mês corrente.
 
+#### `[SPARK] - Distribuição de vendas por Grupo de Produto/`
+Distribuição das vendas de um grupo de produto (pai ou direto, via `:P_CODGRUPOPROD`) no período `:P_PERIODO` (DTNEG), filtrado por vendedor/gerente via `:P_CODVEND` (multilist; gerente traz a equipe por `TGFVEN.CODGER`). Mesmo critério de venda de `RESUMO DE VENDAS POR VENDEDOR`; quantidades e valores são líquidos de devolução (critério de devolução de `Faturamento por período Gestão/p2.sql`).
+- `P1.SQL` — Parceiros (por vendedor) que compraram o grupo: quantidade de produtos, quantidade de notas e valor (só itens do grupo). Clique na linha aciona o P2 (`:A_CODPARC` e `:A_CODVEND`).
+- `P2.SQL` — Produtos do grupo comprados pelo parceiro/vendedor selecionado (`:A_CODPARC`, `:A_CODVEND`), com o vendedor em cada linha.
+- `P3.SQL` — Mapa de calor do Brasil por UF do parceiro, em quantidade (mesmo formato `QTD/CODUF/UF` do `GEOGUESSER`).
+
 #### `resultado de faturamento.sql`
 Query de resultado de faturamento (versão simplificada/legacy).
 
