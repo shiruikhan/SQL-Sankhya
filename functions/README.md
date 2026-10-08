@@ -266,7 +266,7 @@ GET_ESTOQUE_KIT_PA_OVERSYSTEM ( P_CODPROD IN INT,P_CODLOCAL IN INT ) RETURN TYPE
 
 ### `SNK_PRECO` (nativa Sankhya)
 
-**Arquivo:** `nativo/functions/SNK_PRECO.SQL` (local, não versionado)  
+**Arquivo:** `nativo/functions/SNK_PRECO.SQL`  
 **Tipo de retorno:** `FLOAT`  
 **Captura:** 17/09/2026 (via `DBA_SOURCE`)
 

@@ -31,8 +31,11 @@ O objetivo é manter um histórico versionado, auditável e documentado de cada 
 - Fórmulas e regras do ERP
 - Procedures de integração contábil (Audicon)
 
+**Referência (versionado, mas não é código da Spark):**
+- Código e DDL nativos do Sankhya (functions, packages, tabelas, triggers) — em `nativo/`, só para consulta e para `git diff` após cada upgrade do ERP. Ver [`nativo/README.md`](nativo/README.md)
+
 **Fora do escopo (não versionado):**
-- Código e DDL nativos do Sankhya (functions, tabelas, triggers, JARs do SDK) — mantidos só localmente em `nativo/`
+- JARs do Sankhya SDK — mantidos só localmente em `nativo/libs/` (536 MB, fora do git)
 - Scripts de apoio operacional (captura de DDL, diagnósticos, backfills pontuais) — mantidos só localmente em `scripts/`
 - Configurações do servidor de aplicação
 - Parametrizações nativas do ERP (sem código customizado)
@@ -59,20 +62,28 @@ SQL Sankhya/
 ├── exemplos/               Amostras reais de dados (cabeçalho+itens+série) para referência
 ├── inativos/               Objetos descontinuados (preservados para referência)
 │
-│   ── Pastas locais (NÃO versionadas — ver `.gitignore`) ──
-├── nativo/                 Material nativo do Sankhya, só para consulta
+├── nativo/                 Material nativo do Sankhya — referência, NÃO é código da Spark (índice em nativo/README.md)
 │   ├── functions/          DDL das functions nativas (SNK_*, ACT_*, TIM_* …) + catálogo
+│   ├── packages/           Especificações dos packages nativos (20, só spec) + catálogo
 │   ├── tables/             DDL das tabelas nativas mais referenciadas + catálogo
 │   ├── triggers/           Triggers nativas (TRG_INC_TGFITE, TRG_INC_TGFVAR)
-│   └── libs/               JARs do Sankhya SDK (classpath do Java)
+│   ├── MANIFESTO.csv       Inventário de tudo o que foi capturado (tipo, nome, data, linhas)
+│   └── libs/               JARs do Sankhya SDK — LOCAL, fora do git (classpath do Java)
+│
+│   ── Pasta local (NÃO versionada — ver `.gitignore`) ──
 └── scripts/                Scripts de apoio: captura de DDL, diagnóstico, backfills pontuais
 ```
 
-> **Material local.** `nativo/` e `scripts/` existem apenas na máquina de quem
-> mantém o repositório. Não são enviados ao git: o código nativo pertence ao
-> fabricante (e muda a cada upgrade do ERP) e os scripts são ferramentas
-> descartáveis de uso operacional. Ao clonar o repositório essas pastas não
-> existem; para recriá-las, ver [§10](#10-material-local-não-versionado).
+> **Material local.** `scripts/` e `nativo/libs/` existem apenas na máquina de quem
+> mantém o repositório. Não são enviados ao git: os scripts são ferramentas
+> descartáveis de uso operacional e os JARs do SDK pertencem ao fabricante e
+> pesam ~536 MB. Ao clonar o repositório essas pastas não existem; para
+> recriá-las, ver [§10](#10-material-nativo-e-material-local).
+>
+> **Material nativo versionado.** O restante de `nativo/` (functions, packages,
+> tabelas e triggers do fabricante) *é* versionado, de propósito: serve de
+> referência e permite `git diff` após cada upgrade do Sankhya. Não é código da
+> Spark — nunca editar à mão; recapturar do banco (ver [`nativo/README.md`](nativo/README.md)).
 
 ---
 
@@ -330,7 +341,7 @@ de apoio à documentação — não é objeto implantado no ERP.
 
 - **Banco de dados:** Oracle Database (dialeto PL/SQL obrigatório)
 - **ERP:** Sankhya W, módulos COM, FIN, PCP, WMS, CAC
-- **Java SDK:** `SankhyaW-extensions.jar`, `mge-modelcore`, `mgecom-model` (JARs em `nativo/libs/`, pasta local — ver [§10](#10-material-local-não-versionado))
+- **Java SDK:** `SankhyaW-extensions.jar`, `mge-modelcore`, `mgecom-model` (JARs em `nativo/libs/`, pasta local fora do git — ver [§10](#10-material-nativo-e-material-local))
 - **Reports:** JasperReports — compilados pelo Sankhya no deploy
 - **Cada arquivo** contém exatamente um objeto de banco de dados
 - **Objetos inativos** ficam em `inativos/` — não são deployados em produção
@@ -371,18 +382,19 @@ de apoio à documentação — não é objeto implantado no ERP.
 
 ---
 
-## 10. Material local não versionado
+## 10. Material nativo e material local
 
-`nativo/` e `scripts/` estão no `.gitignore` e **não existem num clone novo**. Servem de consulta e ferramenta de trabalho de quem mantém o repositório.
+`nativo/` guarda o que é do **fabricante** (Sankhya): referência de consulta e base para `git diff` após cada upgrade. Está **versionado**, exceto `nativo/libs/`. `scripts/` e `nativo/libs/` estão no `.gitignore` e **não existem num clone novo**. Índice, convenções e procedimento de recaptura em [`nativo/README.md`](nativo/README.md); inventário completo em [`nativo/MANIFESTO.csv`](nativo/MANIFESTO.csv).
 
-| Pasta | Conteúdo | Como recriar |
-|---|---|---|
-| `nativo/functions/` | ~350 functions nativas (`SNK_*`, `ACT_*`, `TIM_*`, `FSP_*` …) + `README.md` com catálogo | `DBMS_METADATA.GET_DDL('FUNCTION', …)`; inventário em `scripts/CAPTURA_LISTA_FUNCTIONS_NAO_SNK.SQL` |
-| `nativo/tables/` | DDL de ~53 tabelas nativas mais referenciadas + `README.md` | `scripts/CAPTURA_DDL_TABELAS_FALTANTES*.SQL`; lista em [`tables/TABELAS_FALTANTES.md`](tables/TABELAS_FALTANTES.md) |
-| `nativo/triggers/` | `TRG_INC_TGFITE` (nativa + customização Spark) e `TRG_INC_TGFVAR` (100% nativa) | `DBMS_METADATA.GET_DDL('TRIGGER', …)`; contexto do incidente em [`triggers/README.md`](triggers/README.md) §14–15 |
-| `nativo/libs/` | JARs do Sankhya SDK (classpath do Java; `.vscode/settings.json` aponta para cá) | Copiar da instalação do servidor Sankhya |
-| `scripts/` | Capturas de DDL, diagnósticos (`DIAG_*`, `DRYRUN_*`, `VALIDA_*`), `CHECK_STATUS_TRIGGERS_SPARK.SQL`, backfills pontuais | Não recriável — fazer backup próprio se necessário |
+| Pasta | Versionada | Conteúdo | Como recriar |
+|---|---|---|---|
+| `nativo/functions/` | sim | ~350 functions nativas (`SNK_*`, `ACT_*`, `TIM_*`, `FSP_*` …) + `README.md` com catálogo | `DBMS_METADATA.GET_DDL('FUNCTION', …)`; inventário em `scripts/CAPTURA_LISTA_FUNCTIONS_NAO_SNK.SQL` |
+| `nativo/packages/` | sim | 20 packages nativos (`VARIAVEIS_PKG`, `TGFITE_PKG`, `ERROS_PKG` …), somente especificação — o banco não tem body — + `README.md` com catálogo | `DBMS_METADATA.GET_DDL('PACKAGE_SPEC', …)`; inventário em `scripts/CAPTURA_LISTA_PACKAGES.SQL` |
+| `nativo/tables/` | sim | DDL de ~53 tabelas nativas mais referenciadas + `README.md` | `scripts/CAPTURA_DDL_TABELAS_FALTANTES*.SQL`; lista em [`tables/TABELAS_FALTANTES.md`](tables/TABELAS_FALTANTES.md) |
+| `nativo/triggers/` | sim | `TRG_INC_TGFITE` (nativa; customização Spark ainda não delimitada — ver `nativo/triggers/README.md`) e `TRG_INC_TGFVAR` (100% nativa) | `DBMS_METADATA.GET_DDL('TRIGGER', …)`; contexto do incidente em [`triggers/README.md`](triggers/README.md) §14–15 |
+| `nativo/libs/` | **não** (536 MB) | JARs do Sankhya SDK (classpath do Java; `.vscode/settings.json` aponta para cá) | Copiar da instalação do servidor Sankhya |
+| `scripts/` | **não** | Capturas de DDL, diagnósticos (`DIAG_*`, `DRYRUN_*`, `VALIDA_*`), `CHECK_STATUS_TRIGGERS_SPARK.SQL`, backfills pontuais | Não recriável — fazer backup próprio se necessário |
 
-**Regra prática:** o que é código da Spark e vai para produção fica nas pastas versionadas (§3). O que é do fabricante, ou ferramenta de uso único, fica em `nativo/` ou `scripts/`. Documentação versionada que cita esses arquivos (`functions/README.md`, `triggers/README.md`, `tables/TABELAS_FALTANTES.md`) indica explicitamente que o caminho é local.
+**Regra prática:** o que é código da Spark e vai para produção fica nas pastas da raiz (§3). O que é do fabricante fica em `nativo/` (versionado, só leitura). O que é ferramenta de uso único ou binário pesado (`scripts/`, `nativo/libs/`) fica fora do git. Documentação que cita arquivos de `scripts/` e `nativo/libs/` indica explicitamente que o caminho é local.
 
-> Atualizações do Sankhya podem alterar ou remover objetos nativos. Recapturar o DDL após cada upgrade do ERP.
+> Atualizações do Sankhya podem alterar ou remover objetos nativos. Recapturar o DDL após cada upgrade do ERP e commitar o resultado — o `git diff` mostra o que o fabricante mudou.

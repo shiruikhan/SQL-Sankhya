@@ -2,9 +2,10 @@
 .env
 /.claude
 
-# ── Material nativo do Sankhya (não é código da Spark) ───────────────────────
-# DDL/fonte capturados do banco, trigger nativa, JARs do SDK. Referência local.
-/nativo/
+# ── Material nativo do Sankhya (versionado, exceto os JARs) ──────────────────
+# DDL/fonte capturados do banco (functions, packages, tabelas, triggers) ficam
+# versionados em nativo/ para diff após cada upgrade do ERP. JARs do SDK não.
+/nativo/libs/
 
 # ── Scripts de apoio (captura de DDL, diagnóstico, backfills pontuais) ───────
 /scripts/
