@@ -159,7 +159,7 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ## Dependências
 
-Todas as dependências estão em `../libs_sankhya/`. As principais utilizadas pelas classes:
+Todas as dependências estão em `../nativo/libs/` (local, não versionado). As principais utilizadas pelas classes:
 
 | JAR | Uso |
 |---|---|
@@ -172,7 +172,7 @@ Todas as dependências estão em `../libs_sankhya/`. As principais utilizadas pe
 
 ## Como Deployar
 
-1. Compilar as classes com o classpath apontando para os JARs em `libs_sankhya/`
+1. Compilar as classes com o classpath apontando para os JARs em `nativo/libs/`
 2. Empacotar em `.jar` (sem dependências — as libs já estão no servidor Sankhya)
 3. Fazer upload do `.jar` em *Administração → Extensões* no Sankhya
 4. Cadastrar os botões de ação ou vincular os listeners conforme `regrasCAC.xml`

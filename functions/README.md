@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de functions:** 10  
+**Total de functions:** 9 (mais `SNK_PRECO`, nativa, documentada ao final — fonte em `nativo/functions/`)  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -266,7 +266,7 @@ GET_ESTOQUE_KIT_PA_OVERSYSTEM ( P_CODPROD IN INT,P_CODLOCAL IN INT ) RETURN TYPE
 
 ### `SNK_PRECO` (nativa Sankhya)
 
-**Arquivo:** `SNK_PRECO.SQL`  
+**Arquivo:** `nativo/functions/SNK_PRECO.SQL` (local, não versionado)  
 **Tipo de retorno:** `FLOAT`  
 **Captura:** 17/09/2026 (via `DBA_SOURCE`)
 
@@ -287,7 +287,7 @@ SNK_PRECO(P_CODTAB IN INTEGER, P_CODPROD IN INTEGER) RETURN FLOAT
 **Tabela consultada:** `TGFTAB`  
 **Dependência:** `STP_OBTEM_PRECO2` (procedure nativa Sankhya)  
 **Uso:**
-- `TRG_SPKCAE_VLRCONSERTO_SPARK` e `scripts/AD_SPKCAE_BACKFILL_VLRCONSERTO.SQL` — calcula `VLRCONSERTO` a partir do preço de serviço do produto (`CODTAB = 14`).
-- `TRG_TGFASS_VLRCONSERTO_SPARK` e `scripts/AD_TGFASS_BACKFILL_VLRCONSERTO_VLRSERVTECNICO.SQL` — calculam `VLRCONSERTO` (`CODTAB = 14`) e `VLRSERVTECNICO` (`CODTAB = 15`) a partir do preço do produto.
+- `TRG_SPKCAE_VLRCONSERTO_SPARK` e `scripts/AD_SPKCAE_BACKFILL_VLRCONSERTO.SQL` (local) — calcula `VLRCONSERTO` a partir do preço de serviço do produto (`CODTAB = 14`).
+- `TRG_TGFASS_VLRCONSERTO_SPARK` e `scripts/AD_TGFASS_BACKFILL_VLRCONSERTO_VLRSERVTECNICO.SQL` (local) — calculam `VLRCONSERTO` (`CODTAB = 14`) e `VLRSERVTECNICO` (`CODTAB = 15`) a partir do preço do produto.
 
-> **Atenção:** function **nativa** do ERP, não uma customização Spark — armazenada aqui só como referência. Atualizações do Sankhya podem sobrescrevê-la; revisar após cada upgrade (mesmo cuidado de `trigger_nativa/README.md`).
+> **Atenção:** function **nativa** do ERP, não uma customização Spark — armazenada aqui só como referência. Atualizações do Sankhya podem sobrescrevê-la; revisar após cada upgrade (mesmo cuidado de `nativo/triggers/README.md`).

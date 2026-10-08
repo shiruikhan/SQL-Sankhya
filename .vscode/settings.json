@@ -1,6 +1,6 @@
 {
     "java.project.sourcePaths": [
-        "libs_sankhya"
+        "nativo/libs"
     ],
     "java.format.settings.url": ".vscode/java-formatter.xml"
 }

@@ -5,7 +5,7 @@
 **Atualizado em:** 18/09/2026 — Seções 1 e 2 **capturadas** (ver status por item abaixo); Seção 3 adicionada a partir de uma segunda varredura pelas cláusulas `REFERENCES` (FK) dos DDLs já capturados.
 **Objetivo:** mapear tabelas usadas no código (triggers, procedures, functions, BI, views, reports) que ainda não têm um `.SQL` de referência em `tables/`, para priorizar a captura via `DBMS_METADATA.GET_DDL`.
 
-> Metodologia (Seções 1-2): contagem de ocorrências de cada nome de tabela como alvo de `FROM/JOIN/UPDATE/INTO/TABLE` em todos os arquivos `.sql/.SQL/.trg/.prc/.fnc/.vw` do repositório, excluindo `tables/` (o que já temos) e `functions/nativas_sankhya/` (código de function, não DDL de tabela). Falsos positivos são possíveis (ex.: alias de CTE que por acaso segue o padrão de nome Sankhya) — validar antes de gastar tempo capturando.
+> Metodologia (Seções 1-2): contagem de ocorrências de cada nome de tabela como alvo de `FROM/JOIN/UPDATE/INTO/TABLE` em todos os arquivos `.sql/.SQL/.trg/.prc/.fnc/.vw` do repositório, excluindo `tables/` (o que já temos) e `nativo/functions/` (código de function, não DDL de tabela). Falsos positivos são possíveis (ex.: alias de CTE que por acaso segue o padrão de nome Sankhya) — validar antes de gastar tempo capturando.
 
 ---
 
@@ -52,7 +52,7 @@ Diferente das nativas, estas foram criadas pela Spark e não existem em nenhuma 
 
 ## 2. Tabelas nativas do Sankhya mais referenciadas sem DDL (≥ 5 ocorrências)
 
-**Status: 53 de 53 capturadas em 18/09/2026** — DDL em `tables/nativas_sankhya/*.SQL`, catálogo em [`tables/nativas_sankhya/README.md`](nativas_sankhya/README.md). Referência/documentação apenas (mesmo cuidado do `SNK_PRECO`: atualização do ERP pode alterar a estrutura).
+**Status: 53 de 53 capturadas em 18/09/2026** — DDL em `nativo/tables/*.SQL`, catálogo em `nativo/tables/README.md` (pasta local, não versionada). Referência/documentação apenas (mesmo cuidado do `SNK_PRECO`: atualização do ERP pode alterar a estrutura).
 
 | Tabela | Refs | Exemplo de uso |
 |---|---:|---|
@@ -115,12 +115,12 @@ Cruzando essa lista com o uso direto no código da aplicação (mesma metodologi
 | `TGFVOL` | 10 | 0* | unidade/volume do produto — muito referenciada por FK, uso direto não confirmado |
 | `TSIEMP` | 6 | 4 | `triggers/TRG_COTAFRETE_SPARK.SQL` (empresas do grupo) |
 | `TGFMBC` | 1 | 5 | `componentes BI/TRG_NUMCHEQUE_TGFECQ_SPARK.SQL` (movimento bancário/cheque) |
-| `TGFTAB` | 2 | 2 | `functions/SNK_PRECO.SQL` (tabela de preços) |
+| `TGFTAB` | 2 | 2 | `nativo/functions/SNK_PRECO.SQL` (tabela de preços) |
 | `TGFTIT` | 2 | 2 | `componentes BI/CONTAS A PAGAR E PROVISAO DE DESPESAS.sql` (tipo de título) |
 
 \* `TGFVOL` não apareceu no scan de uso direto (só como alvo de FK), mas é referenciada por nome em `AD_TGSIOSI`/`AD_TGSISCP` (Seção 1) — mantida na lista por ser praticamente onipresente em qualquer tabela com unidade de medida.
 
-Script de captura pronto em [`scripts/CAPTURA_DDL_TABELAS_FALTANTES_V2.SQL`](../scripts/CAPTURA_DDL_TABELAS_FALTANTES_V2.SQL).
+Script de captura pronto em `scripts/CAPTURA_DDL_TABELAS_FALTANTES_V2.SQL` (pasta local, não versionada).
 
 ---
 

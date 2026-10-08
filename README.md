@@ -30,9 +30,10 @@ O objetivo é manter um histórico versionado, auditável e documentado de cada 
 - Classes Java (listeners e botões de ação de eventos)
 - Fórmulas e regras do ERP
 - Procedures de integração contábil (Audicon)
-- Dependências JAR do Sankhya SDK
 
-**Fora do escopo:**
+**Fora do escopo (não versionado):**
+- Código e DDL nativos do Sankhya (functions, tabelas, triggers, JARs do SDK) — mantidos só localmente em `nativo/`
+- Scripts de apoio operacional (captura de DDL, diagnósticos, backfills pontuais) — mantidos só localmente em `scripts/`
 - Configurações do servidor de aplicação
 - Parametrizações nativas do ERP (sem código customizado)
 - Dados de produção ou registros de clientes
@@ -55,15 +56,23 @@ SQL Sankhya/
 ├── java/                   Classes Java (botões de ação, listeners, utilitários)
 ├── formulas/               Regras e fórmulas configuradas no ERP
 ├── audicon/                Procedures de integração contábil (Audicon)
-├── trigger_nativa/         Trigger nativa do Sankhya (customizada para a empresa)
-├── libs_sankhya/           Dependências JAR do Sankhya SDK
 ├── exemplos/               Amostras reais de dados (cabeçalho+itens+série) para referência
-├── teste_transf/           Protótipo Java — transferência com Reforma Tributária (IBS/CBS)
-└── inativos/               Objetos descontinuados (preservados para referência)
+├── inativos/               Objetos descontinuados (preservados para referência)
+│
+│   ── Pastas locais (NÃO versionadas — ver `.gitignore`) ──
+├── nativo/                 Material nativo do Sankhya, só para consulta
+│   ├── functions/          DDL das functions nativas (SNK_*, ACT_*, TIM_* …) + catálogo
+│   ├── tables/             DDL das tabelas nativas mais referenciadas + catálogo
+│   ├── triggers/           Triggers nativas (TRG_INC_TGFITE, TRG_INC_TGFVAR)
+│   └── libs/               JARs do Sankhya SDK (classpath do Java)
+└── scripts/                Scripts de apoio: captura de DDL, diagnóstico, backfills pontuais
 ```
 
-> `trigger_nativa/` e `libs_sankhya/` estão listados acima por completude, mas
-> não são versionados (`.gitignore`).
+> **Material local.** `nativo/` e `scripts/` existem apenas na máquina de quem
+> mantém o repositório. Não são enviados ao git: o código nativo pertence ao
+> fabricante (e muda a cada upgrade do ERP) e os scripts são ferramentas
+> descartáveis de uso operacional. Ao clonar o repositório essas pastas não
+> existem; para recriá-las, ver [§10](#10-material-local-não-versionado).
 
 ---
 
@@ -308,18 +317,7 @@ Agrupadas por domínio:
 
 ---
 
-### 7.11 Trigger Nativa (pasta `trigger_nativa/`)
-
-| Objeto | Tabela | Descrição |
-|---|---|---|
-| `TRG_INC_TGFITE` | `TGFITE` | Trigger `BEFORE INSERT` customizada sobre a tabela de itens de nota. Realiza validações de agrupamento mínimo, lote, estoque e CFOP na inclusão de cada item |
-| `TRG_INC_TGFVAR` | `TGFVAR` | Trigger `BEFORE INSERT` 100% nativa (sem customização Spark), documentada aqui após investigação de incidente de produção (Set/2026). Processa "nota de variação" (atendimento/entrega parcial); entre outras coisas, atualiza `QTDENTREGUE`/`QTDFIXADA` do item de origem em `TGFITE`, o que dispara em cascata qualquer trigger de validação de `TGFITE` sobre esse item |
-
-> Pasta não versionada (`.gitignore`).
-
----
-
-### 7.12 Exemplos de Referência (pasta `exemplos/`)
+### 7.11 Exemplos de Referência (pasta `exemplos/`)
 > Ver [`exemplos/README.md`](exemplos/README.md).
 
 Amostras reais de dados (`TGFCAB` + `TGFITE` + `TGFSER` de um lançamento de
@@ -328,21 +326,11 @@ de apoio à documentação — não é objeto implantado no ERP.
 
 ---
 
-### 7.13 Protótipos (pasta `teste_transf/`)
-> Ver [`teste_transf/README.md`](teste_transf/README.md).
-
-`GerarTransferenciaReformaTrib.java` + `util/ReformaTribUtils.java` — spike do
-fluxo de transferência entre empresas com impostos da Reforma Tributária
-(IBS/CBS), isolado do pacote de produção `br.com.spark.transferencia`. **Não
-implantado.**
-
----
-
 ## 8. Restrições e Requisitos Técnicos
 
 - **Banco de dados:** Oracle Database (dialeto PL/SQL obrigatório)
 - **ERP:** Sankhya W, módulos COM, FIN, PCP, WMS, CAC
-- **Java SDK:** `SankhyaW-extensions.jar`, `mge-modelcore`, `mgecom-model` (ver `libs_sankhya/`)
+- **Java SDK:** `SankhyaW-extensions.jar`, `mge-modelcore`, `mgecom-model` (JARs em `nativo/libs/`, pasta local — ver [§10](#10-material-local-não-versionado))
 - **Reports:** JasperReports — compilados pelo Sankhya no deploy
 - **Cada arquivo** contém exatamente um objeto de banco de dados
 - **Objetos inativos** ficam em `inativos/` — não são deployados em produção
@@ -380,3 +368,21 @@ implantado.**
 | `O.S.` | Ordem de Serviço |
 | `EVP_` | Procedure de visão externa (evento de tela configurado no Sankhya) |
 | `STP_` | Procedure executada via botão de ação no Sankhya |
+
+---
+
+## 10. Material local não versionado
+
+`nativo/` e `scripts/` estão no `.gitignore` e **não existem num clone novo**. Servem de consulta e ferramenta de trabalho de quem mantém o repositório.
+
+| Pasta | Conteúdo | Como recriar |
+|---|---|---|
+| `nativo/functions/` | ~350 functions nativas (`SNK_*`, `ACT_*`, `TIM_*`, `FSP_*` …) + `README.md` com catálogo | `DBMS_METADATA.GET_DDL('FUNCTION', …)`; inventário em `scripts/CAPTURA_LISTA_FUNCTIONS_NAO_SNK.SQL` |
+| `nativo/tables/` | DDL de ~53 tabelas nativas mais referenciadas + `README.md` | `scripts/CAPTURA_DDL_TABELAS_FALTANTES*.SQL`; lista em [`tables/TABELAS_FALTANTES.md`](tables/TABELAS_FALTANTES.md) |
+| `nativo/triggers/` | `TRG_INC_TGFITE` (nativa + customização Spark) e `TRG_INC_TGFVAR` (100% nativa) | `DBMS_METADATA.GET_DDL('TRIGGER', …)`; contexto do incidente em [`triggers/README.md`](triggers/README.md) §14–15 |
+| `nativo/libs/` | JARs do Sankhya SDK (classpath do Java; `.vscode/settings.json` aponta para cá) | Copiar da instalação do servidor Sankhya |
+| `scripts/` | Capturas de DDL, diagnósticos (`DIAG_*`, `DRYRUN_*`, `VALIDA_*`), `CHECK_STATUS_TRIGGERS_SPARK.SQL`, backfills pontuais | Não recriável — fazer backup próprio se necessário |
+
+**Regra prática:** o que é código da Spark e vai para produção fica nas pastas versionadas (§3). O que é do fabricante, ou ferramenta de uso único, fica em `nativo/` ou `scripts/`. Documentação versionada que cita esses arquivos (`functions/README.md`, `triggers/README.md`, `tables/TABELAS_FALTANTES.md`) indica explicitamente que o caminho é local.
+
+> Atualizações do Sankhya podem alterar ou remover objetos nativos. Recapturar o DDL após cada upgrade do ERP.

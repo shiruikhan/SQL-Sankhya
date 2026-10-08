@@ -200,7 +200,9 @@ Apontamento de conferência de notas importadas, criado direto na tela de
 
 ---
 
-### 14. Trigger Nativa (pasta `trigger_nativa/`)
+### 14. Triggers Nativas (pasta local `nativo/triggers/` — não versionada)
+
+> Os fontes ficam apenas na máquina de quem mantém o repositório (`.gitignore`). Mantida aqui só a descrição, por causa do incidente do §15.
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
@@ -221,7 +223,7 @@ Durante uma rodada de otimização de performance em 20 triggers (10 sobre TGFCA
 
 ### 16. Levantamento de baseline de STATUS — Set/2026
 
-Como consequência direta da lição do §15 item 1, foi criado [`scripts/CHECK_STATUS_TRIGGERS_SPARK.SQL`](../scripts/CHECK_STATUS_TRIGGERS_SPARK.SQL): um `SELECT` sobre `ALL_TRIGGERS` cobrindo todas as triggers do repositório, para rodar antes de cada novo lote de otimização. A primeira execução (Set/2026) não encontrou nenhuma `DISABLED` além das 3 já conhecidas, mas revelou um segundo tipo de gap de documentação: **duas triggers cujo `.sql` continuava em `triggers/`, com aparência de código ativo, mas que não existem mais em `ALL_TRIGGERS`** — ou seja, já foram removidas do banco (não apenas desabilitadas), sem que o arquivo fosse movido para `inativos/`:
+Como consequência direta da lição do §15 item 1, foi criado `scripts/CHECK_STATUS_TRIGGERS_SPARK.SQL` (pasta local, não versionada): um `SELECT` sobre `ALL_TRIGGERS` cobrindo todas as triggers do repositório, para rodar antes de cada novo lote de otimização. A primeira execução (Set/2026) não encontrou nenhuma `DISABLED` além das 3 já conhecidas, mas revelou um segundo tipo de gap de documentação: **duas triggers cujo `.sql` continuava em `triggers/`, com aparência de código ativo, mas que não existem mais em `ALL_TRIGGERS`** — ou seja, já foram removidas do banco (não apenas desabilitadas), sem que o arquivo fosse movido para `inativos/`:
 
 - `SPK_TRG_OSINTERNA.SQL` — tabela `AD_OSINTERNA` segue ativa (outras 3 triggers da tabela confirmadas `ENABLED`), mas esta trigger específica não existe mais no banco.
 - `TRG_INC_ATUALIZAATRIB_SPARK.sql` — tabela `AD_MKTPMELIATRIB`, mesma família `AD_MKTPMELI*` de `VGF_ESTOQUEMELI_SPARK.sql` (já em `inativos/`, descontinuada com a migração da integração Mercado Livre) — indício de que esta trigger é resquício da mesma integração antiga.
