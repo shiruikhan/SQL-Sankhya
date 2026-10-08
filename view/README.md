@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de views:** 6  
+**Total de views:** 15  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -131,6 +131,26 @@
 **Tabelas fonte:** `TGFCAB`, `TGFNFE`; exclui notas já presentes em `TSIATA` com descrição contendo `Etiqueta`.
 
 **Diferença entre as duas:** filtro de vendedor/empresa — `AD_VWMELIFATVIX` usa `CODVEND = 5`; `AD_VWMELIFATVIX2` usa `CODVEND = 43`. Vendedor/empresa fixos no código — ajustar conforme o ambiente.
+
+---
+
+### Views descobertas no banco em 08/10/2026
+
+Existiam no banco sem arquivo no repositório (inventário de 08/10/2026, `scripts/inventario_2026-10-08/`). Capturadas **sem alteração do corpo**, com cabeçalho de captura; `[A DOCUMENTAR]` indica que ainda falta descrever a view. As oito `*_SPARK` seguem o padrão das `VGF_OBS*_SPARK` que alimentam observações padrão de nota/SPED.
+
+| Arquivo | View | Descrição | Criada no banco |
+|---|---|---|---|
+| `VGF_CALCFINIMP_SPARK.SQL` | `VGF_CALCFINIMP_SPARK` | [A DOCUMENTAR] | 16/12/2025 |
+| `VGF_CALDIFAL_SPARK.SQL` | `VGF_CALDIFAL_SPARK` | [A DOCUMENTAR] | 08/11/2024 |
+| `VGF_CALIDFAL_SPARK.SQL` | `VGF_CALIDFAL_SPARK` | [A DOCUMENTAR] | 02/12/2025 |
+| `VGFCOM_FECHSPARK.SQL` | `VGFCOM_FECHSPARK` | [A DOCUMENTAR] | 14/03/2022 |
+| `VGF_DIFSTFEM_SPARK.SQL` | `VGF_DIFSTFEM_SPARK` | [A DOCUMENTAR] | 12/03/2026 |
+| `VGF_DIFST_SPARK.SQL` | `VGF_DIFST_SPARK` | [A DOCUMENTAR] | 12/03/2026 |
+| `VGF_OBSNOTASDEV2_SPARK.SQL` | `VGF_OBSNOTASDEV2_SPARK` | [A DOCUMENTAR] | 12/11/2025 |
+| `VGF_OBSNOTAS2_SPARK.SQL` | `VGF_OBSNOTAS2_SPARK` | [A DOCUMENTAR] | 28/01/2022 |
+| `VGFSERIES.SQL` | `VGFSERIES` | Consulta unificada de números de série (Andes + Sankhya) com nota, produto, parceiro, lote, movimento e local. | 17/01/2024 |
+
+> `VGFSERIES` **não é nativa** (parecia ser): une `AD_ANDSER` (seriais Andes) a `TGFSER` filtrando as TOPs 800, 1314 e 213 e os locais 109/201, e é a view mais referenciada nos componentes BI do repositório (~78 usos). `VGF_OBSNOTAS2_SPARK` tem uma condição fixa `CAB.NUNOTA = 1962` num dos ramos do `UNION` (troca em garantia, TOP 1215) — aparenta ser resquício de teste; confirmar antes de mexer.
 
 ---
 

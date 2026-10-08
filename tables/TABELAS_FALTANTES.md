@@ -30,18 +30,18 @@ Diferente das nativas, estas foram criadas pela Spark e não existem em nenhuma 
 | `AD_TGSSCP` | 5 | ✅ | `procedures/STP_APROVA_SOLIC_COMPRA.sql` |
 | `AD_TGSCUS` | 4 | ✅ | `functions/FC_GETPRECO_TRASF_SP.SQL` |
 | `AD_OSINTERNA` | 4 | ✅ | `procedures/STP_INCMOVOSINT_SPARK.SQL` |
-| `AD_MKTPMELI` | 4 | ❌ | `procedures/STP_ATTESTML_SPARK.sql` |
+| `AD_MKTPMELI` | 4 | ❌ | `inativos/STP_ATTESTML_SPARK.sql` |
 | `AD_TGSITE` | 4 | ✅ | `procedures/STP_INTEGRAPEDIDO_AGENDADA.sql` |
 | `AD_FRETE` | 3 | ✅ | `triggers/TRG_UPD_TGFCAB_TRANSP_SPARK.SQL` |
 | `AD_TGFNCO` | 3 | ✅ | `procedures/STP_INCNCONFORM_SPARK.SQL` |
 | `AD_TGFPIM` | 2 | ✅ | `procedures/STP_CALCULAPROPORCAO_SPARK.SQL` |
-| `AD_MKTPMELIATRIB` | 2 | ❌ | `procedures/STP_BUSCAATRIBML_SPARK.sql` |
+| `AD_MKTPMELIATRIB` | 2 | ❌ | `inativos/STP_BUSCAATRIBML_SPARK.sql` |
 | `AD_DBFECHCOMFIN` | 2 | ✅ | `procedures/STP_EXCLUIRFINCOM_SPARK.sql` |
 | `AD_TGSIOSI` | 2 | ✅ | `procedures/STP_INCMOVOSINT_SPARK.SQL` |
 | `AD_TGSPAR` | 2 | ✅ | `procedures/STP_INTEGRAPEDIDO_AGENDADA.sql` |
 | `AD_TGSSER` | 2 | ✅ | `procedures/STP_INTEGRAPEDIDO_AGENDADA.sql` |
 | `AD_SPKICAE` | 1 | ✅ | `componentes BI/INFORMATIVO DE GESTÃO DA ASSISTÊNCIA EXTERNA/painelcomponentes.sql` |
-| `AD_CADMKTATRIB` | 1 | ❌ | `procedures/STP_BUSCAATRIBML_SPARK.sql` |
+| `AD_CADMKTATRIB` | 1 | ❌ | `inativos/STP_BUSCAATRIBML_SPARK.sql` |
 | `AD_PRVCTR` | 1 | ✅ | `procedures/STP_INCLUIRLANCTO_SPARK.SQL` |
 | `AD_TGSCUSBLOCOH` | 1 | ✅ | `procedures/STP_VERCORCUSTO_SPARK.SQL` |
 | `AD_TSIBLOCK` | 1 | ✅ | `triggers/SPK_TGFCAB_TSIBLOCK.SQL` |

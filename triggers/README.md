@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de triggers:** 86  
+**Total de triggers:** 87  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -229,6 +229,19 @@ Como consequência direta da lição do §15 item 1, foi criado `scripts/CHECK_S
 - `TRG_INC_ATUALIZAATRIB_SPARK.sql` — tabela `AD_MKTPMELIATRIB`, mesma família `AD_MKTPMELI*` de `VGF_ESTOQUEMELI_SPARK.sql` (já em `inativos/`, descontinuada com a migração da integração Mercado Livre) — indício de que esta trigger é resquício da mesma integração antiga.
 
 Ambas foram movidas para `inativos/` (ver `inativos/README.md`). **Lição:** `STATUS = DISABLED` não é o único jeito de uma trigger estar "morta" sem o repositório saber — ela pode ter sido **dropada** do banco. O baseline de `ALL_TRIGGERS` cobre os dois casos: `DISABLED` (não mexer sem confirmação) e ausência de linha (confirmar se foi removida e mover para `inativos/`).
+
+---
+
+### 17. Triggers `_SPARK` descobertas no inventário de 08/10/2026
+
+Existiam no banco (ambas `ENABLED`) sem arquivo no repositório. Convivem com as triggers nativas das mesmas tabelas — em especial `TGFITE`, que passou pela refatoração de performance de Set/2026 (§15). Capturadas **sem alteração do corpo** (removida só a qualificação `"SPARKPRD".`; acrescentados `/` antes do `ALTER TRIGGER` e `;` final).
+
+| Arquivo | Trigger | Tabela | Evento | Objetivo (do fonte) | Autor (no fonte) |
+|---|---|---|---|---|---|
+| `TRG_UPD_NCMPROD_SPARK.SQL` | `TRG_UPD_NCMPROD_SPARK` | `TGFPRO` | BEFORE ROW UPDATE | Impedir alteração do NCM para produtos acabados se o usuário não pertencer ao grupo fiscal (CODGRUPO = 5). Caso seja do grupo 5, registrar a alteração em um log. | Lucas Gabriel |
+| `TRG_UPD_ORIGPROD_SPARK.SQL` | `TRG_UPD_ORIGPROD_SPARK` | `TGFITE` | BEFORE ROW UPDATE | Atualizar a origem do produto, ao mesmo tempo na nota e no produto, automação devido a não poder utilizar a rotina de atualização de cadastro de produto do portal do XML, devido ao fato de nem sempre o fornecedor utilizar as informações corretas. | Lucas Gabriel - DM TECH |
+
+> **Atenção.** `TRG_UPD_NCMPROD_SPARK` bloqueia (reverte silenciosamente) a alteração do NCM em produto acabado para usuários fora do `CODGRUPO = 5` e grava as alterações do grupo 5 em `LOG_ALTERACAO_NCM` (sequence `SEQ_LOG_ALTERACAO`) — objetos que também não estão versionados. `TRG_UPD_ORIGPROD_SPARK` atualiza `TGFPRO.ORIGPROD` a partir de uma trigger `BEFORE UPDATE` de `TGFITE` (compras com `AD_ORIGPROD` preenchido).
 
 ---
 

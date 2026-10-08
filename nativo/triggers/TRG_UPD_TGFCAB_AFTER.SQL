@@ -1,0 +1,131 @@
+/*==============================================================================
+  Nome do Script : TRG_UPD_TGFCAB_AFTER
+  Tipo           : Trigger — origem a confirmar (criada isoladamente em 22/04/2026)
+  Descrição      : Trigger AFTER STATEMENT UPDATE sobre TGFCAB.
+  Empresa        : Spark Eletrônica
+  Observações    : - Estado no banco: ENABLED; criada em 22/04/2026, última alteração em 21/09/2026.
+                   - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Capturado do banco em 08/10/2026, via: SELECT DBMS_METADATA.GET_DDL('TRIGGER', 'TRG_UPD_TGFCAB_AFTER', 'SPARKPRD') FROM dual;
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_UPD_TGFCAB_AFTER" 
+AFTER
+UPDATE  ON TGFCAB
+DECLARE
+   P_CODEMPNOV       NUMBER(05,0);
+   P_CODEMPANT       NUMBER(05,0);
+   P_CODEMPNEGOCNOV  NUMBER(05,0);
+   P_CODEMPNEGOCANT  NUMBER(05,0);
+   P_NUNOTA          NUMBER(10,0);
+   P_TOTDESDOB       FLOAT;
+   P_VLRNOTA         FLOAT;
+   P_SOMA            FLOAT;
+   ERRMSG            VARCHAR2(255);
+   ERROR             EXCEPTION;
+   P_VALIDAR BOOLEAN;
+   P_COUNT           NUMBER(5);
+   CURSOR CUR_TGFCAB_UPT IS SELECT NUNOTA, CODEMPNOV, CODEMPANT, CODEMPNEGOCNOV, CODEMPNEGOCANT FROM TGFCAB_UPT WHERE NVL(PRODUTONFE, 'N') <> 'S';
+   CURSOR CUR_PRODNFE IS SELECT NUNOTA FROM TGFCAB_UPT WHERE PRODUTONFE = 'S';
+BEGIN
+
+  IF STP_GET_ATUALIZANDO THEN
+    RETURN;
+  END IF;
+
+  /* 
+   Sincroniza¿¿o de dados
+  */
+  P_VALIDAR := FPODEVALIDAR('TGFCAB');
+  
+    OPEN CUR_PRODNFE;
+    DELETE FROM TGFCAB_UPT WHERE PRODUTONFE = 'S';
+
+    LOOP
+      FETCH CUR_PRODNFE INTO P_NUNOTA;
+      EXIT WHEN CUR_PRODNFE%NOTFOUND;
+        
+      UPDATE TGFITE SET PRODUTONFE = PRODUTONFE WHERE NUNOTA = P_NUNOTA;
+        
+    END LOOP;  
+    CLOSE CUR_PRODNFE;
+
+    OPEN CUR_TGFCAB_UPT;
+    DELETE FROM TGFCAB_UPT;
+
+    LOOP
+      FETCH CUR_TGFCAB_UPT INTO P_NUNOTA, P_CODEMPNOV, P_CODEMPANT, P_CODEMPNEGOCNOV, P_CODEMPNEGOCANT;
+      EXIT WHEN CUR_TGFCAB_UPT%NOTFOUND;
+
+      IF P_CODEMPNOV <> P_CODEMPANT THEN
+         UPDATE TGFITE
+         SET
+           CODEMP = P_CODEMPNOV
+         WHERE NUNOTA = P_NUNOTA AND CODEMP = P_CODEMPANT
+         AND   SEQUENCIA > 0;
+/*
+  **MARCELO
+  ATENCAO NAO PODE SER MODIFICADO O CODIGO DA EMPRESA E NEM O CODIGO DO
+  PARCEIRO, POR CAUSA DOS VALORES LANCADOS EM OUTROS E FRETE, TAMBEM
+  POR CAUSA DO TIPO DE NEGOCIACAO QUE ESTES CAMPOS SAO LIVRES.
+*/
+/*
+         UPDATE TGFFIN
+         SET
+           CODEMP = P_CODEMPNOV
+         WHERE NUNOTA = P_NUNOTA AND CODEMP = P_CODEMPANT;
+*/
+      END IF;
+      IF P_CODEMPNEGOCNOV <> P_CODEMPNEGOCANT THEN
+        SELECT COUNT(1)
+          INTO P_COUNT
+        FROM TGFITE
+        WHERE NUNOTA = P_NUNOTA
+          AND CODEMP = P_CODEMPNEGOCANT
+          AND SEQUENCIA < 0;
+        
+        IF P_COUNT > 0 THEN
+          UPDATE TGFITE
+             SET CODEMP = P_CODEMPNEGOCNOV
+           WHERE NUNOTA = P_NUNOTA AND CODEMP = P_CODEMPNEGOCANT
+             AND SEQUENCIA < 0;
+        END IF;
+         
+      END IF;
+    END LOOP;
+    CLOSE CUR_TGFCAB_UPT;
+
+ IF TGFCAB_UPD_PKG.V_CONTADOR <> 0 THEN
+    FOR P_LOOPINDEX IN 1..TGFCAB_UPD_PKG.V_CONTADOR LOOP
+      P_NUNOTA := TGFCAB_UPD_PKG.V_NUNOTA(P_LOOPINDEX);
+    P_TOTDESDOB := TGFCAB_UPD_PKG.V_TOTDESDOB(P_LOOPINDEX);
+    P_VLRNOTA := TGFCAB_UPD_PKG.V_VLRNOTA(P_LOOPINDEX);
+    TGFCAB_UPD_PKG.V_NUNOTA(P_LOOPINDEX) := 0;
+      TGFCAB_UPD_PKG.V_TOTDESDOB(P_LOOPINDEX) := 0;
+    TGFCAB_UPD_PKG.V_VLRNOTA(P_LOOPINDEX) := 0  ;
+  
+   SELECT SUM(VLRTOT + VLRIPI - VLRDESC - VLRREPRED) INTO P_SOMA
+     FROM TGFITE
+    WHERE NUNOTA = P_NUNOTA
+      AND SEQUENCIA > 0
+      AND TERCEIROS = 'S';
+
+    IF (P_TOTDESDOB < ROUND((P_VLRNOTA - P_SOMA), 2)) THEN
+        ERRMSG := 'A somat¿ria dos valores do financeiro ('||TO_CHAR((P_TOTDESDOB), '999999.99') ||
+                     ') n¿o corresponde ao total da nota (' || TO_CHAR((P_VLRNOTA-P_SOMA), '9999999.99') || ').' ||
+                     ' Nota de Nro ¿nico: '|| TO_CHAR(P_NUNOTA) ||'.';
+           RAISE ERROR;
+    END IF;
+    END LOOP;
+    TGFCAB_UPD_PKG.V_CONTADOR := 0;
+  END IF;
+  RETURN;
+EXCEPTION
+  WHEN ERROR THEN
+    /* 
+    Sincroniza¿¿o de dados n¿o faz valida¿¿es
+    */
+    IF (P_VALIDAR) THEN 
+      RAISE_APPLICATION_ERROR(-20101, ERRMSG);
+    END IF; 
+END;
+/
+ALTER TRIGGER "SPARKPRD"."TRG_UPD_TGFCAB_AFTER" ENABLE;

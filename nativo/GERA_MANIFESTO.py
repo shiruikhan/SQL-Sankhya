@@ -1,8 +1,8 @@
-# Regenera nativo/MANIFESTO.csv varrendo functions/, packages/, tables/ e triggers/.
+# Regenera nativo/MANIFESTO.csv varrendo functions/, packages/, procedures/, tables/ e triggers/.
 # Uso: python nativo/GERA_MANIFESTO.py   (rodar após cada recaptura; data lida do cabeçalho "Capturado do banco em dd/mm/aaaa")
 import os,re,csv,sys
 root=sys.argv[1] if len(sys.argv)>1 else os.path.dirname(os.path.abspath(__file__))
-TIPOS=[('functions','FUNCTION'),('packages','PACKAGE_SPEC'),('tables','TABLE'),('triggers','TRIGGER')]
+TIPOS=[('functions','FUNCTION'),('packages','PACKAGE_SPEC'),('procedures','PROCEDURE'),('tables','TABLE'),('triggers','TRIGGER')]
 DEFAULT={'tables':'18/09/2026'}  # tabelas: data registrada no README do catálogo, não no arquivo
 rows=[]
 for d,tipo in TIPOS:

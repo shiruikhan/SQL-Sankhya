@@ -66,7 +66,8 @@ SQL Sankhya/
 │   ├── functions/          DDL das functions nativas (SNK_*, ACT_*, TIM_* …) + catálogo
 │   ├── packages/           Especificações dos packages nativos (20, só spec) + catálogo
 │   ├── tables/             DDL das tabelas nativas mais referenciadas + catálogo
-│   ├── triggers/           Triggers nativas (TRG_INC_TGFITE, TRG_INC_TGFVAR)
+│   ├── procedures/         Procedures nativas citadas por triggers/procedures da Spark (6) + catálogo
+│   ├── triggers/           Triggers nativas das tabelas que a Spark customiza (TGFCAB, TGFITE, TGFFIN …) + catálogo
 │   ├── MANIFESTO.csv       Inventário de tudo o que foi capturado (tipo, nome, data, linhas)
 │   └── libs/               JARs do Sankhya SDK — LOCAL, fora do git (classpath do Java)
 │
@@ -159,7 +160,7 @@ Agrupadas por domínio:
 ---
 
 ### 7.2 Procedures (pasta `procedures/`)
-> 78 procedures. Ver [`procedures/README.md`](procedures/README.md) para catálogo completo.
+> 102 procedures. Ver [`procedures/README.md`](procedures/README.md) para catálogo completo.
 
 | Domínio | Qtd | Exemplos |
 |---|---|---|
@@ -170,11 +171,12 @@ Agrupadas por domínio:
 | Vendas / NF | 8 | `STP_VALIDARCONF_SPARK`, `STP_VALIDARSERIE_SPARK`, `STP_NFREFDEV_SPARK`, `STP_TGFCAB_VINCSERIECONF_SPARK` |
 | Assistência / O.S. | 4 | `STP_INCMOVASSIST_SPARK`, `STP_INCNCONFORM_SPARK`, `STP_INCMOVOSINT_SPARK`, `STP_OSINTERNA_INC_SPARK` |
 | Financeiro | 4 | `STP_INCLUIRLANCTO_SPARK`, `STP_EXCLUIRFINCOM_SPARK`, `STP_ATUALIZARVLRMOEDA_SPARK`, `STP_REGRA_VALID_FINAN_SPARK` |
-| E-commerce / Integração | 3 | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA`, `STP_ATTESTML_SPARK` |
+| E-commerce / Integração | 2 | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA` |
 | Cadastros / Produto | 6 | `STP_ALTDADOSPRO_SPARK`, `STP_MUDANCADECODIGO_SPARK`, `STP_ORIGPROD_SPARK`, `STP_CORCSTIPI_SPARK` |
 | Produção | 9 | `STP_TPRCOI_SPARK`, `STP_TPRIATV_SPARK`, `STP_REABRIR_PA_SPARK`, `STP_CORRIGENOTAPROD_SPARK`, `STP_CORRIGEAPONTAMENTO_SPARK`, `STP_CORRIGEAPO_PERIODO_SPARK` |
 | CT-e / Conferência de XML | 3 | `STP_CLASSIFICACTE_SPARK`, `STP_APONTACONFERENCIA_SPARK`, `STP_ATUALIZADTFIM_TGSIXN_SPARK` |
 | Eventos de tela (EVP) | 2 | `EVP_CLASSIFICACTE_SPARK`, `EVP_TGFIXN_EMAIL_SPARK` |
+| Fiscal / SPED / Impostos e demais (autoria Lucas Gabriel — ONTIME TECH / DM TECH) | 21 | `STP_INCSUSPIPI_SPARK`, `STP_CALCPROPOICMS_SPARK`, `STP_GERGUIAICMS_SPARK`, `EVP_ICMSSIMPLES_SPARK`, `STP_BOLJUROSMULTA_SPARK` … (ver `procedures/README.md` §15) |
 | Demais / Auxiliares | 17 | BI, impressão, agendamento, alteração de CFOP, etc. |
 
 ---
@@ -213,6 +215,8 @@ Agrupadas por domínio:
 | `VW_CTE_AUTORIZADOS` (arquivo `VGFIXN.SQL`) | `NRARQUIVO, NUNOTA, CHAVEACESSO, CODTIPOPER_NFE, ...` | CT-e autorizados com referência à NF-e correspondente |
 | `VGFNFE` | `NUNOTA, CODVEND, PEDIDOEXTERNO, CHAVENFE, NOTAXML` | NF-e ativas de vendas com XML do cliente (últimos 4 dias) |
 | `VGFSALDOMRP` | `DTREF, CODPROD, QTDPREV, QTDPRODUZIR, SALDO` | Saldo mensal por produto: meta (`AD_TGFMET`) contra quantidade a produzir das OPs |
+| `VGFSERIES` | `NFSAIDA, CODPROD, SERIE, LOTE, TIPO, MOVIMENTO, LOCAL, TOP` | Seriais unificados (Andes + Sankhya) — não é nativa; mais usada pelos componentes BI |
+| 8 views `VGF_*_SPARK` | — | `VGF_CALDIFAL_SPARK`, `VGF_CALIDFAL_SPARK`, `VGF_CALCFINIMP_SPARK`, `VGF_DIFST_SPARK`, `VGF_DIFSTFEM_SPARK`, `VGF_OBSNOTAS2_SPARK`, `VGF_OBSNOTASDEV2_SPARK`, `VGFCOM_FECHSPARK` (ver `view/README.md`) |
 | `AD_VWMELIFATVIX` / `AD_VWMELIFATVIX2` | `NUNOTA, AD_SHIPID, CHAVENFE, NOTAXML, ...` | NF-e de marketplace (ML) autorizadas nos últimos 7 dias sem etiqueta gerada. As duas diferem no vendedor/empresa (`CODVEND` 5 / 43) |
 
 ---
@@ -391,7 +395,8 @@ de apoio à documentação — não é objeto implantado no ERP.
 | `nativo/functions/` | sim | ~350 functions nativas (`SNK_*`, `ACT_*`, `TIM_*`, `FSP_*` …) + `README.md` com catálogo | `DBMS_METADATA.GET_DDL('FUNCTION', …)`; inventário em `scripts/CAPTURA_LISTA_FUNCTIONS_NAO_SNK.SQL` |
 | `nativo/packages/` | sim | 20 packages nativos (`VARIAVEIS_PKG`, `TGFITE_PKG`, `ERROS_PKG` …), somente especificação — o banco não tem body — + `README.md` com catálogo | `DBMS_METADATA.GET_DDL('PACKAGE_SPEC', …)`; inventário em `scripts/CAPTURA_LISTA_PACKAGES.SQL` |
 | `nativo/tables/` | sim | DDL de ~53 tabelas nativas mais referenciadas + `README.md` | `scripts/CAPTURA_DDL_TABELAS_FALTANTES*.SQL`; lista em [`tables/TABELAS_FALTANTES.md`](tables/TABELAS_FALTANTES.md) |
-| `nativo/triggers/` | sim | `TRG_INC_TGFITE` (nativa; customização Spark ainda não delimitada — ver `nativo/triggers/README.md`) e `TRG_INC_TGFVAR` (100% nativa) | `DBMS_METADATA.GET_DDL('TRIGGER', …)`; contexto do incidente em [`triggers/README.md`](triggers/README.md) §14–15 |
+| `nativo/procedures/` | sim | 6 procedures nativas citadas pelas triggers nativas e pela Spark (`STP_ATUALIZA_TGFEST`, `STP_POPULA_MSG` …) + `README.md` | `DBMS_METADATA.GET_DDL('PROCEDURE', …)`; lote em `scripts/CAPTURA_DDL_NATIVOS_LOTE1.SQL` |
+| `nativo/triggers/` | sim | Triggers das tabelas nativas que a Spark customiza (TGFCAB, TGFITE, TGFFIN, TGFPRO …), com estado `ENABLED`/`DISABLED` — `TRG_INC_TGFITE` (customização Spark ainda não delimitada) e `TRG_INC_TGFVAR` (100% nativa) entre elas | `DBMS_METADATA.GET_DDL('TRIGGER', …)`; inventário em `scripts/CAPTURA_INVENTARIO_NATIVO.SQL`; contexto do incidente em [`triggers/README.md`](triggers/README.md) §14–15 |
 | `nativo/libs/` | **não** (536 MB) | JARs do Sankhya SDK (classpath do Java; `.vscode/settings.json` aponta para cá) | Copiar da instalação do servidor Sankhya |
 | `scripts/` | **não** | Capturas de DDL, diagnósticos (`DIAG_*`, `DRYRUN_*`, `VALIDA_*`), `CHECK_STATUS_TRIGGERS_SPARK.SQL`, backfills pontuais | Não recriável — fazer backup próprio se necessário |
 

@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de procedures:** 80  
+**Total de procedures:** 102  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -160,9 +160,9 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 |---|---|---|
 | `STP_INTEGRAPEDIDO_SITESPARK.sql` | `STP_INTEGRAPEDIDO_SITESPARK` | Converte pedido do site da Spark em nota de venda no ERP |
 | `STP_INTEGRAPEDIDO_AGENDADA.sql` | `STP_INTEGRAPEDIDO_AGENDADA` | Versão agendada da integração de pedidos — execução automática via scheduler |
-| `STP_ATTESTML_SPARK.sql` | `STP_ATTESTML_SPARK` | Atualiza status de pedido no Mercado Livre |
-| `STP_BUSCAATRIBML_SPARK.sql` | `STP_BUSCAATRIBML_SPARK` | Busca atributos de produto no Mercado Livre para atualização no ERP |
 | `STP_GRAVA_FILA_BI2.SQL` | `STP_GRAVA_FILA_BI2` | Grava mensagem na fila de processamento assíncrono do Sankhya (BI/Integração) |
+
+> As procedures da integração antiga com o Mercado Livre (`STP_ATTESTML_SPARK` e `STP_BUSCAATRIBML_SPARK`) foram movidas para [`inativos/`](../inativos/README.md) em 08/10/2026 — não existem mais no banco.
 
 ---
 
@@ -203,6 +203,36 @@ passou para as triggers `TRG_*_AD_TGSIXN_SPARK` (ver `tables/AD_TGSIXN.SQL`).
 |---|---|---|
 | `STP_APONTACONFERENCIA_SPARK.SQL` | `STP_APONTACONFERENCIA_SPARK` | *(uso legado)* Botão de ação sobre `TGFIXN` que gravava o apontamento em `AD_TGSIXN` (novo `NUCONF`, usuário, arquivo), bloqueando duplicidade por `NUARQUIVO`. Substituída pela criação direta na tela + `TRG_INC_AD_TGSIXN_SPARK` |
 | `STP_ATUALIZADTFIM_TGSIXN_SPARK.sql` | `STP_ATUALIZADTFIM_TGSIXN_SPARK` | Procedure **agendada**: reavalia apontamentos em aberto (`STATUS = 1`), localiza a nota lançada correspondente (`TGFIXN.CHAVEACESSO` → `TGFCAB.CHAVENFE`, `STATUSNOTA = 'L'`), grava `TGFCAB.DTMOV` em `DTFIM` e recalcula `DURACAO_DIAS_UTEIS` (dias úteis, sem sábado/domingo). Erros por apontamento vão para `AD_LOG_ERROS` sem abortar o lote |
+
+---
+
+### 15. Objetos descobertos no banco em 08/10/2026 (autoria de terceiros)
+
+> **Contexto.** O inventário de 08/10/2026 (`scripts/inventario_2026-10-08/`) mostrou 21 procedures `*_SPARK` que existiam no banco mas não tinham nenhum arquivo neste repositório. A maioria traz no próprio fonte a autoria de **Lucas Gabriel (ONTIME TECH / DM TECH)**, o mesmo autor das functions `FC_RATEIOFRETE_SAPARK` e `FN_GET_ULTIMO_CUSTO_SPARK1` (ver `functions/README.md`). Os arquivos foram capturados do banco **sem alteração do corpo** (só a qualificação `"SPARKPRD".` foi removida) e ganharam um cabeçalho de captura; **a padronização do cabeçalho e a documentação dos parâmetros ainda estão pendentes**. A coluna "Descrição" vem do campo *Objetivo* do comentário do autor; `[A DOCUMENTAR]` indica que o fonte não traz descrição.
+
+| Arquivo | Procedure | Tipo | Descrição (do fonte) | Autor (no fonte) |
+|---|---|---|---|---|
+| `EVP_DEVICMSSIMPLES_SPARK.SQL` | `EVP_DEVICMSSIMPLES_SPARK` | EVP (evento de tela) | Corrigir as devolução do simples nacional para poder gerar o ajsute posteriormente. | Lucas Gabriel |
+| `EVP_GEROBSPADEFD_SPARK.SQL` | `EVP_GEROBSPADEFD_SPARK` | EVP (evento de tela) | Preencher o campo CODOBSPADRAO do cabeçalho da nota para que o SPED entenda que aquela nota precisa de documento relacionado, e apartir dai gere os registro que precise, tentamos via forma nativa de preencher a sugstão no layout porém nem sempre os usuarios clicam em novo gerando erros no EFD. | Lucas Gabriel |
+| `EVP_ICMSSIMPLES_SPARK.SQL` | `EVP_ICMSSIMPLES_SPARK` | EVP (evento de tela) | Não levar mais o ICMS do Simples nacional em campos proprio, devido a adequação da legislação, a costumização se fez necessaria para não ter que separar em top, aquisição de RPTA e simples, facilitar a vida do fiscal. | Lucas Gabriel |
+| `EVP_PISCOFINSSPARK.SQL` | `EVP_PISCOFINSSPARK` | EVP (evento de tela) | corrigir o PIS e COFINS das notas fiscais de Devolução do Simples nacional pois não pode ser devolvido o ICMS em campos próprios e sim em ajuste. | Lucas Gabriel |
+| `EVP_PISCOFINSSP_SPARK.SQL` | `EVP_PISCOFINSSP_SPARK` | EVP (evento de tela) | corrigir o PIS e COFINS das notas fiscais de Devolução do Simples nacional pois não pode ser devolvido o ICMS em campos próprios e sim em ajuste. | Lucas Gabriel |
+| `STP_AJUSTEC197DEV_SPARK.SQL` | `STP_AJUSTEC197DEV_SPARK` | Botão de ação | Automatizar o preenchimento do registro C197, pois hoje ta sendo feito manualmente, sendo assim o usuario vai utilizar o dashboard para analisar as notas e dentro do dashboard vai rodar o botão de ação para automatizar o passo de preenchimento. | Lucas Gabriel |
+| `STP_ATUALFINLOTE_SPARK.SQL` | `STP_ATUALFINLOTE_SPARK` | Botão de ação | Ajustar data de vencimento de mais de um titulo de uma so vez. | Lucas Gabriel - DM TECH |
+| `STP_BLOCOK200_SPARK.SQL` | `STP_BLOCOK200_SPARK` | Botão de ação | Corrigir a copia de estoque baseado na planilha externa apurada | Lucas Gabriel - DM TECH |
+| `STP_BLOQITEMFLINHA_SPARK.SQL` | `STP_BLOQITEMFLINHA_SPARK` | Procedure | Evitar erros do comercial quando recebe o pedido com código antigo e acaba digitando o pedido mesmo assim | Lucas Gabriel |
+| `STP_BOLJUROSMULTA_SPARK.SQL` | `STP_BOLJUROSMULTA_SPARK` | EVP (evento de tela) | Desmembrar o valor do juros e multa no momento da baixa pois o banco Itaú envia tudo consolidado e o Sankhya ainda não tem preparo na API para essa tratativa. | Lucas Gabriel - ONTIME TECH |
+| `STP_CABPESOEXP_SPARK.SQL` | `STP_CABPESOEXP_SPARK` | EVP (evento de tela) | informar o codigo de parceiro e realizar travas importantes para que tenha integridade do numero unico da pesagem com o numero unico do pedido. | Lucas Gabriel |
+| `STP_CALCPROPOICMS_SPARK.SQL` | `STP_CALCPROPOICMS_SPARK` | Botão de ação | Calcular o ICMS Porpocional dos utlimos meses para calcular o estorno de ICMS Baseado no acumulativo dos ultimos 12 meses. | Lucas Gabriel - ONTIME TECH |
+| `STP_CORPISCOFINSIMP_SPARK.SQL` | `STP_CORPISCOFINSIMP_SPARK` | Botão de ação | Corrigir informações de PIS e COFINS de importação | Lucas Gabriel |
+| `STP_CORRIGERATEIOCT_SPARK.SQL` | `STP_CORRIGERATEIOCT_SPARK` | EVP (evento de tela) | Corrigir o valor do rateio do frete, pois estão corrigindo manualmente a cada lançamento de CTE. O objetivo da personalização é corrigir o CTE se encontrar a nota. Caso contrário, segue o fluxo sem travar os lançamentos de CTE. | Lucas Gabriel - DM TECH |
+| `STP_DUP_METAS_SPARK.SQL` | `STP_DUP_METAS_SPARK` | Botão de ação | [A DOCUMENTAR] | — |
+| `STP_EMAIL_CONTRATO_SPARK.SQL` | `STP_EMAIL_CONTRATO_SPARK` | Procedure | Envio de E-mail avisando da proximidade do termino do contrato para o gestor do contrato, para que faça a gestão do contrato. | Lucas Gabriel - DM TECH |
+| `STP_GERGUIAICMS_SPARK.SQL` | `STP_GERGUIAICMS_SPARK` | Botão de ação | Criar os financeiros automatico apartir do preenchimento da tela de obrigações | Lucas Gabriel |
+| `STP_INCSUSPIPI_SPARK.SQL` | `STP_INCSUSPIPI_SPARK` | Botão de ação | Informar os produtos que contém suspensão do IPI na tabela de IPI de forma automática. | Lucas Gabriel - DM TECH |
+| `STP_ITEPESOEXP_SPARK.SQL` | `STP_ITEPESOEXP_SPARK` | EVP (evento de tela) | Validar informações do preenchimento da pesagem de exportação | Lucas Gabriel - ONTIME TECH |
+| `STP_STATUSCHQ_SPARK.SQL` | `STP_STATUSCHQ_SPARK` | Botão de ação | [A DOCUMENTAR] | — |
+| `STP_TIPOVOLPESO_SPARK.SQL` | `STP_TIPOVOLPESO_SPARK` | Botão de ação | Alterar as informações de Peso, volume, peso apos a confirmação da nota e for feito carta de correção, pois acontece do fiscal fazer carta de correção a transportadora aprova, e precisa reimprimir as etiquetas fica impedido. | Lucas Gabriel |
 
 ---
 

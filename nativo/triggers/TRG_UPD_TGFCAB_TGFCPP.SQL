@@ -1,0 +1,111 @@
+/*==============================================================================
+  Nome do Script : TRG_UPD_TGFCAB_TGFCPP
+  Tipo           : Trigger — origem a confirmar (criada isoladamente em 03/02/2026)
+  Descrição      : Trigger AFTER EACH ROW UPDATE sobre TGFCAB.
+  Empresa        : Spark Eletrônica
+  Observações    : - Estado no banco: ENABLED; criada em 03/02/2026, última alteração em 03/02/2026.
+                   - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Capturado do banco em 08/10/2026, via: SELECT DBMS_METADATA.GET_DDL('TRIGGER', 'TRG_UPD_TGFCAB_TGFCPP', 'SPARKPRD') FROM dual;
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_UPD_TGFCAB_TGFCPP" 
+AFTER UPDATE ON TGFCAB 
+FOR EACH ROW
+ WHEN (NEW.STATUSNOTA = 'L') DECLARE
+    P_CODPROD TGFITE.CODPROD%TYPE;
+    P_QTDNEG TGFITE.QTDNEG%TYPE;
+    P_VLRUNIT TGFITE.VLRUNIT%TYPE;
+    P_DTULT DATE;
+    P_ATUALULTIMACOMP CHAR(1);
+    P_ATUALULTIMAVEND CHAR(1);
+    P_ATUAL CHAR(1);
+    P_TIPMOV CHAR(1);
+    P_DATA DATE;
+    CURSOR ITENS IS
+      SELECT ITE.CODPROD, SUM(ITE.QTDNEG), SUM(VLRTOT) / SUM(QTDNEG)
+      FROM TGFITE ITE
+      WHERE ITE.NUNOTA = :NEW.NUNOTA
+      AND ITE.QTDNEG <> 0 
+      AND ITE.VLRUNIT <> 0
+      GROUP BY ITE.CODPROD;
+  BEGIN 
+
+  -- VERIFICANDO SE O CLIENTE UTILIZA ESTA FUNCIONALIDADE
+  IF VARIAVEIS_PKG.V_UTILIZA_TGFCPP = 'N' THEN
+    RETURN;
+  END IF;
+
+  -- N-NAO ATUALIZA
+  -- G-DT.NEGOCIACAO
+  -- E-DT.ENTRADA 
+  -- M-DT.MOVIMENTO
+
+  IF STP_GET_ATUALIZANDO THEN
+    RETURN;
+  END IF;
+  
+  BEGIN
+    SELECT ATUALULTIMACOMP, ATUALULTIMAVEND
+    INTO P_ATUALULTIMACOMP, P_ATUALULTIMAVEND
+    FROM TGFTOP
+    WHERE CODTIPOPER = :NEW.CODTIPOPER
+    AND DHALTER = :NEW.DHTIPOPER;
+  EXCEPTION WHEN NO_DATA_FOUND THEN
+    RAISE_APPLICATION_ERROR (-20101, 'Não foi encontrada a TOP ' || TO_CHAR(:NEW.CODTIPOPER) || ' com data de alteração igual a ' || TO_CHAR(:NEW.DHTIPOPER) || ' . Nota de Nro Único: '|| TO_CHAR(:NEW.NUNOTA) ||'.');
+  END;  
+  
+  IF (P_ATUALULTIMAVEND <> 'N') THEN
+    P_TIPMOV := 'V';
+    P_ATUAL := P_ATUALULTIMAVEND;
+  ELSIF (P_ATUALULTIMACOMP <> 'N') THEN
+    P_TIPMOV := 'C';
+    P_ATUAL := P_ATUALULTIMACOMP;
+  ELSE
+    P_TIPMOV := '';
+  END IF;    
+    
+  IF P_TIPMOV IN ('V','C') THEN
+    IF (P_ATUAL = 'G') THEN
+      P_DATA := :NEW.DTNEG;
+    ELSIF(P_ATUAL = 'E') THEN
+      P_DATA := :NEW.DTENTSAI;
+    ELSIF(P_ATUAL = 'M')THEN
+      P_DATA := :NEW.DTMOV;
+    ELSIF(P_ATUAL = 'F')THEN
+      P_DATA := TRUNC(NVL(:NEW.DTFATUR, :NEW.DTNEG));
+  ELSIF(P_ATUAL = 'S')THEN 
+      P_DATA := TRUNC(NVL(:NEW.DTENTSAI, :NEW.DTNEG));
+    END IF;
+    
+    OPEN ITENS;
+    LOOP
+      FETCH ITENS INTO P_CODPROD, P_QTDNEG, P_VLRUNIT;
+      EXIT WHEN ITENS%NOTFOUND;
+      
+      BEGIN
+        SELECT DTULT
+        INTO P_DTULT
+        FROM TGFCPP
+        WHERE CODPARC = :NEW.CODPARC
+          AND CODPROD = P_CODPROD
+          AND TIPMOV = P_TIPMOV;
+      EXCEPTION WHEN NO_DATA_FOUND THEN
+        INSERT INTO TGFCPP (CODPROD, CODPARC, TIPMOV, NUNOTA, DTULT, QTDNEG, VLRUNIT)
+        VALUES (P_CODPROD, :NEW.CODPARC, P_TIPMOV, :NEW.NUNOTA, P_DATA, P_QTDNEG, P_VLRUNIT);
+      END;
+      
+      IF (P_DTULT < P_DATA) THEN
+        UPDATE TGFCPP SET
+        NUNOTA = :NEW.NUNOTA
+        , DTULT = P_DATA
+        , QTDNEG = P_QTDNEG
+        , VLRUNIT = P_VLRUNIT
+        WHERE CODPARC = :NEW.CODPARC
+          AND CODPROD = P_CODPROD
+          AND TIPMOV = P_TIPMOV;
+      END IF;
+    END LOOP;
+    CLOSE ITENS;
+  END IF;
+END;
+/
+ALTER TRIGGER "SPARKPRD"."TRG_UPD_TGFCAB_TGFCPP" ENABLE;

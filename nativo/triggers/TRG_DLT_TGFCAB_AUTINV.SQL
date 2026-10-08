@@ -1,0 +1,66 @@
+/*==============================================================================
+  Nome do Script : TRG_DLT_TGFCAB_AUTINV
+  Tipo           : Trigger Nativa Sankhya (instalação do ERP, 12/2021 — referência, não customizada)
+  Descrição      : Trigger BEFORE EACH ROW DELETE sobre TGFCAB.
+  Empresa        : Spark Eletrônica
+  Observações    : - Estado no banco: ENABLED; criada em 07/12/2021, última alteração em 03/07/2024.
+                   - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Capturado do banco em 08/10/2026, via: SELECT DBMS_METADATA.GET_DDL('TRIGGER', 'TRG_DLT_TGFCAB_AUTINV', 'SPARKPRD') FROM dual;
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_DLT_TGFCAB_AUTINV" BEFORE DELETE ON TGFCAB FOR EACH ROW
+DECLARE
+  P_COUNT  INT;
+  P_NUAUTINV  TGMAIN.NUAUTINV%TYPE;
+  P_NUNOTA    TGMAIN.NUNOTA%TYPE;
+  P_VLRUSADO  TGMAIN.VLRUSADO%TYPE;
+  CURSOR CUR_TGFCAB_AUTINV IS
+    SELECT NUAUTINV, NUNOTA, VLRUSADO FROM TGMAIN AIN WHERE AIN.NUNOTADEST = :OLD.NUNOTA;
+BEGIN
+
+  IF STP_GET_ATUALIZANDO THEN
+    RETURN;
+  END IF;
+  
+  SELECT COUNT(*)
+  INTO P_COUNT
+  FROM TGMAIN AIN
+  WHERE AIN.NUNOTADEST = :OLD.NUNOTA;
+  IF P_COUNT > 0 THEN
+    OPEN CUR_TGFCAB_AUTINV;
+    LOOP
+      FETCH CUR_TGFCAB_AUTINV INTO P_NUAUTINV, P_NUNOTA, P_VLRUSADO;
+      EXIT WHEN CUR_TGFCAB_AUTINV%NOTFOUND;
+
+      SELECT COUNT(*)
+      INTO P_COUNT
+      FROM TGMAIN AIN
+      WHERE AIN.NUAUTINV = P_NUAUTINV
+      AND AIN.NUNOTA = P_NUNOTA
+      AND (AIN.NUNOTADEST = 0 OR AIN.NUNOTADEST IS NULL);
+
+      IF P_COUNT > 0 THEN
+        UPDATE TGMAIN SET VLRCOMPROMISSO = VLRCOMPROMISSO + P_VLRUSADO
+        WHERE NUAUTINV = P_NUAUTINV
+        AND NUNOTA = P_NUNOTA
+        AND (NUNOTADEST = 0 OR NUNOTADEST IS NULL);
+
+        DELETE FROM TGMAIN
+        WHERE NUAUTINV = P_NUAUTINV
+        AND NUNOTA = P_NUNOTA
+        AND NUNOTADEST = :OLD.NUNOTA;
+      ELSE
+        UPDATE TGMAIN SET NUNOTADEST = 0
+        , PENDENTE = 'S'
+        WHERE NUAUTINV = P_NUAUTINV
+        AND NUNOTA = P_NUNOTA
+        AND NUNOTADEST = :OLD.NUNOTA;
+      END IF;
+    END LOOP;
+    CLOSE CUR_TGFCAB_AUTINV;
+  END IF;
+  /* */
+
+  DELETE FROM TGMAIN WHERE NUNOTA = :OLD.NUNOTA;
+END;
+/
+ALTER TRIGGER "SPARKPRD"."TRG_DLT_TGFCAB_AUTINV" ENABLE;
