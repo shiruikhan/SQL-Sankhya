@@ -1,8 +1,8 @@
-# Catálogo de Functions Nativas do Sankhya (SNK_%)
+# Catálogo de Functions Nativas do Sankhya
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de functions:** 153  
+**Total de functions:** 348 (153 `SNK_%` + 195 sem prefixo `SNK_`)  
 **Banco:** Oracle PL/SQL  
 **Origem:** Nativas do ERP Sankhya (schema SPARKPRD) — mantidas aqui apenas como referência/documentação, não são customizações da Spark.
 
@@ -10,7 +10,7 @@
 
 > Estas functions **não são mantidas pela Spark** — são nativas do ERP Sankhya. O código foi capturado do banco em 18/09/2026 via `DBMS_METADATA.GET_DDL` e salvo aqui apenas para consulta rápida (evitar depender de VPN/acesso ao banco para entender uma dependência). Atualizações do Sankhya podem alterar ou remover estas functions — revisar após cada upgrade do ERP (mesmo cuidado do `trigger_nativa/README.md`).
 
-## Catálogo
+## Catálogo — functions `SNK_%`
 
 | Function | Retorno | Descrição |
 |---|---|---|
@@ -168,6 +168,263 @@
 | [`SNK_VERIFICA_PK_TGMTRA`](SNK_VERIFICA_PK_TGMTRA.SQL) | `TGMTRA` | Verifica colisao de chave em TGMTRA (NUMTRANSF/SEQUENCIA/SEQUENCIAITE) e retorna um novo NUMTRANSF livre se necessario. |
 | [`SNK_VERIFICA_SE_UTILIZA`](SNK_VERIFICA_SE_UTILIZA.SQL) | `VARCHAR` | Executa dinamicamente um COUNT(*) sobre uma tabela/condicao informada e retorna 'S'/'N' conforme existencia de registros. |
 
+## Catálogo — functions sem prefixo `SNK_`
+
+Capturadas em 08/10/2026 do mesmo schema (`SPARKPRD`), a partir do inventário de `scripts/CAPTURA_LISTA_FUNCTIONS_NAO_SNK.SQL`. A maioria foi criada na instalação do ERP (dez/2021) e pertence ao núcleo do Sankhya ou aos módulos que a Spark não usa (imobiliário `TIM_*`, RH, WMS). As customizações da Spark/terceiros ficam em [`../README.md`](../README.md), não aqui.
+
+> **Atenção:** `GET_DEPEND` está `INVALID` no banco desde 2021. `TIM_YEAR` retorna o *dia* do mês (`TO_CHAR(data, 'DD')`), não o ano — comportamento nativo, não corrigir. `SOMA_DIA_UTIL` e `GET_LOCAL_ORIGEM` têm origem não confirmada (criadas após a instalação, sem marca Spark no fonte); se forem customização, mover para `functions/`. Funções que contêm `?` no lugar de acentos (`EXTENSO_MONETARIO`, `GET_TYPE_COLUMN`, `FERIADO`) exibem `?` no lugar de acentos no DDL exportado (não verificado se o caractere está corrompido no banco ou só na exportação).
+
+
+### Acoes, parametros de execucao e workflow
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`ACT_CONFIRMAR`](ACT_CONFIRMAR.SQL) | `BOOLEAN` | Le a resposta de confirmacao (S/N) da sessao de acao em EXECPARAMS; se ainda nao houve resposta, levanta ORA-20101 para abrir o popup de confirmacao. |
+| [`ACT_DEC_FIELD`](ACT_DEC_FIELD.SQL) | `FLOAT` | Le um parametro decimal (NUMDEC) de uma linha especifica da sessao de acao em EXECPARAMS. |
+| [`ACT_DEC_PARAM`](ACT_DEC_PARAM.SQL) | `FLOAT` | Le um parametro decimal (NUMDEC) do cabecalho (SEQUENCIA 0) da sessao de acao em EXECPARAMS. |
+| [`ACT_DTA_FIELD`](ACT_DTA_FIELD.SQL) | `DATE` | Le um parametro data de uma linha especifica da sessao de acao em EXECPARAMS. |
+| [`ACT_DTA_PARAM`](ACT_DTA_PARAM.SQL) | `DATE` | Le um parametro data do cabecalho (SEQUENCIA 0) da sessao de acao em EXECPARAMS. |
+| [`ACT_ESCOLHER_SIMNAO`](ACT_ESCOLHER_SIMNAO.SQL) | `VARCHAR2` | Le a escolha Sim/Nao da sessao de acao em EXECPARAMS; se ainda nao houve resposta, levanta ORA-20101 para abrir o popup. |
+| [`ACT_INT_FIELD`](ACT_INT_FIELD.SQL) | `NUMBER` | Le um parametro inteiro (NUMINT) de uma linha especifica da sessao de acao em EXECPARAMS. |
+| [`ACT_INT_PARAM`](ACT_INT_PARAM.SQL) | `NUMBER` | Le um parametro inteiro (NUMINT) do cabecalho (SEQUENCIA 0) da sessao de acao em EXECPARAMS. |
+| [`ACT_TXT_FIELD`](ACT_TXT_FIELD.SQL) | `VARCHAR2` | Le um parametro texto de uma linha especifica da sessao de acao em EXECPARAMS. |
+| [`ACT_TXT_PARAM`](ACT_TXT_PARAM.SQL) | `VARCHAR2` | Le um parametro texto do cabecalho (SEQUENCIA 0) da sessao de acao em EXECPARAMS. |
+| [`EVP_GET_CAMPO_DEC`](EVP_GET_CAMPO_DEC.SQL) | `FLOAT` | Alias de ACT_DEC_PARAM (parametro decimal de acao/evento). |
+| [`EVP_GET_CAMPO_DTA`](EVP_GET_CAMPO_DTA.SQL) | `DATE` | Alias de ACT_DTA_PARAM (parametro data de acao/evento). |
+| [`EVP_GET_CAMPO_INT`](EVP_GET_CAMPO_INT.SQL) | `NUMBER` | Alias de ACT_INT_PARAM (parametro inteiro de acao/evento). |
+| [`EVP_GET_CAMPO_TEXTO`](EVP_GET_CAMPO_TEXTO.SQL) | `VARCHAR2` | Alias de ACT_TXT_PARAM (parametro texto de acao/evento). |
+| [`FAP_GET_NIVEL`](FAP_GET_NIVEL.SQL) | `NUMBER` | Calcula recursivamente o nivel de uma etapa na arvore de etapas da FAP (TCSFET). |
+| [`FAP_GET_PATH`](FAP_GET_PATH.SQL) | `VARCHAR` | Monta recursivamente o caminho (sequencias separadas por ponto) de uma etapa na arvore da FAP (TCSFET). |
+| [`FLW_GET_CAMPO_DEC`](FLW_GET_CAMPO_DEC.SQL) | `FLOAT` | Retorna a variavel decimal (NUMDEC) de uma instancia de processo do workflow (TWFIVAR). |
+| [`FLW_GET_CAMPO_DTA`](FLW_GET_CAMPO_DTA.SQL) | `DATE` | Retorna a variavel data de uma instancia de processo do workflow (TWFIVAR). |
+| [`FLW_GET_CAMPO_INT`](FLW_GET_CAMPO_INT.SQL) | `NUMBER` | Retorna a variavel inteira (NUMINT) de uma instancia de processo do workflow (TWFIVAR). |
+| [`FLW_GET_CAMPO_TXT`](FLW_GET_CAMPO_TXT.SQL) | `VARCHAR2` | Retorna a variavel texto de uma instancia de processo do workflow (TWFIVAR). |
+| [`FLW_GET_RESPONSAVEL_TAREFA`](FLW_GET_RESPONSAVEL_TAREFA.SQL) | `NUMBER` | Retorna o codigo do usuario dono da tarefa pendente mais antiga de uma instancia de processo do workflow (TWFITAR). |
+| [`FLW_GET_TAREFA_PENDENTE`](FLW_GET_TAREFA_PENDENTE.SQL) | `VARCHAR2` | Retorna o nome do elemento (tarefa) pendente mais antigo de uma instancia de processo do workflow. |
+
+### Parametros do sistema (TSIPAR) e variaveis de sessao
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`FCHECKOUT_UTILIZA`](FCHECKOUT_UTILIZA.SQL) | `BOOLEAN` | Indica se o cliente utiliza Sankhya Checkout (existe PDV configurado em TFXPDV). |
+| [`FPODEVALIDAR`](FPODEVALIDAR.SQL) | `BOOLEAN` | Decide se a validacao de uma tabela deve rodar, considerando DataSync em andamento (variavel de pacote/TSIPAR) e uso do Checkout. |
+| [`FTEM_KIT_INDEPENDENTE`](FTEM_KIT_INDEPENDENTE.SQL) | `BOOLEAN` | Indica se a configuracao de kit independente (TSIPAR CONFKITIND) esta ativa. |
+| [`GET_ADIARATUALIZACAOESTOQUE`](GET_ADIARATUALIZACAOESTOQUE.SQL) | `VARCHAR2` | Le a variavel de sessao VARIAVEIS_PKG.V_ADIARATUALIZACAOESTOQUE. |
+| [`GET_CONTROLE_CUSTO`](GET_CONTROLE_CUSTO.SQL) | `VARCHAR` | Devolve o controle da chave de custo: o proprio campo se custo nao e por controle, senao o parametro informado. |
+| [`GET_EMPRESA_CUSTO`](GET_EMPRESA_CUSTO.SQL) | `INTEGER` | Devolve a empresa da chave de custo: o proprio campo se custo nao e por empresa, senao o parametro informado. |
+| [`GET_LOCAL_CUSTO`](GET_LOCAL_CUSTO.SQL) | `INTEGER` | Devolve o local da chave de custo: o proprio campo se custo nao e por local, senao o parametro informado. |
+| [`GET_TSIPAR_DATA`](GET_TSIPAR_DATA.SQL) | `DATE` | Retorna o parametro de sistema do tipo data (TSIPAR.DATA) pela chave. |
+| [`GET_TSIPAR_INTEIRO`](GET_TSIPAR_INTEIRO.SQL) | `INTEGER` | Retorna o parametro de sistema inteiro (TSIPAR.INTEIRO, CODUSU = 0) pela chave; 0 se nao existir. |
+| [`GET_TSIPAR_LOGICO`](GET_TSIPAR_LOGICO.SQL) | `CHAR` | Retorna o parametro de sistema logico S/N (TSIPAR.LOGICO, CODUSU = 0) pela chave; 'N' se nao existir. |
+| [`GET_TSIPAR_NUMERO`](GET_TSIPAR_NUMERO.SQL) | `FLOAT` | Retorna o parametro de sistema decimal (TSIPAR.NUMDEC, CODUSU = 0) pela chave; 0 se nao existir. |
+| [`GET_TSIPAR_TEXTO`](GET_TSIPAR_TEXTO.SQL) | `VARCHAR2` | Retorna o parametro de sistema texto (TSIPAR.TEXTO, CODUSU = 0) pela chave. |
+| [`GET_TSIPAR_TIPO_CT`](GET_TSIPAR_TIPO_CT.SQL) | `VARCHAR` | Retorna o valor de um parametro TSIPAR do tipo C (combo) ou T (texto) como texto, conforme o tipo cadastrado. |
+| [`GET_TSIPAR_USUARIO_DECIMAL`](GET_TSIPAR_USUARIO_DECIMAL.SQL) | `FLOAT` | Parametro decimal do usuario logado em TSIPAR, com fallback para o valor geral (CODUSU = 0). |
+| [`GET_TSIPAR_USUARIO_INTEIRO`](GET_TSIPAR_USUARIO_INTEIRO.SQL) | `NUMBER` | Parametro inteiro do usuario logado em TSIPAR, com fallback para o valor geral (CODUSU = 0). |
+| [`GET_TSIPAR_USUARIO_LOGICO`](GET_TSIPAR_USUARIO_LOGICO.SQL) | `CHAR` | Parametro logico do usuario logado em TSIPAR, com fallback para o valor geral (CODUSU = 0). |
+| [`GET_TSIPAR_USUARIO_TEXTO`](GET_TSIPAR_USUARIO_TEXTO.SQL) | `VARCHAR2` | Parametro texto do usuario logado em TSIPAR, com fallback para o valor geral (CODUSU = 0). |
+| [`GET_VALEST_BLOQWMS_FAT`](GET_VALEST_BLOQWMS_FAT.SQL) | `VARCHAR2` | Le a variavel de sessao VARIAVEIS_PKG.V_VALEST_BLOQWMS_FAT. |
+| [`MULTIPLICA`](MULTIPLICA.SQL) | `NUMBER` | Multiplica um valor pelo parametro inteiro de TSIPAR (chave informada); 0 se valor nulo/zero ou parametro inexistente. |
+| [`STP_GET_ATUALIZANDO`](STP_GET_ATUALIZANDO.SQL) | `BOOLEAN` | Le a variavel de sessao VARIAVEIS_PKG.V_ATUALIZANDO (processo de atualizacao em andamento). |
+| [`STP_GET_CHECKOUT_CALC_IMPOSTO`](STP_GET_CHECKOUT_CALC_IMPOSTO.SQL) | `BOOLEAN` | Le a variavel de sessao VARIAVEIS_PKG.V_SNK_CHECKOUT_CALC_IMP. |
+| [`STP_GET_CODUSULOGADO`](STP_GET_CODUSULOGADO.SQL) | `NUMBER` | Retorna o codigo do usuario logado na sessao (TSIUSU_LOG_PKG.V_CODUSULOG). |
+| [`STP_GET_DISVALLDT`](STP_GET_DISVALLDT.SQL) | `BOOLEAN` | Indica se o titulo (NUFIN) esta marcado em TGFFIN_DISVALLDT para desabilitar a validacao de data. |
+| [`STP_GET_TIMUTILIZAIMOB`](STP_GET_TIMUTILIZAIMOB.SQL) | `BOOLEAN` | Le a variavel de sessao VARIAVEIS_PKG.V_TIMUTILIZAIMOB (uso do modulo imobiliario). |
+| [`STP_GET_UTILIZAFECHACTB`](STP_GET_UTILIZAFECHACTB.SQL) | `BOOLEAN` | Le a variavel TCBBFC_LOG_PKG.V_UTILIZA_FECHACTB (uso de fechamento contabil). |
+| [`STP_GET_VARIAVEIS`](STP_GET_VARIAVEIS.SQL) | `CHAR` | Retorna uma variavel de VARIAVEIS_PKG pelo nome (insercao automatica, imposto retido, custo por empresa/local/controle). |
+| [`TIM_GET_TSIPAR_INTEIRO`](TIM_GET_TSIPAR_INTEIRO.SQL) | `INT` | Parametro inteiro de TSIPAR (CODUSU = 0), busca case-insensitive e com TRIM na chave; NULL se nao existir. |
+| [`TIM_PARAM_BOL`](TIM_PARAM_BOL.SQL) | `CHAR` | Parametro logico de TSIPAR por chave (case-insensitive); 'N' se nao existir. Usada pelo modulo imobiliario. |
+| [`TIM_PARAM_DEC`](TIM_PARAM_DEC.SQL) | `FLOAT` | Parametro decimal de TSIPAR por chave (case-insensitive); NULL se nao existir. Usada pelo modulo imobiliario. |
+| [`TIM_PARAM_INT`](TIM_PARAM_INT.SQL) | `INT` | Parametro inteiro de TSIPAR por chave (case-insensitive); NULL se nao existir. Usada pelo modulo imobiliario. |
+| [`TIM_PARAM_TEXT`](TIM_PARAM_TEXT.SQL) | `VARCHAR2` | Parametro texto de TSIPAR por chave (case-insensitive); NULL se nao existir. Usada pelo modulo imobiliario. |
+
+### Datas, feriados e dias uteis
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`EH_DIA_UTIL_EMP`](EH_DIA_UTIL_EMP.SQL) | `INT` | Retorna 1 se a data e dia util para a empresa (nao e sabado/domingo nem feriado da cidade/UF/pais da empresa), senao 0. |
+| [`EH_DIA_UTIL_EMP_GIRO`](EH_DIA_UTIL_EMP_GIRO.SQL) | `INT` | Variacao de EH_DIA_UTIL_EMP que considera tambem os dias de folga configurados em TSIPAR (FOLGADOM...FOLGASAB); usada por SNK_QTD_DIAS_UTEIS. |
+| [`FERIADO`](FERIADO.SQL) | `NUMBER` | Retorna 1 se a data e feriado (recorrente ou nao) para a localidade do usuario/parceiro/empresa, senao 0. |
+| [`FSP_DATA_DIA_UTIL`](FSP_DATA_DIA_UTIL.SQL) | `INT` | Calcula a quantidade de dias uteis (descontando fins de semana e feriados TSIFER) para a data, na localidade do usuario. |
+| [`FSP_DIF_DATAS_POR_EXTENSO`](FSP_DIF_DATAS_POR_EXTENSO.SQL) | `VARCHAR2` | Diferenca entre duas datas em texto ('N dias e HH:MM:SS'). |
+| [`FSP_RETURN_DATAS_UTEIS`](FSP_RETURN_DATAS_UTEIS.SQL) | `TSP_DATAS_UTEIS_TYPE` | Retorna uma colecao (TSP_DATAS_UTEIS_TYPE) com cada data do intervalo, indicador de dia util e numero sequencial de dia util. |
+| [`GET_DIA_PROXMES`](GET_DIA_PROXMES.SQL) | `DATE` | Retorna o dia N do mes seguinte a uma data (ultimo dia do mes + N). |
+| [`GET_DIA_UTIL_EC`](GET_DIA_UTIL_EC.SQL) | `DATE` | Retorna a proxima data (a partir da informada) que e dia util para a empresa, usando EH_DIA_UTIL_EMP. |
+| [`GET_PROXIMO_DIA_UTIL`](GET_PROXIMO_DIA_UTIL.SQL) | `DATE` | Retorna o proximo dia util a partir de uma data, considerando fim de semana (conforme parametro) e feriados da localidade do parceiro/usuario/cidade. |
+| [`MONTH_TO_CHAR`](MONTH_TO_CHAR.SQL) | `VARCHAR2` | Retorna o nome do mes por extenso a partir do numero (formato completo ou resumido). |
+| [`SOMA_DIA_UTIL`](SOMA_DIA_UTIL.SQL) | `DATE` | Soma N dias uteis a uma data, usando EH_DIA_UTIL_EMP da empresa. [origem a confirmar] |
+| [`TIM_ACUMULAINDICE`](TIM_ACUMULAINDICE.SQL) | `NUMBER` | Acumula indices de uma moeda/indexador (TSICOT) entre duas datas (produtorio de 1 + cotacao/100). |
+| [`TIM_ACUMULAINDICEPROP`](TIM_ACUMULAINDICEPROP.SQL) | `NUMBER` | Acumula indices de uma moeda/indexador (TSICOT) entre duas datas, aplicando o primeiro mes proporcionalmente. |
+| [`TIM_DATABASE`](TIM_DATABASE.SQL) | `DATE` | Calcula a proxima data-base de reajuste contratual a partir da data de inicio, periodo e duracao em meses. |
+| [`TIM_DEFINIR_DATA_REPASSE`](TIM_DEFINIR_DATA_REPASSE.SQL) | `DATE` | Define a data de repasse (dias corridos ou uteis, conforme contrato e parametro) a partir de uma data e quantidade de dias. |
+| [`TIM_MONTH`](TIM_MONTH.SQL) | `NUMBER` | Retorna o mes (numero) de uma data. |
+| [`TIM_MONTHEXT`](TIM_MONTHEXT.SQL) | `VARCHAR2` | Retorna o nome do mes por extenso de uma data. |
+| [`TIM_SOMA_DIA_COMERCIAL`](TIM_SOMA_DIA_COMERCIAL.SQL) | `DATE` | Soma N dias a uma data usando o calendario comercial de 30 dias por mes. |
+| [`TIM_TOCHARDATE`](TIM_TOCHARDATE.SQL) | `VARCHAR` | TO_CHAR de data no formato DD/MM/YYYY. |
+| [`TIM_TOCHARDATETIME`](TIM_TOCHARDATETIME.SQL) | `VARCHAR` | TO_CHAR de data no formato DD/MM/YYYY HH24:MI:SS. |
+| [`TIM_TOCHARDAY`](TIM_TOCHARDAY.SQL) | `VARCHAR2` | TO_CHAR de data com formato DD (dia). |
+| [`TIM_TOCHARINTEGER`](TIM_TOCHARINTEGER.SQL) | `VARCHAR` | TO_CHAR de um numero inteiro. |
+| [`TIM_TODATE`](TIM_TODATE.SQL) | `DATE` | TO_DATE de string no formato DD/MM/YYYY. |
+| [`TIM_TODATETIME`](TIM_TODATETIME.SQL) | `DATE` | TO_DATE de string no formato DD/MM/YYYY HH24:MI:SS. |
+| [`TIM_TRUNCMONTH`](TIM_TRUNCMONTH.SQL) | `DATE` | Trunca a data para o primeiro dia do mes. |
+| [`TIM_TRUNCYEAR`](TIM_TRUNCYEAR.SQL) | `DATE` | Trunca a data para o primeiro dia do ano. |
+| [`TIM_YEAR`](TIM_YEAR.SQL) | `NUMBER` | Retorna TO_CHAR(data, 'DD') como numero, ou seja, o DIA e nao o ano, apesar do nome (comportamento nativo). |
+
+### Horas e carga horaria
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`DEC2HR`](DEC2HR.SQL) | `NUMBER` | Converte horas decimais em hora no formato HHMM (ex.: 8,5 -> 830). |
+| [`HORAEXTRACARGAHORARIA`](HORAEXTRACARGAHORARIA.SQL) | `NUMBER` | Calcula os minutos de hora extra de um periodo em relacao a carga horaria (inicio/fim), tratando antes/depois da jornada. |
+| [`HORAEXTRACARGAHORARIA2`](HORAEXTRACARGAHORARIA2.SQL) | `NUMBER` | Versao simplificada de HORAEXTRACARGAHORARIA para calculo dos minutos fora da carga horaria. |
+| [`HR2DEC`](HR2DEC.SQL) | `NUMBER` | Converte hora no formato HHMM em horas decimais (ex.: 830 -> 8,5). |
+| [`HR2MIN`](HR2MIN.SQL) | `NUMBER` | Converte hora no formato HHMM em minutos. |
+| [`INTERVALO_CARGA_HORARIA`](INTERVALO_CARGA_HORARIA.SQL) | `NUMBER` | Calcula o intervalo em minutos entre duas horas HHMM, virando a meia-noite quando necessario. |
+
+### Formatacao, texto e utilitarios genericos
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`DANFE_BUILDDRAZAOSOCIAL`](DANFE_BUILDDRAZAOSOCIAL.SQL) | `VARCHAR2` | Monta o nome do emitente do DANFE (razao, fantasia ou razao/fantasia conforme o tipo). |
+| [`DANFE_BUILDRAZAOSOCIAL`](DANFE_BUILDRAZAOSOCIAL.SQL) | `VARCHAR2` | Duplicata de DANFE_BUILDDRAZAOSOCIAL (mesmo comportamento, nome sem o D extra). |
+| [`EXISTS_STP`](EXISTS_STP.SQL) | `VARCHAR` | Retorna 'S' ou 'N' conforme a procedure informada existe em USER_PROCEDURES. |
+| [`EXTENSO_MONETARIO`](EXTENSO_MONETARIO.SQL) | `VARCHAR2` | Escreve um valor monetario por extenso em reais e centavos. |
+| [`FC_FORMATAHTML`](FC_FORMATAHTML.SQL) | `VARCHAR2` | Monta o HTML padrao de mensagem de atencao (mensagem, motivo e solucao) exibido nas criticas do Sankhya. |
+| [`FC_ROWS_TO_CLOB`](FC_ROWS_TO_CLOB.SQL) | `CLOB` | Executa dinamicamente um SELECT de coluna unica e concatena todas as linhas em um CLOB. |
+| [`FNC_CORTA_DECIMAL`](FNC_CORTA_DECIMAL.SQL) | `FLOAT` | Trunca (corta) um valor para N casas decimais somando uma unidade na ultima casa quando ha excedente. |
+| [`FORMATAR_CPF_CNPJ`](FORMATAR_CPF_CNPJ.SQL) | `VARCHAR2` | Aplica mascara de CPF ou CNPJ conforme o tamanho do documento. |
+| [`FSP_FORMATAR_CPF_CNPJ`](FSP_FORMATAR_CPF_CNPJ.SQL) | `VARCHAR2` | Duplicata de FORMATAR_CPF_CNPJ (mascara de CPF/CNPJ). |
+| [`GETBLOB`](GETBLOB.SQL) | `CLOB` | Converte um BLOB em CLOB (leitura em blocos de 32767 bytes). |
+| [`GET_DISTANCIA`](GET_DISTANCIA.SQL) | `FLOAT` | Calcula a distancia entre dois pontos por latitude/longitude (formula de haversine). |
+| [`GET_LINK_TELA`](GET_LINK_TELA.SQL) | `VARCHAR2` | Monta um link HTML (#app/<tela>/<pk>) em Base64 para abrir uma tela do Sankhya a partir de uma consulta. |
+| [`LINHA2COLUNA`](LINHA2COLUNA.SQL) | `VARCHAR2` | Executa um SELECT dinamico de coluna unica e devolve os valores concatenados e separados por virgula (limite de 4000 caracteres). |
+| [`MONTA_PATH_CONTROLE`](MONTA_PATH_CONTROLE.SQL) | `VARCHAR` | Monta o caminho hierarquico (pai > filho) de um controle da estrutura TRDCON/TRDFCO. |
+| [`OBTEM_ALIQ_IPI`](OBTEM_ALIQ_IPI.SQL) | `NUMBER` | Stub: retorna NULL (ponto de extensao para obter a aliquota de IPI). |
+| [`PDES`](PDES.SQL) | `VARCHAR2` | Retorna o primeiro valor de um campo/tabela/filtro informados como texto (SELECT dinamico, transacao autonoma). |
+| [`QUEBRALINHACHAR`](QUEBRALINHACHAR.SQL) | `VARCHAR2` | Quebra um texto em linhas de N caracteres (CR+LF entre elas). |
+| [`SCORE_PREFIX`](SCORE_PREFIX.SQL) | `NUMBER` | Retorna 1 se o valor comeca com o prefixo informado (ignorando . e -), usado como pontuacao em buscas (ex.: NCM). |
+| [`STRAGG`](STRAGG.SQL) | `VARCHAR2` | Funcao agregada de concatenacao de strings (usa o tipo STRING_AGG_TYPE). |
+| [`TIM_COMPOEVALORCFI`](TIM_COMPOEVALORCFI.SQL) | `NUMBER` | Stub: retorna 100 (ponto de extensao do modulo imobiliario). |
+| [`VALIDA_ATRASO_PARCEIRO`](VALIDA_ATRASO_PARCEIRO.SQL) | `CHAR` | Stub: sempre retorna 'S' (ponto de extensao para validar atraso de parceiro). |
+
+### Dicionario de dados e metadados
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`FIELD_LABEL`](FIELD_LABEL.SQL) | `VARCHAR` | Retorna o rotulo (DESCRCAMPO) de um campo no dicionario de dados (TDDCAM). |
+| [`F_CONVERTELONG`](F_CONVERTELONG.SQL) | `VARCHAR2` | Converte a coluna LONG DATA_DEFAULT de USER_TAB_COLUMNS em texto (ate 2000 caracteres). |
+| [`F_DESCROPC`](F_DESCROPC.SQL) | `TDDOPC.OPCAO%TYPE` | Retorna a descricao da opcao (TDDOPC) de um campo (TDDCAM) para um valor de lista. |
+| [`GET_COLUMNS_TABLE`](GET_COLUMNS_TABLE.SQL) | `VARCHAR2` | Lista as colunas de uma tabela separadas por virgula, excluindo as indicadas. |
+| [`GET_TYPE_COLUMN`](GET_TYPE_COLUMN.SQL) | `VARCHAR2` | Retorna o tipo de dado de uma coluna de tabela (com tamanho/precisao). |
+| [`OPTION_LABEL`](OPTION_LABEL.SQL) | `VARCHAR2` | Retorna a descricao da opcao de um campo de lista (TDDOPC) para um valor. |
+| [`TIM_FIELDSMENURETROAPR`](TIM_FIELDSMENURETROAPR.SQL) | `TYPESET_KEYVALUE` | Retorna pipelined (chave/valor) com o rotulo e o valor de observacao de visitas da ultima administracao do imovel. |
+
+### Custo, preco, estoque e volumes
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`GET_CODPROD_REF`](GET_CODPROD_REF.SQL) | `INTEGER` | Localiza o codigo do produto por referencia, referencia do fornecedor ou descricao, podendo restringir aos itens da nota de origem. |
+| [`OBTEMCUSTO`](OBTEMCUSTO.SQL) | `FLOAT` | Retorna o custo do produto (TGFCUS) na data, por empresa/local/controle, conforme o tipo (reposicao, medio, variavel etc.). |
+| [`OBTEM_EST_KIT_EC`](OBTEM_EST_KIT_EC.SQL) | `NUMBER` | Estoque disponivel de um kit (variacao 30000 em TGFICP) pelo menor estoque de seus componentes - versao e-commerce. |
+| [`OBTEM_EST_KIT_LV`](OBTEM_EST_KIT_LV.SQL) | `NUMBER` | Estoque disponivel de um kit (variacao 30000 em TGFICP) pelo menor estoque de seus componentes - versao loja virtual. |
+| [`OBTEM_PRECO_CW`](OBTEM_PRECO_CW.SQL) | `NUMBER` | Retorna o preco de um produto na tabela de precos vigente (TGFTAB) - integracao ChannelWeb. |
+| [`QTDEVOLPADRAO`](QTDEVOLPADRAO.SQL) | `FLOAT` | Converte uma quantidade para o volume padrao do produto usando as conversoes de TGFVOA. |
+| [`QTDEVOLPADRAO2`](QTDEVOLPADRAO2.SQL) | `FLOAT` | Versao de QTDEVOLPADRAO que considera tambem o controle (lote/serie) na conversao de volume. |
+| [`VOLUMEALT`](VOLUMEALT.SQL) | `FLOAT` | Converte quantidade entre volume padrao e volume alternativo de um produto (TGFVOA), com fallback sem controle. |
+
+### WMS e recebimento
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`FWMS_BUSCA_MENOR_OC`](FWMS_BUSCA_MENOR_OC.SQL) | `NUMBER` | Busca a menor ordem de carga entre uma tarefa WMS e suas tarefas dependentes (TGWSEP/TGWTDP). |
+| [`F_WMS_GETESTOQUEDOCA`](F_WMS_GETESTOQUEDOCA.SQL) | `FLOAT` | Soma o estoque (volume padrao) em docas de expedicao (TGWEST/TGWDCA) de um produto/controle/empresa/local. |
+| [`F_WMS_GETESTOQUEDOCA_PARC`](F_WMS_GETESTOQUEDOCA_PARC.SQL) | `FLOAT` | Variacao de F_WMS_GETESTOQUEDOCA que tambem filtra por parceiro. |
+| [`F_WMS_GETPESOTAR`](F_WMS_GETPESOTAR.SQL) | `FLOAT` | Calcula o peso de uma tarefa WMS (peso do produto x quantidade, ajustado pela conversao de volume). |
+| [`F_WMS_NIVEL_VALIDO_ENDERECO`](F_WMS_NIVEL_VALIDO_ENDERECO.SQL) | `CHAR` | Valida se os niveis de origem/destino de um endereco WMS sao atendidos pelo equipamento (nivel minimo/maximo, conexao, picking). |
+| [`F_WMS_QTDVOLPAD`](F_WMS_QTDVOLPAD.SQL) | `FLOAT` | Converte quantidade para o volume padrao WMS via TGFVOA. |
+| [`F_WMS_QTDVOLPAD2`](F_WMS_QTDVOLPAD2.SQL) | `FLOAT` | Variacao de F_WMS_QTDVOLPAD que considera o controle (lote) e arredonda em 4 casas. |
+| [`GET_TEM_RASTREAMENTO_ITENS`](GET_TEM_RASTREAMENTO_ITENS.SQL) | `CHAR` | Indica ('S'/'N') se o produto/empresa/TOP exige rastreamento de estoque (TGFRASTEMP/TGFEMP). |
+| [`GET_TEM_RASTSTULTENTRADA`](GET_TEM_RASTSTULTENTRADA.SQL) | `CHAR` | Indica se o rastreamento por ultima entrada (parametro RASTSTULTENTRA) se aplica a empresa/produto/TOP. |
+| [`RECEBIMENTO_M3_ARMAZ`](RECEBIMENTO_M3_ARMAZ.SQL) | `FLOAT` | Soma o volume (m3) ja armazenado de um recebimento WMS. |
+| [`RECEBIMENTO_M3_CONFERIDO`](RECEBIMENTO_M3_CONFERIDO.SQL) | `FLOAT` | Soma o volume (m3) conferido de uma conferencia (TGWCOI), ignorando recontagem. |
+| [`RECEBIMENTO_M3_TOTAL`](RECEBIMENTO_M3_TOTAL.SQL) | `FLOAT` | Soma o volume (m3) total das notas de um recebimento WMS. |
+| [`RECEBIMENTO_PESO_ARMAZ`](RECEBIMENTO_PESO_ARMAZ.SQL) | `FLOAT` | Soma o peso bruto ja armazenado de um recebimento WMS. |
+| [`RECEBIMENTO_PESO_CONFERIDO`](RECEBIMENTO_PESO_CONFERIDO.SQL) | `FLOAT` | Soma o peso bruto conferido de uma conferencia (TGWCOI), ignorando recontagem. |
+| [`RECEBIMENTO_PESO_TOTAL`](RECEBIMENTO_PESO_TOTAL.SQL) | `FLOAT` | Soma o peso bruto total das notas de um recebimento WMS. |
+
+### Financeiro, fiscal e comercial
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`DTL_BOLETO_POLIPRINT`](DTL_BOLETO_POLIPRINT.SQL) | `VARCHAR2` | Monta a instrucao de multa, mora e correcao monetaria impressa no boleto Poliprint. |
+| [`EHSIMPLESNACIONAL`](EHSIMPLESNACIONAL.SQL) | `BOOLEAN` | Indica se a empresa e optante do Simples Nacional (TSIEMP.SIMPLES = 'S' e regime tributario 1). |
+| [`FRMT_LINHA_BOLETO`](FRMT_LINHA_BOLETO.SQL) | `CLOB` | Quebra um texto em N campos de largura fixa (com padding) para linhas de instrucao do boleto. |
+| [`FRMT_NOMEBCO_POLIPRINT`](FRMT_NOMEBCO_POLIPRINT.SQL) | `VARCHAR2` | Monta a identificacao banco/agencia/conta do cedente para o boleto Poliprint. |
+| [`FSP_GETDTLBOLETO`](FSP_GETDTLBOLETO.SQL) | `VARCHAR2` | Monta o detalhamento (historico, complemento e valor) dos lancamentos de um titulo para o boleto. |
+| [`F_OBTEM_SALDO_INDENIZ`](F_OBTEM_SALDO_INDENIZ.SQL) | `FLOAT` | Calcula o saldo de indenizacao de um parceiro na data (saldo inicial + movimentos das notas). |
+| [`GETCIDCONTATO`](GETCIDCONTATO.SQL) | `NUMBER` | Retorna o codigo da cidade de um contato de parceiro (TGFCTT). |
+| [`GETUF`](GETUF.SQL) | `NUMBER` | Retorna o codigo da UF de uma cidade (TSICID). |
+| [`GET_DF_ESTADO`](GET_DF_ESTADO.SQL) | `NUMBER` | Classifica o CFOP por origem (1 = estadual, 2 = interestadual, 3 = exterior). |
+| [`GET_EXTRATO_POUPANCA`](GET_EXTRATO_POUPANCA.SQL) | `T_EXTRATO_TABLE` | Retorna (colecao T_EXTRATO_TABLE) o extrato de uma aplicacao indexada por moeda/indice entre duas datas. |
+| [`GET_EXTRATO_REPASSE`](GET_EXTRATO_REPASSE.SQL) | `T_EXTRATO_REP_TABLE` | Retorna (colecao T_EXTRATO_REP_TABLE) o extrato de repasse de um titulo com saldo acumulado. |
+| [`GET_INDICE_AJUSTE_NOTA`](GET_INDICE_AJUSTE_NOTA.SQL) | `FLOAT` | Calcula o indice de ajuste de itens (1 - |juros - desconto| / total) de uma nota. |
+| [`GET_LOCAL_ORIGEM`](GET_LOCAL_ORIGEM.SQL) | `NUMBER` | Retorna o local de origem (CODLOCALORIG) do item da nota de origem de um item atendido (via TGFVAR). [origem a confirmar] |
+| [`GET_NUNOTA_EC`](GET_NUNOTA_EC.SQL) | `TGFCAB.NUNOTA%TYPE` | Retorna o NUNOTA da nota gerada a partir de uma nota de origem (via TGFVAR). |
+| [`GET_PRECOMOEDA`](GET_PRECOMOEDA.SQL) | `FLOAT` | Retorna a cotacao da moeda (TSICOT) na data, seguindo o parametro PROCMOE e o tratamento para cotacao inexistente (PROCMOEINEX). |
+| [`GET_PREVISAO_CREDITO_DEBITO`](GET_PREVISAO_CREDITO_DEBITO.SQL) | `DATE` | Calcula a data prevista de credito/debito de um titulo (baixa, vencimento + carencia, proximo dia util). |
+| [`GET_TOTALMOVBANC`](GET_TOTALMOVBANC.SQL) | `FLOAT` | Totaliza movimentos bancarios (TGFMBC) de uma conta e periodo por tipo, convertendo moedas. |
+| [`GET_VALOR_TGFAJA`](GET_VALOR_TGFAJA.SQL) | `FLOAT` | Retorna o valor de ajuste de apuracao de imposto (TGFAJA) para empresa/data/imposto/UF. |
+| [`GET_VLRFRETE_TGFFNF`](GET_VLRFRETE_TGFFNF.SQL) | `FLOAT` | Soma o valor de frete (TGFFNF) de uma nota, excluindo o titulo informado. |
+| [`MONTADESCRICAOCLASSE`](MONTADESCRICAOCLASSE.SQL) | `VARCHAR2` | Traduz a sigla de classe da conta bancaria (C, D, A, X, E, G, S, O, Z) em descricao. |
+| [`OBTEM_NUFIN_SITE`](OBTEM_NUFIN_SITE.SQL) | `NUMBER` | Gera e retorna o proximo NUFIN via STP_KEYGEN_NUFIN. |
+| [`OBTEM_PROX_PK_EC`](OBTEM_PROX_PK_EC.SQL) | `NUMBER` | Gera e retorna o proximo codigo de uma tabela via STP_KEYGEN_TGFNUM. |
+| [`TIM_POSSUI_FIN_JUR`](TIM_POSSUI_FIN_JUR.SQL) | `BOOLEAN` | Indica se o contrato de locacao tem titulos vencidos em juridico (TGFFIN). |
+
+### RH, folha e recrutamento
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`GET_CANDIDATO_APROV`](GET_CANDIDATO_APROV.SQL) | `VARCHAR2` | Indica se o candidato ja foi aprovado em alguma selecao (TRSCAN/TRSSEL). |
+| [`GET_DEPEND`](GET_DEPEND.SQL) | `VARCHAR` | Lista os dependentes de um funcionario (TFPDPD) separados por virgula. INVALID no banco desde 2021. |
+| [`GET_EVENTO_FOLHA`](GET_EVENTO_FOLHA.SQL) | `INTEGER` | Retorna o codigo do evento de folha ativo para uma caracteristica; -1 se nao houver. |
+| [`GET_REQ_ABERTA`](GET_REQ_ABERTA.SQL) | `VARCHAR2` | Indica se existe outra requisicao de vaga em aberto para a mesma selecao (TRSREQ/TRSRQS). |
+
+### Modulo imobiliario (TIM_*)
+
+| Function | Retorno | Descrição |
+|---|---|---|
+| [`EHCORRETORLOC`](EHCORRETORLOC.SQL) | `CHAR` | Indica se o corretor logado atende locacao (TIMCOR.CORLOCACAO). |
+| [`EHCORRETORVENDA`](EHCORRETORVENDA.SQL) | `CHAR` | Indica se o corretor logado atende vendas (TIMCOR.CORVENDA). |
+| [`ESTAGIO_INTERESSE`](ESTAGIO_INTERESSE.SQL) | `CHAR` | Classifica o imovel para a FAC como Interessados, Disponiveis ou Nao Disponiveis. |
+| [`ESTAGIO_RESERVACHAVE`](ESTAGIO_RESERVACHAVE.SQL) | `VARCHAR2` | Classifica o imovel quanto a reserva de chave para a FAC (Reservados, Disponiveis, Nao Disponiveis). |
+| [`FTIM_EXECUTAR`](FTIM_EXECUTAR.SQL) | `BOOLEAN` | Indica se existe empresa (TSIEMP) cadastrada com o CNPJ informado; usada para liberar rotinas do modulo imobiliario. |
+| [`GER_DESCR_BUSCA_IMV`](GER_DESCR_BUSCA_IMV.SQL) | `VARCHAR2` | Monta a descricao de busca do imovel (codigo, descricao, bairro, cidade e UF). |
+| [`GET_CORRETORLOGADO`](GET_CORRETORLOGADO.SQL) | `NUMBER` | Retorna o codigo do corretor vinculado ao usuario logado (TSIUSU.CORCODIGO). |
+| [`GET_QTD_FOTOS_IMV`](GET_QTD_FOTOS_IMV.SQL) | `T_FOTOS_IMOVEIS_TABLE` | Retorna a quantidade de fotos de um imovel (colecao T_FOTOS_IMOVEIS_TABLE). |
+| [`TIM_ASSINAFIADOR`](TIM_ASSINAFIADOR.SQL) | `VARCHAR2` | Monta os blocos de assinatura dos fiadores de uma locacao. |
+| [`TIM_ASSINAINQUILINO`](TIM_ASSINAINQUILINO.SQL) | `VARCHAR2` | Monta os blocos de assinatura dos inquilinos de uma locacao. |
+| [`TIM_ASSINALOCADOR`](TIM_ASSINALOCADOR.SQL) | `VARCHAR2` | Monta os blocos de assinatura dos locadores (proprietarios) de um imovel. |
+| [`TIM_BUILD_BAIRROCIDADE`](TIM_BUILD_BAIRROCIDADE.SQL) | `VARCHAR` | Formata 'bairro, cidade' para endereco. |
+| [`TIM_BUILD_LOGRADOURO`](TIM_BUILD_LOGRADOURO.SQL) | `VARCHAR` | Formata 'tipo logradouro, numero' para endereco. |
+| [`TIM_BUILD_UFCEP`](TIM_BUILD_UFCEP.SQL) | `VARCHAR` | Formata 'UF, CEP' para endereco. |
+| [`TIM_CLASSIFICADOS2`](TIM_CLASSIFICADOS2.SQL) | `VARCHAR2` | Resume em texto os anuncios (classificados) publicados de um imovel desde a data de liberacao. |
+| [`TIM_COMPOEANUNCIOCFI`](TIM_COMPOEANUNCIOCFI.SQL) | `VARCHAR2` | Compoe o texto do anuncio de um imovel para um classificado. |
+| [`TIM_DESCRICAO_IMOVELAP`](TIM_DESCRICAO_IMOVELAP.SQL) | `VARCHAR2` | Retorna a descricao atual do imovel (TIMIMV.IMVDESCRICAOATUAL). |
+| [`TIM_DETALHEVISITAS2`](TIM_DETALHEVISITAS2.SQL) | `VARCHAR2` | Detalha em texto os motivos de devolucao/desistencia registrados nas visitas ao imovel. |
+| [`TIM_DNORM_ENDERECO`](TIM_DNORM_ENDERECO.SQL) | `VARCHAR2` | Normaliza e escreve o endereco por extenso a partir de codigos de logradouro, bairro e cidade. |
+| [`TIM_ENDERECO_IMOVEL_MAPS`](TIM_ENDERECO_IMOVEL_MAPS.SQL) | `VARCHAR` | Monta o endereco completo de um imovel para geocodificacao/mapas. |
+| [`TIM_ENDERECO_MAPS`](TIM_ENDERECO_MAPS.SQL) | `VARCHAR` | Monta endereco formatado (logradouro, bairro/cidade, UF/CEP) para mapas. |
+| [`TIM_FORMATACPFCNPJ`](TIM_FORMATACPFCNPJ.SQL) | `VARCHAR2` | Aplica mascara de CPF ou CNPJ conforme o tipo de pessoa (F/J). |
+| [`TIM_FORMATAENDERECO`](TIM_FORMATAENDERECO.SQL) | `VARCHAR2` | Formata o endereco de uma pessoa (tipo, numero, complemento, bairro, cidade e estado). |
+| [`TIM_FORMATAPESSOA`](TIM_FORMATAPESSOA.SQL) | `VARCHAR2` | Qualifica uma pessoa em texto contratual (nome, nacionalidade, estado civil, profissao, documentos, endereco). |
+| [`TIM_FORMATATELEFONE`](TIM_FORMATATELEFONE.SQL) | `VARCHAR` | Formata um telefone brasileiro (com/sem DDD, DDI e zero) em mascara padrao. |
+| [`TIM_GERADESCRICAO`](TIM_GERADESCRICAO.SQL) | `VARCHAR2` | Gera a descricao comercial do imovel (tipo, bairro, quartos, edificio, endereco). |
+| [`TIM_MONTAFIADOR`](TIM_MONTAFIADOR.SQL) | `VARCHAR2` | Qualifica em texto contratual os fiadores de uma locacao. |
+| [`TIM_MONTAFORMAREPASSE`](TIM_MONTAFORMAREPASSE.SQL) | `VARCHAR2` | Descreve em texto a forma de repasse (percentuais por proprietario e IRB) de um contrato de administracao. |
+| [`TIM_MONTAINQUILINO`](TIM_MONTAINQUILINO.SQL) | `VARCHAR2` | Qualifica em texto contratual os inquilinos de uma locacao. |
+| [`TIM_MONTAPROPRIETARIOS`](TIM_MONTAPROPRIETARIOS.SQL) | `VARCHAR2` | Lista os nomes dos proprietarios de um contrato de administracao. |
+| [`TIM_VISITASIMOVEL2`](TIM_VISITASIMOVEL2.SQL) | `VARCHAR2` | Resume em texto o percentual de cada motivo de desistencia/devolucao nas visitas ao imovel. |
+
 ## Como recapturar / atualizar
 
 ```sql
@@ -175,3 +432,5 @@ SELECT DBMS_METADATA.GET_DDL('FUNCTION', 'NOME_DA_FUNCTION', 'SPARKPRD') FROM du
 ```
 
 Lista completa obtida via `all_objects` filtrando `object_name LIKE 'SNK\_%' ESCAPE '\'` e `object_type = 'FUNCTION'` no schema `SPARKPRD`.
+
+Para as sem prefixo `SNK_`, o inventário completo (nome, status, datas, linhas) está em `scripts/CAPTURA_LISTA_FUNCTIONS_NAO_SNK.SQL` (Bloco 1) e o DDL no Bloco 2 do mesmo script.

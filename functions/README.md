@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de functions:** 6  
+**Total de functions:** 10  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -173,6 +173,94 @@ OBTEM_TOTAIS_MRP(
 **Uso:** Utilizada nas queries analíticas de BI e no componente `CRONOGRAMA GERAL DE PRODUCAO` para construir visão consolidada do plano de produção por produto.
 
 > **Observação:** Saldo negativo em `P_TIPO = 'S'` indica que o PA já foi produzido acima da meta; neste caso o valor não deve influenciar no cálculo de MP a comprar.
+
+---
+
+### `FC_GET_FATURAS`
+
+**Arquivo:** `FC_GET_FATURAS.SQL`  
+**Tipo de retorno:** `VARCHAR2`  
+**Captura:** 08/10/2026 (via `DBMS_METADATA.GET_DDL`, cópia fiel da produção)
+
+**Assinatura:**
+```sql
+FC_GET_FATURAS (P_NUNOTA IN TGFCAB.NUNOTA%TYPE) RETURN VARCHAR2
+```
+
+**Retorno:** Texto com as parcelas dos títulos da nota (`TGFFIN`: `Parc=… Venc=… Valor=…`, separadas por ` | `), excluindo os tipos de título 34, 35, 36 e 15 e empresas ≥ 500.
+
+**Tabela consultada:** `TGFFIN`
+
+> **Origem não confirmada:** sem sufixo `_SPARK`, mas criada em 02/2022, alterada em 09/2025 e com regras de negócio da Spark; tratada como customização.
+
+---
+
+### `FC_RATEIOFRETE_SAPARK`
+
+**Arquivo:** `FC_RATEIOFRETE_SAPARK.SQL`  
+**Tipo de retorno:** `NUMBER`  
+**Captura:** 08/10/2026 (via `DBMS_METADATA.GET_DDL`, cópia fiel da produção)
+
+**Assinatura:**
+```sql
+FC_RATEIOFRETE_SAPARK ( P_NUNOTA IN NUMBER ) RETURN NUMBER
+```
+
+**Retorno:** Percentual (0 a 1, 6 casas) do valor das notas vinculadas (`TGFNCT` → `TGFCAB` pela chave NF-e) que é base de DIFAL: soma das notas das TOPs 201, 221, 224, 231 e 209 sobre o total. `0` se o total for zero.
+
+**Tabelas consultadas:** `TGFNCT`, `TGFCAB`  
+**Autoria:** Lucas Gabriel (ONTIME TECH), 04/08/2025 — apoio ao cálculo do DIFAL.
+
+> **Atenção:** o sufixo `SAPARK` parece erro de digitação de `SPARK`; renomear exigiria ajustar quem a chama.
+
+---
+
+### `FN_GET_ULTIMO_CUSTO_SPARK1`
+
+**Arquivo:** `FN_GET_ULTIMO_CUSTO_SPARK1.SQL`  
+**Tipo de retorno:** `NUMBER`  
+**Captura:** 08/10/2026 (via `DBMS_METADATA.GET_DDL`, cópia fiel da produção)
+
+**Assinatura:**
+```sql
+FN_GET_ULTIMO_CUSTO_SPARK1 ( P_CODPROD IN NUMBER, P_TIPO IN NUMBER, P_DATA IN DATE ) RETURN NUMBER
+```
+
+**Parâmetros:** `P_CODPROD` (produto), `P_TIPO` (componente do custo), `P_DATA` (data de referência).
+
+| `P_TIPO` | Retorno |
+|---|---|
+| `0` | Custo MP fiscal |
+| `1` | Custo MP real |
+| `2` | Mão de obra |
+| `3` | Valor ICMS |
+| `4` | Valor IPI |
+| `5` | Frete fixo |
+
+**Retorno:** Componente do último custo realizado da planilha de custos (`AD_TGSCIT` / `AD_TGSCUS`) com `DTREF <= P_DATA` e `CUSTOREL > 0`; `0` se não houver registro.
+
+**Tabelas consultadas:** `AD_TGSCIT`, `AD_TGSCUS`  
+**Autoria:** Lucas Gabriel (ONTIME TECH), 30/10/2025  
+**Uso:** Relatório `33 - ORÇAMENTO DE VENDA LUCAS` (`ORCAMENTO V04.jrxml`).
+
+---
+
+### `GET_ESTOQUE_KIT_PA_OVERSYSTEM`
+
+**Arquivo:** `GET_ESTOQUE_KIT_PA_OVERSYSTEM.SQL`  
+**Tipo de retorno:** `TYPE_TABLE_KIT`  
+**Captura:** 08/10/2026 (via `DBMS_METADATA.GET_DDL`, cópia fiel da produção)
+
+**Assinatura:**
+```sql
+GET_ESTOQUE_KIT_PA_OVERSYSTEM ( P_CODPROD IN INT,P_CODLOCAL IN INT ) RETURN TYPE_TABLE_KIT
+```
+
+**Retorno:** Pipelined (`TYPE_TABLE_KIT`): estoque disponível (`ESTOQUE - RESERVADO`, mínimo 0) do PA ou, quando é kit (variação 30000 em `TGFICP`), de cada matéria-prima componente. `P_CODLOCAL = 0` soma todos os locais.
+
+**Tabelas consultadas:** `TGFEST`, `TGFICP`
+
+> **Origem não confirmada:** o sufixo `OVERSYSTEM` sugere consultoria externa; criada em 02/2022. Nenhum objeto do repositório a referencia.
 
 ---
 

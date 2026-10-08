@@ -168,6 +168,10 @@ Agrupadas por domínio:
 | `FN_XMLTYPE_SAFE` | `(P_XML VARCHAR2) → XMLTYPE` | Converte string para XMLTYPE retornando NULL em caso de XML inválido (evita ORA-31011) |
 | `OBTEMCUSTO_SPARK` | `(P_CODPROD, P_POREMP, P_CODEMP, P_PORLOCAL, P_CODLOCAL, P_PORCONTROLE, P_CONTROLE, P_DATA, P_TIPO) → FLOAT` | Retorna o custo do produto por tipo (reposição, médio, variável, sem ICMS, etc.) |
 | `OBTEM_TOTAIS_MRP` | `(P_NUMPS, P_CODPRODPA, P_CODPRODMP, P_TIPO) → FLOAT` | Retorna totais do MRP: meta PA, produção PA, saldo a produzir, necessidade MP, estoque disponível |
+| `FC_GET_FATURAS` | `(P_NUNOTA) → VARCHAR2` | Concatena as parcelas dos títulos de uma nota (origem a confirmar) |
+| `FC_RATEIOFRETE_SAPARK` | `(P_NUNOTA) → NUMBER` | Percentual de base de DIFAL das notas vinculadas (ONTIME TECH) |
+| `FN_GET_ULTIMO_CUSTO_SPARK1` | `(P_CODPROD, P_TIPO, P_DATA) → NUMBER` | Último custo realizado da planilha de custos por componente (ONTIME TECH) |
+| `GET_ESTOQUE_KIT_PA_OVERSYSTEM` | `(P_CODPROD, P_CODLOCAL) → TYPE_TABLE_KIT` | Estoque disponível de PA/kit por componente (origem a confirmar) |
 
 ---
 
