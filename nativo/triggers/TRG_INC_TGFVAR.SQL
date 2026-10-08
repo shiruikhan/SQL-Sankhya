@@ -1,9 +1,16 @@
-create or replace TRIGGER TRG_INC_TGFVAR
+/*==============================================================================
+  Nome do Script : TRG_INC_TGFVAR
+  Tipo           : Trigger de origem Sankhya (lote de atualização do ERP de 03/07/2024 — referência)
+  Descrição      : Trigger BEFORE EACH ROW INSERT sobre TGFVAR.
+  Empresa        : Spark Eletrônica
+  Observações    : - Estado no banco: ENABLED; criada em 03/07/2024, última alteração em 21/09/2026.
+                   - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Capturado do banco em 08/10/2026 (recaptura em pedaços — DDL completo, conferido pelo tamanho), via GET_DDL('TRIGGER', 'TRG_INC_TGFVAR', 'SPARKPRD').
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_INC_TGFVAR" 
 BEFORE INSERT ON TGFVAR 
 FOR EACH ROW
-WHEN ((NEW.SEQUENCIA <> 0) AND (NEW.SEQUENCIAORIG <> 0) AND (NEW.QTDATENDIDA <> 0))
--- para nao validar abaixo (LIGACAO DE NOTA DEPOSITO COM QUEBRA TECNICA OS-293834)
-DECLARE
+ WHEN ((NEW.SEQUENCIA <> 0) AND (NEW.SEQUENCIAORIG <> 0) AND (NEW.QTDATENDIDA <> 0)) DECLARE
     P_COUNT             INT:= 0;
     P_CODPROD_O         INT;
     P_QTDRESTANTE       NUMERIC(15,6);
@@ -583,3 +590,5 @@ EXCEPTION
       RAISE_APPLICATION_ERROR(-20101, ERRMSG);
     END IF; 
 END;
+/
+ALTER TRIGGER "SPARKPRD"."TRG_INC_TGFVAR" ENABLE;

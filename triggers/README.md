@@ -206,7 +206,7 @@ Apontamento de conferência de notas importadas, criado direto na tela de
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
-| `TRG_INC_TGFITE.SQL` | `TRG_INC_TGFITE` | `TGFITE` | BEFORE INSERT | Trigger nativa do Sankhya (validação de agrupamento mínimo, lote, CFOP, IPI e estoque). O cabeçalho do arquivo cita customizações da Spark, mas elas ainda não foram delimitadas por diff contra a versão original — ver `nativo/triggers/README.md` |
+| `TRG_INC_TGFITE.SQL` | `TRG_INC_TGFITE` | `TGFITE` | BEFORE INSERT | Trigger nativa do Sankhya (validação de agrupamento mínimo, lote, CFOP, IPI e estoque). A única customização da Spark identificada era desligar a validação de lote obrigatório; a versão do banco (alterada em 21/09/2026) voltou a exigi-la — ver `nativo/triggers/README.md` |
 | `TRG_INC_TGFVAR.SQL` | `TRG_INC_TGFVAR` | `TGFVAR` | BEFORE INSERT | Trigger nativa do Sankhya (não customizada pela Spark) que processa a inclusão de "nota de variação" (atendimento/entrega parcial): valida a existência da nota de origem, atualiza `QTDENTREGUE`/`QTDFIXADA` em `TGFITE` para o item de origem e replica compromissos em `TGMTRA`. Documentada aqui após investigação de incidente (ver §15) — não fazia parte do catálogo até Set/2026 |
 
 ---

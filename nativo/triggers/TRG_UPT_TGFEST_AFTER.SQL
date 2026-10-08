@@ -1,0 +1,134 @@
+/*==============================================================================
+  Nome do Script : TRG_UPT_TGFEST_AFTER
+  Tipo           : Trigger de origem Sankhya (lote de atualização do ERP de 21/09/2026 — referência)
+  Descrição      : Trigger AFTER STATEMENT UPDATE sobre TGFEST.
+  Empresa        : Spark Eletrônica
+  Observações    : - Estado no banco: ENABLED; criada em 21/09/2026, última alteração em 21/09/2026.
+                   - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Capturado do banco em 08/10/2026 (recaptura em pedaços — DDL completo, conferido pelo tamanho), via GET_DDL('TRIGGER', 'TRG_UPT_TGFEST_AFTER', 'SPARKPRD').
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_UPT_TGFEST_AFTER" 
+AFTER  UPDATE  ON TGFEST
+DECLARE
+  P_VALEST                 TGFGRU.VALEST%TYPE;
+  P_CODEMP                 TGFEST.CODEMP%TYPE;
+  P_CODLOCAL               TGFEST.CODLOCAL%TYPE;
+  P_CONTROLE               TGFEST.CONTROLE%TYPE;  
+  P_CODPROD                TGFEST.CODPROD%TYPE;
+  P_QUANTEST               TGFEST.ESTOQUE%TYPE;
+  P_ESTOQUEOLD             TGFEST.ESTOQUE%TYPE;
+  P_ESTOQUENEW             TGFEST.ESTOQUE%TYPE;
+  ERROR                    EXCEPTION;
+  ERRMSG                   VARCHAR2(4000);
+  P_DIF                    FLOAT;
+  P_RESERVADONEW           TGFEST.RESERVADO%TYPE;
+  P_VALIDAR                BOOLEAN;
+  P_STATUSLOTE             CHAR(1);
+  P_CODPRODINNATURA        NUMBER(10);  
+  P_HABFLV                 CHAR(1);
+  P_FATURARESTWMS          CHAR(1);
+  P_UTILIZAWMS             INTEGER;
+  P_FATURANDOESTCONFERIDO  CHAR(1);
+  P_WMSBLOQUEADO           TGFEST.WMSBLOQUEADO%TYPE;
+  
+  CURSOR ESTOQUE IS
+    SELECT CODEMP, CODLOCAL, CONTROLE, CODPROD, ESTOQUEOLD, ESTOQUEOLDNEW, RESERVADONEW, STATUSLOTE, WMSBLOQUEADO FROM TGFEST_UPD;
+BEGIN
+  IF STP_GET_ATUALIZANDO THEN
+    RETURN;
+  END IF;
+
+  /* 
+  SINCRONIZACAO DE DADOS
+  */
+  P_VALIDAR := FPODEVALIDAR('TGFEST');
+  
+  VARIAVEIS_PKG.V_VALIDA_EST_RESERVAR := false;
+  
+  OPEN ESTOQUE;  
+  
+  DELETE FROM TGFEST_UPD;
+  LOOP
+    FETCH ESTOQUE INTO P_CODEMP, P_CODLOCAL, P_CONTROLE, P_CODPROD, P_ESTOQUEOLD, P_ESTOQUENEW, P_RESERVADONEW, P_STATUSLOTE, P_WMSBLOQUEADO;
+    EXIT WHEN ESTOQUE%NOTFOUND;
+  BEGIN
+    SELECT NVL(1, 0) INTO P_UTILIZAWMS
+      FROM DUAL
+     WHERE  EXISTS(SELECT 1
+                  FROM TGFEMP
+                 WHERE CODEMP = P_CODEMP AND UTILIZAWMS = 'S')
+           AND EXISTS
+                  (SELECT 1
+                     FROM TGFPRO
+                    WHERE CODPROD = P_CODPROD AND UTILIZAWMS = 'S');
+      
+  EXCEPTION WHEN NO_DATA_FOUND THEN
+      P_FATURARESTWMS := 'N'; 
+  END;
+
+    IF(P_UTILIZAWMS <> 0) THEN
+        P_FATURARESTWMS := VARIAVEIS_PKG.V_FATURARESTWMS;
+    END IF; 
+    P_FATURANDOESTCONFERIDO := NVL(VARIAVEIS_PKG.V_FATURANDOESTOQUECONFERIDO, 'N');
+    IF P_ESTOQUENEW < P_ESTOQUEOLD AND (ESTOQUE_PKG.V_TRANSF = 'N') AND (P_FATURARESTWMS = 'N') AND (P_FATURANDOESTCONFERIDO = 'N') THEN
+      SELECT GRU.VALEST, NVL(PRO.CODPRODINNATURA, 0) 
+      INTO P_VALEST, P_CODPRODINNATURA
+      FROM TGFPRO PRO, TGFGRU GRU
+      WHERE PRO.CODPROD = P_CODPROD
+      AND PRO.CODGRUPOPROD = GRU.CODGRUPOPROD;
+      IF P_VALEST IN ('G','S','E','L') THEN
+        P_HABFLV := 'N';
+        IF P_CODPRODINNATURA > 0 THEN
+          BEGIN
+            SELECT LOGICO INTO P_HABFLV
+            FROM TSIPAR 
+            WHERE CHAVE = 'HABFLV';
+          EXCEPTION WHEN NO_DATA_FOUND THEN
+            P_HABFLV := 'N';
+          END;
+        END IF;
+        IF (P_HABFLV = 'N') THEN  
+          STP_VALIDA_ESTOQUE40(P_CODEMP, P_CODLOCAL, P_CONTROLE, P_CODPROD, P_STATUSLOTE, NULL, P_QUANTEST, P_VALEST);
+          -- PRINT 'ACABOU DE VOLTAR DA STP.'
+          IF P_VALEST IN ('G','S','E','L') AND (P_QUANTEST < 0) THEN
+            P_DIF := P_QUANTEST + (P_ESTOQUEOLD - P_ESTOQUENEW);
+            ERRMSG := 'ESTOQUE INSUFICIENTE ! DISPONÍVEL: ' || P_DIF ||  ', PRODUTO: ' || P_CODPROD || ', EMPRESA : ' || P_CODEMP || ', LOCAL : ' || P_CODLOCAL || ' E CONTROLE : ' || P_CONTROLE;
+            RAISE ERROR;
+          END IF;
+        END IF;
+      END IF;
+    END IF;
+
+    IF (P_ESTOQUENEW = 0) AND (P_RESERVADONEW = 0) AND (NVL(P_WMSBLOQUEADO,0) = 0) THEN
+      DELETE FROM TGFEST
+      WHERE CODEMP = P_CODEMP
+      AND CODPROD = P_CODPROD
+      AND CONTROLE = P_CONTROLE
+      AND CODPARC = 0
+      AND CODLOCAL = P_CODLOCAL
+      AND ESTMIN = 0
+      AND ESTMAX = 0
+      AND NVL(WMSBLOQUEADO, 0) = 0
+      AND TRIM(CODBARRA) IS NULL
+      AND DTVAL IS NULL
+      AND NVL(PERCGERMIN, 0) = 0
+      AND NVL(PERCPUREZA, 0) = 0
+      AND DTFABRICACAO IS NULL;
+    END IF;
+  END LOOP;
+  CLOSE ESTOQUE;
+  RETURN;
+EXCEPTION
+  WHEN OTHERS THEN
+    /* 
+    SINCRONIZACAO DE DADOS NAO FAZ VALIDACOES
+    */
+     IF (P_VALIDAR) THEN
+       IF SQLCODE <> 1 THEN
+         ERRMSG := ERRMSG || '  ' || SQLERRM;
+       END IF;
+       RAISE_APPLICATION_ERROR(-20101, ERRMSG);       
+     END IF;
+END;
+/
+ALTER TRIGGER "SPARKPRD"."TRG_UPT_TGFEST_AFTER" ENABLE;

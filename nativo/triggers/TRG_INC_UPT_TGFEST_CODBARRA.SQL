@@ -1,10 +1,11 @@
 /*==============================================================================
   Nome do Script : TRG_INC_UPT_TGFEST_CODBARRA
-  Tipo           : Trigger Nativa Sankhya (instalação do ERP, 12/2021 — referência, não customizada)
+  Tipo           : Trigger Nativa Sankhya COM CUSTOMIZAÇÃO DA SPARK (instalação do ERP, 12/2021)
   Descrição      : Trigger BEFORE EACH ROW INSERT OR UPDATE sobre TGFEST.
   Empresa        : Spark Eletrônica
   Observações    : - Estado no banco: ENABLED; criada em 07/12/2021, última alteração em 03/07/2024.
                    - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Customização Spark (comentário "PERSONALIZADO SPARK" no fonte): a validação "Código de Barras REPETIDO no Cadastro de Código de Barras por produto" (TGFBAR) só vale para CODLOCAL <> 108 — a Spark precisa gerar código de barras da série para a conferência de produção. Reaplicar após upgrade se a trigger for sobrescrita.
                    - Capturado do banco em 08/10/2026, via: SELECT DBMS_METADATA.GET_DDL('TRIGGER', 'TRG_INC_UPT_TGFEST_CODBARRA', 'SPARKPRD') FROM dual;
 ==============================================================================*/
   CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_INC_UPT_TGFEST_CODBARRA" BEFORE

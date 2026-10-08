@@ -24,8 +24,8 @@ Cópia **de referência** do que é do fabricante: functions, packages, tabelas 
 | [`functions/`](functions/README.md) | 348 (153 `SNK_*` + 195 outras) | 17–18/09/2026 (`SNK_*`) e 08/10/2026 (demais) | `functions/README.md` | Cabeçalho padronizado em cada arquivo, com assinatura e data de captura |
 | [`packages/`](packages/README.md) | 20 | 08/10/2026 | `packages/README.md` | **Só especificação** — o banco não tem `PACKAGE BODY`; funcionam como repositório de variáveis de sessão |
 | [`tables/`](tables/README.md) | 53 | 18/09/2026 | `tables/README.md` | DDL cru do `GET_DDL`, sem cabeçalho; selecionadas por frequência de uso no repositório |
-| [`procedures/`](procedures/README.md) | 6 | 08/10/2026 | `procedures/README.md` | Só as citadas por triggers nativas e pela Spark; as ~200 procedures de 12/2021 não foram capturadas |
-| [`triggers/`](triggers/README.md) | 94 (92 do lote 1 + 2 antigas) + 57 pendentes | 08/10/2026 (lote 1); 2 antigas sem data | `triggers/README.md` | Triggers das tabelas que a Spark customiza (`TGFCAB`, `TGFITE`, `TGFFIN`, `TGFPRO` …), com estado `ENABLED`/`DISABLED`. As 57 pendentes vieram truncadas em 4000 caracteres e aguardam `scripts/CAPTURA_DDL_NATIVOS_LOTE1B.SQL` |
+| [`procedures/`](procedures/README.md) | 21 | 08/10/2026 | `procedures/README.md` | Só as chamadas por triggers nativas capturadas e pela Spark (fechamento de dependência); as ~200 procedures de 12/2021 restantes não foram capturadas |
+| [`triggers/`](triggers/README.md) | 149 | 08/10/2026 | `triggers/README.md` | Triggers das tabelas que a Spark customiza (`TGFCAB`, `TGFITE`, `TGFFIN`, `TGFPRO` …), com estado `ENABLED`/`DISABLED` — 57 delas recapturadas em pedaços por terem vindo truncadas em 4000 caracteres |
 | `libs/` | 364 JARs | — | — | Local, fora do git |
 
 O inventário arquivo a arquivo (tipo, objeto, arquivo, data de captura, nº de linhas) está em [`MANIFESTO.csv`](MANIFESTO.csv). Para regenerar depois de adicionar ou recapturar arquivos:
@@ -53,12 +53,24 @@ A data vem da linha `Capturado do banco em dd/mm/aaaa` do cabeçalho de cada arq
 4. `python nativo/GERA_MANIFESTO.py`, ajustar os `README.md` das subpastas e commitar com a versão do ERP na mensagem.
 5. Antes de qualquer `CREATE OR REPLACE` numa trigger nativa, conferir `STATUS` em `USER_TRIGGERS` — o Oracle sempre recria como `ENABLED` (ver `triggers/README.md` §15 da raiz).
 
+## Customizações da Spark em objetos nativos
+
+Pontos em que o código do fabricante foi alterado pela Spark e que **podem ser desfeitos por um upgrade** — reaplicar/conferir depois de cada atualização. Levantamento por leitura do código (marcas `PERSONALIZADO SPARK` e comparação com cópia local), em 08/10/2026:
+
+| Objeto | O que a Spark alterou | Situação |
+|---|---|---|
+| [`triggers/TRG_INC_TGFITE`](triggers/TRG_INC_TGFITE.SQL) | Desligou a validação de **lote obrigatório** (`TIPCONTEST = 'L'`) na inclusão de item | **Perdida**: a versão do banco (alterada em 21/09/2026) voltou a exigir lote. Impacto a confirmar — ver `triggers/README.md` |
+| [`procedures/STP_VALIDA_ESTOQUE40`](procedures/STP_VALIDA_ESTOQUE40.SQL) | No ramo `VALEST = 'G'` (estoque geral) **não desconta a reserva** (`E.RESERVADO` comentado) — "não considerar a reserva no faturar F2" (Dione/João/Danilo, 03/02/2022) | Presente no banco (procedure alterada em 29/05/2026) |
+| [`triggers/TRG_INC_UPT_TGFEST_CODBARRA`](triggers/TRG_INC_UPT_TGFEST_CODBARRA.SQL) | A crítica "código de barras repetido no cadastro de códigos de barras (`TGFBAR`)" **só vale para `CODLOCAL <> 108`** — a Spark gera código de barras da série para a conferência de produção | Presente no banco (trigger alterada em 03/07/2024) |
+
+Há outras marcas no material nativo que **não são da Spark** (ex.: `SNK_GET_PRECO`: "tem personalizações para o COCAL" — outro cliente; comentários "Manoel OS …" são chamados da Sankhya).
+
 ## Cobertura — o que ainda não foi capturado
 
 | Tipo | Situação |
 |---|---|
-| Triggers nativas | Capturadas as das tabelas que a Spark customiza (lote 1, 08/10/2026), exceto 57 truncadas pendentes de recaptura. Tabelas cujas triggers já estão todas no repositório da Spark (`TPRCOI`, `TGFCON2`, `TPRSERPA`, `TGFCOI2` …) não geraram captura nativa |
-| Procedures nativas (`STP_*`) | Só 6 (as citadas). As ~200 de 12/2021 não foram capturadas; capturar por fechamento de dependência — procedures chamadas pelo código das triggers já capturadas — quando as 57 pendentes chegarem |
+| Triggers nativas | Capturadas as das tabelas que a Spark customiza (lote 1, 08/10/2026), todas completas. Tabelas cujas triggers já estão todas no repositório da Spark (`TPRCOI`, `TGFCON2`, `TPRSERPA`, `TGFCOI2` …) não geraram captura nativa |
+| Procedures nativas (`STP_*`) | 21 capturadas (as chamadas pelo código das triggers nativas e pela Spark). Falta `STP_END_ICMS` (chamada por `SNK_ORIGEM_DESTINO_ENTREGA`); as ~200 de 12/2021 restantes não foram capturadas. `GET_PARAMETRO_INT/TXT` não existem como objeto — são funções locais declaradas dentro das triggers `TRG_TGFFIN_TIM_BAIXA_*` |
 | Views nativas (`VGF*`) | Não capturadas (673 no banco; a maioria é do fabricante, ex.: `VRI_*`/`VFP_*`). `VGFSERIES`, que parecia nativa, é da Spark e foi para `view/` |
 | Types / sequences | Não capturados |
 | Dicionário de dados (`TDDCAM`, `TDDOPC`, parâmetros de `TSIPAR`) | Em análise |
@@ -66,9 +78,8 @@ A data vem da linha `Capturado do banco em dd/mm/aaaa` do cabeçalho de cada arq
 
 ## Pendências conhecidas
 
-- `TRG_INC_TGFITE`: delimitar o que é customização da Spark (ver `triggers/README.md`). A versão do banco foi criada em 12/01/2026 e alterada em 21/09/2026; a cópia local é anterior e foi reformatada — comparar após a recaptura (lote 1B).
-- **Recapturar as 57 triggers truncadas** (`scripts/CAPTURA_DDL_NATIVOS_LOTE1B.SQL`).
-- **Provável upgrade do ERP em 21/09/2026** (196 objetos alterados no mesmo dia): functions `SNK_*` e tabelas capturadas em 18/09/2026 podem estar defasadas — listar por `LAST_DDL_TIME` e recapturar o que mudou.
+- **`TRG_INC_TGFITE`: validação de lote obrigatória voltou a valer no banco** (a cópia antiga a tinha comentada — provável customização perdida no upgrade de 21/09/2026). Confirmar impacto e decidir se reaplica; ver `triggers/README.md` desta pasta.
+- **Provável upgrade do ERP em 21/09/2026** (196 objetos alterados no mesmo dia). Cruzando o inventário com o manifesto, 17 objetos já capturados mudaram depois da captura: 2 functions (`SNK_GETLIB_CODEMP`, `SNK_GET_NUFIN`) e 15 tabelas (`TGFCAB`, `TGFITE`, `TGFFIN`, `TGFPRO` …; parte pode ser campo `AD_*` criado pela Spark). Recaptura em `scripts/CAPTURA_DDL_NATIVOS_LOTE3.SQL`; o `git diff` separa o que é do fabricante.
 - `SOMA_DIA_UTIL` e `GET_LOCAL_ORIGEM`: origem incerta (hoje catalogadas como nativas) — confirmar.
 - Registrar a **versão do Sankhya** vigente nas capturas (hoje não consta em nenhum arquivo).
 - Data de captura das 2 triggers.

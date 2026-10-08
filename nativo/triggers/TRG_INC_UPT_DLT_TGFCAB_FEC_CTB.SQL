@@ -1,0 +1,479 @@
+/*==============================================================================
+  Nome do Script : TRG_INC_UPT_DLT_TGFCAB_FEC_CTB
+  Tipo           : Trigger de origem Sankhya (lote de atualização do ERP de 21/09/2026 — referência)
+  Descrição      : Trigger BEFORE EACH ROW INSERT OR UPDATE OR DELETE sobre TGFCAB.
+  Empresa        : Spark Eletrônica
+  Observações    : - Estado no banco: ENABLED; criada em 21/09/2026, última alteração em 21/09/2026.
+                   - Objeto do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - Capturado do banco em 08/10/2026 (recaptura em pedaços — DDL completo, conferido pelo tamanho), via GET_DDL('TRIGGER', 'TRG_INC_UPT_DLT_TGFCAB_FEC_CTB', 'SPARKPRD').
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE TRIGGER "SPARKPRD"."TRG_INC_UPT_DLT_TGFCAB_FEC_CTB" 
+BEFORE INSERT OR UPDATE OR DELETE ON TGFCAB
+FOR EACH ROW
+DECLARE
+    ERRMSG	VARCHAR2(4000);
+    ERROR	EXCEPTION;
+    P_TIPO_ITEM	CHAR(1);
+    P_DATA	DATE;
+    P_CODEMP	NUMBER;
+    P_TIPOACAO	CHAR(1);
+    P_NUCHAVE	NUMBER;
+    P_CODTIPOPER	NUMBER;
+    P_DHTIPOPER	DATE;
+    P_NOTA_LIBERADA	CHAR(1);
+    P_IS_CALC_CUSTO	CHAR(1);
+
+    P_STATUS_NOTA_LIBERADA CHAR(1) := 'L';
+    P_SIM CHAR(1) := 'S';    
+    P_MOVIMENTACAO_ESTOQUE CHAR(2) := '01';
+    P_MOVIMENTACAO_CUSTO_NOTA CHAR(2) := '02';
+
+    P_TIPO_ITEM_ESTOQUE_ENTRADA CHAR(1) := 'E';
+    P_TIPO_ITEM_ESTOQUE_SAIDA CHAR(1) := 'S';
+    P_TIPO_ITEM_ESTOQUE_SEM_TIPO CHAR(1) := 'N';
+    P_TIPO_ACAO_INCLUSAO CHAR(1) := 'I';
+    P_TIPO_ACAO_ALTERACAO CHAR(1) := 'A';
+    P_TIPO_ACAO_DELECAO CHAR(1) := 'D';
+    P_TIPO_ACAO_MSG	VARCHAR(40);
+	
+BEGIN
+    IF STP_GET_ATUALIZANDO THEN 
+      RETURN;
+    END IF;
+
+	IF NOT STP_GET_UTILIZAFECHACTB() THEN
+      RETURN;
+	END IF;
+   
+/**
+ * Campos que não serão bloqueados
+ * SITUACAOCTE, SITUACAOWMS, ORDEMCARGA, CODVEICULO, CODMOTORISTA, CODOBSPADRAO, OBSERVACAO, OBSERVACAOAC, VOLUME, PENDENTE,DTALTER, CODUSU, CODUSUINC
+ * Campos Adicionais 'AD_' 
+ *  
+ */
+
+  IF DELETING THEN
+    P_CODTIPOPER := :OLD.CODTIPOPER;
+    P_DHTIPOPER := :OLD.DHTIPOPER;
+    P_TIPOACAO := P_TIPO_ACAO_DELECAO;
+    P_CODEMP := :OLD.CODEMP;
+    P_NUCHAVE := :OLD.NUNOTA;
+    P_DATA := NVL(:OLD.DTENTSAIINFO, NVL(:OLD.DTENTSAI, :OLD.DTNEG));
+    P_TIPO_ACAO_MSG := '(Deleção)';
+    
+    IF :OLD.STATUSNOTA = P_STATUS_NOTA_LIBERADA THEN 
+    
+      P_NOTA_LIBERADA := P_SIM;
+    END IF;
+  ELSE
+
+    P_CODTIPOPER := :NEW.CODTIPOPER;
+    P_DHTIPOPER := :NEW.DHTIPOPER;
+    P_DATA := NVL(:NEW.DTENTSAIINFO, NVL(:NEW.DTENTSAI, :NEW.DTNEG));
+    P_CODEMP := :NEW.CODEMP;
+    P_NUCHAVE := :NEW.NUNOTA;
+    P_TIPO_ACAO_MSG := '(Inserção)';
+
+    IF :NEW.STATUSNOTA = P_STATUS_NOTA_LIBERADA THEN 
+
+      P_NOTA_LIBERADA := P_SIM;
+    END IF;
+    P_TIPOACAO := P_TIPO_ACAO_INCLUSAO;
+  END IF;
+
+  IF P_NOTA_LIBERADA = P_SIM THEN 
+    BEGIN
+      SELECT  CASE WHEN (TPO.ATUALFIN = -1        -- Financeiro = Despesa
+				    OR (TPO.ATUALFIN = 0 AND (TPO.TIPMOV = 'L' OR TPO.ATUALEST = 'E' OR TPO.ATUALESTMP = 1))) -- Devolução de Requisição
+                  AND (TPO.TIPATUALFIN = 'I'     -- Atualização do Financeiro = Incluir
+                    OR TPO.ATUALEST = 'E'         -- Atualização do Estoque = Entrar 
+                    OR TPO.ATUALESTMP = 1        -- Atualização do Estoque MP = Entrar
+                    OR TPO.ATUALBEM <> 'N'        -- Atualização do Bem <> Não atualiza
+                    OR TPO.ATUALCOM <> 'N'        -- Comissão <> Não atualiza
+                    OR TPO.ATUALCTB = 'S'        -- Atualiza Contabilidade = 'Sim'
+                    OR TPO.ATUALLIVFIS IN ('E', 'A')     -- Atualização de Livro ICMS  = Livro de Entrada
+                    OR TPO.ATUALLIVISS = 'E'    -- Atualização livros de ISS = Aquisição
+                    OR TPO.ATUALESTTERC <> 'N') THEN P_TIPO_ITEM_ESTOQUE_ENTRADA 
+               WHEN (TPO.ATUALFIN = 1        -- Financeiro = Receita
+					OR (TPO.ATUALFIN = 0 AND (TPO.TIPMOV = 'Q' OR TPO.ATUALEST = 'B' OR TPO.ATUALESTMP = -1))) -- Requisição
+                    AND (TPO.TIPATUALFIN = 'I'     -- Atualização do Financeiro = Incluir
+                    OR TPO.ATUALEST = 'B'         -- Atualização do Estoque = Baixar 
+                    OR TPO.ATUALESTMP = -1        -- Atualização do Estoque MP = Baixar
+                    OR TPO.ATUALBEM <> 'N'        -- Atualização do Bem <> Não atualiza
+                    OR TPO.ATUALCOM <> 'N'        -- Comissão <> Não atualiza
+                    OR TPO.ATUALCTB = 'S'        -- Atualiza Contabilidade = 'Sim'
+                    OR TPO.ATUALLIVFIS IN ('S', 'A')     -- Atualização de Livro ICMS  = Livro de Saída
+                    OR TPO.ATUALLIVISS = 'S'    -- Atualização livros de ISS = Prestação
+                    OR TPO.ATUALESTTERC <> 'N'    -- Estoque com/de Terceiros <> Não controla
+                    OR TPO.NFE = 'N'            -- NFE = Normal
+                    OR TPO.NFSE = 'N') THEN P_TIPO_ITEM_ESTOQUE_SAIDA
+               ELSE 'N' END,
+               CASE WHEN TPO.PRECIFICA <> 'N' THEN 'S'
+               ELSE 'N' END AS IS_CALC_CUSTO
+               INTO P_TIPO_ITEM, P_IS_CALC_CUSTO
+      FROM TGFTOP TPO 
+      WHERE TPO.CODTIPOPER = P_CODTIPOPER
+      AND TPO.DHALTER = P_DHTIPOPER
+      ;
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+          P_TIPO_ITEM := P_TIPO_ITEM_ESTOQUE_SEM_TIPO;
+    END;
+    
+    IF P_TIPO_ITEM = P_TIPO_ITEM_ESTOQUE_SAIDA THEN
+      IF DELETING THEN   
+          P_DATA := NVL(:OLD.DTENTSAIINFO, :OLD.DTNEG);            
+        ELSE 
+          P_DATA := NVL(:NEW.DTENTSAIINFO, :NEW.DTNEG);
+        END IF;
+    END IF;
+
+    IF P_TIPO_ITEM <> P_TIPO_ITEM_ESTOQUE_SEM_TIPO THEN 
+
+        IF UPDATING THEN
+            IF (:OLD.NUNOTA <> :NEW.NUNOTA
+            OR :OLD.CODEMP <> :NEW.CODEMP
+            OR :OLD.CODCENCUS <> :NEW.CODCENCUS
+            OR :OLD.NUMNOTA <> :NEW.NUMNOTA
+            OR NVL(:OLD.SERIENOTA, ' ') <> NVL(:NEW.SERIENOTA, ' ')
+            OR :OLD.DTNEG <> :NEW.DTNEG
+            OR NVL(:OLD.DTFATUR, SYSDATE) <> NVL(:NEW.DTFATUR, SYSDATE)
+            OR NVL(:OLD.DTENTSAI, SYSDATE) <> NVL(:NEW.DTENTSAI, SYSDATE)
+            OR NVL(:OLD.DTVAL, SYSDATE) <> NVL(:NEW.DTVAL, SYSDATE)
+            OR NVL(:OLD.DTMOV, SYSDATE) <> NVL(:NEW.DTMOV, SYSDATE)
+            OR NVL(:OLD.DTCONTAB, SYSDATE) <> NVL(:NEW.DTCONTAB, SYSDATE)
+            OR NVL(:OLD.HRMOV, 0) <> NVL(:NEW.HRMOV, 0)
+            OR :OLD.CODEMPNEGOC <> :NEW.CODEMPNEGOC
+            OR :OLD.CODPARC <> :NEW.CODPARC
+            OR NVL(:OLD.CODCONTATO, 0) <> NVL(:NEW.CODCONTATO, 0)
+            OR :OLD.RATEADO <> :NEW.RATEADO
+            OR :OLD.CODTIPOPER <> :NEW.CODTIPOPER
+            OR :OLD.DHTIPOPER <> :NEW.DHTIPOPER
+            OR :OLD.TIPMOV <> :NEW.TIPMOV
+            OR :OLD.CODTIPVENDA <> :NEW.CODTIPVENDA
+            OR :OLD.DHTIPVENDA <> :NEW.DHTIPVENDA
+            OR NVL(:OLD.NUMCOTACAO, 0) <> NVL(:NEW.NUMCOTACAO, 0)
+            OR :OLD.CODVEND <> :NEW.CODVEND
+            OR :OLD.COMISSAO <> :NEW.COMISSAO
+            OR :OLD.CODMOEDA <> :NEW.CODMOEDA
+            OR :OLD.VLRSEG <> :NEW.VLRSEG
+            OR :OLD.VLRICMSSEG <> :NEW.VLRICMSSEG
+            OR :OLD.VLRDESTAQUE <> :NEW.VLRDESTAQUE
+            OR :OLD.VLRJURO <> :NEW.VLRJURO
+            OR :OLD.VLRVENDOR <> :NEW.VLRVENDOR
+            OR :OLD.VLROUTROS <> :NEW.VLROUTROS
+            OR :OLD.VLREMB <> :NEW.VLREMB
+            OR :OLD.VLRICMSEMB <> :NEW.VLRICMSEMB
+            OR :OLD.VLRDESCSERV <> :NEW.VLRDESCSERV
+            OR :OLD.IPIEMB <> :NEW.IPIEMB
+            OR :OLD.TIPIPIEMB <> :NEW.TIPIPIEMB
+            OR :OLD.VLRDESCTOT <> :NEW.VLRDESCTOT
+            OR :OLD.VLRDESCTOTITEM <> :NEW.VLRDESCTOTITEM
+            OR :OLD.VLRFRETE <> :NEW.VLRFRETE
+            OR :OLD.ICMSFRETE <> :NEW.ICMSFRETE
+            OR :OLD.BASEICMSFRETE <> :NEW.BASEICMSFRETE
+            OR :OLD.TIPFRETE <> :NEW.TIPFRETE
+            OR NVL(:OLD.CIF_FOB, ' ') <> NVL(:NEW.CIF_FOB, ' ')
+            OR NVL(:OLD.VENCFRETE, SYSDATE) <> NVL(:NEW.VENCFRETE, SYSDATE)
+            OR :OLD.VLRNOTA <> :NEW.VLRNOTA
+            OR NVL(:OLD.VENCIPI, SYSDATE) <> NVL(:NEW.VENCIPI, SYSDATE)
+            OR NVL(:OLD.SEQCARGA, 0) <> NVL(:NEW.SEQCARGA, 0)
+            OR NVL(:OLD.KMVEICULO, 0) <> NVL(:NEW.KMVEICULO, 0)
+            OR :OLD.CODPARCTRANSP <> :NEW.CODPARCTRANSP
+            OR :OLD.QTDVOL <> :NEW.QTDVOL
+            OR :OLD.BASEICMS <> :NEW.BASEICMS
+            OR :OLD.VLRICMS <> :NEW.VLRICMS
+            OR :OLD.BASEIPI <> :NEW.BASEIPI
+            OR :OLD.VLRIPI <> :NEW.VLRIPI
+            OR :OLD.ISSRETIDO <> :NEW.ISSRETIDO
+            OR :OLD.BASEISS <> :NEW.BASEISS
+            OR :OLD.VLRISS <> :NEW.VLRISS
+            OR :OLD.APROVADO <> :NEW.APROVADO
+            OR :OLD.STATUSNOTA <> :NEW.STATUSNOTA
+            OR :OLD.IRFRETIDO <> :NEW.IRFRETIDO
+            OR NVL(:OLD.COMGER, 0) <> NVL(:NEW.COMGER, 0)
+            OR :OLD.VLRIRF <> :NEW.VLRIRF
+            OR :OLD.CODPARCDEST <> :NEW.CODPARCDEST
+            OR :OLD.VLRSUBST <> :NEW.VLRSUBST
+            OR :OLD.BASESUBSTIT <> :NEW.BASESUBSTIT
+            OR :OLD.CODPROJ <> :NEW.CODPROJ
+            OR :OLD.NUMCONTRATO <> :NEW.NUMCONTRATO
+            OR :OLD.BASEINSS <> :NEW.BASEINSS
+            OR :OLD.VLRINSS <> :NEW.VLRINSS
+            OR :OLD.VLRREPREDTOT <> :NEW.VLRREPREDTOT
+            OR :OLD.PERCDESC <> :NEW.PERCDESC
+            OR :OLD.CODPARCREMETENTE <> :NEW.CODPARCREMETENTE
+            OR :OLD.CODPARCCONSIGNATARIO <> :NEW.CODPARCCONSIGNATARIO
+            OR :OLD.CODPARCREDESPACHO <> :NEW.CODPARCREDESPACHO
+            OR NVL(:OLD.LOCALCOLETA, ' ') <> NVL(:NEW.LOCALCOLETA, ' ')
+            OR NVL(:OLD.LOCALENTREGA, ' ') <> NVL(:NEW.LOCALENTREGA, ' ')
+            OR NVL(:OLD.VLRMERCADORIA, 0) <> NVL(:NEW.VLRMERCADORIA, 0)
+            OR NVL(:OLD.PESO, 0) <> NVL(:NEW.PESO, 0)
+            OR NVL(:OLD.NOTASCF, ' ') <> NVL(:NEW.NOTASCF, ' ')
+            OR :OLD.CODNAT <> :NEW.CODNAT
+            OR NVL(:OLD.CODMAQ, 0) <> NVL(:NEW.CODMAQ, 0)
+            OR NVL(:OLD.CODFUNC, 0) <> NVL(:NEW.CODFUNC, 0)
+            OR NVL(:OLD.NUMOS, 0) <> NVL(:NEW.NUMOS, 0)
+            OR NVL(:OLD.NUMCF, 0) <> NVL(:NEW.NUMCF, 0)
+            OR NVL(:OLD.VLRFRETECPL, 0) <> NVL(:NEW.VLRFRETECPL, 0)
+            OR :OLD.TROCO <> :NEW.TROCO
+            OR NVL(:OLD.NROREDZ, 0) <> NVL(:NEW.NROREDZ, 0)
+            OR NVL(:OLD.VLRMOEDA, 0) <> NVL(:NEW.VLRMOEDA, 0)
+            OR NVL(:OLD.OCCN48, 0) <> NVL(:NEW.OCCN48, 0)
+            OR NVL(:OLD.NUTRANSF, 0) <> NVL(:NEW.NUTRANSF, 0)
+            OR NVL(:OLD.CODSITE, 0) <> NVL(:NEW.CODSITE, 0)
+            OR NVL(:OLD.TOTALCUSTOPROD, 0) <> NVL(:NEW.TOTALCUSTOPROD, 0)
+            OR NVL(:OLD.TOTALCUSTOSERV, 0) <> NVL(:NEW.TOTALCUSTOSERV, 0)
+            OR NVL(:OLD.CODCID, 0) <> NVL(:NEW.CODCID, 0)
+            OR NVL(:OLD.BASESUBSTSEMRED, 0) <> NVL(:NEW.BASESUBSTSEMRED, 0)
+            OR NVL(:OLD.NURD8, 0) <> NVL(:NEW.NURD8, 0)
+            OR :OLD.CODUSUCOMPRADOR <> :NEW.CODUSUCOMPRADOR
+            OR NVL(:OLD.NATUREZAOPERDES, ' ') <> NVL(:NEW.NATUREZAOPERDES, ' ')
+            OR NVL(:OLD.SERIENFDES, ' ') <> NVL(:NEW.SERIENFDES, ' ')
+            OR NVL(:OLD.MODELONFDES, ' ') <> NVL(:NEW.MODELONFDES, ' ')
+            OR NVL(:OLD.DTPREVENT, SYSDATE) <> NVL(:NEW.DTPREVENT, SYSDATE)
+            OR NVL(:OLD.NUNOTAPEDFRET, 0) <> NVL(:NEW.NUNOTAPEDFRET, 0)
+            OR NVL(:OLD.BASEIRF, 0) <> NVL(:NEW.BASEIRF, 0)
+            OR NVL(:OLD.ALIQIRF, 0) <> NVL(:NEW.ALIQIRF, 0)
+            OR NVL(:OLD.PLACA, ' ') <> NVL(:NEW.PLACA, ' ')
+            OR NVL(:OLD.UFVEICULO, 0) <> NVL(:NEW.UFVEICULO, 0)
+            OR NVL(:OLD.PESOBRUTO, 0) <> NVL(:NEW.PESOBRUTO, 0)
+            OR NVL(:OLD.HRENTSAI, SYSDATE) <> NVL(:NEW.HRENTSAI, SYSDATE)
+            OR NVL(:OLD.ANTT, ' ') <> NVL(:NEW.ANTT, ' ')
+            OR NVL(:OLD.LACRES, ' ') <> NVL(:NEW.LACRES, ' ')
+            OR NVL(:OLD.DANFE, 0) <> NVL(:NEW.DANFE, 0)
+            OR NVL(:OLD.CHAVENFE, ' ') <> NVL(:NEW.CHAVENFE, ' ')
+            OR NVL(:OLD.NUMERACAOVOLUMES, ' ') <> NVL(:NEW.NUMERACAOVOLUMES, ' ')
+            OR NVL(:OLD.DTENVIOPMB, SYSDATE) <> NVL(:NEW.DTENVIOPMB, SYSDATE)
+            OR NVL(:OLD.TIPNOTAPMB, ' ') <> NVL(:NEW.TIPNOTAPMB, ' ')
+            OR NVL(:OLD.NUMALEATORIO, 0) <> NVL(:NEW.NUMALEATORIO, 0)
+            OR NVL(:OLD.NUMPROTOC, ' ') <> NVL(:NEW.NUMPROTOC, ' ')
+            OR NVL(:OLD.DHPROTOC, SYSDATE) <> NVL(:NEW.DHPROTOC, SYSDATE)
+            OR NVL(:OLD.DTENVSUF, SYSDATE) <> NVL(:NEW.DTENVSUF, SYSDATE)
+            OR NVL(:OLD.NULOTENFE, 0) <> NVL(:NEW.NULOTENFE, 0)
+            OR NVL(:OLD.STATUSNFE, ' ') <> NVL(:NEW.STATUSNFE, ' ')
+            OR NVL(:OLD.TPEMISNFE, 0) <> NVL(:NEW.TPEMISNFE, 0)
+            OR NVL(:OLD.DTADIAM, SYSDATE) <> NVL(:NEW.DTADIAM, SYSDATE)
+            OR NVL(:OLD.HRADIAM, 0) <> NVL(:NEW.HRADIAM, 0)
+            OR NVL(:OLD.CODDOCA, 0) <> NVL(:NEW.CODDOCA, 0)
+            OR NVL(:OLD.DIGITAL, ' ') <> NVL(:NEW.DIGITAL, ' ')
+            OR NVL(:OLD.TOTDISPDESC, 0) <> NVL(:NEW.TOTDISPDESC, 0)
+            OR NVL(:OLD.BASEPIS, 0) <> NVL(:NEW.BASEPIS, 0)
+            OR NVL(:OLD.VLRPIS, 0) <> NVL(:NEW.VLRPIS, 0)
+            OR NVL(:OLD.BASEPISST, 0) <> NVL(:NEW.BASEPISST, 0)
+            OR NVL(:OLD.VLRPISST, 0) <> NVL(:NEW.VLRPISST, 0)
+            OR NVL(:OLD.BASECOFINS, 0) <> NVL(:NEW.BASECOFINS, 0)
+            OR NVL(:OLD.VLRCOFINS, 0) <> NVL(:NEW.VLRCOFINS, 0)
+            OR NVL(:OLD.BASECOFINSST, 0) <> NVL(:NEW.BASECOFINSST, 0)
+            OR NVL(:OLD.VLRCOFINSST, 0) <> NVL(:NEW.VLRCOFINSST, 0)
+            OR NVL(:OLD.VLRROYALT, 0) <> NVL(:NEW.VLRROYALT, 0)
+            OR NVL(:OLD.NROCAIXA, 0) <> NVL(:NEW.NROCAIXA, 0)
+            OR NVL(:OLD.NUMREGDPEC, ' ') <> NVL(:NEW.NUMREGDPEC, ' ')
+            OR NVL(:OLD.DHREGDPEC, SYSDATE) <> NVL(:NEW.DHREGDPEC, SYSDATE)
+            OR NVL(:OLD.CODEMPFUNC, 0) <> NVL(:NEW.CODEMPFUNC, 0)
+            OR NVL(:OLD.VLRINDENIZ, 0) <> NVL(:NEW.VLRINDENIZ, 0)
+            OR NVL(:OLD.MARCA, ' ') <> NVL(:NEW.MARCA, ' ')
+            OR NVL(:OLD.TIPOPTAGJNFE, 0) <> NVL(:NEW.TIPOPTAGJNFE, 0)
+            OR NVL(:OLD.TPEMISNFSE, 0) <> NVL(:NEW.TPEMISNFSE, 0)
+            OR NVL(:OLD.NULOTENFSE, 0) <> NVL(:NEW.NULOTENFSE, 0)
+            OR NVL(:OLD.NUMNFSE, ' ') <> NVL(:NEW.NUMNFSE, ' ')
+            OR NVL(:OLD.STATUSNFSE, ' ') <> NVL(:NEW.STATUSNFSE, ' ')
+            OR NVL(:OLD.UFEMBARQ, ' ') <> NVL(:NEW.UFEMBARQ, ' ')
+            OR NVL(:OLD.LOCEMBARQ, ' ') <> NVL(:NEW.LOCEMBARQ, ' ')
+            OR NVL(:OLD.TPLIGACAO, 0) <> NVL(:NEW.TPLIGACAO, 0)
+            OR NVL(:OLD.CODGRUPOTENSAO, ' ') <> NVL(:NEW.CODGRUPOTENSAO, ' ')
+            OR NVL(:OLD.TPASSINANTE, 0) <> NVL(:NEW.TPASSINANTE, 0)
+            OR NVL(:OLD.AGRUPBOL, ' ') <> NVL(:NEW.AGRUPBOL, ' ')
+            OR NVL(:OLD.NUREM, 0) <> NVL(:NEW.NUREM, 0)
+            OR NVL(:OLD.RETDATACRITICA, ' ') <> NVL(:NEW.RETDATACRITICA, ' ')
+            OR NVL(:OLD.QTDBATIDAS, 0) <> NVL(:NEW.QTDBATIDAS, 0)
+            OR NVL(:OLD.PERCPUREZA, 0) <> NVL(:NEW.PERCPUREZA, 0)
+            OR NVL(:OLD.PERCGERMIN, 0) <> NVL(:NEW.PERCGERMIN, 0)
+            OR NVL(:OLD.FRETEVLRBRUTO, 0) <> NVL(:NEW.FRETEVLRBRUTO, 0)
+            OR NVL(:OLD.FRETEVLRDESC, 0) <> NVL(:NEW.FRETEVLRDESC, 0)
+            OR NVL(:OLD.FRETEPERCDESC, 0) <> NVL(:NEW.FRETEPERCDESC, 0)
+            OR NVL(:OLD.FRETEVLRIMP, 0) <> NVL(:NEW.FRETEVLRIMP, 0)
+            OR NVL(:OLD.FRETEVLRJUR, 0) <> NVL(:NEW.FRETEVLRJUR, 0)
+            OR NVL(:OLD.FRETEVLRPAGO, 0) <> NVL(:NEW.FRETEVLRPAGO, 0)
+            OR NVL(:OLD.CODVENDTEC, 0) <> NVL(:NEW.CODVENDTEC, 0)
+            OR NVL(:OLD.NUMPEDIDO, 0) <> NVL(:NEW.NUMPEDIDO, 0)
+            OR NVL(:OLD.VLRINDENIZDIST, 0) <> NVL(:NEW.VLRINDENIZDIST, 0)
+            OR NVL(:OLD.CODAGENDA, 0) <> NVL(:NEW.CODAGENDA, 0)
+            OR NVL(:OLD.DTREF, SYSDATE) <> NVL(:NEW.DTREF, SYSDATE)
+            OR NVL(:OLD.FRETEVLRNEGOC, 0) <> NVL(:NEW.FRETEVLRNEGOC, 0)
+            OR NVL(:OLD.CODPRODPERMUTA, 0) <> NVL(:NEW.CODPRODPERMUTA, 0)
+            OR NVL(:OLD.NROGAR, 0) <> NVL(:NEW.NROGAR, 0)
+            OR NVL(:OLD.MD5PAF, ' ') <> NVL(:NEW.MD5PAF, ' ')
+            OR NVL(:OLD.CODMODDOCNOTA, 0) <> NVL(:NEW.CODMODDOCNOTA, 0)
+            OR NVL(:OLD.CPFCNPJADQUIRENTE, ' ') <> NVL(:NEW.CPFCNPJADQUIRENTE, ' ')
+            OR NVL(:OLD.NOMEADQUIRENTE, ' ') <> NVL(:NEW.NOMEADQUIRENTE, ' ')
+            OR NVL(:OLD.VLRSACADOLAR, 0) <> NVL(:NEW.VLRSACADOLAR, 0)
+            OR NVL(:OLD.NUMPEDIDO2, ' ') <> NVL(:NEW.NUMPEDIDO2, ' ')
+            OR NVL(:OLD.NUMCOO, 0) <> NVL(:NEW.NUMCOO, 0)
+            OR NVL(:OLD.ORDEMCARGAANT, 0) <> NVL(:NEW.ORDEMCARGAANT, 0)
+            OR NVL(:OLD.TPAMBNFE, ' ') <> NVL(:NEW.TPAMBNFE, ' ')
+            OR NVL(:OLD.PRZMED, 0) <> NVL(:NEW.PRZMED, 0)
+            OR NVL(:OLD.CODRESIDUO, 0) <> NVL(:NEW.CODRESIDUO, 0)
+            OR NVL(:OLD.DTREF2, SYSDATE) <> NVL(:NEW.DTREF2, SYSDATE)
+            OR NVL(:OLD.VLRLIQITEMNFE, ' ') <> NVL(:NEW.VLRLIQITEMNFE, ' ')
+            OR NVL(:OLD.CLASCONS, ' ') <> NVL(:NEW.CLASCONS, ' ')
+            OR NVL(:OLD.NUMFORM, 0) <> NVL(:NEW.NUMFORM, 0)
+            OR NVL(:OLD.DTREF3, SYSDATE) <> NVL(:NEW.DTREF3, SYSDATE)
+            OR NVL(:OLD.CODCC, 0) <> NVL(:NEW.CODCC, 0)
+            OR NVL(:OLD.PRODUETLOC, ' ') <> NVL(:NEW.PRODUETLOC, ' ')
+            OR NVL(:OLD.VLRSTEXTRANOTATOT, 0) <> NVL(:NEW.VLRSTEXTRANOTATOT, 0)
+            OR NVL(:OLD.NUTRANEMP, 0) <> NVL(:NEW.NUTRANEMP, 0)
+            OR NVL(:OLD.SITESPECIALRESP, ' ') <> NVL(:NEW.SITESPECIALRESP, ' ')
+            OR NVL(:OLD.DTENTSAIINFO, SYSDATE) <> NVL(:NEW.DTENTSAIINFO, SYSDATE)
+            OR NVL(:OLD.EXIGEISSQN, ' ') <> NVL(:NEW.EXIGEISSQN, ' ')
+            OR NVL(:OLD.REGESPTRIBUT, ' ') <> NVL(:NEW.REGESPTRIBUT, ' ')
+            OR NVL(:OLD.MOTNAORETERISSQN, ' ') <> NVL(:NEW.MOTNAORETERISSQN, ' ')
+            OR NVL(:OLD.DTREMRET, SYSDATE) <> NVL(:NEW.DTREMRET, SYSDATE)
+            OR NVL(:OLD.LIBCONF, ' ') <> NVL(:NEW.LIBCONF, ' ')
+            OR NVL(:OLD.NUCONFATUAL, 0) <> NVL(:NEW.NUCONFATUAL, 0)
+            OR NVL(:OLD.STATUSXTRATEGIE, ' ') <> NVL(:NEW.STATUSXTRATEGIE, ' ')
+            OR NVL(:OLD.CODSAF, 0) <> NVL(:NEW.CODSAF, 0)
+            OR NVL(:OLD.VLRFRETECALC, 0) <> NVL(:NEW.VLRFRETECALC, 0)
+            OR NVL(:OLD.VLRJURODIST, 0) <> NVL(:NEW.VLRJURODIST, 0)
+            OR NVL(:OLD.NOTAEMPENHO, ' ') <> NVL(:NEW.NOTAEMPENHO, ' ')
+            OR NVL(:OLD.CODTPD, 0) <> NVL(:NEW.CODTPD, 0)
+            OR NVL(:OLD.CODVTP, 0) <> NVL(:NEW.CODVTP, 0)
+            OR NVL(:OLD.CANCELADO, ' ') <> NVL(:NEW.CANCELADO, ' ')
+            OR NVL(:OLD.NUPCA, 0) <> NVL(:NEW.NUPCA, 0)
+            OR NVL(:OLD.PESOBRUTOMANUAL, ' ') <> NVL(:NEW.PESOBRUTOMANUAL, ' ')
+            OR NVL(:OLD.PESOLIQUIMANUAL, ' ') <> NVL(:NEW.PESOLIQUIMANUAL, ' ')
+            OR NVL(:OLD.INDPRESNFCE, ' ') <> NVL(:NEW.INDPRESNFCE, ' ')
+			OR NVL(:OLD.INTERMED, ' ') <> NVL(:NEW.INTERMED, ' ')
+			OR NVL(:OLD.CODINTERM, 0) <> NVL(:NEW.CODINTERM, 0)
+            OR NVL(:OLD.M3, 0) <> NVL(:NEW.M3, 0)
+            OR :OLD.VLRTOTLIQITEMMOE <> :NEW.VLRTOTLIQITEMMOE
+            OR :OLD.VLRDESCTOTITEMMOE <> :NEW.VLRDESCTOTITEMMOE
+            OR NVL(:OLD.CHAVECTE, ' ') <> NVL(:NEW.CHAVECTE, ' ')
+			OR NVL(:OLD.CHAVECTEREF, ' ') <> NVL(:NEW.CHAVECTEREF, ' ')
+            OR NVL(:OLD.PRODPRED, ' ') <> NVL(:NEW.PRODPRED, ' ')
+            OR NVL(:OLD.TPEMISCTE, 0) <> NVL(:NEW.TPEMISCTE, 0)
+            OR NVL(:OLD.TPAMBCTE, ' ') <> NVL(:NEW.TPAMBCTE, ' ')
+            OR NVL(:OLD.LOTACAO, ' ') <> NVL(:NEW.LOTACAO, ' ')
+            OR NVL(:OLD.STATUSCTE, ' ') <> NVL(:NEW.STATUSCTE, ' ')
+            OR NVL(:OLD.NUMALEATORIOCTE, 0) <> NVL(:NEW.NUMALEATORIOCTE, 0)
+            OR NVL(:OLD.NUMPROTOCCTE, ' ') <> NVL(:NEW.NUMPROTOCCTE, ' ')
+            OR NVL(:OLD.DHPROTOCCTE, SYSDATE) <> NVL(:NEW.DHPROTOCCTE, SYSDATE)
+            OR NVL(:OLD.NULOTECTE, 0) <> NVL(:NEW.NULOTECTE, 0)
+            OR NVL(:OLD.DTDECLARA, SYSDATE) <> NVL(:NEW.DTDECLARA, SYSDATE)
+            OR NVL(:OLD.REBOQUE1, 0) <> NVL(:NEW.REBOQUE1, 0)
+            OR NVL(:OLD.REBOQUE2, 0) <> NVL(:NEW.REBOQUE2, 0)
+            OR NVL(:OLD.REBOQUE3, 0) <> NVL(:NEW.REBOQUE3, 0)
+            OR NVL(:OLD.CTELOTACAO, ' ') <> NVL(:NEW.CTELOTACAO, ' ')
+            OR NVL(:OLD.CODVEITRACAO, 0) <> NVL(:NEW.CODVEITRACAO, 0)
+            OR NVL(:OLD.NUNOTASUB, 0) <> NVL(:NEW.NUNOTASUB, 0)
+            OR NVL(:OLD.CODOBRA, ' ') <> NVL(:NEW.CODOBRA, ' ')
+            OR NVL(:OLD.CODART, ' ') <> NVL(:NEW.CODART, ' ')
+            --OR NVL(:OLD.SENHANFSE, ' ') <> NVL(:NEW.SENHANFSE, ' ')
+            OR NVL(:OLD.IDIPROC, 0) <> NVL(:NEW.IDIPROC, 0)
+            OR NVL(:OLD.VIATRANSP, ' ') <> NVL(:NEW.VIATRANSP, ' ')
+            OR NVL(:OLD.TIPPROCIMP, ' ') <> NVL(:NEW.TIPPROCIMP, ' ')
+            OR NVL(:OLD.CNPJADQUIRENTE, ' ') <> NVL(:NEW.CNPJADQUIRENTE, ' ')
+            OR NVL(:OLD.UFADQUIRENTE, ' ') <> NVL(:NEW.UFADQUIRENTE, ' ')
+            OR NVL(:OLD.MODENTREGA, ' ') <> NVL(:NEW.MODENTREGA, ' ')
+            OR NVL(:OLD.CHAVENFSE, ' ') <> NVL(:NEW.CHAVENFSE, ' ')
+            OR NVL(:OLD.DHEMISSEPEC, SYSDATE) <> NVL(:NEW.DHEMISSEPEC, SYSDATE)
+            OR NVL(:OLD.VLRFRETETOTAL, 0) <> NVL(:NEW.VLRFRETETOTAL, 0)
+            OR NVL(:OLD.CODPARCTRANSPFINAL, 0) <> NVL(:NEW.CODPARCTRANSPFINAL, 0)
+            OR NVL(:OLD.VLRICMSDIFALDEST, 0) <> NVL(:NEW.VLRICMSDIFALDEST, 0)
+            OR NVL(:OLD.VLRICMSDIFALREM, 0) <> NVL(:NEW.VLRICMSDIFALREM, 0)
+            OR NVL(:OLD.CIOT, 0) <> NVL(:NEW.CIOT, 0)
+            OR NVL(:OLD.VLRICMSFCP, 0) <> NVL(:NEW.VLRICMSFCP, 0)
+            OR NVL(:OLD.CHAVENFEREF, ' ') <> NVL(:NEW.CHAVENFEREF, ' ')
+            OR NVL(:OLD.FUSOEMISSEPEC, ' ') <> NVL(:NEW.FUSOEMISSEPEC, ' ')
+            OR NVL(:OLD.VLRDESCRAT, 0) <> NVL(:NEW.VLRDESCRAT, 0)
+            OR NVL(:OLD.SEQCONFIRMA, 0) <> NVL(:NEW.SEQCONFIRMA, 0)
+            OR NVL(:OLD.CLASSIFICMS, ' ') <> NVL(:NEW.CLASSIFICMS, ' ')
+            OR NVL(:OLD.CODCONTATOENTREGA, 0) <> NVL(:NEW.CODCONTATOENTREGA, 0)
+            OR NVL(:OLD.CODCIDORIGEM, 0) <> NVL(:NEW.CODCIDORIGEM, 0)
+            OR NVL(:OLD.CODCIDDESTINO, 0) <> NVL(:NEW.CODCIDDESTINO, 0)
+            OR NVL(:OLD.CODCIDENTREGA, 0) <> NVL(:NEW.CODCIDENTREGA, 0)
+            OR NVL(:OLD.CODUFORIGEM, 0) <> NVL(:NEW.CODUFORIGEM, 0)
+            OR NVL(:OLD.CODUFDESTINO, 0) <> NVL(:NEW.CODUFDESTINO, 0)
+            OR NVL(:OLD.CODUFENTREGA, 0) <> NVL(:NEW.CODUFENTREGA, 0)
+            --OR NVL(:OLD.TIPOMERCADO, ' ') <> NVL(:NEW.TIPOMERCADO, ' ')
+            --OR NVL(:OLD.LOTEPRODUCAO, ' ') <> NVL(:NEW.LOTEPRODUCAO, ' ')
+            OR NVL(:OLD.NUFOP, 0) <> NVL(:NEW.NUFOP, 0)
+            OR NVL(:OLD.CODRASTREAMENTOECT, ' ') <> NVL(:NEW.CODRASTREAMENTOECT, ' ')
+             OR NVL(:OLD.NUODP, 0) <> NVL(:NEW.NUODP, 0)
+            OR NVL(:OLD.NUPEDFRETE, 0) <> NVL(:NEW.NUPEDFRETE, 0)
+        /*  OR NVL(:OLD.TIMNUFINORIG, 0) <> NVL(:NEW.TIMNUFINORIG, 0)
+            OR NVL(:OLD.TIMCONTRATOVENDA, 0) <> NVL(:NEW.TIMCONTRATOVENDA, 0)
+            OR NVL(:OLD.TIMORIGEM, ' ') <> NVL(:NEW.TIMORIGEM, ' ')
+            OR NVL(:OLD.TIMCONTRATOLTV, 0) <> NVL(:NEW.TIMCONTRATOLTV, 0)
+            OR NVL(:OLD.TIMNUNOTAMOD, 0) <> NVL(:NEW.TIMNUNOTAMOD, 0)*/
+            OR NVL(:OLD.CODCIDPREST, 0) <> NVL(:NEW.CODCIDPREST, 0)
+            OR NVL(:OLD.FORMPGTCTE, ' ') <> NVL(:NEW.FORMPGTCTE, ' ')
+            OR NVL(:OLD.PERCDESCFOB, 0) <> NVL(:NEW.PERCDESCFOB, 0)
+            OR NVL(:OLD.TPAMBNFSE, ' ') <> NVL(:NEW.TPAMBNFSE, ' ')
+            OR NVL(:OLD.TERMACORDNOTA, ' ') <> NVL(:NEW.TERMACORDNOTA, ' ')
+            OR NVL(:OLD.VLRDESCQTD, 0) <> NVL(:NEW.VLRDESCQTD, 0)
+            OR NVL(:OLD.VLRICMSFCPINT, 0) <> NVL(:NEW.VLRICMSFCPINT, 0)
+            OR NVL(:OLD.VLRSTFCPINT, 0) <> NVL(:NEW.VLRSTFCPINT, 0)
+            OR NVL(:OLD.VLRSTFCPINTANT, 0) <> NVL(:NEW.VLRSTFCPINTANT, 0)
+            OR NVL(:OLD.CTEGLOBAL, ' ') <> NVL(:NEW.CTEGLOBAL, ' ')
+            OR NVL(:OLD.VLRCARGAAVERB, 0) <> NVL(:NEW.VLRCARGAAVERB, 0)
+            OR NVL(:OLD.CODCIDINICTE, 0) <> NVL(:NEW.CODCIDINICTE, 0)
+            OR NVL(:OLD.CODCIDFIMCTE, 0) <> NVL(:NEW.CODCIDFIMCTE, 0)
+            OR NVL(:OLD.NUCFR, 0) <> NVL(:NEW.NUCFR, 0)
+            OR NVL(:OLD.NFEDEVRECUSA, ' ') <> NVL(:NEW.NFEDEVRECUSA, ' ')
+            OR NVL(:OLD.VLRPRESTAFRMM, 0) <> NVL(:NEW.VLRPRESTAFRMM, 0)
+            OR NVL(:OLD.VLRAFRMM, 0) <> NVL(:NEW.VLRAFRMM, 0)
+			OR NVL(:OLD.IDNAVIO, ' ') <> NVL(:NEW.IDNAVIO, ' ')
+            OR NVL(:OLD.IRINNAVIO, ' ') <> NVL(:NEW.IRINNAVIO, ' ')
+            OR NVL(:OLD.DIRECAOVIAG, ' ') <> NVL(:NEW.DIRECAOVIAG, ' ')
+            OR NVL(:OLD.IDBALSA01, ' ') <> NVL(:NEW.IDBALSA01, ' ')
+			OR NVL(:OLD.IDBALSA02, ' ') <> NVL(:NEW.IDBALSA02, ' ')
+            OR NVL(:OLD.IDBALSA03, ' ') <> NVL(:NEW.IDBALSA03, ' ')
+            OR NVL(:OLD.AGRUPFINNOTA, ' ') <> NVL(:NEW.AGRUPFINNOTA, ' ')
+            OR NVL(:OLD.CONFIRMNOTAFAT, ' ') <> NVL(:NEW.CONFIRMNOTAFAT, ' ')
+            OR NVL(:OLD.PERMALTERCENTRAL, ' ') <> NVL(:NEW.PERMALTERCENTRAL, ' ')
+            OR (:NEW.TIPFRETE = 'S' AND (:OLD.VLRFRETE <> :NEW.VLRFRETE OR
+              :OLD.ICMSFRETE <> :NEW.ICMSFRETE OR
+              :OLD.BASEICMSFRETE <> :NEW.BASEICMSFRETE OR
+              :OLD.VENCFRETE <> :NEW.VENCFRETE OR
+              :OLD.VLRFRETECPL <> :NEW.VLRFRETECPL))) THEN 
+  
+                P_TIPOACAO := P_TIPO_ACAO_ALTERACAO;
+                P_TIPO_ACAO_MSG := '(Alteração)';
+
+                IF SNK_BLOQUEIO_FECHAMENTO (P_CODEMP, P_DATA, P_TIPOACAO, P_MOVIMENTACAO_ESTOQUE, NULL, P_TIPO_ITEM, P_NUCHAVE) THEN             
+                    ERRMSG := ERRMSG || ' para movimentação de estoque.';
+                    RAISE ERROR;
+                END IF;
+
+                IF P_IS_CALC_CUSTO = 'S' AND SNK_BLOQUEIO_FECHAMENTO (P_CODEMP, P_DATA, P_TIPOACAO, P_MOVIMENTACAO_CUSTO_NOTA, NULL, P_TIPO_ITEM, P_NUCHAVE) THEN             
+                    ERRMSG := ERRMSG || ' para movimentação de calculo de custo.';
+                    RAISE ERROR;
+                END IF;
+            END IF;
+        ELSE 
+            IF SNK_BLOQUEIO_FECHAMENTO (P_CODEMP, P_DATA, P_TIPOACAO, P_MOVIMENTACAO_ESTOQUE, NULL, P_TIPO_ITEM, P_NUCHAVE) THEN             
+              ERRMSG := ERRMSG || ' para movimentação de estoque.';
+              RAISE ERROR;
+            END IF;
+
+            IF P_IS_CALC_CUSTO = 'S' AND SNK_BLOQUEIO_FECHAMENTO (P_CODEMP, P_DATA, P_TIPOACAO, P_MOVIMENTACAO_CUSTO_NOTA, NULL, P_TIPO_ITEM, P_NUCHAVE) THEN             
+              ERRMSG := ERRMSG || ' para movimentação de calculo de custo.';
+              RAISE ERROR;
+            END IF;
+
+            P_TIPO_ACAO_MSG := '(Inclusão/Alteração)';            
+        END IF;
+    END IF;
+END IF;
+
+   RETURN;
+
+EXCEPTION
+   WHEN ERROR THEN
+        ERRMSG := SNK_FORMAT_MSG_BLOQ_FEC_CTB(ERRMSG || 'O mês ' || TO_CHAR(P_DATA,'MM/YYYY')  || ' está fechado. Não é possível realizar movimentação referente a chave ' || CAST(NVL(P_NUCHAVE, '') AS VARCHAR) || ' em períodos fechados pela contabilidade sem uma liberação de ' || P_TIPO_ACAO_MSG || ' para empresa ' || CAST(NVL(P_CODEMP, '') AS VARCHAR) || '.');
+
+      RAISE_APPLICATION_ERROR(-20101, ERRMSG);
+   RETURN;
+END;
+/
+ALTER TRIGGER "SPARKPRD"."TRG_INC_UPT_DLT_TGFCAB_FEC_CTB" ENABLE;

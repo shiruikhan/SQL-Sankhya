@@ -1,0 +1,224 @@
+/*==============================================================================
+  Nome do Script : STP_VALIDA_ESTOQUE40
+  Tipo           : Procedure Nativa Sankhya COM CUSTOMIZAÇÃO DA SPARK
+  Descrição      : Valida o estoque disponível de um produto conforme o VALEST do grupo (I/N/E/G/S/L), considerando reserva, WMS e controle/lote; devolve P_QUANTEST e P_VALEST. CONTÉM CUSTOMIZAÇÃO DA SPARK (ver Observações).
+  Empresa        : Spark Eletrônica
+  Observações    : - Objeto nativo do ERP — atualizações do Sankhya podem sobrescrever; revisar após cada upgrade (nativo/README.md).
+                   - No banco: criada em 13/01/2023, última alteração em 29/05/2026.
+                   - Capturado do banco em 08/10/2026 (em pedaços — DDL completo, conferido pelo tamanho), via GET_DDL('PROCEDURE', 'STP_VALIDA_ESTOQUE40', 'SPARKPRD').
+                   - Descrição resumida a partir da leitura do código.
+                   - Customização Spark (02/2022, comentário "PERSONALIZADO SPARK"): no ramo VALEST = 'G' (estoque geral) a reserva NÃO é descontada (E.RESERVADO comentado) — "não considerar a reserva no faturar F2" (Dione/João/Danilo, 03/02/2022). Reaplicar após upgrade se a procedure for sobrescrita.
+==============================================================================*/
+  CREATE OR REPLACE EDITIONABLE PROCEDURE "SPARKPRD"."STP_VALIDA_ESTOQUE40" (
+   P_CODEMP       IN SMALLINT,
+   P_CODLOCALORIG IN SMALLINT,
+   P_CONTROLE     IN VARCHAR2,
+   P_CODPROD      IN INTEGER,
+   P_STATUSLOTE    IN VARCHAR2,
+   P_TIPOESTOQUE  IN  CHAR,
+   P_QUANTEST     OUT FLOAT,
+   P_VALEST       OUT VARCHAR2)
+AS
+BEGIN
+  DECLARE 
+        P_QTDANT       FLOAT;
+        PW_CONTROLE    TGFEST.CONTROLE%TYPE;
+        P_COUNT        INTEGER;
+        P_PEDIRLIB     VARCHAR2(1);
+        P_SOESTOQUE   VARCHAR2(1);
+        P_VALESTINDEP  VARCHAR2(1);
+        PW_STATUSLOTE  VARCHAR2(1);
+        P_WMSDESCONESTBLQ    CHAR(1);
+        P_AGRUPALOCVALEST     CHAR(1);
+        P_SUBESTDOCAWMS     CHAR(1);
+        P_USOPROD TGFPRO.USOPROD%TYPE;
+BEGIN
+  PW_CONTROLE := NVL(P_CONTROLE, ' ') ;
+  PW_STATUSLOTE := NVL(P_STATUSLOTE, 'N');
+  SELECT  COUNT(1) INTO P_COUNT
+  FROM TGFEST
+  WHERE CODLOCAL = P_CODLOCALORIG
+    AND ((CONTROLE = PW_CONTROLE) OR (PW_CONTROLE = '[TODOS]'))
+   AND (( STATUSLOTE = PW_STATUSLOTE ) OR (PW_STATUSLOTE = 'N'))
+    AND CODPROD = P_CODPROD
+    AND CODEMP = P_CODEMP
+    AND CODPARC = 0
+    AND ATIVO = 'N' ;
+  IF (P_COUNT <> 0)  THEN
+      P_VALEST := 'I' ;
+      RETURN ;
+  END IF;
+  SELECT  COUNT(1), MIN(G.VALEST), MIN(G.PEDIRLIB), MIN(G.AGRUPALOCVALEST), MIN(P.USOPROD)  
+     INTO P_COUNT, P_VALEST, P_PEDIRLIB, P_AGRUPALOCVALEST, P_USOPROD
+  FROM TGFPRO P, TGFGRU G
+  WHERE P.CODPROD = P_CODPROD
+  AND P.CODGRUPOPROD = G.CODGRUPOPROD;
+  IF (P_COUNT = 0) THEN
+    RAISE_APPLICATION_ERROR(-20101, 'Nao existe o grupo de produtos cadastrado.');
+  END IF;
+
+  IF (P_VALEST = 'N') THEN  /* NAO VALIDA */
+      P_QUANTEST := 0 ;
+      RETURN ;
+  END IF;
+
+  IF P_USOPROD = 'S' THEN
+    SELECT COUNT(*) 
+    INTO P_COUNT
+    FROM TSIPAR
+    WHERE CHAVE = 'ATUALESTSERV'
+    AND LOGICO = 'S';
+    IF P_COUNT = 0 THEN
+        P_QUANTEST := 0 ;
+        P_VALEST := 'N';
+        RETURN ;
+    END IF;
+  END IF;
+
+  --FORÇA VALIDAR POR EMPRESA
+  IF P_VALEST = 'G' AND Valida_Estoque_Pkg40.V_TipoEmpresa = 1 THEN     
+    P_VALEST := 'E';
+  END IF;
+
+  IF P_TIPOESTOQUE IS NOT NULL THEN
+    P_SOESTOQUE := P_TIPOESTOQUE;
+  ELSIF Valida_Estoque_Pkg40.V_TipoReserva = -1 THEN  --USA O PARAMETRO SOESTOQUE FOI MANTIDO PARA COMPATIBILIDADE COM EXECS ANTERIORES, PODERÁ SER REMOVIDO NO FUTURO
+    BEGIN
+      SELECT LOGICO INTO P_SOESTOQUE 
+      FROM TSIPAR 
+      WHERE CHAVE = 'SOESTOQUE';
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+      P_SOESTOQUE := 'N';
+    END;
+  ELSIF Valida_Estoque_Pkg40.V_TipoReserva = 1 THEN  -- VALIDA SEM CONSIDERAR A RESERVA DE ESTOQUE
+    P_SOESTOQUE := 'S';
+  ELSE  -- VALIDA CONSIDERANDO A RESERVA DE ESTOQUE
+    P_SOESTOQUE := 'N';  
+  END IF;
+
+  BEGIN
+    SELECT LOGICO INTO P_WMSDESCONESTBLQ
+  FROM TSIPAR
+  WHERE CHAVE = 'WMSDESCONESTBLQ';
+  EXCEPTION WHEN NO_DATA_FOUND THEN
+    P_WMSDESCONESTBLQ := 'N';
+  END;
+
+  BEGIN
+    SELECT LOGICO INTO P_SUBESTDOCAWMS
+  FROM TSIPAR
+  WHERE CHAVE = 'SUBESTDOCAWMS';
+  EXCEPTION WHEN NO_DATA_FOUND THEN
+    P_SUBESTDOCAWMS := 'N';  
+  END;
+
+  IF P_CODLOCALORIG <> 0 THEN
+    SELECT NVL(VALESTINDEP,'N') 
+    INTO P_VALESTINDEP
+    FROM TGFLOC
+    WHERE CODLOCAL = P_CODLOCALORIG;
+  ELSE
+    P_VALESTINDEP := 'N';
+  END IF;
+
+  IF Valida_Estoque_Pkg.V_AGRUPALOCVALEST = 'N' THEN
+     P_AGRUPALOCVALEST := 'N';
+  END IF;
+
+  IF (P_VALEST = 'A') OR (P_VALEST = 'L')  THEN /* VALIDA E ACEITA */
+     SELECT NVL(SUM(E.ESTOQUE - 
+                  (CASE WHEN P_SOESTOQUE = 'N' THEN E.RESERVADO ELSE 0 END) -
+          (CASE WHEN P_WMSDESCONESTBLQ = 'S' AND VARIAVEIS_PKG.V_VALEST_BLOQWMS_FAT = 'S' THEN NVL(E.WMSBLOQUEADO, 0) ELSE 0 END) -
+          (CASE WHEN P_SUBESTDOCAWMS = 'S' THEN F_WMS_GETESTOQUEDOCA(E.CODPROD, E.CONTROLE, E.CODEMP, E.CODLOCAL) ELSE 0 END)),0)
+     INTO P_QUANTEST
+     FROM TGFEST E
+     WHERE E.CODEMP   = P_CODEMP
+     AND ((P_AGRUPALOCVALEST  = 'N' AND E.CODLOCAL = P_CODLOCALORIG) OR
+        (P_AGRUPALOCVALEST  = 'S' AND ((P_VALESTINDEP = 'S' AND E.CODLOCAL = P_CODLOCALORIG) OR
+                                         (P_VALESTINDEP = 'N' AND EXISTS (SELECT 1 
+                                                        FROM TGFLOC LOC 
+                                        WHERE LOC.CODLOCAL = E.CODLOCAL 
+                                        AND LOC.VALESTINDEP = 'N')))))
+
+     AND ((E.CONTROLE = PW_CONTROLE) OR (PW_CONTROLE = '[TODOS]'))
+   AND (( STATUSLOTE = PW_STATUSLOTE ) OR (PW_STATUSLOTE = 'N'))
+     AND E.CODPARC = 0
+     AND E.CODPROD  = P_CODPROD ;
+
+     IF P_VALEST = 'L' AND P_PEDIRLIB = 'S' THEN
+       P_VALEST := 'A';
+     END IF;     
+     RETURN ;
+  END IF;
+  IF (P_VALEST = 'E')  THEN /* ESTOQUE EMPRESA */
+     SELECT NVL(SUM(E.ESTOQUE - 
+                  (CASE WHEN P_SOESTOQUE = 'N' THEN E.RESERVADO ELSE 0 END) -
+          (CASE WHEN P_WMSDESCONESTBLQ = 'S' AND VARIAVEIS_PKG.V_VALEST_BLOQWMS_FAT = 'S' THEN NVL(E.WMSBLOQUEADO, 0) ELSE 0 END) -
+          (CASE WHEN P_SUBESTDOCAWMS = 'S' THEN F_WMS_GETESTOQUEDOCA(E.CODPROD, E.CONTROLE, E.CODEMP, E.CODLOCAL) ELSE 0 END)),0)
+     INTO P_QUANTEST
+     FROM TGFEST E
+     WHERE E.CODEMP   = P_CODEMP
+     AND ((P_AGRUPALOCVALEST  = 'N' AND E.CODLOCAL = P_CODLOCALORIG) OR
+        (P_AGRUPALOCVALEST  = 'S' AND ((P_VALESTINDEP = 'S' AND E.CODLOCAL = P_CODLOCALORIG) OR
+                                         (P_VALESTINDEP = 'N' AND EXISTS (SELECT 1 
+                                                        FROM TGFLOC LOC 
+                                        WHERE LOC.CODLOCAL = E.CODLOCAL 
+                                        AND LOC.VALESTINDEP = 'N')))))
+
+     AND ((E.CONTROLE = PW_CONTROLE) OR (PW_CONTROLE = '[TODOS]'))
+   AND (( STATUSLOTE = PW_STATUSLOTE ) OR (PW_STATUSLOTE = 'N'))
+     AND E.CODPARC = 0
+     AND E.CODPROD  = P_CODPROD ;
+
+     IF P_PEDIRLIB = 'S' THEN
+       P_VALEST := 'A';
+     END IF;     
+     RETURN ;
+  END IF;
+  IF (P_VALEST = 'G')  THEN /* ESTOQUE GERAL */
+     SELECT NVL(SUM(E.ESTOQUE - 
+                  (CASE WHEN P_SOESTOQUE = 'N' THEN/* E.RESERVADO */  0 ELSE 0 END) -  /*PERSONALIZADO SPARK: NÃO CONSIDERAR A RESERVA NO FATURAR F2 - DIONE/JOÃO/DANILO  -- 03/02/2022*/
+          (CASE WHEN P_WMSDESCONESTBLQ = 'S' AND VARIAVEIS_PKG.V_VALEST_BLOQWMS_FAT = 'S' THEN NVL(E.WMSBLOQUEADO, 0) ELSE 0 END) -
+          (CASE WHEN P_SUBESTDOCAWMS = 'S' THEN F_WMS_GETESTOQUEDOCA(E.CODPROD, E.CONTROLE, E.CODEMP, E.CODLOCAL) ELSE 0 END)),0)
+     INTO P_QUANTEST
+     FROM TGFEST E
+     WHERE ((E.CONTROLE = PW_CONTROLE) OR (PW_CONTROLE = '[TODOS]'))
+   AND (( STATUSLOTE = PW_STATUSLOTE ) OR (PW_STATUSLOTE = 'N'))
+     AND E.CODPARC = 0
+     AND ((P_VALESTINDEP = 'S' AND E.CODLOCAL = P_CODLOCALORIG) OR
+          (P_VALESTINDEP = 'N' AND EXISTS (SELECT 1 FROM TGFLOC LOC WHERE LOC.CODLOCAL = E.CODLOCAL AND LOC.VALESTINDEP = 'N')))    
+     AND E.CODPROD  = P_CODPROD ;
+
+     IF P_PEDIRLIB = 'S' THEN
+       P_VALEST := 'A';
+     END IF;     
+     RETURN ;
+  END IF;
+  IF (P_VALEST = 'S') THEN /* ESTOQUE SOMA */
+     SELECT NVL(SUM(E.ESTOQUE - 
+                  (CASE WHEN P_SOESTOQUE = 'N' THEN E.RESERVADO ELSE 0 END) -
+          (CASE WHEN P_WMSDESCONESTBLQ = 'S' AND VARIAVEIS_PKG.V_VALEST_BLOQWMS_FAT = 'S' THEN NVL(E.WMSBLOQUEADO, 0) ELSE 0 END) -
+          (CASE WHEN P_SUBESTDOCAWMS = 'S' THEN F_WMS_GETESTOQUEDOCA(E.CODPROD, E.CONTROLE, E.CODEMP, E.CODLOCAL) ELSE 0 END)),0)
+   INTO P_QUANTEST
+     FROM  TGFEST E,  TGFEMP E1
+     WHERE E.CODPROD  = P_CODPROD
+     AND E.CODEMP = E1.CODEMP
+     AND NVL(E1.EMPSOMA,E1.CODEMP) = (SELECT NVL(EMPSOMA, CODEMP) FROM TGFEMP WHERE CODEMP = P_CODEMP)
+     AND E.CODPARC = 0
+     AND ((P_AGRUPALOCVALEST  = 'N' AND E.CODLOCAL = P_CODLOCALORIG) OR
+        (P_AGRUPALOCVALEST  = 'S' AND ((P_VALESTINDEP = 'S' AND E.CODLOCAL = P_CODLOCALORIG) OR
+                                         (P_VALESTINDEP = 'N' AND EXISTS (SELECT 1 
+                                                        FROM TGFLOC LOC 
+                                        WHERE LOC.CODLOCAL = E.CODLOCAL 
+                                        AND LOC.VALESTINDEP = 'N')))))
+
+     AND ((E.CONTROLE = PW_CONTROLE) OR (PW_CONTROLE = '[TODOS]'))
+     AND (( STATUSLOTE = PW_STATUSLOTE ) OR (PW_STATUSLOTE = 'N'));
+
+     IF P_PEDIRLIB = 'S' THEN
+       P_VALEST := 'A';
+     END IF;    
+     RETURN ;
+  END IF;
+END;
+END;
