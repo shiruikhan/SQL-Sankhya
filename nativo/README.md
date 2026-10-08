@@ -57,7 +57,7 @@ A data vem da linha `Capturado do banco em dd/mm/aaaa` do cabeçalho de cada arq
 
 | Tipo | Situação |
 |---|---|
-| Triggers nativas | Capturadas as das tabelas que a Spark customiza (lote 1, 08/10/2026), exceto 57 truncadas pendentes de recaptura. Tabelas do inventário sem trigger nativa relevante (`TPR*`, `TGFCON2` …) já têm todas as triggers no repositório da Spark |
+| Triggers nativas | Capturadas as das tabelas que a Spark customiza (lote 1, 08/10/2026), exceto 57 truncadas pendentes de recaptura. Tabelas cujas triggers já estão todas no repositório da Spark (`TPRCOI`, `TGFCON2`, `TPRSERPA`, `TGFCOI2` …) não geraram captura nativa |
 | Procedures nativas (`STP_*`) | Só 6 (as citadas). As ~200 de 12/2021 não foram capturadas; capturar por fechamento de dependência — procedures chamadas pelo código das triggers já capturadas — quando as 57 pendentes chegarem |
 | Views nativas (`VGF*`) | Não capturadas (673 no banco; a maioria é do fabricante, ex.: `VRI_*`/`VFP_*`). `VGFSERIES`, que parecia nativa, é da Spark e foi para `view/` |
 | Types / sequences | Não capturados |
