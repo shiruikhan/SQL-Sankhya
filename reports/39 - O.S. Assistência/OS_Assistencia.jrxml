@@ -1,0 +1,847 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OS_Assistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="3.138428376721117"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="1674"/>
+	<property name="ireport.definition"/>
+	<subDataset name="Table Dataset 1"/>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NUMOSINI" class="java.math.BigDecimal">
+		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
+	</parameter>
+	<parameter name="NUMOSFIN" class="java.math.BigDecimal">
+		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT ASS.CODPARCASS || ' - ' || (SELECT P.NOMEPARC FROM TGFPAR P WHERE P.CODPARC = ASS.CODPARCASS) AS "ASSISTENCIA RESPONSAVEL",
+	ASS.DTRECEB AS "DATA DE RECEBIMENTO",
+	ASS.NUMOS AS "NR DA OS",
+	ASS.CODPARC || ' - ' || PAR.NOMEPARC AS CLIENTE,
+	EN.NOMEEND AS RUA,
+	PAR.NUMEND AS "NR DA RESIDENCIA",
+	CID.NOMECID AS CIDADE,
+	UFS.UF AS ESTADO,
+	PAR.TELEFONE,
+	ASS.SNENTRADA AS "SN DO PRODUTO",
+	(SELECT DISTINCT RFINTERNA FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND MOVIMENTO = 'ENTRADA') AS "REFERENCIA INTERNA",
+	(SELECT DISTINCT DESCRPARVENDA FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND VGFSERIES.MOVIMENTO = 'SAÍDA' AND VGFSERIES.DTVENDA = (SELECT MAX(DTVENDA) FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND VGFSERIES.MOVIMENTO = 'SAÍDA')) AS REVENDEDOR,
+	ASS.NUMNOTAENT AS "NOTA DE ENTRADA",
+	(CASE WHEN ASS.STATUS = 'G' THEN 'GARANTIA'
+		WHEN ASS.STATUS = 'RN' THEN 'RENOVAÇÃO'
+		WHEN ASS.STATUS = 'D' THEN 'DEVOLUÇÃO'
+		WHEN ASS.STATUS = 'T' THEN 'TROCA'
+		WHEN ASS.STATUS = 'RT' THEN 'RETORNO/TROCA'
+		WHEN ASS.STATUS = 'R' THEN 'RETORNO'
+		WHEN ASS.STATUS = 'TG' THEN 'TROCA DE GERAÇÃO' END) AS STATUS
+FROM AD_TGFASS ASS
+	LEFT JOIN TGFPAR PAR ON ASS.CODPARC = PAR.CODPARC
+	LEFT JOIN TSIEND EN  ON PAR.CODEND = EN.CODEND
+	LEFT JOIN TSICID CID ON PAR.CODCID = CID.CODCID
+	LEFT JOIN TSIUFS UFS ON CID.UF = UFS.CODUF
+WHERE ASS.NUMOS >= $P{NUMOSINI}
+	AND ASS.NUMOS <= $P{NUMOSFIN}]]>
+	</queryString>
+	<field name="ASSISTENCIA RESPONSAVEL" class="java.lang.String"/>
+	<field name="DATA DE RECEBIMENTO" class="java.sql.Timestamp"/>
+	<field name="NR DA OS" class="java.math.BigDecimal"/>
+	<field name="CLIENTE" class="java.lang.String"/>
+	<field name="RUA" class="java.lang.String"/>
+	<field name="NR DA RESIDENCIA" class="java.lang.String"/>
+	<field name="CIDADE" class="java.lang.String"/>
+	<field name="ESTADO" class="java.lang.String"/>
+	<field name="TELEFONE" class="java.lang.String"/>
+	<field name="SN DO PRODUTO" class="java.lang.String"/>
+	<field name="REFERENCIA INTERNA" class="java.lang.String"/>
+	<field name="REVENDEDOR" class="java.lang.String"/>
+	<field name="NOTA DE ENTRADA" class="java.math.BigDecimal"/>
+	<field name="STATUS" class="java.lang.String"/>
+	<title>
+		<band height="60" splitType="Stretch">
+			<image>
+				<reportElement x="207" y="0" width="152" height="40"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="164" y="40" width="236" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ORDEM DE SERVIÇO AUTORIZADA 2024]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="357" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="15" width="555" height="64"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="15" width="50" height="15" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nome:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="29" width="50" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cliente:]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="247" width="555" height="13"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="45" width="50" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Rua:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="62" width="50" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cidade:]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="15" backcolor="#CCCCCC"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="0" width="555" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[AUTORIZADA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="275" y="15" width="47" height="15" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dt. Recb:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="276" y="62" width="30" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[UF:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="411" y="15" width="47" height="14" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[O.S. nº:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="411" y="46" width="49" height="16" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[nº:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="364" y="62" width="47" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[*Fone:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="29" width="555" height="1"/>
+			</line>
+			<line>
+				<reportElement x="0" y="45" width="555" height="1"/>
+			</line>
+			<line>
+				<reportElement x="0" y="61" width="555" height="1"/>
+			</line>
+			<line>
+				<reportElement x="49" y="15" width="1" height="64"/>
+			</line>
+			<line>
+				<reportElement x="274" y="15" width="1" height="14"/>
+			</line>
+			<line>
+				<reportElement x="322" y="15" width="1" height="14"/>
+			</line>
+			<line>
+				<reportElement x="275" y="62" width="1" height="17"/>
+			</line>
+			<line>
+				<reportElement x="305" y="62" width="1" height="17"/>
+			</line>
+			<line>
+				<reportElement x="363" y="62" width="1" height="17"/>
+			</line>
+			<line>
+				<reportElement x="410" y="62" width="1" height="17"/>
+			</line>
+			<line>
+				<reportElement x="410" y="15" width="1" height="14"/>
+			</line>
+			<line>
+				<reportElement x="458" y="15" width="1" height="14"/>
+			</line>
+			<line>
+				<reportElement x="459" y="45" width="1" height="17"/>
+			</line>
+			<line>
+				<reportElement x="410" y="45" width="1" height="17"/>
+			</line>
+			<textField pattern="">
+				<reportElement x="459" y="16" width="96" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NR DA OS}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="51" y="16" width="223" height="13"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{ASSISTENCIA RESPONSAVEL}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="323" y="15" width="87" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DATA DE RECEBIMENTO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="51" y="31" width="504" height="14"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CLIENTE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="51" y="47" width="359" height="14"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{RUA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="51" y="63" width="223" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CIDADE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="460" y="47" width="95" height="14"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{NR DA RESIDENCIA}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="0" y="275" width="555" height="13"/>
+			</rectangle>
+			<textField>
+				<reportElement x="306" y="63" width="57" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{ESTADO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="412" y="63" width="142" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TELEFONE}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="448" y="79" width="107" height="9"/>
+				<textElement>
+					<font fontName="Arial" size="6" isBold="true"/>
+				</textElement>
+				<text><![CDATA[*Fone completo do cliente com DDD]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="101" width="555" height="86"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="87" width="555" height="15" backcolor="#CCCCCC"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="87" width="555" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[EQUIPAMENTO]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="137" width="555" height="15"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="137" width="555" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[GARANTIA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="102" width="62" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Modelo:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="120" width="62" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nº de série:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="119" width="555" height="1"/>
+			</line>
+			<line>
+				<reportElement x="62" y="102" width="1" height="35"/>
+			</line>
+			<textField>
+				<reportElement x="63" y="102" width="492" height="17"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{REFERENCIA INTERNA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="63" y="120" width="491" height="17"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SN DO PRODUTO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="152" width="69" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Revendedor:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="170" width="69" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nota fiscal:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="69" y="152" width="1" height="35"/>
+			</line>
+			<line>
+				<reportElement x="0" y="169" width="555" height="1"/>
+			</line>
+			<staticText>
+				<reportElement mode="Opaque" x="306" y="152" width="84" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Garantia:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="306" y="170" width="84" height="17" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Data de compra:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="390" y="152" width="1" height="35"/>
+			</line>
+			<line>
+				<reportElement x="305" y="152" width="1" height="35"/>
+			</line>
+			<textField>
+				<reportElement x="70" y="152" width="235" height="17"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{REVENDEDOR}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="390" y="152" width="164" height="17"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{STATUS}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="70" y="170" width="235" height="17"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NOTA DE ENTRADA}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="0" y="191" width="555" height="138"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="191" width="555" height="13"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="191" width="555" height="13" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DEFEITO APRESENTADO]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="0" y="218" width="555" height="13"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="218" width="555" height="13" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TÉCNICO]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="337" width="555" height="1"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<rectangle>
+				<reportElement x="0" y="342" width="555" height="15"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="342" width="555" height="15" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[COMPONENTES UTILIZADOS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="247" width="555" height="13" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SOLDA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="272" width="555" height="13" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TESTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="301" width="555" height="13" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[INSERÇÃO]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="15" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="15" backcolor="#CCCCCC"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Transparent" x="427" y="0" width="128" height="15" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[QUANTIDADE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="133" y="0" width="293" height="15" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESCRIÇÃO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="0" y="0" width="132" height="15" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CÓDIGOS COMPONENTES]]></text>
+			</staticText>
+			<line>
+				<reportElement x="133" y="0" width="1" height="15"/>
+			</line>
+			<line>
+				<reportElement x="425" y="0" width="1" height="15"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="168">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="13" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="26" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="39" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="52" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="65" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="78" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="91" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="104" width="555" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="116" width="555" height="13"/>
+			</rectangle>
+			<line>
+				<reportElement x="425" y="0" width="1" height="129"/>
+			</line>
+			<line>
+				<reportElement x="133" y="0" width="1" height="129"/>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="167" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="91" width="264" height="13"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="0" width="554" height="13" backcolor="#CCCCCC"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Transparent" x="284" y="0" width="270" height="13" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DEFEITOS PRODUÇÃO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="2" y="0" width="140" height="13" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DEFEITOS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="143" y="0" width="140" height="13" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TESTES]]></text>
+			</staticText>
+			<line>
+				<reportElement x="283" y="1" width="1" height="89"/>
+			</line>
+			<line>
+				<reportElement x="142" y="0" width="1" height="90"/>
+			</line>
+			<line>
+				<reportElement x="0" y="13" width="555" height="1"/>
+			</line>
+			<staticText>
+				<reportElement x="2" y="13" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[ATUALIZAÇÃO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2" y="24" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[MAU USO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2" y="35" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[DESGASTE (CRONOLÓGICO)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2" y="46" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[MONTAGEM (FABRICA)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="143" y="13" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[TESTE DE CORRENTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="143" y="24" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[TESTE DE TENSÃO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="143" y="35" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[TESTE EM BATERIA (fontes pequenas)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="143" y="57" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[ISOLANTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="143" y="68" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[TESTE DE RETORNO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="143" y="46" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[FLUTUAÇÃO]]></text>
+			</staticText>
+			<line>
+				<reportElement x="263" y="13" width="1" height="77"/>
+			</line>
+			<line>
+				<reportElement x="122" y="13" width="1" height="77"/>
+			</line>
+			<line>
+				<reportElement x="0" y="24" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="35" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="46" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="68" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="57" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="79" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="69" y="141" width="1" height="26"/>
+			</line>
+			<rectangle>
+				<reportElement x="0" y="128" width="555" height="13" backcolor="#CCCCCC"/>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Opaque" x="1" y="154" width="109" height="13" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Assinatura do Cliente:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="276" y="155" width="115" height="12" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Assinatura do Cliente:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1" y="141" width="109" height="13" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Data de recebimento:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="0" y="128" width="555" height="13" backcolor="#CCCCCC"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DATAS E PRAZOS DA GARANTIA]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="154" width="555" height="1"/>
+			</line>
+			<staticText>
+				<reportElement mode="Opaque" x="276" y="141" width="114" height="13" backcolor="#CCCCCC"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Data de entrega:]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement mode="Transparent" x="0" y="128" width="555" height="39"/>
+			</rectangle>
+			<line>
+				<reportElement x="419" y="14" width="1" height="76"/>
+			</line>
+			<line>
+				<reportElement x="404" y="14" width="1" height="76"/>
+			</line>
+			<line>
+				<reportElement x="540" y="13" width="1" height="77"/>
+			</line>
+			<staticText>
+				<reportElement x="284" y="13" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[DISJUNTOR - MF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="13" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[CORRENTE DESREGULADA MAXIMA - T]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="284" y="79" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[CORRENTE DESREGULADA MÍNIMA - T]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="90" width="554" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="284" y="46" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[SOLDA FRIA - S/T]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="284" y="57" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[INDUTOR EM CURTO - S/T]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="284" y="68" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[SEM MICA - T]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement mode="Transparent" x="0" y="0" width="555" height="91"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="284" y="24" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[LED - T]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="284" y="35" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[COOLER SOLTO - MF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="46" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[CURTO PLACA/COMPONENTE - T]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="35" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[ADESIVO ERRADO - MF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="24" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[PROGRAMAÇÃO DISPLAY - MF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="57" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[COMP. INVERTIDO/QUEBRADO - I]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="68" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[CHICOTE COOLER - MF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="79" width="120" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="6" isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[TRANSFORMADOR EM CURTO - S/T]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="91" width="143" height="13" backcolor="#999999"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Versão de Placa]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>
