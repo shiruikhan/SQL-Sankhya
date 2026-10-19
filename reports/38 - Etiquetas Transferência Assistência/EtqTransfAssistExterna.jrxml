@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : EtqTransfAssistExterna
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 38 - Etiquetas Transferência Assistência
+  Descrição      : Etiquetas dos produtos movimentados nas transferências de
+                   reposição da assistência externa (mesma busca do relatório
+                   37 - SepTransfAssistExterna). Uma etiqueta por linha da lista
+                   de separação (parceiro + produto + unidade), com:
+                     COD | DESCRPROD | QTDNEG
+                   Layout baseado no relatório 31 (Etiqueta de Série Avulsa
+                   Manual): 2 colunas, 142 x 36 pt por etiqueta. Linha 1 = COD
+                   à esquerda e QTD à direita; linhas 2-3 = DESCRPROD.
+
+  Parâmetros     : P_CODPARC — parceiro da assistência externa (opcional). Em
+                               branco, etiquetas de todos os parceiros.
+                   P_DTINI   — data inicial de conclusão da O.S. (DTCONCLUSAO;
+                               opcional; padrão = hoje)
+                   P_DTFIN   — data final de conclusão da O.S. (DTCONCLUSAO;
+                               opcional; padrão = hoje)
+
+  Tabelas        : AD_SPKCAE : O.S. de conserto externo (NUNOTATRF, CODPARC)
+                   TGFCAB / TGFITE : nota de transferência (TOP 708) e itens
+                   TGFPRO : descrição do produto
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Data de Criação: 19/10/2026
+  Última Revisão : Outubro/2026 — Criação
+
+  Observações    : - Mesmos filtros e agrupamento do relatório 37: a quantidade
+                     é a soma de QTDNEG de todas as O.S. concluídas no período,
+                     por parceiro + produto + unidade. Manter os dois em sincronia
+                     se a busca do 37 mudar.
+                   - Não usa PK_ da tela: imprimir com um único registro
+                     selecionado (N selecionados = N cópias das etiquetas).
+                   - Uma etiqueta por produto (não uma por unidade); a
+                     quantidade vai impressa na etiqueta.
+                   - DESCRPROD é cortada se passar de ~3 linhas (fonte 7).
+  ==============================================================================
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="EtqTransfAssistExterna" language="groovy" columnCount="2" printOrder="Horizontal" pageWidth="303" pageHeight="42" orientation="Landscape" columnWidth="142" columnSpacing="8" leftMargin="8" rightMargin="2" topMargin="5" bottomMargin="1">
+	<property name="ireport.zoom" value="4.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="P_CODPARC" class="java.math.BigDecimal">
+		<property name="NOMETABELA" value="TGFPAR"/>
+		<parameterDescription><![CDATA[Parceiro da assistência externa (opcional; em branco lista todos)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTINI" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data inicial de conclusão da O.S. (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTFIN" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data final de conclusão da O.S. (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.sql.Timestamp(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT CAE.CODPARC,
+    ITE.CODPROD,
+    PRO.DESCRPROD,
+    ITE.CODVOL,
+    SUM(ITE.QTDNEG) AS QTDNEG
+FROM AD_SPKCAE CAE
+    INNER JOIN TGFCAB CAB ON CAB.NUNOTA = CAE.NUNOTATRF
+    INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+    INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAE.CODPARC
+WHERE CAB.CODTIPOPER = 708
+  AND ITE.SEQUENCIA > 0
+  AND DECODE(CAE.CODPARC, NVL($P{P_CODPARC}, CAE.CODPARC), 1, 0) = 1
+  AND CAE.DTCONCLUSAO >= TRUNC(NVL($P{P_DTINI}, CAE.DTCONCLUSAO))
+  AND CAE.DTCONCLUSAO < TRUNC(NVL($P{P_DTFIN}, CAE.DTCONCLUSAO)) + 1
+GROUP BY CAE.CODPARC,
+    PAR.NOMEPARC,
+    ITE.CODPROD,
+    PRO.DESCRPROD,
+    ITE.CODVOL
+ORDER BY PAR.NOMEPARC, CAE.CODPARC, ITE.CODPROD, ITE.CODVOL]]>
+	</queryString>
+	<field name="CODPARC" class="java.math.BigDecimal"/>
+	<field name="CODPROD" class="java.math.BigDecimal"/>
+	<field name="DESCRPROD" class="java.lang.String"/>
+	<field name="CODVOL" class="java.lang.String"/>
+	<field name="QTDNEG" class="java.lang.Double"/>
+	<detail>
+		<band height="36" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="62" height="12"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CODPROD} == null ? "" : String.valueOf($F{CODPROD})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="62" y="0" width="80" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["QTD: " + ($F{QTDNEG} == null ? "" : new java.text.DecimalFormat("#,##0.##").format($F{QTDNEG})) + ($F{CODVOL} == null ? "" : " " + $F{CODVOL})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="12" width="142" height="24"/>
+				<textElement textAlignment="Center" verticalAlignment="Top" markup="none">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>
