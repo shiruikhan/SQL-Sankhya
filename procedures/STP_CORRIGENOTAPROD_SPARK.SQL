@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE STP_CORRIGENOTAPROD_SPARK (
     P_DIAS        NUMBER   DEFAULT 7,    -- Janela de varredura (dias) das conferências finalizadas
     P_IDIPROC     NUMBER   DEFAULT NULL, -- Restringe a verificação a uma OP específica (opcional)
-    P_ATUALIZAEST VARCHAR2 DEFAULT 'S'   -- S = ajusta TGFEST no mesmo delta corrigido no item PA
+    P_ATUALIZAEST VARCHAR2 DEFAULT 'N'   -- OBSOLETO (Out/2026): ignorado; mantido só por compatibilidade de chamada
 ) AS
 /*==============================================================================
   Nome do Script : STP_CORRIGENOTAPROD_SPARK
@@ -37,22 +37,22 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGENOTAPROD_SPARK (
                       notas da OP.
                    3. Quantidade divergente (a menor OU a maior) -> corrige
                       TGFITE.QTDNEG do item PA para coincidir com o total de
-                      séries lançadas na nota (cria o item se não existir);
-                      o estoque é ajustado pelo mesmo delta, positivo ou
-                      negativo. Séries em excesso em TGFSER não são excluídas.
+                      séries lançadas na nota (cria o item se não existir).
+                      Séries em excesso em TGFSER não são excluídas.
 
-                   Como o item PA tem ATUALESTOQUE = 1 e a nota é gravada já
-                   confirmada (PENDENTE = 'N'), o estoque do PA (TGFEST) é
-                   ajustado pelo mesmo delta corrigido — comportamento
-                   controlado pelo parâmetro P_ATUALIZAEST.
+                   O estoque do PA (TGFEST) NÃO é ajustado por esta rotina: o
+                   INSERT/UPDATE do item PA (ATUALESTOQUE = 1, RESERVA = 'N')
+                   já movimenta TGFEST pelas triggers nativas de TGFITE
+                   (TRG_INC_TGFITE / TRG_UPT_TGFITE -> STP_ATUALIZA_TGFEST).
 
   Parâmetros     : P_DIAS        — janela de varredura em dias (default 7);
                                    conferências com séries consolidadas dentro
                                    da janela são verificadas
                    P_IDIPROC     — verifica somente a OP informada (opcional)
-                   P_ATUALIZAEST — S/N: ajusta TGFEST no delta corrigido (default S)
+                   P_ATUALIZAEST — obsoleto, ignorado (mantido para não quebrar
+                                   chamadas existentes)
   Tabelas        : TPRCONF, TPRIATV, TPRIPROC, TPRIPA, AD_TPRCOI, TPRCOI (leitura)
-                   TGFCAB, TGFITE, TGFSER, TGFEST (leitura/escrita)
+                   TGFCAB, TGFITE, TGFSER (leitura/escrita)
                    TGFTOP, TGFPRO (leitura)
                    AD_CORRNOTAPROD (auditoria das correções)
   Tabela de Log  : AD_LOG_ERROS
@@ -87,6 +87,12 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGENOTAPROD_SPARK (
                    não é reinserida (evita ORA-00001 em PK_TGFSER); auditoria
                    SERIE_INCLUIDA passa a gravar o QTDLANC real (antes NULL,
                    violando NOT NULL em AD_CORRNOTAPROD).
+                   Outubro/2026 — Removido o ajuste direto em TGFEST
+                   (ATUALIZA_ESTOQUE): somava o delta uma segunda vez, além das
+                   triggers nativas de TGFITE, dobrando o estoque do PA no
+                   local 109 a cada nota criada/ajustada (confirmado em
+                   19/10/2026: nota 831917, PA 311614, +7 no kardex e +14 em
+                   TGFEST). P_ATUALIZAEST passa a ser ignorado.
 
   Observações    : Premissas assumidas (validar antes de implantar):
                    - O serviço nativo grava TGFCAB.IDIPROC na nota de produção
@@ -207,38 +213,6 @@ CREATE OR REPLACE PROCEDURE STP_CORRIGENOTAPROD_SPARK (
             P_QTDCONF, P_QTDLANC, P_QTDCORR, P_TIPO, P_DESCR, SYSDATE
         );
     END REGISTRA_CORRECAO;
-
-    -- Ajusta o estoque do PA (TGFEST) no delta corrigido, espelhando o
-    -- ATUALESTOQUE = 1 do item da nota de produção
-    PROCEDURE ATUALIZA_ESTOQUE(
-        P_CODPROD NUMBER,
-        P_CODEMP  NUMBER,
-        P_QTD     NUMBER
-    ) IS
-    BEGIN
-        IF NVL(P_ATUALIZAEST, 'N') <> 'S' OR NVL(P_QTD, 0) = 0 THEN
-            RETURN;
-        END IF;
-
-        UPDATE  TGFEST
-        SET     ESTOQUE = NVL(ESTOQUE, 0) + P_QTD
-        WHERE   CODEMP   = P_CODEMP
-        AND     CODPROD  = P_CODPROD
-        AND     CODLOCAL = V_CODLOCAL_PA
-        AND     CONTROLE = ' '
-        AND     CODPARC  = 0
-        AND     TIPO     = 'P';
-
-        IF SQL%ROWCOUNT = 0 THEN
-            INSERT INTO TGFEST (
-                CODEMP, CODPROD, CODLOCAL, CONTROLE, CODPARC, TIPO,
-                ESTOQUE, RESERVADO
-            ) VALUES (
-                P_CODEMP, P_CODPROD, V_CODLOCAL_PA, ' ', 0, 'P',
-                P_QTD, 0
-            );
-        END IF;
-    END ATUALIZA_ESTOQUE;
 
     -- Insere o item do PA na nota (mesmos valores do item gerado pelo
     -- serviço nativo — ver exemplos/TGFITE.sql)
@@ -396,7 +370,6 @@ BEGIN
 
                 V_SEQPA := 1;
                 INSERE_ITEM_PA(V_NUNOTA, V_SEQPA, V_CODEMP, R_CONF.CODPRODPA, R_CONF.QTDCONF);
-                ATUALIZA_ESTOQUE(R_CONF.CODPRODPA, V_CODEMP, R_CONF.QTDCONF);
 
                 REGISTRA_CORRECAO('NOTA_CRIADA', R_CONF.NUCONF, R_CONF.IDIPROC,
                     V_NUNOTA, R_CONF.CODPRODPA, R_CONF.QTDCONF, 0, R_CONF.QTDCONF,
@@ -503,8 +476,6 @@ BEGIN
 
                     INSERE_ITEM_PA(V_NUNOTA, V_SEQPA, V_CODEMP, R_CONF.CODPRODPA, V_DELTA);
                 END IF;
-
-                ATUALIZA_ESTOQUE(R_CONF.CODPRODPA, V_CODEMP, V_DELTA);
 
                 REGISTRA_CORRECAO('QTD_AJUSTADA', R_CONF.NUCONF, R_CONF.IDIPROC,
                     V_NUNOTA, R_CONF.CODPRODPA, R_CONF.QTDCONF, V_QTDLANC, V_DELTA,
