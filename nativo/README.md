@@ -23,7 +23,7 @@ Cópia **de referência** do que é do fabricante: functions, packages, tabelas 
 |---|---|---|---|---|
 | [`functions/`](functions/README.md) | 348 (153 `SNK_*` + 195 outras) | 17–18/09/2026 (`SNK_*`) e 08/10/2026 (demais) | `functions/README.md` | Cabeçalho padronizado em cada arquivo, com assinatura e data de captura |
 | [`packages/`](packages/README.md) | 20 | 08/10/2026 | `packages/README.md` | **Só especificação** — o banco não tem `PACKAGE BODY`; funcionam como repositório de variáveis de sessão |
-| [`tables/`](tables/README.md) | 53 | 18/09/2026 | `tables/README.md` | DDL cru do `GET_DDL`, sem cabeçalho; selecionadas por frequência de uso no repositório |
+| [`tables/`](tables/README.md) | 54 | 18/09/2026 | `tables/README.md` | DDL cru do `GET_DDL`, sem cabeçalho; selecionadas por frequência de uso no repositório |
 | [`procedures/`](procedures/README.md) | 21 | 08/10/2026 | `procedures/README.md` | Só as chamadas por triggers nativas capturadas e pela Spark (fechamento de dependência); as ~200 procedures de 12/2021 restantes não foram capturadas |
 | [`triggers/`](triggers/README.md) | 149 | 08/10/2026 | `triggers/README.md` | Triggers das tabelas que a Spark customiza (`TGFCAB`, `TGFITE`, `TGFFIN`, `TGFPRO` …), com estado `ENABLED`/`DISABLED` — 57 delas recapturadas em pedaços por terem vindo truncadas em 4000 caracteres |
 | `libs/` | 364 JARs | — | — | Local, fora do git |

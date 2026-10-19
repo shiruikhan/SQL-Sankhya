@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de tabelas:** 53  
+**Total de tabelas:** 54  
 **Banco:** Oracle  
 **Origem:** Nativas do ERP Sankhya (schema SPARKPRD) — mantidas aqui apenas como referência/documentação, não são customizações da Spark.
 
@@ -64,6 +64,7 @@
 | [`TSICID`](TSICID.SQL) | `CODCID` | Cadastro de cidades. |
 | [`TSICTA`](TSICTA.SQL) | `CODCTABCOINT` | Conta contábil-financeira (integração contábil). |
 | [`TSIEND`](TSIEND.SQL) | `CODEND` | Cadastro de endereço (logradouro). |
+| [`TSILGT`](TSILGT.SQL) | — (sem PK; índice `TSILGT_I01` em `NOMETAB, DHACAO`) | Log nativo de alteração de campos do sistema (tabela, chave, campo, valor novo/antigo, usuário do sistema/banco/rede, máquina, IP, programa). Gravada por [`STP_GRAVATABLOG`](../procedures/STP_GRAVATABLOG.SQL). Capturada em 19/10/2026, sem triggers; não está cadastrada no dicionário (`TDDCAM`). |
 | [`TSIPAR`](TSIPAR.SQL) | `CHAVE, CODUSU` | Parâmetros de sistema (chave/valor) configuráveis do ERP. |
 | [`TSIUFS`](TSIUFS.SQL) | `CODUF` | Cadastro de Unidades da Federação (UF). |
 | [`TSIUSU`](TSIUSU.SQL) | `CODUSU` | Usuários do sistema. |

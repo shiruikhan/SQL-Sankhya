@@ -4,6 +4,7 @@ import os,re,csv,sys
 root=sys.argv[1] if len(sys.argv)>1 else os.path.dirname(os.path.abspath(__file__))
 TIPOS=[('functions','FUNCTION'),('packages','PACKAGE_SPEC'),('procedures','PROCEDURE'),('tables','TABLE'),('triggers','TRIGGER')]
 DEFAULT={'tables':'18/09/2026'}  # tabelas: data registrada no README do catálogo, não no arquivo
+EXCECAO={'tables/TSILGT.SQL':'19/10/2026'}  # tabelas capturadas depois do lote de 18/09/2026
 rows=[]
 for d,tipo in TIPOS:
     for f in sorted(os.listdir(os.path.join(root,d))):
@@ -13,7 +14,7 @@ for d,tipo in TIPOS:
         try: t=raw.decode('utf-8')
         except UnicodeDecodeError: t=raw.decode('latin-1')
         m=re.search(r'[Cc]apturad[oa][^\n]{0,60}?(\d{2}/\d{2}/\d{4})',t)
-        data=m.group(1) if m else DEFAULT.get(d,'')
+        data=m.group(1) if m else EXCECAO.get(f'{d}/{f}',DEFAULT.get(d,''))
         nome=os.path.splitext(f)[0]
         sub=tipo
         rows.append([sub,nome,f'{d}/{f}',data,len(t.splitlines())])
