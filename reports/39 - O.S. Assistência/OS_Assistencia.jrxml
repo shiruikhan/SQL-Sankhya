@@ -8,6 +8,9 @@
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
 	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["./"]]></defaultValueExpression>
+	</parameter>
 	<parameter name="NUMOSINI" class="java.math.BigDecimal">
 		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
 	</parameter>
@@ -34,12 +37,44 @@
 		WHEN ASS.STATUS = 'T' THEN 'TROCA'
 		WHEN ASS.STATUS = 'RT' THEN 'RETORNO/TROCA'
 		WHEN ASS.STATUS = 'R' THEN 'RETORNO'
-		WHEN ASS.STATUS = 'TG' THEN 'TROCA DE GERAÇÃO' END) AS STATUS
+		WHEN ASS.STATUS = 'TG' THEN 'TROCA DE GERAÇÃO' END) AS STATUS,
+	ASS.T_DTVENDA AS "DATA DE COMPRA",
+	ASS.DTENVIO AS "DATA DE ENTREGA",
+	NVL((SELECT MAX(OPC.OPCAO)
+	       FROM TDDOPC OPC
+	      INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
+	      WHERE CAM.NOMETAB   = 'AD_TGFASS'
+	        AND CAM.NOMECAMPO = 'DEFEITO'
+	        AND OPC.VALOR     = ASS.DEFEITO), ASS.DEFEITO) AS "DEFEITO APRESENTADO",
+	TEC.NOME AS TECNICO,
+	SOL.NOME || CASE WHEN SOL.NOME IS NOT NULL AND SOL2.NOME IS NOT NULL THEN ' / ' END || SOL2.NOME AS SOLDA,
+	TES.NOME AS TESTE,
+	INS.NOME AS INSERCAO,
+	ASS.VERSAO AS "VERSAO DE PLACA",
+	CASE WHEN NVL(ASS.DISJUNTOR, 'N')     <> 'N' THEN 'X' END AS DP_DISJUNTOR,
+	CASE WHEN NVL(ASS.LED, 'N')           <> 'N' THEN 'X' END AS DP_LED,
+	CASE WHEN NVL(ASS.COOLER, 'N')        <> 'N' THEN 'X' END AS DP_COOLER,
+	CASE WHEN NVL(ASS.SOLDA, 'N')         <> 'N' THEN 'X' END AS DP_SOLDA,
+	CASE WHEN NVL(ASS.INDUTOR, 'N')       <> 'N' THEN 'X' END AS DP_INDUTOR,
+	CASE WHEN NVL(ASS.MICA, 'N')          <> 'N' THEN 'X' END AS DP_MICA,
+	CASE WHEN NVL(ASS.CORRENTEMIN, 'N')   <> 'N' THEN 'X' END AS DP_CORRENTEMIN,
+	CASE WHEN NVL(ASS.CORRENTEMAX, 'N')   <> 'N' THEN 'X' END AS DP_CORRENTEMAX,
+	CASE WHEN NVL(ASS.DISPLAY, 'N')       <> 'N' THEN 'X' END AS DP_DISPLAY,
+	CASE WHEN NVL(ASS.ADESIVO, 'N')       <> 'N' THEN 'X' END AS DP_ADESIVO,
+	CASE WHEN NVL(ASS.CURTO, 'N')         <> 'N' THEN 'X' END AS DP_CURTO,
+	CASE WHEN NVL(ASS.COMPINVERTIDO, 'N') <> 'N' THEN 'X' END AS DP_COMPINVERTIDO,
+	CASE WHEN NVL(ASS.CHICOTE, 'N')       <> 'N' THEN 'X' END AS DP_CHICOTE,
+	CASE WHEN NVL(ASS.TRANSFORMADOR, 'N') <> 'N' THEN 'X' END AS DP_TRANSFORMADOR
 FROM AD_TGFASS ASS
 	LEFT JOIN TGFPAR PAR ON ASS.CODPARC = PAR.CODPARC
 	LEFT JOIN TSIEND EN  ON PAR.CODEND = EN.CODEND
 	LEFT JOIN TSICID CID ON PAR.CODCID = CID.CODCID
 	LEFT JOIN TSIUFS UFS ON CID.UF = UFS.CODUF
+	LEFT JOIN AD_CADFUNC TEC  ON TEC.IDFUNC  = ASS.TECNICO
+	LEFT JOIN AD_CADFUNC SOL  ON SOL.IDFUNC  = ASS.FUNCSOLDA
+	LEFT JOIN AD_CADFUNC SOL2 ON SOL2.IDFUNC = ASS.FUNCSOLDA2
+	LEFT JOIN AD_CADFUNC TES  ON TES.IDFUNC  = ASS.FUNCTESTE
+	LEFT JOIN AD_CADFUNC INS  ON INS.IDFUNC  = ASS.FUNCINSERCAO
 WHERE ASS.NUMOS >= $P{NUMOSINI}
 	AND ASS.NUMOS <= $P{NUMOSFIN}]]>
 	</queryString>
@@ -57,6 +92,28 @@ WHERE ASS.NUMOS >= $P{NUMOSINI}
 	<field name="REVENDEDOR" class="java.lang.String"/>
 	<field name="NOTA DE ENTRADA" class="java.math.BigDecimal"/>
 	<field name="STATUS" class="java.lang.String"/>
+	<field name="DATA DE COMPRA" class="java.sql.Timestamp"/>
+	<field name="DATA DE ENTREGA" class="java.sql.Timestamp"/>
+	<field name="DEFEITO APRESENTADO" class="java.lang.String"/>
+	<field name="TECNICO" class="java.lang.String"/>
+	<field name="SOLDA" class="java.lang.String"/>
+	<field name="TESTE" class="java.lang.String"/>
+	<field name="INSERCAO" class="java.lang.String"/>
+	<field name="VERSAO DE PLACA" class="java.lang.String"/>
+	<field name="DP_DISJUNTOR" class="java.lang.String"/>
+	<field name="DP_LED" class="java.lang.String"/>
+	<field name="DP_COOLER" class="java.lang.String"/>
+	<field name="DP_SOLDA" class="java.lang.String"/>
+	<field name="DP_INDUTOR" class="java.lang.String"/>
+	<field name="DP_MICA" class="java.lang.String"/>
+	<field name="DP_CORRENTEMIN" class="java.lang.String"/>
+	<field name="DP_CORRENTEMAX" class="java.lang.String"/>
+	<field name="DP_DISPLAY" class="java.lang.String"/>
+	<field name="DP_ADESIVO" class="java.lang.String"/>
+	<field name="DP_CURTO" class="java.lang.String"/>
+	<field name="DP_COMPINVERTIDO" class="java.lang.String"/>
+	<field name="DP_CHICOTE" class="java.lang.String"/>
+	<field name="DP_TRANSFORMADOR" class="java.lang.String"/>
 	<title>
 		<band height="60" splitType="Stretch">
 			<image>
@@ -446,6 +503,48 @@ WHERE ASS.NUMOS >= $P{NUMOSINI}
 				</textElement>
 				<text><![CDATA[INSERÇÃO]]></text>
 			</staticText>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="391" y="170" width="163" height="17"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DATA DE COMPRA}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="204" width="551" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DEFEITO APRESENTADO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="231" width="551" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TECNICO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="260" width="551" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SOLDA}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="288" width="551" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TESTE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="314" width="551" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{INSERCAO}]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
@@ -483,43 +582,18 @@ WHERE ASS.NUMOS >= $P{NUMOSINI}
 		</band>
 	</columnHeader>
 	<detail>
-		<band height="168">
-			<rectangle>
-				<reportElement x="0" y="0" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="13" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="26" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="39" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="52" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="65" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="78" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="91" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="104" width="555" height="13"/>
-			</rectangle>
-			<rectangle>
-				<reportElement x="0" y="116" width="555" height="13"/>
-			</rectangle>
-			<line>
-				<reportElement x="425" y="0" width="1" height="129"/>
-			</line>
-			<line>
-				<reportElement x="133" y="0" width="1" height="129"/>
-			</line>
+		<band height="13">
+			<subreport>
+				<reportElement key="OS_Assistencia_Componentes" x="0" y="0" width="555" height="13"/>
+				<subreportParameter name="NUMOS">
+					<subreportParameterExpression><![CDATA[$F{NR DA OS}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="PDIR_MODELO">
+					<subreportParameterExpression><![CDATA[$P{PDIR_MODELO}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "OS_Assistencia_Componentes.jasper"]]></subreportExpression>
+			</subreport>
 		</band>
 	</detail>
 	<pageFooter>
@@ -842,6 +916,125 @@ WHERE ASS.NUMOS >= $P{NUMOSINI}
 				</textElement>
 				<text><![CDATA[Versão de Placa]]></text>
 			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="13" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_DISJUNTOR}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="13" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_CORRENTEMAX}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="24" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_LED}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="24" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_DISPLAY}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="35" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_COOLER}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="35" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_ADESIVO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="46" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_SOLDA}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="46" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_CURTO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="57" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_INDUTOR}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="57" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_COMPINVERTIDO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="68" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_MICA}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="68" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_CHICOTE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="405" y="79" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_CORRENTEMIN}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="541" y="79" width="14" height="11"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DP_TRANSFORMADOR}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="144" y="91" width="119" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{VERSAO DE PLACA}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="111" y="141" width="164" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DATA DE RECEBIMENTO}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="391" y="141" width="163" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DATA DE ENTREGA}]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageFooter>
 </jasperReport>
