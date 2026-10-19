@@ -1,19 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ==============================================================================
-  Nome do Script : Separacao_Lista_Materiais
-  Tipo           : Relatório Jasper (.jrxml)
-  Grupo          : 6 - Lista de Materiais Almoxarifado
-  Descrição      : Lista de separação de materiais para almoxarifado
-
-  Empresa        : Spark Eletrônica
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Data de Criação: A DEFINIR
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-  ==============================================================================
--->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Ordem de Produção" language="groovy" pageWidth="595" pageHeight="842" columnWidth="539" leftMargin="28" rightMargin="28" topMargin="28" bottomMargin="28">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Ordem de Produção" language="groovy" pageWidth="842" pageHeight="595" columnWidth="786" leftMargin="28" rightMargin="28" topMargin="28" bottomMargin="28">
 	<property name="ireport.zoom" value="2.6573415000000056"/>
 	<property name="ireport.x" value="335"/>
 	<property name="ireport.y" value="0"/>
@@ -23,30 +9,30 @@
 			<pen lineWidth="1.0" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="table_TH" mode="Opaque" backcolor="#C3C3D9">
+	<style name="table_TH" mode="Opaque" backcolor="#DADADA">
 		<box>
-			<topPen lineWidth="0.5" lineColor="#000000"/>
-			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#999999"/>
+			<bottomPen lineWidth="0.5" lineColor="#999999"/>
 		</box>
 	</style>
-	<style name="table_CH" mode="Opaque" backcolor="#E6E6FF">
+	<style name="table_CH" mode="Opaque" backcolor="#EAEAEA">
 		<box>
-			<topPen lineWidth="0.5" lineColor="#000000"/>
-			<leftPen lineWidth="0.5"/>
-			<bottomPen lineWidth="0.5" lineColor="#000000"/>
-			<rightPen lineWidth="0.5"/>
+			<topPen lineWidth="0.5" lineColor="#999999"/>
+			<leftPen lineWidth="0.5" lineColor="#999999"/>
+			<bottomPen lineWidth="0.5" lineColor="#999999"/>
+			<rightPen lineWidth="0.5" lineColor="#999999"/>
 		</box>
 	</style>
 	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF" hAlign="Center">
 		<box leftPadding="0">
-			<topPen lineWidth="0.5" lineColor="#000000"/>
-			<leftPen lineWidth="0.5"/>
-			<bottomPen lineWidth="0.5" lineColor="#000000"/>
-			<rightPen lineWidth="0.5"/>
+			<topPen lineWidth="0.5" lineColor="#B0B0B0"/>
+			<leftPen lineWidth="0.5" lineColor="#B0B0B0"/>
+			<bottomPen lineWidth="0.5" lineColor="#B0B0B0"/>
+			<rightPen lineWidth="0.5" lineColor="#B0B0B0"/>
 		</box>
 		<conditionalStyle>
 			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
-			<style backcolor="#F8F8FF"/>
+			<style backcolor="#F7F7F7"/>
 		</conditionalStyle>
 	</style>
 	<style name="table 1">
@@ -80,22 +66,22 @@
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<queryString>
-		<![CDATA[SELECT --LINHA2COLUNA('SELECT DISTINCT AD_NUMPS FROM TGFCAB WHERE NVL(NUMPEDIDO2,AD_NUMPS) = '||NVL(C.NUMPEDIDO2,C.AD_NUMPS)) AS NUMPS,
-	(SELECT CB.AD_NUMPS FROM TGFCAB CB WHERE CB.NUNOTA = NVL($P{NUNOTA},$P{PK_NUNOTA})) AS NUMPS,
+		<![CDATA[SELECT (SELECT CB.AD_NUMPS FROM TGFCAB CB WHERE CB.NUNOTA = NVL($P{NUNOTA},$P{PK_NUNOTA})) AS NUMPS,
 	c.ad_codlocaldest,
 	L.CODLOCAL||'-'||L.DESCRLOCAL AS DESCRLOCAL,
 	I.CODPROD,
 	P.DESCRPROD,
 	P.LOCALIZACAO,
-	SUM(I.QTDNEG-I.QTDENTREGUE) AS  QTD
+	SUM(I.QTDNEG-I.QTDENTREGUE) AS  QTD,
+	DBMS_LOB.SUBSTR(P.AD_OBSTECNICA, 1000, 1) AS AD_OBSTECNICA
 FROM TGFCAB C
 	LEFT JOIN TGFLOC L ON (C.AD_CODLOCALDEST = L.CODLOCAL)
 	INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)
 	INNER JOIN TGFPRO P ON (P.CODPROD = I.CODPROD)
 WHERE NVL(C.NUMPEDIDO2,C.AD_NUMPS) IN (SELECT NVL(CAB.NUMPEDIDO2,CAB.AD_NUMPS) FROM TGFCAB CAB WHERE CAB.NUNOTA=NVL($P{NUNOTA},$P{PK_NUNOTA}))
 	AND NVL(c.ad_codlocaldest,0) >0
-GROUP BY NVL(C.NUMPEDIDO2,C.AD_NUMPS), c.ad_codlocaldest, L.CODLOCAL||'-'||L.DESCRLOCAL, I.CODPROD, P.DESCRPROD, P.LOCALIZACAO
-ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
+GROUP BY NVL(C.NUMPEDIDO2,C.AD_NUMPS), c.ad_codlocaldest, L.CODLOCAL||'-'||L.DESCRLOCAL, I.CODPROD, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBSTECNICA, 1000, 1)
+ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO, DBMS_LOB.SUBSTR(P.AD_OBSTECNICA, 1000, 1)]]>
 	</queryString>
 	<field name="NUMPS" class="java.lang.String"/>
 	<field name="AD_CODLOCALDEST" class="java.math.BigDecimal"/>
@@ -104,6 +90,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 	<field name="DESCRPROD" class="java.lang.String"/>
 	<field name="LOCALIZACAO" class="java.lang.String"/>
 	<field name="QTD" class="java.math.BigDecimal"/>
+	<field name="AD_OBSTECNICA" class="java.lang.String"/>
 	<variable name="LOTE_1" class="java.lang.Integer" calculation="Count">
 		<variableExpression><![CDATA[]]></variableExpression>
 	</variable>
@@ -144,12 +131,12 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 					<text><![CDATA[Plano:]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="5" y="27" width="64" height="29"/>
+					<reportElement style="table_CH" x="5" y="27" width="70" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
@@ -157,12 +144,12 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 					<text><![CDATA[Código]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="69" y="27" width="224" height="29"/>
+					<reportElement style="table_CH" x="75" y="27" width="210" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
@@ -170,12 +157,12 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 					<text><![CDATA[Descrição	]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="341" y="27" width="48" height="29"/>
+					<reportElement style="table_CH" x="345" y="27" width="50" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
@@ -183,12 +170,12 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 					<text><![CDATA[Atender]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="389" y="27" width="48" height="29"/>
+					<reportElement style="table_CH" x="395" y="27" width="60" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
@@ -196,25 +183,25 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 					<text><![CDATA[Saldo]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="437" y="27" width="48" height="29"/>
+					<reportElement style="table_CH" x="455" y="27" width="50" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
 					</textElement>
-					<text><![CDATA[Atendido]]></text>
+					<text><![CDATA[Falta]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="293" y="27" width="48" height="29"/>
+					<reportElement style="table_CH" mode="Opaque" x="285" y="27" width="60" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
@@ -243,17 +230,30 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 					<text><![CDATA[/]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="485" y="27" width="54" height="29"/>
+					<reportElement style="table_CH" mode="Opaque" x="505" y="27" width="34" height="29"/>
 					<box leftPadding="3">
-						<topPen lineWidth="0.5" lineStyle="Solid"/>
-						<leftPen lineWidth="0.5" lineStyle="Solid"/>
-						<bottomPen lineWidth="0.5" lineStyle="Solid"/>
-						<rightPen lineWidth="0.5" lineStyle="Solid"/>
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
 					</box>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Arial" size="10" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Ass]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="table_CH" mode="Opaque" x="539" y="27" width="247" height="29"/>
+					<box leftPadding="3">
+						<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+						<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#999999"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Arial" size="10" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Obs. Técnica]]></text>
 				</staticText>
 			</band>
 		</groupHeader>
@@ -267,10 +267,10 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 	<title>
 		<band height="32" splitType="Stretch">
 			<rectangle>
-				<reportElement x="0" y="0" width="539" height="31"/>
+				<reportElement mode="Opaque" x="0" y="0" width="786" height="31" backcolor="#F0F0F0"/>
 			</rectangle>
 			<staticText>
-				<reportElement x="105" y="1" width="308" height="30"/>
+				<reportElement x="0" y="1" width="786" height="30"/>
 				<box leftPadding="3"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="14" isBold="true"/>
@@ -286,7 +286,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 	<detail>
 		<band height="20">
 			<textField>
-				<reportElement x="5" y="-1" width="64" height="20"/>
+				<reportElement x="5" y="-1" width="70" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -299,7 +299,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{CODPROD}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="293" y="-1" width="48" height="20"/>
+				<reportElement x="285" y="-1" width="60" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -312,7 +312,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{LOCALIZACAO}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="437" y="-1" width="48" height="20"/>
+				<reportElement x="455" y="-1" width="50" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -325,7 +325,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="341" y="-1" width="48" height="20"/>
+				<reportElement x="345" y="-1" width="50" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -338,7 +338,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTD}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="69" y="-1" width="224" height="20"/>
+				<reportElement x="75" y="-1" width="210" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -351,7 +351,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRPROD}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="389" y="-1" width="48" height="20"/>
+				<reportElement x="395" y="-1" width="60" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -364,7 +364,7 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="485" y="-1" width="54" height="20"/>
+				<reportElement x="505" y="-1" width="34" height="20"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -376,6 +376,19 @@ ORDER BY c.ad_codlocaldest, P.DESCRPROD, P.LOCALIZACAO]]>
 				</textElement>
 				<text><![CDATA[]]></text>
 			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="539" y="-1" width="247" height="20"/>
+				<box>
+					<topPen lineWidth="0.5" lineStyle="Solid"/>
+					<leftPen lineWidth="0.5" lineStyle="Solid"/>
+					<bottomPen lineWidth="0.5" lineStyle="Solid"/>
+					<rightPen lineWidth="0.5" lineStyle="Solid"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{AD_OBSTECNICA}]]></textFieldExpression>
+			</textField>
 		</band>
 	</detail>
 </jasperReport>
