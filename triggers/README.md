@@ -195,6 +195,7 @@ Apontamento de conferência de notas importadas, criado direto na tela de
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
 | `TRG_INC_AD_TGSIXN_SPARK.SQL` | `TRG_INC_AD_TGSIXN_SPARK` | `AD_TGSIXN` | BEFORE INSERT | Preenche a identidade do apontamento: `CODUSUINC`, `DTINI`, `CODEMP = 1`, e busca `NUMNOTA`/`DHEMISS` em `TGFIXN` pelo `NUARQUIVO`; inicializa `DURACAO_DIAS_UTEIS` |
+| `TRG_INC_CORRAPONTAMENTO_SPARK.SQL` | `TRG_INC_CORRAPONTAMENTO_SPARK` | `AD_CORRAPONTAMENTO` | AFTER INSERT | Alerta por e-mail (vieira.silvio@spark.ind.br) a cada nova correção de apontamento, com todos os campos do registro + `DESCRPROD`; grava na fila via `STP_GRAVA_FILA_BI2`; erro só é logado em `AD_LOG_ERROS` (não relança) |
 | `TRG_INC_UPD_AD_TGSIXN_SPARK.SQL` | `TRG_INC_UPD_AD_TGSIXN_SPARK` | `AD_TGSIXN` | BEFORE INSERT, UPDATE | Mantém `STATUS` coerente com `DTFIM`: `1` (aberto) enquanto `DTFIM` nula, `2` (finalizado) quando preenchida — sempre recalculado, sobrepõe valor manual |
 | `TRG_UPD_AD_TGSIXN_SPARK.SQL` | `TRG_UPD_AD_TGSIXN_SPARK` | `AD_TGSIXN` | BEFORE UPDATE | Torna imutáveis os campos de identidade (`NUCONF`, `CODUSUINC`, `NUARQUIVO`, `DTINI`, `CODEMP`, `NUMNOTA`, `DHEMISS`); `CODFUNC` (conferente) só pode ser setado uma vez; `OBSERVACAO` livre |
 
