@@ -491,7 +491,7 @@ BEGIN
                 ,R.DTVCTO
                 ,'D'
                 ,90
-                ,100102
+                ,100110
                 ,R.DIFAL_DEVIDO
                 ,NULL
                 ,R.TIPO
