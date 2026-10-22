@@ -1,12 +1,14 @@
 create or replace TRIGGER TRG_TGFASS_INC_SPARK
-BEFORE INSERT /* OR UPDATE*/ ON AD_TGFASS 
+BEFORE INSERT OR UPDATE OF SNENTRADA ON AD_TGFASS
 FOR EACH ROW
+WHEN (OLD.SNENTRADA IS NULL OR NEW.SNENTRADA IS NULL OR NEW.SNENTRADA <> OLD.SNENTRADA)
 /*==============================================================================
   Nome do Script : TRG_TGFASS_INC_SPARK
   Tipo           : Trigger
-  Descrição      : Popula automaticamente atributos de série (produto, descrição, referência, data fabricação, lote) consultando view VGFSERIES na inserção.
+  Descrição      : Popula automaticamente atributos de série (produto, descrição, referência, data fabricação, lote) consultando view VGFSERIES na inserção
+                   e sempre que SNENTRADA for informada ou alterada.
   Tabela         : AD_TGFASS
-  Evento         : BEFORE INSERT
+  Evento         : BEFORE INSERT OR UPDATE OF SNENTRADA
   Escopo         : FOR EACH ROW / STATEMENT
 
   Autor          : Silvio Vieira
@@ -14,6 +16,9 @@ FOR EACH ROW
   Empresa        : Spark Eletrônica
   Data de Criação: [A DEFINIR]
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Outubro/2026 — passa a disparar também em UPDATE OF SNENTRADA
+                   (WHEN só quando o valor muda), pois O.S. salvas sem série e
+                   completadas depois ficavam com T_* padrão (caso O.S. 13041).
 ==============================================================================*/
 DECLARE
 	P_CODPROD INTEGER;

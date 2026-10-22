@@ -31,12 +31,12 @@
 	PAR.NOMEPARC,
 	PAR.RAZAOSOCIAL,
 	PAR.TELEFONE,
-	CAB.PESO || ' KG' AS PESOLIQCAB,
-	CAB.PESOBRUTO || ' KG' AS PESOBRUTCAB,
+	TO_CHAR(CAB.PESO, 'FM999G999G990D000', 'NLS_NUMERIC_CHARACTERS=''.,''') || ' KG' AS PESOLIQCAB,
+	TO_CHAR(CAB.PESOBRUTO, 'FM999G999G990D000', 'NLS_NUMERIC_CHARACTERS=''.,''') || ' KG' AS PESOBRUTCAB,
 	PAR.FAX,
 	PAR.CGC_CPF,
 	0 AS OTHER,
-	(CASE WHEN CAB.VLRSEG > 0 THEN CAB.VLRSEG / CAB.VLRMOEDA ELSE 0 END) AS INSURANCE,
+	(CASE WHEN CAB.VLRSEG > 0 THEN ROUND(CAB.VLRSEG / CAB.VLRMOEDA, 2) ELSE 0 END) AS INSURANCE,
 	PAR.CEP,
 	PAR.INSCESTADNAUF,
 	CAB.AD_BUYERNAME,
@@ -77,8 +77,8 @@
 
 	)/ITE.QTDNEG,5),0)  AS PESOBRUTO,
 	ITE.AD_PESOBRUTEXP  AS PESOTOT,
-	ITE.VLRUNITMOE - (ITE.VLRDESCMOE / ITE.QTDNEG) AS VLRUNIT,
-	ITE.VLRTOTMOE - ITE.VLRDESCMOE AS VLRTOT,
+	ROUND(ITE.VLRUNITMOE - (ITE.VLRDESCMOE / ITE.QTDNEG), 6) AS VLRUNIT,
+	ROUND(ITE.VLRTOTMOE - ITE.VLRDESCMOE, 2) AS VLRTOT,
 	(SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = 9999990602 AND VALOR = CAB.AD_TRANSPORTE) AS TRANSPORTE,
     NVL((SELECT
 		NVL(SUM(PEXP.PESOBRUT),0)
@@ -101,16 +101,7 @@
 	CAB.NUMNOTA || '/' || TO_CHAR(CAB.DTFATUR,'YYYY') AS NUMINVOICE,
 	SUBSTR(AD_NRINVOICE,0,(length(to_char(AD_NRINVOICE)))-4) || '/' || SUBSTR(AD_NRINVOICE,-4,4) AS NRINVOICE,
 	CAB.VLRMOEDA,
-	CASE WHEN CAB.TIPFRETE = 'S' THEN (CASE WHEN CAB.VLRFRETE > 0 THEN CAB.VLRFRETE / CAB.VLRMOEDA ELSE 0 END) ELSE 0 END AS VLRFRETEUSD,
-	(SELECT SUM(ROUND(I.VLRTOTMOE - I.VLRDESCMOE, 2))
-			FROM TGFITE I
-			   , TGFCAB C
-	WHERE I.NUNOTA = C.NUNOTA
-		AND C.NUNOTA = CAB.NUNOTA)
-		+
-		 (CASE WHEN CAB.TIPFRETE = 'S' THEN CASE WHEN CAB.VLRFRETE > 0 THEN CAB.VLRFRETE / CAB.VLRMOEDA ELSE 0 END ELSE 0 END)
-		+
-		 (CASE WHEN CAB.VLRSEG > 0 THEN CAB.VLRSEG / CAB.VLRMOEDA ELSE 0 END) AS VLRTOTFRETE,
+	CASE WHEN CAB.TIPFRETE = 'S' THEN (CASE WHEN CAB.VLRFRETE > 0 THEN ROUND(CAB.VLRFRETE / CAB.VLRMOEDA, 2) ELSE 0 END) ELSE 0 END AS VLRFRETEUSD,
     CAB.AD_NRPO,
     CAB.MARCA
 
@@ -244,7 +235,6 @@ ORDER BY CAB.DTNEG
 	<field name="VLRTOT" class="java.math.BigDecimal"/>
 	<field name="PESOTOTAL" class="java.math.BigDecimal"/>
 	<field name="VLRFRETEUSD" class="java.math.BigDecimal"/>
-	<field name="VLRTOTFRETE" class="java.math.BigDecimal"/>
 	<field name="AD_NRPO" class="java.math.BigDecimal"/>
 	<field name="DTDIA" class="java.sql.Timestamp"/>
 	<field name="DTFATUR" class="java.sql.Timestamp"/>
@@ -507,7 +497,7 @@ ORDER BY CAB.DTNEG
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font fontName="Arial" size="7" isBold="true"/>
 				</textElement>
-				<text><![CDATA[TOTAL Price]]></text>
+				<text><![CDATA[TOTAL Price USD]]></text>
 			</staticText>
 			<staticText>
 				<reportElement key="staticText-1" mode="Transparent" x="4" y="228" width="120" height="12" forecolor="#000000" backcolor="#FFFFFF"/>
@@ -867,7 +857,7 @@ ORDER BY CAB.DTNEG
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA[$F{NCM}]]></textFieldExpression>
 			</textField>
-			<textField pattern="#,##0;-#,##0">
+			<textField pattern="#,##0.###;-#,##0.###">
 				<reportElement x="305" y="0" width="65" height="14"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font fontName="Arial" size="7"/>
@@ -879,7 +869,7 @@ ORDER BY CAB.DTNEG
 				<textElement textAlignment="Center" verticalAlignment="Middle" lineSpacing="Single">
 					<font fontName="Arial" size="7"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[new java.text.DecimalFormat("#,##0.00", new java.text.DecimalFormatSymbols(java.util.Locale.US)).format($F{VLRUNIT})]]></textFieldExpression>
+				<textFieldExpression class="java.lang.String"><![CDATA[new java.text.DecimalFormat("#,##0.000000", new java.text.DecimalFormatSymbols(java.util.Locale.US)).format($F{VLRUNIT})]]></textFieldExpression>
 			</textField>
 			<textField pattern="" isBlankWhenNull="true">
 				<reportElement x="495" y="0" width="60" height="14"/>
@@ -967,7 +957,7 @@ ORDER BY CAB.DTNEG
 				<textElement textAlignment="Left" verticalAlignment="Top" rotation="None" lineSpacing="Single" markup="none">
 					<font fontName="Arial" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica-Bold" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
 				</textElement>
-				<textFieldExpression class="java.lang.String"><![CDATA[new java.text.DecimalFormat("#,##0.00", new java.text.DecimalFormatSymbols(java.util.Locale.US)).format($F{VLRTOTFRETE})]]></textFieldExpression>
+				<textFieldExpression class="java.lang.String"><![CDATA[new java.text.DecimalFormat("#,##0.00", new java.text.DecimalFormatSymbols(java.util.Locale.US)).format($V{VLRTOT_1}.add($F{VLRFRETEUSD}).add($F{INSURANCE}).add($F{OTHER}))]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement mode="Transparent" x="318" y="47" width="160" height="14" forecolor="#000000" backcolor="#FFFFFF"/>

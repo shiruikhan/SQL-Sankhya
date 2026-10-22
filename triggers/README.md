@@ -105,7 +105,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_UPD_OSINTERNA.SQL` | `TRG_UPD_OSINTERNA` | `[O.S.]` | UPDATE | Envia e-mail ao criador da O.S. quando há mudança de status |
 | `TRG_UPD_OSINTERNA_DHFIM.SQL` | `TRG_UPD_OSINTERNA_DHFIM` | `[O.S.]` | UPDATE | Grava data e hora de finalização (`DHFIM`) quando status muda para finalizado |
 | `TRG_INS_OSSTATUS_SPARK.SQL` | `TRG_INS_OSSTATUS_SPARK` | `[O.S.]` | INSERT | Define status inicial da Ordem de Serviço |
-| `TRG_TGFASS_INC_SPARK.SQL` | `TRG_TGFASS_INC_SPARK` | `TGFASS` | INSERT | Automação na inclusão de registros de assistência |
+| `TRG_TGFASS_INC_SPARK.SQL` | `TRG_TGFASS_INC_SPARK` | `AD_TGFASS` | INSERT, UPDATE OF SNENTRADA | Preenche os campos `T_*` (produto, lote, venda, fabricação) a partir da série `SNENTRADA` na `VGFSERIES`; no UPDATE só dispara quando a série muda |
 | `TRG_TGFASS_INCUPD_SPARK.SQL` | `TRG_TGFASS_INCUPD_SPARK` | `TGFASS` | INSERT, UPDATE | Validações adicionais na assistência (inclusão e alteração) |
 | `TRG_TGFASS_VLRCONSERTO_SPARK.SQL` | `TRG_TGFASS_VLRCONSERTO_SPARK` | `AD_TGFASS` | INSERT, UPDATE | Preenche `VLRCONSERTO` via `SNK_PRECO(14, T_CODPROD)` e `VLRSERVTECNICO` via `SNK_PRECO(15, T_CODPROD)`, cada um quando o respectivo campo está nulo/zerado. `FOLLOWS TRG_TGFASS_INC_SPARK` para garantir `T_CODPROD` já preenchido |
 
