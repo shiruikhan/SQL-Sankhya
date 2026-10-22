@@ -17,6 +17,7 @@ package br.com.spark.transferencia.util;
  *   <li>{@code buildItens}        — cria a coleção de itens para a nota de transferência,
  *                                   copiando impostos da nota de origem</li>
  *   <li>{@code gerarSerie}        — copia séries de produtos da nota de origem para a destino</li>
+ *   <li>{@code recalcularImpostos} — recalcula impostos da nota, incluindo IBS/CBS (TGFREFIMP)</li>
  *   <li>{@code salvarOrigem}      — vincula pedido, saída e entrada via AD_NUNOTASAI/AD_NUNOTAENT</li>
  *   <li>{@code confirmaNota}      — confirma a nota via {@code ConfirmacaoNotaHelper}</li>
  *   <li>{@code gerarLote}         — envia lote NF-e via {@code ServicosNFeHelper2}</li>
@@ -61,6 +62,7 @@ import br.com.sankhya.modelcore.comercial.BarramentoRegra;
 import br.com.sankhya.modelcore.comercial.CentralFaturamento;
 import br.com.sankhya.modelcore.comercial.ComercialUtils;
 import br.com.sankhya.modelcore.comercial.ConfirmacaoNotaHelper;
+import br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper;
 import br.com.sankhya.modelcore.comercial.nfe.DocumentoEletronicoHelper;
 import br.com.sankhya.modelcore.comercial.nfe.ServicosNFeHelper2;
 import br.com.sankhya.modelcore.helper.ConferenciaHelper;
@@ -259,23 +261,43 @@ public class TransferenciaUtils {
     	JdbcWrapper jdbc;
     	try {
     		jdbc = EntityFacadeFactory.getDWFFacade().getJdbcWrapper();
+    		// Itens da nota destino: a CAC renumera as sequências (1, 2, ...), então a série
+    		// não pode herdar a SEQUENCIA da origem (pedido com itens excluídos tem lacunas).
+    		// buildItens cria os itens na mesma ordem da origem, logo o casamento é por posição.
+    		ArrayList<BigDecimal[]> itensDestino = new ArrayList<>();
+    		NativeSql queItemDest = new NativeSql(jdbc);
+    		queItemDest.loadSql(TransferenciaUtils.class, "queItem.sql");
+    		queItemDest.setNamedParameter("NUNOTA", destino);
+    		ResultSet rsItemDest = queItemDest.executeQuery();
+    		while(rsItemDest.next()) {
+    			itensDestino.add(new BigDecimal[] { rsItemDest.getBigDecimal("SEQUENCIA"), rsItemDest.getBigDecimal("CODPROD") });
+    		}
+    		JdbcUtils.closeResultSet(rsItemDest);
+    		NativeSql.releaseResources(queItemDest);
+
     		queItem = new NativeSql(jdbc);
     		queItem.loadSql(TransferenciaUtils.class, "queItem.sql");
     		queItem.setNamedParameter("NUNOTA", origem);
     		rsItem = queItem.executeQuery();
-    		while(rsItem.next()) {    			
+    		int idx = 0;
+    		while(rsItem.next()) {
+    			if (idx >= itensDestino.size())
+    				throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Nota " + destino + " tem menos itens que a origem " + origem + "; não foi possível copiar as séries."));
+    			BigDecimal[] itemDest = itensDestino.get(idx++);
+    			if (itemDest[1].compareTo(rsItem.getBigDecimal("CODPROD")) != 0)
+    				throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("Itens da nota " + destino + " não correspondem à origem " + origem + " (seq. destino " + itemDest[0] + "); não foi possível copiar as séries."));
     			NativeSql queSerie = new NativeSql(jdbc);
     			queSerie.loadSql(TransferenciaUtils.class, "queSerie.sql");
     			queSerie.setNamedParameter("NUNOTA", origem);
     			queSerie.setNamedParameter("SEQUENCIA", rsItem.getBigDecimal("SEQUENCIA"));
     			queSerie.setNamedParameter("CODPROD", rsItem.getBigDecimal("CODPROD"));
         		ResultSet rsSerie = queSerie.executeQuery();
-        		while(rsSerie.next()) {   
+        		while(rsSerie.next()) {
                     JapeWrapper dao = JapeFactory.dao("SerieProduto");
                     DynamicVO serieVO = dao.create()
                     		           .set("NUNOTA", destino)
                                        .set("CODPROD", rsSerie.getBigDecimal("CODPROD"))
-									   .set("SEQUENCIA", rsSerie.getBigDecimal("SEQUENCIA"))
+									   .set("SEQUENCIA", itemDest[0])
                                        .set("SERIE", rsSerie.getString("SERIE"))
 									   .set("ATUALESTOQUE", rsSerie.getBigDecimal("ATUALESTOQUE"))   
                                        .save();              
@@ -422,6 +444,26 @@ public class TransferenciaUtils {
 			NativeSql.releaseResources(ns);
 		}
 		return null;
+	}
+
+	public static void recalcularImpostos(BigDecimal nuNota) throws MGEModelException {
+		try {
+			ImpostosHelpper helper = new ImpostosHelpper();
+			helper.setForcarRecalculo(true);
+			helper.calcularImpostos(nuNota);
+			// calcularImpostos não recalcula IBS/CBS: força o cálculo da reforma item a item
+			// (só tem efeito se a TOP tiver TEMIBS/TEMCBS = 'S') e totaliza em TGFREFIMP.
+			EntityFacade ewf = EntityFacadeFactory.getDWFFacade();
+			FinderWrapper finder = new FinderWrapper("ItemNota", "this.NUNOTA = " + nuNota);
+			finder.setOrderBy("SEQUENCIA ASC");
+			Collection<DynamicVO> itens = ewf.findByDynamicFinderAsVO(finder);
+			for (DynamicVO itemVO : itens) {
+				helper.forceCalcularImpostosReforma(itemVO, true);
+			}
+			helper.totalizarImpostosCbsIbsIs(nuNota);
+		} catch (Exception e) {
+			MGEModelException.throwMe(e);
+		}
 	}
 
 	public static String getLinkNota(final String descricao, final BigDecimal nuNota) {

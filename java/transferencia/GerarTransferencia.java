@@ -7,13 +7,14 @@ package br.com.spark.transferencia;
  * selecionados. O processo é executado em 5 etapas sequenciais, cada uma com transação própria:
  * <ol>
  *   <li>Geração das notas de saída (usando modelo {@code CabecalhoNotaModelo} ID 278268)</li>
- *   <li>Cálculo de impostos das saídas via {@code ImpostosHelpper}</li>
+ *   <li>Cálculo de impostos das saídas, incluindo IBS/CBS ({@code TransferenciaUtils.recalcularImpostos})</li>
  *   <li>Geração das notas de entrada espelhando as saídas (modelo ID 278275)</li>
- *   <li>Cálculo de impostos das entradas</li>
- *   <li>Confirmação das notas e geração de lote NF-e via {@code ServicosNFeHelper2}</li>
+ *   <li>Cálculo de impostos das entradas, incluindo IBS/CBS</li>
+ *   <li>Confirmação das saídas, lote NF-e das saídas ({@code ServicosNFeHelper2}) e, se o lote
+ *       foi gerado, confirmação das entradas</li>
  * </ol>
- * Ao final, vincula pedido, saída e entrada nos campos {@code AD_NUNOTASAI} e {@code AD_NUNOTAENT}
- * de {@code TGFCAB}.
+ * Vincula pedido, saída e entrada nos campos {@code AD_NUNOTASAI} e {@code AD_NUNOTAENT}
+ * de {@code TGFCAB} e retorna mensagem com os NUNOTAs gerados e eventuais pendências.
  *
  * <p><b>Parâmetros esperados no contexto:</b> P_CODEMPORIG, P_CODEMPDEST,
  * P_CODLOCALORIG, P_CODLOCALDEST</p>
@@ -42,7 +43,6 @@ import br.com.sankhya.modelcore.MGEModelException;
 import br.com.sankhya.modelcore.auth.AuthenticationInfo;
 import br.com.sankhya.modelcore.comercial.BarramentoRegra;
 import br.com.sankhya.modelcore.comercial.centrais.CACHelper;
-import br.com.sankhya.modelcore.comercial.impostos.ImpostosHelpper;
 import br.com.sankhya.modelcore.util.DynamicEntityNames;
 import br.com.sankhya.modelcore.util.EntityFacadeFactory;
 import br.com.sankhya.util.troubleshooting.SKError;
@@ -58,10 +58,7 @@ import java.util.Map.Entry;
 
 public class GerarTransferencia implements AcaoRotinaJava {
   int totalEntradas = 0;
-  int qtdSaidaConfirmadas = 0;
-  int qtdEntradaConfirmadas = 0;
-  int qtdNFe = 0 ;
-  
+
   public void doAction(ContextoAcao ctx) throws Exception {
     		
     BigDecimal codEmpOrig = BigDecimalUtil.valueOf((String)ctx.getParam("P_CODEMPORIG"));
@@ -72,7 +69,7 @@ public class GerarTransferencia implements AcaoRotinaJava {
     HashMap<BigDecimal,HashMap<BigDecimal, BigDecimal>> documentos = new HashMap();
     Collection<BigDecimal> documentosSaidas = new ArrayList<>();
     Collection<BigDecimal> documentosEntradas = new ArrayList<>();
-    String mgsRetorno = null;
+    Collection<String> avisos = new ArrayList<>();
 
     // 1. GERAÇÃO DE SAÍDAS (Primeira Transação)
     SessionHandle hnd = null;
@@ -122,18 +119,17 @@ public class GerarTransferencia implements AcaoRotinaJava {
         throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram geradas notas de saída."));
     }
 
-    // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS (Fora de Transação para persistência)
+    // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS + IBS/CBS (Fora de Transação para persistência)
     if (!documentosSaidas.isEmpty()) {
         SessionHandle hndCalc = null;
         try {
             hndCalc = JapeSession.open();
             for(BigDecimal nuNotaSaida : documentosSaidas) {
                 try {
-                    ImpostosHelpper helper = new ImpostosHelpper();
-                    helper.setForcarRecalculo(true);
-                    helper.calcularImpostos(nuNotaSaida);
+                    TransferenciaUtils.recalcularImpostos(nuNotaSaida);
                 } catch (Exception e) {
                     e.printStackTrace();
+                    avisos.add("Falha ao recalcular impostos da saída " + nuNotaSaida + ": " + e.getMessage());
                 }
             }
         } finally {
@@ -207,18 +203,17 @@ public class GerarTransferencia implements AcaoRotinaJava {
         }
     }
 
-    // 4. CÁLCULO DE IMPOSTOS DAS ENTRADAS
+    // 4. CÁLCULO DE IMPOSTOS DAS ENTRADAS + IBS/CBS
     if (!documentosEntradas.isEmpty()) {
         SessionHandle hndCalcEnt = null;
         try {
             hndCalcEnt = JapeSession.open();
             for(BigDecimal nuNotaEntrada : documentosEntradas) {
                 try {
-                    ImpostosHelpper helper = new ImpostosHelpper();
-                    helper.setForcarRecalculo(true);
-                    helper.calcularImpostos(nuNotaEntrada);
+                    TransferenciaUtils.recalcularImpostos(nuNotaEntrada);
                 } catch (Exception e) {
                     e.printStackTrace();
+                    avisos.add("Falha ao recalcular impostos da entrada " + nuNotaEntrada + ": " + e.getMessage());
                 }
             }
         } finally {
@@ -226,25 +221,60 @@ public class GerarTransferencia implements AcaoRotinaJava {
         }
     }
 
-    // 5. CONFIRMAÇÃO E TRANSMISSÃO (via PlatformService @core:faturamento.service)
-    if (!documentosSaidas.isEmpty()) {
+    // 5. CONFIRMAÇÕES E LOTE (lógica da V26: saídas → lote NF-e das saídas → entradas)
+    int qtdSaidaConfirmadas = 0;
+    int qtdEntradaConfirmadas = 0;
+    boolean loteGerado = false;
+    for (BigDecimal nuNotaSaida : documentosSaidas) {
         try {
-            TransferenciaUtils.confirmarETransmitir(documentosSaidas);
-        } catch (Exception e) {
+            TransferenciaUtils.confirmaNota(nuNotaSaida);
+            qtdSaidaConfirmadas++;
+        } catch (MGEModelException e) {
             e.printStackTrace();
-            MGEModelException.throwMe(e);
+            avisos.add("Saída " + nuNotaSaida + " não foi confirmada: " + e.getMessage());
         }
     }
 
-    if (!documentosEntradas.isEmpty()) {
+    if (qtdSaidaConfirmadas > 0) {
         try {
-            TransferenciaUtils.confirmarETransmitir(documentosEntradas);
+            TransferenciaUtils.gerarLote(documentosSaidas);
+            loteGerado = true;
         } catch (Exception e) {
             e.printStackTrace();
-            MGEModelException.throwMe(e);
+            avisos.add("Lote NF-e das saídas não foi gerado: " + e.getMessage());
         }
     }
 
-	ctx.setMensagemRetorno("Transferência realizada com sucesso!");
+    // Entrada só é confirmada depois que a saída foi para a SEFAZ (na V26 a condição estava invertida)
+    if (loteGerado) {
+        for (BigDecimal nuNotaEntrada : documentosEntradas) {
+            try {
+                TransferenciaUtils.confirmaNota(nuNotaEntrada);
+                qtdEntradaConfirmadas++;
+            } catch (MGEModelException e) {
+                e.printStackTrace();
+                avisos.add("Entrada " + nuNotaEntrada + " não foi confirmada: " + e.getMessage());
+            }
+        }
+    } else {
+        avisos.add("Entradas não foram confirmadas porque o lote das saídas não foi gerado.");
+    }
+
+    // 6. MENSAGEM DE RETORNO
+    StringBuilder msg = new StringBuilder();
+    msg.append(avisos.isEmpty() ? "<b>Transferência realizada com sucesso!</b>" : "<b>Transferência gerada com pendências.</b>");
+    for (Entry<BigDecimal, HashMap<BigDecimal, BigDecimal>> doc : documentos.entrySet()) {
+        for (Entry<BigDecimal, BigDecimal> mov : doc.getValue().entrySet()) {
+            msg.append("<br>Pedido ").append(doc.getKey())
+               .append(" → Saída ").append(TransferenciaUtils.getLinkNota(mov.getKey().toString(), mov.getKey()))
+               .append(" / Entrada ").append(TransferenciaUtils.getLinkNota(mov.getValue().toString(), mov.getValue()));
+        }
+    }
+    msg.append("<br>Saídas confirmadas: ").append(qtdSaidaConfirmadas).append("/").append(documentosSaidas.size())
+       .append(" | Entradas confirmadas: ").append(qtdEntradaConfirmadas).append("/").append(documentosEntradas.size());
+    for (String aviso : avisos) {
+        msg.append("<br>• ").append(aviso);
+    }
+	ctx.setMensagemRetorno(msg.toString());
   }
 }

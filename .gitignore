@@ -11,7 +11,10 @@
 /scripts/
 
 # ── Código local não versionado ──────────────────────────────────────────────
-java/recalcpreco.java
+java/precos/recalcpreco.java
+
+# ── Bytecode compilado (gerar localmente; deploy é feito via .jar) ───────────
+*.class
 
 # ── Dados sensíveis ──────────────────────────────────────────────────────────
 # dash PRODUCAO DIARIA POR SETOR (volumetria e estrutura interna)

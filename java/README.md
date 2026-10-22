@@ -16,13 +16,37 @@ As classes Java são utilizadas em dois tipos de extensão do Sankhya:
 | **Botão de Ação** | `AcaoRotinaJava` | Cadastrado em *Botões de Ação* do Sankhya, associado a uma tela |
 | **Listener de Evento** | Implementação direta | Configurado em *Eventos* no CAC ou via `regrasCAC.xml` |
 
-Os arquivos `.class` compilados devem ser empacotados em `.jar` e deployados no servidor Sankhya. As queries SQL auxiliares (`.sql` em `util/`) são executadas pelo código Java via `JdbcWrapper`.
+Os arquivos `.class` compilados devem ser empacotados em `.jar` e deployados no servidor Sankhya. As queries SQL auxiliares (`.sql` em `transferencia/util/`) são executadas pelo código Java via `JdbcWrapper`.
+
+### Estrutura da pasta
+
+As pastas agrupam as classes **por domínio**. A declaração `package` de cada classe **não** foi alterada — o botão de ação/evento no ERP é cadastrado pelo nome completo da classe (ex.: `botaoAcao.CotaFreteMultiTransp`), então mudar o pacote exige recadastrar no Sankhya.
+
+```
+java/
+├── frete/                      package botaoAcao — cotação de frete multi-transportadora
+│   ├── CotaFreteMultiTransp    botão de ação (o que deve estar cadastrado no ERP)
+│   ├── *Cotador, CotadorTransportadora, DTOs, FreteUtils
+│   └── legado/                 CotaFrete, CotaFreteRodonaves (substituídos, só referência)
+├── transferencia/              package br.com.spark.transferencia — transferência entre empresas
+│   ├── GerarTransferencia      botão de ação
+│   ├── enuns/  listeners/
+│   ├── util/                   TransferenciaUtils + recursos carregados por ela (.sql, .xml)
+│   └── legado/                 GerarTransferenciaOriginal (backup pré-refatoração)
+├── etiquetas/                  package botaoAcao — ImprimirEtiquetasv2
+├── financeiro/                 package br.com.dm.valida.cte — RecalFinanceiroEve
+└── precos/                     package br.com.rm.recalcpreco — recalcpreco (não versionado)
+```
+
+Os `.sql` e `.xml` em `transferencia/util/` ficam junto da `TransferenciaUtils` porque são carregados relativos a essa classe (`NativeSql.loadSql(TransferenciaUtils.class, ...)` / `BarramentoRegra.build(TransferenciaUtils.class, ...)`) — no `.jar` precisam estar em `br/com/spark/transferencia/util/`.
+
+Arquivos `.class` não são versionados (`*.class` no `.gitignore`); compile localmente para gerar o `.jar`.
 
 ---
 
 ## Catálogo de Classes
 
-### `CotaFreteMultiTransp.java`
+### `frete/CotaFreteMultiTransp.java`
 
 **Pacote:** `botaoAcao`  
 **Interface:** `AcaoRotinaJava`  
@@ -51,7 +75,7 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ---
 
-### `CotaFrete.java` — ⚠️ Substituído por `CotaFreteMultiTransp.java`
+### `frete/legado/CotaFrete.java` — ⚠️ Substituído por `CotaFreteMultiTransp.java`
 
 **Pacote:** `botaoAcao`  
 **Interface:** `AcaoRotinaJava`  
@@ -65,7 +89,7 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ---
 
-### `CotaFreteRodonaves.java` — ⚠️ Substituído por `CotaFreteMultiTransp.java`
+### `frete/legado/CotaFreteRodonaves.java` — ⚠️ Substituído por `CotaFreteMultiTransp.java`
 
 **Pacote:** `botaoAcao`  
 **Interface:** `AcaoRotinaJava`  
@@ -79,7 +103,7 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ---
 
-### `GerarTransferencia.java`
+### `transferencia/GerarTransferencia.java`
 
 **Pacote:** `br.com.spark.transferencia`  
 **Interface:** `AcaoRotinaJava`  
@@ -93,21 +117,21 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ---
 
-### `GerarTransferenciaOriginal.java`
+### `transferencia/legado/GerarTransferenciaOriginal.java`
 
 **Tipo:** Referência / Backup  
 **Descrição:** Versão original do `GerarTransferencia` antes de refatorações. Mantida para referência histórica e rollback em caso de regressão.
 
 ---
 
-### `RecalFinanceiroEve.java`
+### `financeiro/RecalFinanceiroEve.java`
 
 **Tipo:** Evento  
 **Descrição:** Realiza recálculo de lançamentos financeiros vinculados a uma nota. Acionado como evento de confirmação ou pós-confirmação de nota no Sankhya.
 
 ---
 
-### `recalcpreco.java`
+### `precos/recalcpreco.java` (não versionado)
 
 **Tipo:** Botão de Ação  
 **Descrição:** Recalcula o preço unitário dos itens de uma nota com base na tabela de preço vigente. Utilizado para corrigir itens inseridos manualmente com preço incorreto.
@@ -116,7 +140,7 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ## Enumerações e Utilitários
 
-### `enuns/Tipo.java`
+### `transferencia/enuns/Tipo.java`
 
 **Tipo:** Enumeração (`enum`)  
 **Descrição:** Define os tipos de operação de transferência entre empresas.
@@ -127,14 +151,14 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 ---
 
-### `listeners/DelecaoTransfencia.java`
+### `transferencia/listeners/DelecaoTransfencia.java`
 
 **Tipo:** Listener  
 **Descrição:** Intercepta a exclusão de uma transferência entre empresas. Valida se a exclusão é permitida (ex: nota já confirmada) e executa limpeza de dados dependentes se necessário.
 
 ---
 
-### `util/TransferenciaUtils.java`
+### `transferencia/util/TransferenciaUtils.java`
 
 **Tipo:** Classe utilitária  
 **Descrição:** Métodos auxiliares reutilizados pelo processo de transferência entre empresas: cálculos de totais, validações de campos, busca de dados complementares.
@@ -143,8 +167,8 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 | Arquivo | Descrição |
 |---|---|
-| `util/queItem.sql` | Busca itens da nota de origem para a transferência |
-| `util/queSerie.sql` | Busca séries vinculadas aos itens para controle de série na transferência |
+| `transferencia/util/queItem.sql` | Busca itens da nota de origem para a transferência |
+| `transferencia/util/queSerie.sql` | Busca séries vinculadas aos itens para controle de série na transferência |
 
 ---
 
@@ -152,8 +176,8 @@ As validações (CNPJ/CPF, CEPs, MODAL, TIPFRETE, valores/peso/volumes), a grava
 
 | Arquivo | Descrição |
 |---|---|
-| `regrasCAC.xml` | Configuração de regras de negócio do CAC para eventos Java — define quais eventos disparam quais classes |
-| `regrasConfirmacaoCAC.xml` | Regras específicas para eventos de confirmação no CAC |
+| `transferencia/util/regrasCAC.xml` | Configuração de regras de negócio do CAC para eventos Java — define quais eventos disparam quais classes |
+| `transferencia/util/regrasConfirmacaoCAC.xml` | Regras específicas para eventos de confirmação no CAC |
 
 ---
 
