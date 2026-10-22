@@ -1,18 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ==============================================================================
-  Nome do Script : RelatorioPedidoDeVenda
-  Tipo           : Relatório Jasper (.jrxml)
-  Grupo          : 21 - Pedido de Venda - Spark
-  Descrição      : Relatório de pedido de venda com detalhes de itens, preços e quantidades.
-
-  Empresa        : Spark Eletrônica
-  Autor          : Silvio Vieira
-  Cargo          : Analista de Sistemas Sênior
-  Data de Criação: [A DEFINIR]
-  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
-  ==============================================================================
--->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="RelatorioPedidoDeCompra" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="832" leftMargin="5" rightMargin="5" topMargin="5" bottomMargin="5">
 	<property name="ireport.scriptlethandling" value="0"/>
 	<property name="ireport.encoding" value="UTF-8"/>
@@ -95,6 +81,8 @@ CAB.CODVEND AS CODVEND,
 ITE.OBSERVACAO AS OBSERVACAOITE,
 ITE.VLRTOT AS VLRTOT,
 CAB.NUNOTA,
+CAB.AD_NUNOTAENT,
+CAB.AD_NUNOTASAI,
 ITE.VLRDESC AS DESCITEM,
 (ITE.VLRTOT - ITE.VLRDESC + ITE.VLRSUBST + ITE.VLRIPI - ITE.VLRREPRED) AS TOTLIQ,
 ITE.VLRUNIT - (ITE.VLRDESC/ITE.QTDNEG) as VLRUNITLQ,
@@ -202,6 +190,8 @@ WHERE CAB.CODEMP = EMP.CODEMP
 	<field name="OBSERVACAOITE" class="java.lang.String"/>
 	<field name="VLRTOT" class="java.math.BigDecimal"/>
 	<field name="NUNOTA" class="java.math.BigDecimal"/>
+	<field name="AD_NUNOTAENT" class="java.math.BigDecimal"/>
+	<field name="AD_NUNOTASAI" class="java.math.BigDecimal"/>
 	<field name="DESCITEM" class="java.math.BigDecimal"/>
 	<field name="TOTLIQ" class="java.math.BigDecimal"/>
 	<field name="VLRUNITLQ" class="java.math.BigDecimal"/>
@@ -281,6 +271,42 @@ WHERE CAB.CODEMP = EMP.CODEMP
 				</textElement>
 				<text><![CDATA[Nº Ped:]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="552" y="8" width="88" height="20">
+					<printWhenExpression><![CDATA[$F{AD_NUNOTAENT} != null]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Courier New" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transf.Ent:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="640" y="8" width="56" height="20">
+					<printWhenExpression><![CDATA[$F{AD_NUNOTAENT} != null]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Courier New" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{AD_NUNOTAENT}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="552" y="26" width="88" height="20">
+					<printWhenExpression><![CDATA[$F{AD_NUNOTASAI} != null]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Courier New" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transf.Saí:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="640" y="26" width="56" height="20">
+					<printWhenExpression><![CDATA[$F{AD_NUNOTASAI} != null]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Courier New" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{AD_NUNOTASAI}]]></textFieldExpression>
+			</textField>
 		</band>
 	</title>
 	<pageHeader>
@@ -1243,23 +1269,21 @@ $F{CGCPARCEIO}.substring(8, 12) + "-" + $F{CGCPARCEIO}.substring(12, 14)) : ($F{
 				<text><![CDATA[( )Imp. s/ Frete]]></text>
 			</staticText>
 			<textField pattern="#,###,##0.00" isBlankWhenNull="true">
-                <reportElement mode="Transparent" x="750" y="44" width="65" height="13" forecolor="#000000" backcolor="#FFFFFF"/>
-                <textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
-                    <font fontName="Courier New" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
-                </textElement>
-                <textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{IMPFRETE}]]></textFieldExpression>
-            </textField>
-
-            <!-- Mensagem de aprovação financeira quando CODTIPOPER = 900 -->
-            <staticText>
-                <reportElement x="7" y="95" width="818" height="20">
-                    <printWhenExpression><![CDATA[$F{CODTIPOPER} != null && $F{CODTIPOPER}.intValue() == 900]]></printWhenExpression>
-                </reportElement>
-                <textElement textAlignment="Left" verticalAlignment="Middle">
-                    <font fontName="Courier New" size="8" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Após aceite do Orçamento o Pedido passará por análise e aprovação financeira.]]></text>
-            </staticText>
-        </band>
-    </summary>
+				<reportElement mode="Transparent" x="750" y="44" width="65" height="13" forecolor="#000000" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle" rotation="None" lineSpacing="Single" markup="none">
+					<font fontName="Courier New" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{IMPFRETE}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="7" y="95" width="818" height="20">
+					<printWhenExpression><![CDATA[$F{CODTIPOPER} != null && $F{CODTIPOPER}.intValue() == 900]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Courier New" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Após aceite do Orçamento o Pedido passará por análise e aprovação financeira.]]></text>
+			</staticText>
+		</band>
+	</summary>
 </jasperReport>
