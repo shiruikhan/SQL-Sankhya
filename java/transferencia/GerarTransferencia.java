@@ -70,6 +70,7 @@ public class GerarTransferencia implements AcaoRotinaJava {
     Collection<BigDecimal> documentosSaidas = new ArrayList<>();
     Collection<BigDecimal> documentosEntradas = new ArrayList<>();
     Collection<String> avisos = new ArrayList<>();
+    Collection<BigDecimal> impostosComFalha = new ArrayList<>();
 
     // 1. GERAÇÃO DE SAÍDAS (Primeira Transação)
     SessionHandle hnd = null;
@@ -119,16 +120,21 @@ public class GerarTransferencia implements AcaoRotinaJava {
         throw (Exception)SKError.registry(TSLevel.ERROR, "CORE_SPARK", new Exception("A rotina falhou!. Não foram geradas notas de saída."));
     }
 
-    // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS + IBS/CBS (Fora de Transação para persistência)
+    // 2. CÁLCULO DE IMPOSTOS DAS SAÍDAS + IBS/CBS (uma transação por nota: falha numa não desfaz as outras)
     if (!documentosSaidas.isEmpty()) {
         SessionHandle hndCalc = null;
         try {
             hndCalc = JapeSession.open();
             for(BigDecimal nuNotaSaida : documentosSaidas) {
                 try {
-                    TransferenciaUtils.recalcularImpostos(nuNotaSaida);
+                    hndCalc.execWithTX(new JapeSession.TXBlock() {
+                        public void doWithTx() throws Exception {
+                            TransferenciaUtils.recalcularImpostos(nuNotaSaida);
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
+                    impostosComFalha.add(nuNotaSaida);
                     avisos.add("Falha ao recalcular impostos da saída " + nuNotaSaida + ": " + e.getMessage());
                 }
             }
@@ -210,9 +216,14 @@ public class GerarTransferencia implements AcaoRotinaJava {
             hndCalcEnt = JapeSession.open();
             for(BigDecimal nuNotaEntrada : documentosEntradas) {
                 try {
-                    TransferenciaUtils.recalcularImpostos(nuNotaEntrada);
+                    hndCalcEnt.execWithTX(new JapeSession.TXBlock() {
+                        public void doWithTx() throws Exception {
+                            TransferenciaUtils.recalcularImpostos(nuNotaEntrada);
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
+                    impostosComFalha.add(nuNotaEntrada);
                     avisos.add("Falha ao recalcular impostos da entrada " + nuNotaEntrada + ": " + e.getMessage());
                 }
             }
@@ -222,22 +233,28 @@ public class GerarTransferencia implements AcaoRotinaJava {
     }
 
     // 5. CONFIRMAÇÕES E LOTE (lógica da V26: saídas → lote NF-e das saídas → entradas)
-    int qtdSaidaConfirmadas = 0;
+    // Nota com falha no recálculo de impostos não é confirmada nem enviada à SEFAZ
+    Collection<BigDecimal> saidasConfirmadas = new ArrayList<>();
     int qtdEntradaConfirmadas = 0;
     boolean loteGerado = false;
     for (BigDecimal nuNotaSaida : documentosSaidas) {
+        if (impostosComFalha.contains(nuNotaSaida)) {
+            avisos.add("Saída " + nuNotaSaida + " não foi confirmada porque os impostos não foram recalculados.");
+            continue;
+        }
         try {
             TransferenciaUtils.confirmaNota(nuNotaSaida);
-            qtdSaidaConfirmadas++;
+            saidasConfirmadas.add(nuNotaSaida);
         } catch (MGEModelException e) {
             e.printStackTrace();
             avisos.add("Saída " + nuNotaSaida + " não foi confirmada: " + e.getMessage());
         }
     }
+    int qtdSaidaConfirmadas = saidasConfirmadas.size();
 
     if (qtdSaidaConfirmadas > 0) {
         try {
-            TransferenciaUtils.gerarLote(documentosSaidas);
+            TransferenciaUtils.gerarLote(saidasConfirmadas);
             loteGerado = true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -248,6 +265,10 @@ public class GerarTransferencia implements AcaoRotinaJava {
     // Entrada só é confirmada depois que a saída foi para a SEFAZ (na V26 a condição estava invertida)
     if (loteGerado) {
         for (BigDecimal nuNotaEntrada : documentosEntradas) {
+            if (impostosComFalha.contains(nuNotaEntrada)) {
+                avisos.add("Entrada " + nuNotaEntrada + " não foi confirmada porque os impostos não foram recalculados.");
+                continue;
+            }
             try {
                 TransferenciaUtils.confirmaNota(nuNotaEntrada);
                 qtdEntradaConfirmadas++;
