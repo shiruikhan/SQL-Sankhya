@@ -114,7 +114,7 @@ CREATE OR REPLACE PROCEDURE EVP_GEROBRGDIFAL_SPARK (
             ,UFS.CODUF
             ,2 AS TIPO
             ,TRUNC(CAB.DTNEG, 'MM') AS DTREF
-            ,TRUNC(CAB.DTNEG, 'MM') + 8 AS DTVCTO
+            ,ADD_MONTHS(TRUNC(CAB.DTNEG, 'MM'), 1) + 8 AS DTVCTO
 
             /* DIFAL DAS VENDAS */
 
