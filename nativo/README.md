@@ -23,7 +23,7 @@ Cópia **de referência** do que é do fabricante: functions, packages, tabelas 
 |---|---|---|---|---|
 | [`functions/`](functions/README.md) | 348 (153 `SNK_*` + 195 outras) | 17–18/09/2026 (`SNK_*`) e 08/10/2026 (demais) | `functions/README.md` | Cabeçalho padronizado em cada arquivo, com assinatura e data de captura |
 | [`packages/`](packages/README.md) | 20 | 08/10/2026 | `packages/README.md` | **Só especificação** — o banco não tem `PACKAGE BODY`; funcionam como repositório de variáveis de sessão |
-| [`tables/`](tables/README.md) | 54 | 18/09/2026 | `tables/README.md` | DDL cru do `GET_DDL`, sem cabeçalho; selecionadas por frequência de uso no repositório |
+| [`tables/`](tables/README.md) | 54 | 18/09/2026 (`TSILGT`: 19/10/2026) | `tables/README.md` | DDL cru do `GET_DDL`, sem cabeçalho; 53 selecionadas por frequência de uso no repositório + `TSILGT` |
 | [`procedures/`](procedures/README.md) | 21 | 08/10/2026 | `procedures/README.md` | Só as chamadas por triggers nativas capturadas e pela Spark (fechamento de dependência); as ~200 procedures de 12/2021 restantes não foram capturadas |
 | [`triggers/`](triggers/README.md) | 149 | 08/10/2026 | `triggers/README.md` | Triggers das tabelas que a Spark customiza (`TGFCAB`, `TGFITE`, `TGFFIN`, `TGFPRO` …), com estado `ENABLED`/`DISABLED` — 57 delas recapturadas em pedaços por terem vindo truncadas em 4000 caracteres |
 | `libs/` | 364 JARs | — | — | Local, fora do git |
@@ -34,7 +34,7 @@ O inventário arquivo a arquivo (tipo, objeto, arquivo, data de captura, nº de 
 python nativo/GERA_MANIFESTO.py
 ```
 
-A data vem da linha `Capturado do banco em dd/mm/aaaa` do cabeçalho de cada arquivo. Tabelas não têm cabeçalho (DDL cru), então usam 18/09/2026 como padrão do script, e as triggers ficam em branco — ao recapturar, registre a data no cabeçalho.
+A data vem da linha `Capturado do banco em dd/mm/aaaa` do cabeçalho de cada arquivo. Tabelas não têm cabeçalho (DDL cru), então usam 18/09/2026 como padrão do script (exceção fixa no script: `TSILGT`, 19/10/2026). As triggers têm a data no cabeçalho (08/10/2026) — ao recapturar, registre a nova data no cabeçalho.
 
 ## Convenções
 
@@ -74,7 +74,7 @@ Há outras marcas no material nativo que **não são da Spark** (ex.: `SNK_GET_P
 | Views nativas (`VGF*`) | Não capturadas (673 no banco; a maioria é do fabricante, ex.: `VRI_*`/`VFP_*`). `VGFSERIES`, que parecia nativa, é da Spark e foi para `view/` |
 | Types / sequences | Não capturados |
 | Dicionário de dados (`TDDCAM`, `TDDOPC`, parâmetros de `TSIPAR`) | Em análise |
-| Tabelas | Só as 53 mais referenciadas; as demais estão fora |
+| Tabelas | Só 54: as 53 mais referenciadas + `TSILGT`; as demais estão fora |
 
 ## Pendências conhecidas
 
@@ -82,4 +82,3 @@ Há outras marcas no material nativo que **não são da Spark** (ex.: `SNK_GET_P
 - **Provável upgrade do ERP em 21/09/2026** (196 objetos alterados no mesmo dia). Cruzando o inventário com o manifesto, 17 objetos já capturados mudaram depois da captura: 2 functions (`SNK_GETLIB_CODEMP`, `SNK_GET_NUFIN`) e 15 tabelas (`TGFCAB`, `TGFITE`, `TGFFIN`, `TGFPRO` …; parte pode ser campo `AD_*` criado pela Spark). Recaptura em `scripts/CAPTURA_DDL_NATIVOS_LOTE3.SQL`; o `git diff` separa o que é do fabricante.
 - `SOMA_DIA_UTIL` e `GET_LOCAL_ORIGEM`: origem incerta (hoje catalogadas como nativas) — confirmar.
 - Registrar a **versão do Sankhya** vigente nas capturas (hoje não consta em nenhum arquivo).
-- Data de captura das 2 triggers.

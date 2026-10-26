@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de tabelas:** 38  
+**Total de tabelas:** 39  
 **Prefixo padrão:** `AD_` (customização Spark sobre o Sankhya)  
 
 > As duas primeiras tabelas abaixo têm dicionário de campos completo. As demais
@@ -277,6 +277,23 @@ Programação de manutenção preventiva de um bem do imobilizado/patrimônio
 (`CODBEM`): data prevista, tipo/natureza de manutenção, operador e custo.
 Usada por `STP_INCLUIRLANCTO_SPARK`.
 
+### `AD_SPKCAE`
+
+**Arquivo:** `AD_SPKCAE.SQL` | **PK:** `NUMOS` | **FK:** `CODPARC` → `TGFPAR`
+
+Cabeçalho da O.S. de conserto da **assistência externa** (parceiro que faz o
+conserto — estrutura parecida com `AD_TGFASS`, porém mais enxuta). Guarda data
+de recebimento, série de entrada (`SNENTRADA`), `STATUS`, data de conclusão,
+observação adm (`OBSADM`, CLOB), defeito, tipo de entrega, cliente/contato,
+`CONSERTO`, `CONSUMO` (CLOB) e os campos `T_*` (produto, descrição, parceiro e
+data de venda, fabricação, tipo, lote, ref. interna) preenchidos a partir da
+série por `TRG_SPKCAE_INC_SPARK` (via `VGFSERIES`). `VLRCONSERTO` é preenchido
+por `TRG_SPKCAE_VLRCONSERTO_SPARK` (`SNK_PRECO`, `CODTAB` 14) quando
+`STATUS = 'C'`. Marcadores de idempotência: `NUFIN` (financeiro gerado por
+`STP_INCFINASSIST_SPARK`) e `NUNOTATRF`/`NUNOTADESC` (notas de transferência
+TOP 708 e consumo TOP 503 geradas por `STP_MOVMATASSIST_SPARK`). Pai de
+`AD_SPKICAE`.
+
 ### `AD_SPKICAE`
 
 **Arquivo:** `AD_SPKICAE.SQL` | **PK composta:** `(NUMOS, IDCOMP)` | **FKs:** `NUMOS` → `AD_SPKCAE`, `CODPROD` → `TGFPRO`
@@ -302,7 +319,7 @@ meta). Usada por `STP_ALTERAMETA_SPARK` e `STP_PCPMETA_SPARK`.
 
 ### `AD_TGFNCO`
 
-**Arquivo:** `AD_TGFNCO.SQL` | **PK:** `NUNCO` | **FKs:** `CODUSU`/`TRANSP` → `TSIUSU`/`TGFPAR`, `CODCENCUS` → `TGFLOC`, `NCOAPO` → `AD_CADNCO` (ainda sem DDL capturado)
+**Arquivo:** `AD_TGFNCO.SQL` | **PK:** `NUNCO` | **FKs:** `CODUSU` → `TSIUSU`, `CODPARC`/`TRANSP` → `TGFPAR`, `CODCENCUS` → `TGFLOC`, `NCOAPO` → `AD_CADNCO` (ainda sem DDL capturado)
 
 Registro de **Não Conformidade** (NC): produto/nota/parceiro envolvidos,
 causa (`CAUSA`), técnico responsável, ação imediata e corretiva

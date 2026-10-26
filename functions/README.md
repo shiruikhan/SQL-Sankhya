@@ -16,8 +16,10 @@
 
 **Assinatura:**
 ```sql
-FC_GETPRECO_TRASF_SP(P_CODPROD IN INT) RETURN FLOAT
+FC_GETPRECO_TRASF_SP(P_CODPROD INT) RETURN FLOAT
 ```
+
+> No código o parâmetro é declarado sem `IN` explícito (modo `IN` implícito).
 
 **Parâmetros:**
 
@@ -25,7 +27,7 @@ FC_GETPRECO_TRASF_SP(P_CODPROD IN INT) RETURN FLOAT
 |---|---|---|
 | `P_CODPROD` | `INT` | Código do produto a consultar |
 
-**Retorno:** Custo mais recente do produto na tabela de custos customizada (`AD_TGSCUS` / `AD_TGSCIT`) com data de referência `≤ SYSDATE`. Retorna `0` se não houver registro.
+**Retorno:** `MAX(AD_TGSCIT.CUSTO)` do produto no registro de custo (`AD_TGSCUS`) com a maior `DTREF ≤ TRUNC(SYSDATE)` que contenha o produto. Retorna `0` se não houver registro (`NVL`).
 
 **Tabelas consultadas:** `AD_TGSCUS` (cabeçalho da tabela de custo), `AD_TGSCIT` (itens da tabela de custo)  
 **Uso:** Procedure de transferência entre empresas para obter o preço de custo do produto no momento da geração da nota.
@@ -128,6 +130,9 @@ OBTEMCUSTO_SPARK(
 | `3` | Custo sem ICMS |
 | `4` | Custo médio com ICMS |
 | `5` | Entrada sem ICMS |
+| `6` | Entrada com ICMS |
+
+Fonte: `TGFCUS`, registro com a maior `DTATUAL ≤ P_DATA` para os filtros informados. Tipo não mapeado, produto sem custo ou erro inesperado retornam `0`.
 
 **Uso:** Utilizada em procedures de transferência, análise de margem e relatórios de custo de produto.
 
@@ -146,6 +151,7 @@ OBTEM_TOTAIS_MRP(
     P_CODPRODMP NUMBER,
     P_TIPO      VARCHAR2
 ) RETURN FLOAT
+RESULT_CACHE
 ```
 
 **Parâmetros:**
@@ -153,8 +159,8 @@ OBTEM_TOTAIS_MRP(
 | Parâmetro | Tipo | Descrição |
 |---|---|---|
 | `P_NUMPS` | `NUMBER` | Número do plano mestre (MPS) |
-| `P_CODPRODPA` | `NUMBER` | Código do produto acabado (PA) |
-| `P_CODPRODMP` | `NUMBER` | Código da matéria-prima (MP) |
+| `P_CODPRODPA` | `NUMBER` | Código do produto acabado (PA); `0` = todos os PAs do plano |
+| `P_CODPRODMP` | `NUMBER` | Código da matéria-prima (MP); usado nos tipos `N`, `NA`, `C`, `E` e `O` |
 | `P_TIPO` | `VARCHAR2` | Tipo de total a retornar (ver tabela abaixo) |
 
 **Tipos de total (P_TIPO):**
@@ -165,10 +171,12 @@ OBTEM_TOTAIS_MRP(
 | `'P'` | Produção do PA |
 | `'S'` | Saldo a produzir do PA (negativo = produção acima da meta) |
 | `'N'` | Necessidade de MP no MRP filtrado |
-| `'NA'` | Necessidade total de MP |
-| `'C'` | Necessidade de compra de MP no MRP filtrado |
-| `'E'` | Estoque disponível de MP |
-| `'O'` | Ordem/Pedido de compra aberto de MP |
+| `'NA'` | Necessidade de MP dos planos anteriores ao MPS filtrado |
+| `'C'` | Necessidade de compra de MP no MRP filtrado — **não implementado** (cai no retorno padrão `0`) |
+| `'E'` | Estoque disponível de MP (`ESTOQUE − RESERVADO`, local 101) |
+| `'O'` | Pedidos de compra abertos/pendentes de MP (`QTDNEG − QTDENTREGUE`) |
+
+Tipo desconhecido retorna `0`. A function é `RESULT_CACHE` (cache por combinação de argumentos).
 
 **Uso:** Utilizada nas queries analíticas de BI e no componente `CRONOGRAMA GERAL DE PRODUCAO` para construir visão consolidada do plano de produção por produto.
 
@@ -253,7 +261,7 @@ FN_GET_ULTIMO_CUSTO_SPARK1 ( P_CODPROD IN NUMBER, P_TIPO IN NUMBER, P_DATA IN DA
 
 **Assinatura:**
 ```sql
-GET_ESTOQUE_KIT_PA_OVERSYSTEM ( P_CODPROD IN INT,P_CODLOCAL IN INT ) RETURN TYPE_TABLE_KIT
+GET_ESTOQUE_KIT_PA_OVERSYSTEM ( P_CODPROD IN INT,P_CODLOCAL IN INT ) RETURN TYPE_TABLE_KIT PIPELINED
 ```
 
 **Retorno:** Pipelined (`TYPE_TABLE_KIT`): estoque disponível (`ESTOQUE - RESERVADO`, mínimo 0) do PA ou, quando é kit (variação 30000 em `TGFICP`), de cada matéria-prima componente. `P_CODLOCAL = 0` soma todos os locais.

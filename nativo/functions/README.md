@@ -8,7 +8,7 @@
 
 ---
 
-> Estas functions **não são mantidas pela Spark** — são nativas do ERP Sankhya. O código foi capturado do banco em 18/09/2026 via `DBMS_METADATA.GET_DDL` e salvo aqui apenas para consulta rápida (evitar depender de VPN/acesso ao banco para entender uma dependência). Atualizações do Sankhya podem alterar ou remover estas functions — revisar após cada upgrade do ERP (mesmo cuidado do [`../triggers/README.md`](../triggers/README.md)).
+> Estas functions **não são mantidas pela Spark** — são nativas do ERP Sankhya. O código das `SNK_%` foi capturado do banco em 18/09/2026 (`SNK_PRECO` em 17/09/2026) via `DBMS_METADATA.GET_DDL` e salvo aqui apenas para consulta rápida (evitar depender de VPN/acesso ao banco para entender uma dependência). Atualizações do Sankhya podem alterar ou remover estas functions — revisar após cada upgrade do ERP (mesmo cuidado do [`../triggers/README.md`](../triggers/README.md)).
 
 ## Catálogo — functions `SNK_%`
 

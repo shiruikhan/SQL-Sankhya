@@ -8,7 +8,7 @@
 
 ---
 
-> Estas tabelas **não são mantidas pela Spark** — são nativas do ERP Sankhya, listadas em [`tables/TABELAS_FALTANTES.md`](../../tables/TABELAS_FALTANTES.md) por serem muito referenciadas no repositório (>= 5 ocorrências) sem termos o DDL local. Capturadas via `DBMS_METADATA.GET_DDL` em 18/09/2026. Atualizações do Sankhya podem alterar a estrutura — revisar após cada upgrade do ERP (mesmo cuidado do `nativo/triggers/README.md` e de `nativo/functions/README.md`).
+> Estas tabelas **não são mantidas pela Spark** — são nativas do ERP Sankhya, listadas em [`tables/TABELAS_FALTANTES.md`](../../tables/TABELAS_FALTANTES.md) por serem muito referenciadas no repositório (>= 5 ocorrências) sem termos o DDL local. Capturadas via `DBMS_METADATA.GET_DDL` em 18/09/2026. Exceção: `TSILGT`, capturada à parte em 19/10/2026 (não consta de `TABELAS_FALTANTES.md`). Atualizações do Sankhya podem alterar a estrutura — revisar após cada upgrade do ERP (mesmo cuidado do `nativo/triggers/README.md` e de `nativo/functions/README.md`).
 
 ## Catálogo
 

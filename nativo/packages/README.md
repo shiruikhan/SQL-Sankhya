@@ -38,7 +38,7 @@
 ## Pontos de atenção
 
 - `VARIAVEIS_PKG` é o mais usado: as functions `STP_GET_*`, `GET_CONTROLE_CUSTO`, `GET_EMPRESA_CUSTO` e `GET_LOCAL_CUSTO` (em [`nativo/functions/`](../functions/README.md)) apenas devolvem o valor de uma variável deste package.
-- `TGFCAB_PKG`, `TGFCAB_UPD_PKG`, `TGFITE_PKG` e `TGFFIN_PKG` declaram tabelas PL/SQL para guardar chaves no momento da linha e processá-las depois, evitando `ORA-04091` (tabela mutante) — o mesmo objetivo do `PKG_SPARK_MOEDA` (ver [`package/README.md`](../../package/README.md)). O uso exato (fase em que são lidas/limpas) não foi verificado, pois os fontes das triggers nativas não estão no repositório.
+- `TGFCAB_PKG`, `TGFCAB_UPD_PKG`, `TGFITE_PKG` e `TGFFIN_PKG` declaram tabelas PL/SQL para guardar chaves no momento da linha e processá-las depois, evitando `ORA-04091` (tabela mutante) — o mesmo objetivo do `PKG_SPARK_MOEDA` (ver [`package/README.md`](../../package/README.md)). Nas triggers capturadas em [`nativo/triggers/`](../triggers/README.md), `TGFCAB_PKG` aparece em `TRG_DLT_TGFCAB`, `TRG_DLT_TGFITE_FLEX`, `TRG_DLT_TGFSER` e `TRG_INC_UPD_DLT_TGFITE_RASTEST`; `TGFCAB_UPD_PKG` em `TRG_UPD_TGFCAB` e `TRG_UPD_TGFCAB_AFTER`; `TGFFIN_PKG` em `TRG_DLT_TGFFIN`, `TRG_INC_TGFFIN`, `TRG_UPD_TGFCAB` e `TRG_UPT_TGFFIN`; `TGFITE_PKG` não é referenciado por nenhuma trigger capturada. O uso exato (fase em que são lidas/limpas) a confirmar.
 - `ERROS_PKG` contém as mensagens-padrão do Sankhya para cadastros inativos/inexistentes; úteis para reconhecer a origem de uma crítica vinda de trigger nativa.
 
 ## Como recapturar / atualizar

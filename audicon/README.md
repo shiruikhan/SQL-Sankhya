@@ -8,7 +8,9 @@
 
 ## Objetivo
 
-Esta pasta contém procedures de geração de contas contábeis para integração com o sistema Audicon. As procedures criam automaticamente as contas contábeis correspondentes a clientes e fornecedores no plano de contas, a partir dos dados do cadastro de parceiros do Sankhya.
+Esta pasta contém procedures de geração de contas contábeis para integração com o sistema Audicon. As procedures criam no plano de contas (`TCBPLA`) uma conta analítica por parceiro — cliente ou fornecedor — que movimentou o financeiro e ainda não tem conta própria, e gravam o vínculo no cadastro do parceiro.
+
+> **Autoria:** rotinas criadas pela própria Audicon em 23/01/2026 (comentário no código-fonte). Não seguem o padrão de cabeçalho/log de erros da Spark.
 
 ---
 
@@ -17,31 +19,46 @@ Esta pasta contém procedures de geração de contas contábeis para integraçã
 ### `STP_CRIA_CTACTBCLI_AUDICON`
 
 **Arquivo:** `STP_CRIA_CTACTBCLI_AUDICON.sql`  
-**Tipo:** Stored Procedure  
+**Tipo:** Stored Procedure (sem parâmetros)  
 
-**Descrição:** Cria conta contábil no plano de contas para clientes novos ou não cadastrados, permitindo a integração contábil via Audicon. Consulta o cadastro de parceiros do Sankhya e gera a estrutura de conta necessária no módulo contábil.
+**Descrição:** Percorre os parceiros com títulos **a receber** (`TGFFIN.RECDESP = 1`) desde 01/01/2024, cuja TOP tenha contabilização com conta `PARC1` (`TGFCTB`), e que ainda não tenham conta contábil (`TGFPAR.CODCTACTB IS NULL` e nenhuma `TCBPLA` com o código gerado). Para cada um:
 
-**Tabelas envolvidas:** `TGFPAR` (parceiros — clientes), tabelas do módulo contábil Sankhya (`TSICCB` ou equivalente)
+- insere a conta em `TCBPLA` — código `LPAD(CODPARC, 5, 1000)`, máscara `1.1.03.01.001.<CODPARC>`, grau 6, conta-pai 169, grupo `01`, descrição = razão social (40 caracteres, `&` → `E`);
+- atualiza `TGFPAR.CODCTACTB2` com o código criado;
+- insere o vínculo com a conta referencial em `TCBCTR` (`1.01.02.02.01`, ou `1.01.02.02.02` para parceiro estrangeiro).
 
-**Quando usar:** Executar ao cadastrar novos clientes ou ao realizar a carga inicial de contas contábeis para clientes existentes.
+Títulos de TOPs com `TIPMOV = 'I'` só entram se a natureza não tiver `AD_TIPOCTBZ = 'S'`.
+
+**Tabelas lidas:** `TGFFIN`, `TGFPAR`, `TGFTOP`, `TGFCTB`, `TGFNAT`, `TCBPLA`  
+**Tabelas gravadas:** `TCBPLA`, `TCBCTR`, `TGFPAR` (`CODCTACTB2`)
 
 ---
 
 ### `STP_CRIA_CTACTBFOR_AUDICON`
 
 **Arquivo:** `STP_CRIA_CTACTBFOR_AUDICON.sql`  
-**Tipo:** Stored Procedure  
+**Tipo:** Stored Procedure (sem parâmetros)  
 
-**Descrição:** Mesma lógica de `STP_CRIA_CTACTBCLI_AUDICON`, porém aplicada a fornecedores. Cria a conta contábil no módulo contábil Sankhya para viabilizar a integração com o Audicon.
+**Descrição:** Mesma lógica de `STP_CRIA_CTACTBCLI_AUDICON`, aplicada a fornecedores. Diferenças:
 
-**Tabelas envolvidas:** `TGFPAR` (parceiros — fornecedores), tabelas do módulo contábil
+| Item | Cliente (`CLI`) | Fornecedor (`FOR`) |
+|---|---|---|
+| Títulos considerados | `RECDESP = 1` | `RECDESP = -1` |
+| Conta de contabilização da TOP | `PARC1` | `PARC2` |
+| Filtro de parceiro sem conta | `TGFPAR.CODCTACTB IS NULL` | `TGFPAR.CODCTACTB2 IS NULL` |
+| Código da conta | `LPAD(CODPARC, 5, 1000)` | `LPAD(CODPARC, 5, 2000)` |
+| Máscara | `1.1.03.01.001.<CODPARC>` | `2.1.01.01.001.<CODPARC>` |
+| Conta-pai / grupo | 169 / `01` | 194 / `02` |
+| Conta referencial (nacional / estrangeiro) | `1.01.02.02.01` / `1.01.02.02.02` | `2.01.01.03.01` / `2.01.01.03.02` |
 
-**Quando usar:** Executar ao cadastrar novos fornecedores ou na carga inicial de contas para fornecedores existentes.
+**Tabelas lidas:** `TGFFIN`, `TGFPAR`, `TGFTOP`, `TGFCTB`, `TGFNAT`, `TCBPLA`  
+**Tabelas gravadas:** `TCBPLA`, `TCBCTR`, `TGFPAR` (`CODCTACTB2`)
 
 ---
 
 ## Observações
 
-- As procedures devem ser executadas manualmente via botão de ação ou scheduler no ERP, após o cadastro de novos parceiros.
-- O resultado da execução deve ser validado no módulo de contabilidade do Sankhya antes de exportar para o Audicon.
-- Em caso de parceiro já com conta criada, verificar se a procedure possui tratamento de duplicidade (chave única).
+- Execução manual (ou agendada) no ERP, após o cadastro/movimentação de novos parceiros. O resultado deve ser validado no módulo de contabilidade do Sankhya antes de exportar para o Audicon.
+- **Duplicidade:** a própria consulta evita recriar a conta (`NOT EXISTS` em `TCBPLA` pelo código gerado), então reexecutar é seguro.
+- **Atenção — divergência no código:** as duas procedures gravam em `TGFPAR.CODCTACTB2`, mas a de clientes filtra por `TGFPAR.CODCTACTB IS NULL`. Confirmar com a Audicon se a versão de clientes deveria gravar em `CODCTACTB`.
+- Há `COMMIT` após cada `INSERT`/`UPDATE` dentro do laço, e não há tratamento de exceção — uma falha no meio deixa os parceiros anteriores já processados.

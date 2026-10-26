@@ -20,7 +20,7 @@ Os packages Oracle são utilizados como repositório de variáveis de sessão co
 **Arquivo:** `PKG_SPARK_MOEDA.sql`  
 **Tipo:** Package (especificação apenas — sem body)
 
-**Descrição:** Package de estado de sessão para a trigger compound `TRG_UPD_TGFCAB_MOEDA_SPARK2`. Expõe variáveis globais de sessão que permitem à fase `AFTER STATEMENT` do compound trigger comunicar valores do cabeçalho da nota aos triggers de itens (`TRG_INC_UPD_TGFITE_SPARK2`), evitando SELECT em `TGFCAB` enquanto ela está mutante.
+**Descrição:** Package de estado de sessão para a trigger compound `TRG_UPD_TGFCAB_MOEDA_SPARK2`. Expõe variáveis globais de sessão que permitem à fase `AFTER STATEMENT` do compound trigger comunicar valores do cabeçalho da nota aos triggers de itens (`TRG_INC_UPD_TGFITE_SPARK2`), evitando um SELECT desnecessário em `TGFCAB` (o `UPDATE` em `TGFITE` é feito no `AFTER STATEMENT` justamente porque ali `TGFCAB` já não está mutante). O compound recalcula `VLRUNITMOE`/`VLRTOTMOE` dos itens quando `VLRMOEDA` muda no cabeçalho (TOPs 1008/1009).
 
 **Variáveis:**
 
@@ -32,8 +32,8 @@ Os packages Oracle são utilizados como repositório de variáveis de sessão co
 
 **Ciclo de vida:**
 - Populadas na fase `AFTER STATEMENT` de `TRG_UPD_TGFCAB_MOEDA_SPARK2`
-- Lidas por `TRG_INC_UPD_TGFITE_SPARK2` durante o UPDATE em `TGFITE`
-- Limpas (`NULL` / `DELETE`) ao final do loop da fase `AFTER STATEMENT`
+- Lidas por `TRG_INC_UPD_TGFITE_SPARK2` durante o UPDATE em `TGFITE` — só quando `PKG_SPARK_MOEDA.V_NUNOTA = :NEW.NUNOTA`
+- Ao final do loop da fase `AFTER STATEMENT` apenas `V_NUNOTA` volta a `NULL` (o `DELETE` é da coleção interna `g_rows` do compound); `V_VLRMOEDA` e `V_CODTIPOPER` mantêm o último valor, mas ficam inertes porque o consumidor só os usa quando `V_NUNOTA` casa com a nota
 
 **Dependências:**
 
