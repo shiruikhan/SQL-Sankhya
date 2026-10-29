@@ -20,8 +20,11 @@ create or replace PROCEDURE          STP_GERALISTAMPS_SPARK (
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
-  Data de Criação: [A DEFINIR]
+  Data de Criação: Anterior a Abr/2025 (primeiro versionamento em 22/04/2025)
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Outubro/2026 — Inclusão do processo CODPRC 1003 na geração;
+                   mensagem ao usuário informa planos sem pedido gerado e o
+                   motivo (diagnóstico etapa a etapa dos filtros)
 ==============================================================================*/
        FIELD_NUMPS NUMBER;
        P_NUNOTA                INT;
@@ -35,6 +38,22 @@ create or replace PROCEDURE          STP_GERALISTAMPS_SPARK (
        P_DESCRLOCAL      VARCHAR2(100);
        P_COUNT           INT;
        P_NUMNOTA         NUMBER;
+
+       -- Controle de geração e retorno ao usuário
+       V_QTDPED_PLANO    NUMBER := 0;             -- pedidos gerados no plano corrente
+       V_QTDPED_TOTAL    NUMBER := 0;             -- pedidos gerados em toda a execução
+       V_DETALHE         VARCHAR2(4000);          -- linhas por plano para a mensagem final
+       V_MOTIVO          VARCHAR2(1000);
+
+       -- Contadores do diagnóstico (cada um aplica um filtro a mais que o anterior)
+       V_QTD_ITENS       NUMBER;
+       V_QTD_PROC        NUMBER;
+       V_QTD_LPA         NUMBER;
+       V_QTD_LMP         NUMBER;
+       V_QTD_EST         NUMBER;
+       V_QTD_LOC         NUMBER;
+       V_QTD_QTDPOS      NUMBER;
+       V_PROC_ENCONTR    VARCHAR2(1000);
 
        CURSOR CUR_LOCAL IS 
        SELECT DISTINCT NVL(EST.CODLOCALBAIXAMP,0), LOC.DESCRLOCAL --CODLOCALORIG
@@ -50,7 +69,7 @@ create or replace PROCEDURE          STP_GERALISTAMPS_SPARK (
           AND LPA.IDPROC = I.IDPROC
           AND EST.CODLOCALBAIXAMP = LOC.CODLOCAL
           AND EST.TIPOITENS='PA'
-          AND PRC.CODPRC IN (3000, 1000,1001,2000)
+          AND PRC.CODPRC IN (3000, 1000, 1001, 1003, 2000)
           AND (LMP.QTDMISTURA*I.QTDPRODUZIRLIQ) > 0
           AND I.NUMPS = FIELD_NUMPS;
 
@@ -84,6 +103,8 @@ BEGIN
                     'Gere o botão MRP em seguida tente novamente!'));    
             END IF;
 
+
+            V_QTDPED_PLANO := 0;
 
             OPEN CUR_LOCAL;
             LOOP
@@ -136,7 +157,7 @@ BEGIN
                               AND LPA.IDPROC = I.IDPROC
                               AND EST.TIPOITENS='PA' --- APENAS ATIVIDADE APONTAMENTO
                               AND EST.CODLOCALBAIXAMP = P_CODLOCAL
-                              AND PRC.CODPRC IN (3000, 1000,1001,2000) ---GERAR LISTA APENAS DO PROCESSO PRODUTIVO PA, OS DEMAIS PROCESSOS IRÃO GERAR LISTA PELA PRÓPRIA ORDEM. ACRESCENTADO PROCESSO 2000 DO MANUEL PARA GERAR REQUISICAO PARA ENVIO NOTA REMESSA
+                              AND PRC.CODPRC IN (3000, 1000, 1001, 1003, 2000) ---GERAR LISTA APENAS DO PROCESSO PRODUTIVO PA, OS DEMAIS PROCESSOS IRÃO GERAR LISTA PELA PRÓPRIA ORDEM. ACRESCENTADO PROCESSO 2000 DO MANUEL PARA GERAR REQUISICAO PARA ENVIO NOTA REMESSA. ACRESCENTADO PROCESSO 1003 (OUT/2026)
                               AND I.NUMPS = FIELD_NUMPS
                               GROUP BY LMP.CODPRODMP, NVL(PRO.CODLOCALPADRAO,101), NVL(LMP.CONTROLEMP,' '), PRO.USOPROD, PRO.CODVOL
                               HAVING SUM(LMP.QTDMISTURA*I.QTDPRODUZIRLIQ) > 0);
@@ -146,9 +167,98 @@ BEGIN
 
                                UPDATE TGFNUM SET ULTCOD=P_NUMNOTA WHERE ARQUIVO LIKE'%402%';
 
+                               V_QTDPED_PLANO := V_QTDPED_PLANO + 1;
 
             END LOOP;
             CLOSE CUR_LOCAL;
+
+            V_QTDPED_TOTAL := V_QTDPED_TOTAL + V_QTDPED_PLANO;
+
+            ---------------------------------------------------------------------------
+            -- Diagnóstico: plano sem nenhum pedido gerado
+            -- Reaplica os filtros da geração um a um (LEFT JOIN em cascata) e
+            -- aponta o primeiro que zerou o resultado.
+            ---------------------------------------------------------------------------
+            IF V_QTDPED_PLANO = 0 THEN
+
+                SELECT  COUNT(I.CODPROD)
+                       ,COUNT(PRC.IDPROC)
+                       ,COUNT(LPA.CODPRODPA)
+                       ,COUNT(LMP.CODPRODMP)
+                       ,COUNT(EST.IDEFX)
+                       ,COUNT(LOC.CODLOCAL)
+                       ,SUM(CASE WHEN LOC.CODLOCAL IS NOT NULL
+                                  AND LMP.QTDMISTURA * I.QTDPRODUZIRLIQ > 0
+                                 THEN 1 ELSE 0 END)
+                  INTO  V_QTD_ITENS
+                       ,V_QTD_PROC
+                       ,V_QTD_LPA
+                       ,V_QTD_LMP
+                       ,V_QTD_EST
+                       ,V_QTD_LOC
+                       ,V_QTD_QTDPOS
+                  FROM  TPRIMPS I
+                  LEFT JOIN TPRPRC PRC
+                         ON PRC.IDPROC = I.IDPROC
+                        AND PRC.CODPRC IN (3000, 1000, 1001, 1003, 2000)
+                  LEFT JOIN TPRLPA LPA
+                         ON LPA.IDPROC    = PRC.IDPROC
+                        AND LPA.CODPRODPA = I.CODPROD
+                  LEFT JOIN TPRATV ATV
+                         ON ATV.IDPROC = LPA.IDPROC
+                  LEFT JOIN TPRLMP LMP
+                         ON LMP.CODPRODPA = LPA.CODPRODPA
+                        AND LMP.IDEFX     = ATV.IDEFX
+                        AND NVL(LMP.GERAREQUISICAO, 'N') = 'S'
+                  LEFT JOIN TPROEST EST
+                         ON EST.IDEFX     = LMP.IDEFX
+                        AND EST.TIPOITENS = 'PA'
+                  LEFT JOIN TGFLOC LOC
+                         ON LOC.CODLOCAL = EST.CODLOCALBAIXAMP
+                 WHERE  I.NUMPS = FIELD_NUMPS;
+
+                IF V_QTD_ITENS = 0 THEN
+                    V_MOTIVO := 'o plano não possui produtos a produzir.';
+
+                ELSIF V_QTD_PROC = 0 THEN
+                    -- Lista os processos que o plano usa, para o usuário ver o que ficou de fora
+                    SELECT  LISTAGG(X.CODPRC, ', ') WITHIN GROUP (ORDER BY X.CODPRC)
+                      INTO  V_PROC_ENCONTR
+                      FROM  (SELECT DISTINCT PRC.CODPRC
+                               FROM TPRIMPS I
+                              INNER JOIN TPRPRC PRC
+                                      ON PRC.IDPROC = I.IDPROC
+                              WHERE I.NUMPS = FIELD_NUMPS) X;
+
+                    V_MOTIVO := 'nenhum produto do plano usa processo habilitado para a lista '
+                             || '(CODPRC 1000, 1001, 1003, 2000, 3000). Processos do plano: '
+                             || NVL(V_PROC_ENCONTR, 'não identificado') || '.';
+
+                ELSIF V_QTD_LPA = 0 THEN
+                    V_MOTIVO := 'os produtos do plano não estão cadastrados como PA no processo produtivo (TPRLPA).';
+
+                ELSIF V_QTD_LMP = 0 THEN
+                    V_MOTIVO := 'nenhuma matéria-prima da lista dos produtos está marcada para gerar requisição.';
+
+                ELSIF V_QTD_EST = 0 THEN
+                    V_MOTIVO := 'as matérias-primas marcadas não estão em atividade de apontamento (itens tipo PA).';
+
+                ELSIF V_QTD_LOC = 0 THEN
+                    V_MOTIVO := 'a atividade de apontamento não possui local de baixa de MP válido.';
+
+                ELSIF NVL(V_QTD_QTDPOS, 0) = 0 THEN
+                    V_MOTIVO := 'a quantidade calculada das matérias-primas está zerada (qtd. mistura x qtd. a produzir).';
+
+                ELSE
+                    V_MOTIVO := 'nenhum item atendeu aos critérios de geração.';
+                END IF;
+
+                V_DETALHE := SUBSTR(V_DETALHE || '<br>Plano ' || FIELD_NUMPS
+                                    || ': nenhum pedido gerado — ' || V_MOTIVO, 1, 3500);
+            ELSE
+                V_DETALHE := SUBSTR(V_DETALHE || '<br>Plano ' || FIELD_NUMPS
+                                    || ': ' || V_QTDPED_PLANO || ' pedido(s) de requisição gerado(s).', 1, 3500);
+            END IF;
 
 /*
 SELECT I.CODPROD,  I.QTDPRODUZIRLIQ, LMP.CODPRODMP, LMP.QTDMISTURA, LMP.CODVOL
@@ -167,7 +277,11 @@ SELECT I.CODPROD,  I.QTDPRODUZIRLIQ, LMP.CODPRODMP, LMP.QTDMISTURA, LMP.CODVOL
 
 
 -- <ESCREVA SEU CÓDIGO DE FINALIZAÇÃO AQUI> --
- P_MENSAGEM := 'Pedidos de Requisição gerados com sucesso!';
+ IF V_QTDPED_TOTAL = 0 THEN
+     P_MENSAGEM := 'Nenhum pedido de requisição foi gerado.' || V_DETALHE;
+ ELSE
+     P_MENSAGEM := 'Pedidos de Requisição gerados com sucesso!' || V_DETALHE;
+ END IF;
 
 
 END;
