@@ -1,0 +1,458 @@
+<gadget ><prompt-parameters><parameter  id="CODCENCUS" description="CR" metadata="entity:CentroResultado@CODCENCUS" required="false" keep-last="false" order="0" label="CODCENCUS : Entidade/Tabela"/><parameter  id="EMPRESA" description="Empresa" metadata="multiList:Text" required="false" keep-last="true" listType="sql" keep-date="false" order="1" label="EMPRESA : multiList:Text"><expression type="SQL"><![CDATA[SELECT
+       DISTINCT EMP.CODEMP AS VALUE,
+       EMP.CODEMP || '- '||EMP.RAZAOSOCIAL AS LABEL
+   FROM TSIEMP EMP 
+   ORDER BY 1]]></expression></parameter><parameter  id="PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" order="2" label="PERIODO : Período"/><parameter  id="ADIANTAMENTO" description="Incluir Adiantamento" metadata="boolean" required="false" keep-last="false" keep-date="false" default="false" order="3" label="ADIANTAMENTO : Verdadeiro/Falso"/></prompt-parameters><level id="lvl_a2ec6dm" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="31.862745098039216"><simple-value id="svl_ascwm0p"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(RECEITA) AS RECEITA,SUM(DESPESA) AS DESPESA,SUM(RESULTADO) AS RESULTADO
+FROM
+(
+SELECT
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) AS RECEITA, 
+        SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) AS DESPESA,
+SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) - SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) AS RESULTADO
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON FIN.CODNAT= NAT.CODNAT
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+
+WHERE FIN.DHBAIXA >= :PERIODO.INI
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND FIN.CODEMP IN :EMPRESA
+
+UNION ALL
+
+SELECT SUM(CASE WHEN MBC.RECDESP = 1 THEN MBC.VLRLANC ELSE 0 END) AS RECEITA,
+SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) AS DESPESA,
+SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END) - SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) AS RESULTADO
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON FIN.CODNAT= NAT.CODNAT
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND :ADIANTAMENTO = 'S')]]></expression><metadata><field name="RECEITA" label="RECEITA" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="DESPESA" label="DESPESA" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="RESULTADO" label="RESULTADO" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<div style='text-align: center;'>Resultado: $RESULTADO
+<span style='color: #669900;'>Receita Total: $RECEITA</span>
+<span style='color: #FF9900;'>Despesa Total: $DESPESA</span></div>]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="68.13725490196079"><chart id="cht_ascwm0o" type="column" tamTexto="12" nroColuna="6"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(RECEITA) AS RECEITA, SUM(DESPESA) AS DESPESA, PER,ORDEM,SUM(AZUL) AS AZUL, SUM(VERMELHO) AS VERMELHO
+FROM(
+SELECT
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) AS RECEITA, 
+        SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) AS DESPESA,
+TO_CHAR(FIN.DHBAIXA,'Mon/YYYY') AS PER,
+TO_CHAR(FIN.DHBAIXA,'YYYYMM') AS ORDEM,
+case when
+
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) -
+        SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) >0
+then 
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) -
+        SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) end as AZUL,
+
+case when
+
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) -
+        SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) <=0
+then 
+        SUM(CASE WHEN FIN.RECDESP = -1 THEN FIN.VLRDESDOB ELSE 0 END) -
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) end as VERMELHO
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON FIN.CODNAT= NAT.CODNAT
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP IN :EMPRESA) 
+GROUP BY
+TO_CHAR(FIN.DHBAIXA,'Mon/YYYY') ,
+TO_CHAR(FIN.DHBAIXA,'YYYYMM')
+
+
+UNION ALL
+
+SELECT SUM(CASE WHEN MBC.RECDESP = 1 THEN MBC.VLRLANC ELSE 0 END) AS RECEITA,
+SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) AS DESPESA,
+TO_CHAR(MBC.DTLANC,'Mon/YYYY') AS PER,
+TO_CHAR(MBC.DTLANC,'YYYYMM') AS ORDEM,
+case when
+
+        SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END) -
+        SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) >0
+then 
+        SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END) -
+        SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) end as AZUL,
+
+case when
+
+        SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END) -
+        SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) <=0
+then 
+        SUM(CASE WHEN MBC.RECDESP = -1 THEN MBC.VLRLANC ELSE 0 END) -
+        SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END) end as VERMELHO
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON FIN.CODNAT= NAT.CODNAT
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND :ADIANTAMENTO = 'S'
+GROUP BY
+TO_CHAR(MBC.DTLANC,'Mon/YYYY'),
+TO_CHAR(MBC.DTLANC,'YYYYMM'))
+GROUP BY PER,ORDEM
+ORDER BY 4]]></expression><metadata><field name="RECEITA" label="Valor" type="F" visible="true" useFooter="true" mask="R$ #.##0,00"></field><field name="DESPESA" label="Valor" type="F" visible="true" useFooter="true" mask="R$ #.##0,00"></field><field name="PER" label="Período" type="S" visible="true" useFooter="false"></field><field name="ORDEM" label="Ordem" type="S" visible="true" useFooter="false"></field><field name="AZUL" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="VERMELHO" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><horizontal-axis><category field="PER" rotation="-45" dropLabel="false"><initView value="disabled"></initView></category></horizontal-axis><vertical-axis><linear resultRotation="-90" vResizing="false"><mask></mask></linear></vertical-axis><series><set type="stacked"><serie type="column"><xField>$PER</xField><yField>$RECEITA</yField><display><![CDATA[Receita]]></display><color>0x669900</color><on-click  navigate-to="lvl_a2ec6d3">
+                  <param id="PER">$PER</param>
+                  <param id="RECEITA">$RECEITA</param>
+                </on-click></serie><serie type="column"><xField>$PER</xField><yField>$VERMELHO</yField><display><![CDATA[Res. Negativo]]></display><color>0xff0000</color></serie></set><set type="stacked"><serie type="column"><xField>$PER</xField><yField>$DESPESA</yField><display><![CDATA[Despesa]]></display><color>0xff9900</color><on-click  navigate-to="lvl_a2bc6d3">
+                  <param id="PER">$PER</param>
+                  <param id="DESPESA">$DESPESA</param>
+                </on-click></serie><serie type="column"><xField>$PER</xField><yField>$AZUL</yField><display><![CDATA[Res. Positivo]]></display><color>0xff</color></serie></set></series><legend position="top" direction="h"></legend></chart></container></container></level><level id="lvl_a2ec6d3" description="2 rec"><args >
+      <arg id="PER" type="text"/>
+      <arg id="RECEITA" type="integer"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_a2ec6d5"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT :RECEITA AS RECEITA FROM DUAL]]></expression><metadata><field name="RECEITA" label="RECEITA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<b>Receitas:</b> $RECEITA 
+<b> Mês: </b>:PER]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_a2ec6d4" type="column" tamTexto="12"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(RECEITA) AS RECEITA, DESCRCENCUS
+FROM(
+SELECT
+
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) AS RECEITA, CUS.DESCRCENCUS
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.RECDESP =  1
+AND :PER= TO_CHAR(fin.DHBAIXA, 'Mon/YYYY') 
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP in :EMPRESA)
+GROUP BY
+CUS.DESCRCENCUS
+
+UNION ALL
+
+SELECT SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END)  as RECEITA, CUS.DESCRCENCUS
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON FIN.CODNAT= NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP =  1
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND :PER= TO_CHAR(MBC.DTLANC, 'Mon/YYYY') 
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND :ADIANTAMENTO = 'S'
+GROUP BY
+CUS.DESCRCENCUS)
+GROUP BY DESCRCENCUS
+
+order by 1 desc]]></expression><metadata><field name="RECEITA" label="Valor" type="F" visible="true" useFooter="true" mask="R$ #.##0,00"></field><field name="DESCRCENCUS" label="Centro de Resultado" type="S" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="DESCRCENCUS" rotation="-45" dropLabel="false"></category></horizontal-axis><series><serie type="column"><xField>$DESCRCENCUS</xField><yField>$RECEITA</yField><display><![CDATA[Receita]]></display><color>0x669900</color><on-click  navigate-to="lvl_a2ec6ef">
+                <param id="DESCRCENCUS">$DESCRCENCUS</param>
+                <param id="RECEITA">$RECEITA</param>
+              </on-click></serie></series></chart></container></container></level><level id="lvl_a2ec6ef" description="3 rec"><args >
+      <arg id="DESCRCENCUS" type="text"/>
+      <arg id="RECEITA" type="decimal"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_a2ec6eg"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT :RECEITA AS RECEITA FROM DUAL]]></expression><metadata><field name="RECEITA" label="RECEITA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<b>Receitas:</b> $RECEITA
+<b>Mês: </b> :PER
+<b>Centro de Resultado: </b>:DESCRCENCUS]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_a2ec6eh" type="column" tamTexto="12"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(RECEITA) AS RECEITA,DESCRNAT
+FROM(
+SELECT
+
+        SUM(CASE WHEN FIN.RECDESP =  1 THEN FIN.VLRDESDOB ELSE 0 END) AS RECEITA, NAT.DESCRNAT
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.RECDESP =  1
+
+AND :PER= TO_CHAR(FIN.DHBAIXA, 'Mon/YYYY')
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP IN :EMPRESA) 
+AND CUS.DESCRCENCUS= :DESCRCENCUS
+GROUP BY
+ NAT.DESCRNAT
+
+UNION ALL
+
+SELECT SUM(CASE WHEN MBC.RECDESP =  1 THEN MBC.VLRLANC ELSE 0 END)  as RECEITA, NAT.DESCRNAT
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.RECDESP =  1
+AND :PER= TO_CHAR(MBC.DTLANC, 'Mon/YYYY') 
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND :ADIANTAMENTO = 'S'
+GROUP BY
+NAT.DESCRNAT)
+GROUP BY DESCRNAT
+order by 1 desc]]></expression><metadata><field name="RECEITA" label="Valor" type="F" visible="true" useFooter="true" mask="R$ #.##0,00"></field><field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="DESCRNAT" rotation="-45" dropLabel="false"></category></horizontal-axis><series><serie type="column"><xField>$DESCRNAT</xField><yField>$RECEITA</yField><display><![CDATA[Receita]]></display><color>0x669900</color><on-click  navigate-to="lvl_a2ec6fx">
+                <param id="DESCRNAT">$DESCRNAT</param>
+                <param id="RECEITA">$RECEITA</param>
+              </on-click></serie></series></chart></container></container></level><level id="lvl_a2bc6d3" description="2 desp"><args >
+      <arg id="PER" type="text"/>
+      <arg id="DESPESA" type="decimal"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_a2ec6d5"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT :DESPESA AS DESPESA FROM DUAL]]></expression><metadata><field name="DESPESA" label="DESPESA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<b>Despesas: </b> $DESPESA
+<b> Mês: </b>:PER]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_a2ec6d4" type="column" tamTexto="12"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(DESPESA) AS DESPESA, DESCRCENCUS
+FROM
+(
+SELECT
+
+        SUM(CASE WHEN FIN.RECDESP =  -1 THEN FIN.VLRDESDOB ELSE 0 END) AS DESPESA, CUS.DESCRCENCUS
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.RECDESP =  -1
+AND :PER= TO_CHAR(FIN.DHBAIXA, 'Mon/YYYY')
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP IN :EMPRESA) 
+GROUP BY
+ CUS.DESCRCENCUS
+
+UNION ALL
+
+SELECT SUM(CASE WHEN MBC.RECDESP =  -1 THEN MBC.VLRLANC ELSE 0 END)  as DESPESA, CUS.DESCRCENCUS
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON FIN.CODNAT= NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP =  -1
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND :PER= TO_CHAR(MBC.DTLANC, 'Mon/YYYY') 
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND :ADIANTAMENTO = 'S'
+GROUP BY
+CUS.DESCRCENCUS)
+GROUP BY DESCRCENCUS
+order by 1 desc]]></expression><metadata><field name="DESPESA" label="DESPESA" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="DESCRCENCUS" label="Centro de Resultado" type="S" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="DESCRCENCUS" rotation="-45" dropLabel="false"></category></horizontal-axis><series><serie type="column"><xField>$DESCRCENCUS</xField><yField>$DESPESA</yField><display><![CDATA[Despesa]]></display><color>0xff9900</color><on-click  navigate-to="lvl_a2ec4ef">
+                <param id="DESCRCENCUS">$DESCRCENCUS</param>
+                <param id="DESPESA">$DESPESA</param>
+              </on-click></serie></series></chart></container></container></level><level id="lvl_a2ec4ef" description="3 desp"><args >
+      <arg id="DESCRCENCUS" type="text"/>
+      <arg id="DESPESA" type="decimal"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_a2ec6eg"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT :DESPESA AS DESPESA FROM DUAL]]></expression><metadata><field name="DESPESA" label="DESPESA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<b>Despesas:</b> $DESPESA
+<b>Mês: </b> :PER
+<b>Centro de Resultado: </b>:DESCRCENCUS]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_a2ec6eh" type="column" tamTexto="12"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(DESPESA) AS DESPESA, DESCRNAT
+FROM(
+SELECT
+
+        SUM(CASE WHEN FIN.RECDESP =  -1 THEN FIN.VLRDESDOB ELSE 0 END) AS DESPESA, NAT.DESCRNAT
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP =  -1
+AND :PER= TO_CHAR(FIN.DHBAIXA, 'Mon/YYYY')
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP IN :EMPRESA) 
+AND CUS.DESCRCENCUS= :DESCRCENCUS
+GROUP BY
+ NAT.DESCRNAT
+
+UNION ALL
+
+SELECT 
+SUM(CASE WHEN MBC.RECDESP =  -1 THEN MBC.VLRLANC ELSE 0 END)  as DESPESA, NAT.DESCRNAT
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND FIN.RECDESP =  -1
+AND :PER= TO_CHAR(MBC.DTLANC, 'Mon/YYYY') 
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND :ADIANTAMENTO = 'S'
+GROUP BY
+NAT.DESCRNAT)
+
+GROUP BY DESCRNAT
+
+order by 1 desc]]></expression><metadata><field name="DESPESA" label="DESPESA" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="DESCRNAT" rotation="-45" dropLabel="false"></category></horizontal-axis><series><serie type="column"><xField>$DESCRNAT</xField><yField>$DESPESA</yField><display><![CDATA[Despesa]]></display><color>0xff9900</color><on-click  navigate-to="lvl_a2ec6gb">
+                <param id="DESCRNAT">$DESCRNAT</param>
+                <param id="DESPESA">$DESPESA</param>
+              </on-click></serie></series></chart></container></container></level><level id="lvl_a2ec6fx" description="grid rec"><args >
+      <arg id="DESCRNAT" type="text"/>
+      <arg id="RECEITA" type="decimal"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_a2ec6fy"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT :RECEITA AS RECEITA FROM DUAL]]></expression><metadata><field name="RECEITA" label="RECEITA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<b>Receitas:</b> $RECEITA
+<b> Mês: </b> :PER 
+<b>Centro de Resultado: </b>:DESCRCENCUS
+<b>Natureza:</b> :DESCRNAT]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_a2ec6fz"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT*
+FROM(
+SELECT
+FIN.NUFIN, FIN.VLRDESDOB,
+FIN.DHBAIXA, PAR.NOMEPARC
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+INNER JOIN TGFPAR PAR ON FIN.CODPARC= PAR.CODPARC
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP =  1
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND :PER= TO_CHAR(FIN.DHBAIXA, 'Mon/YYYY')
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP in :EMPRESA)
+AND CUS.DESCRCENCUS= :DESCRCENCUS
+AND NAT.DESCRNAT= :DESCRNAT
+
+UNION ALL
+
+SELECT 
+FIN.NUFIN, FIN.VLRDESDOB,
+FIN.DHBAIXA, PAR.NOMEPARC
+
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+INNER JOIN TGFPAR PAR ON FIN.CODPARC= PAR.CODPARC
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP =  1
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND :PER= TO_CHAR(MBC.DTLANC, 'Mon/YYYY') 
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND CUS.DESCRCENCUS= :DESCRCENCUS
+AND NAT.DESCRNAT= :DESCRNAT
+AND :ADIANTAMENTO = 'S')
+
+order by 1 desc]]></expression><metadata><field name="NUFIN" label="Núm. Fin." type="I" visible="true" useFooter="false"></field><field name="VLRDESDOB" label="Valor" type="C" visible="true" useFooter="true"></field><field name="DHBAIXA" label="Data" type="D" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NUFIN</NUFIN>
+          </on-click-launcher></grid></container></container></level><level id="lvl_a2ec6gb" description="grid desp"><args >
+      <arg id="DESCRNAT" type="text"/>
+      <arg id="DESPESA" type="decimal"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_a2ec6gc"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT :DESPESA AS DESPESA FROM DUAL]]></expression><metadata><field name="DESPESA" label="DESPESA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression><![CDATA[<b>Despesas:</b> $DESPESA
+<b> Mês: </b> :PER 
+<b>Centro de Resultado: </b>:DESCRCENCUS
+<b>Natureza:</b> :DESCRNAT]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_a2ec6gd"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT *
+FROM(
+SELECT
+FIN.NUFIN, FIN.VLRDESDOB,
+FIN.DHBAIXA, PAR.NOMEPARC
+
+FROM TGFFIN FIN
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+LEFT JOIN TGFMBC MBC ON MBC.NUBCO = FIN.NUBCO
+LEFT JOIN TSICTA CTA ON CTA.CODCTABCOINT =  MBC.CODCTABCOINT
+INNER JOIN TGFPAR PAR ON FIN.CODPARC= PAR.CODPARC
+WHERE FIN.DHBAIXA >= :PERIODO.INI 
+AND FIN.DHBAIXA <= :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.RECDESP =  -1
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND :PER= TO_CHAR(FIN.DHBAIXA, 'Mon/YYYY')
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP <> 0
+AND ((CTA.CLASSE IS NULL OR CTA.CLASSE <> 'D')) 
+AND (FIN.CODEMP IN :EMPRESA) 
+AND CUS.DESCRCENCUS= :DESCRCENCUS
+AND NAT.DESCRNAT= :DESCRNAT
+
+UNION ALL
+
+SELECT 
+FIN.NUFIN, FIN.VLRDESDOB,
+FIN.DHBAIXA, PAR.NOMEPARC
+
+FROM TGFMBC MBC
+INNER JOIN TSICTA CTA ON MBC.CODCTABCOINT = CTA.CODCTABCOINT
+INNER JOIN TGFFIN FIN ON MBC.NUBCO = FIN.NUBCO
+INNER JOIN TGFNAT NAT ON ROUND((fin.CODNAT / 100),0) * 100 = NAT.CODNAT
+INNER JOIN TSICUS CUS ON CUS.CODCENCUS = FIN.CODCENCUS
+INNER JOIN TGFPAR PAR ON FIN.CODPARC= PAR.CODPARC
+WHERE  MBC.DTLANC     >=  :PERIODO.INI 
+AND MBC.DTLANC     < :PERIODO.FIN 
+AND FIN.DHBAIXA IS NOT NULL
+AND FIN.PROVISAO='N'
+AND FIN.RECDESP =  -1
+AND (FIN.CODCENCUS = :CODCENCUS OR :CODCENCUS IS NULL)
+AND :PER= TO_CHAR(MBC.DTLANC, 'Mon/YYYY') 
+AND CTA.CLASSE = 'D'
+AND (FIN.CODEMP IN :EMPRESA) 
+AND CUS.DESCRCENCUS= :DESCRCENCUS
+AND NAT.DESCRNAT= :DESCRNAT
+AND :ADIANTAMENTO = 'S')
+
+order by 1 desc]]></expression><metadata><field name="NUFIN" label="Núm. Fin." type="I" visible="true" useFooter="false"></field><field name="VLRDESDOB" label="Valor" type="C" visible="true" useFooter="true"></field><field name="DHBAIXA" label="Data" type="D" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NUFIN</NUFIN>
+          </on-click-launcher></grid></container></container></level></gadget>

@@ -1,0 +1,24 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="0" label="P_PERIODO : Período"/><parameter  id="P_SETOR" description="Setor" metadata="multiList:Text" listType="text" required="false" keep-last="true" keep-date="false" order="1" label="P_SETOR : multiList:Text"><item value="S" label="Solda"/><item value="T" label="Teste"/><item value="I" label="Inserção"/><item value="TF" label="Transformador/Indutor"/><item value="D" label="Display"/><item value="MF" label="Montagem Final"/><item value="C" label="Capacitor"/><item value="DP" label="Dissipador"/><item value="IN" label="Insersora"/></parameter></prompt-parameters><level id="lvl_gf2lrk" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_gf2lrl" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT OPE.NOMEFUNC AS OPERADORTESTE,
+	OPE2.NOMEFUNC AS OPERADORFAB,
+	REV2.NOMEFUNC AS REVISORFAB,
+	REV.NOMEFUNC AS REVISOR,
+	NVL(SUM(APO.MINSERIDO),0) AS MINSERIDO,
+	NVL(SUM(APO.FALTANDO),0) AS FALTANDO,
+	NVL(SUM(APO.INVERTIDO),0) AS INVERTIDO,
+	NVL(SUM(APO.TROCADO),0) AS TROCADO,
+	NVL(SUM(APO.QUEIMADO),0) AS QUEIMADO,
+	NVL(SUM(APO.CURTO),0) AS CURTO,
+	NVL(SUM(APO.SOLDAFRIA),0) AS SOLDAFRIA,
+	NVL(SUM(APO.DEFEITOMP),0) AS DEFEITOMP
+FROM AD_APOQLD APO
+	LEFT JOIN TFPFUN OPE ON APO.FUNCOPERADOR = OPE.CODFUNC
+	LEFT JOIN TFPFUN REV ON APO.FUNCREVISOR = REV.CODFUNC
+	LEFT JOIN TFPFUN OPE2 ON APO.FUNCOPERADOR2 = OPE2.CODFUNC
+	LEFT JOIN TFPFUN REV2 ON APO.FUNCREVISOR2 = REV2.CODFUNC
+WHERE (:P_PERIODO IS NULL OR (:P_PERIODO >= APO.DTAPO AND :P_PERIODO <= APO.DTAPO))
+	AND APO.SETOR IN :P_SETOR
+GROUP BY OPE.NOMEFUNC,
+	REV.NOMEFUNC,
+	OPE2.NOMEFUNC,
+	REV2.NOMEFUNC
+ORDER BY OPE.NOMEFUNC]]></expression><metadata><field name="OPERADORTESTE" label="Operador Teste" type="S" visible="true" useFooter="false"></field><field name="OPERADORFAB" label="Operador Fábrica" type="S" visible="true" useFooter="false"></field><field name="REVISORFAB" label="Revisor Fábrica" type="S" visible="true" useFooter="false"></field><field name="REVISOR" label="Revisor Apontamento" type="S" visible="true" useFooter="false"></field><field name="MINSERIDO" label="Mal Inserido" type="I" visible="true" useFooter="SUM"></field><field name="FALTANDO" label="Faltando" type="I" visible="true" useFooter="SUM"></field><field name="INVERTIDO" label="Invertido" type="I" visible="true" useFooter="SUM"></field><field name="TROCADO" label="Trocado" type="I" visible="true" useFooter="SUM"></field><field name="QUEIMADO" label="Queimado" type="I" visible="true" useFooter="SUM"></field><field name="CURTO" label="Curto" type="I" visible="true" useFooter="SUM"></field><field name="SOLDAFRIA" label="Solda Fria" type="I" visible="true" useFooter="SUM"></field><field name="DEFEITOMP" label="Defeito de MP" type="I" visible="true" useFooter="SUM"></field><field name="TOTAL" label="Total" type="I" visible="true" useFooter="SUM"><calculated><formula><![CDATA[$CURTO + $DEFEITOMP + $FALTANDO + $INVERTIDO + $MINSERIDO + $QUEIMADO + $SOLDAFRIA + $TROCADO]]></formula></calculated></field></metadata></grid></container></level></gadget>

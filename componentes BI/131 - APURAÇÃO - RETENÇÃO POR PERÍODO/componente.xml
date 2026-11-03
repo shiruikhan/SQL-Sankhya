@@ -1,0 +1,23 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DTENTSAI" description="Período" metadata="datePeriod" required="true" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_7rzih8" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_7rzih9" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT TO_CHAR(REFERENCIA,'MM/YYYY') AS PERIODO,	LAST_DAY(REFERENCIA) AS AP_FINAL,	LAST_DAY(TRUNC(REFERENCIA)) + 20 AS VENCIMENTO,	NVL(ROUND(BASE,2),0) AS BASE,	NVL(ROUND(ALIQUOTA,2),0) AS ALIQUOTA,	NVL(ROUND(VALOR,2),0) AS VALOR,	' ' || NOME_IMP || ' NF ' || NUMNOTA || ' ' || PARCEIRO AS OBS,	CODNAT,	DESCRNATFROM (SELECT CAB.NUNOTA,			CAB.NUMNOTA,			CAB.DTENTSAI AS REFERENCIA,			CAB.CODPARC,			PAR.NOMEPARC AS PARCEIRO,			(CASE WHEN IMN.TIPOIMPOSTO = 4 THEN 'ISS' WHEN IMN.TIPOIMPOSTO = 5 THEN 'INSS' WHEN IMN.TIPOIMPOSTO = 6 THEN 'PIS' WHEN IMN.TIPOIMPOSTO = 7 THEN 'COFINS' WHEN IMN.TIPOIMPOSTO = 8 THEN 'IRF' WHEN IMN.TIPOIMPOSTO = 0 THEN 'CSRF' END) AS NOME_IMP,			SUM(ITE.VLRTOT - ITE.VLRDESC) AS VLRCTB,			CAB.VLRNOTA,			SUM(IMN.BASE) AS BASE,			SUM(IMN.ALIQUOTA) AS ALIQUOTA,			SUM(IMN.VALOR) AS VALOR,			CAB.CODNAT,			(SELECT DISTINCT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = CAB.CODNAT) AS DESCRNAT		FROM TGFCAB CAB			INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC			INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA			INNER JOIN TGFTOP OPE ON (CAB.CODTIPOPER = OPE.CODTIPOPER AND CAB.DHTIPOPER = OPE.DHALTER)			INNER JOIN TGFIMN IMN ON (CAB.NUNOTA = IMN.NUNOTA AND ITE.NUNOTA = IMN.NUNOTA AND ITE.SEQUENCIA = IMN.SEQUENCIA)		WHERE OPE.ATUALLIVISS = 'E'			AND CAB.STATUSNOTA = 'L'			AND CAB.CODEMP <> 501			AND CAB.CODEMP = 1			AND CAB.DTENTSAI >= :P_DTENTSAI.INI			AND CAB.DTENTSAI <= :P_DTENTSAI.FIN			GROUP BY CAB.NUNOTA, CAB.NUMNOTA, CAB.DTENTSAI, CAB.CODPARC, PAR.NOMEPARC, CAB.VLRNOTA, IMN.TIPOIMPOSTO, CAB.CODNAT			ORDER BY 2, 3) VORDER BY 2]]></expression>
+        <metadata>
+          <field name="PERIODO" label="PERIODO" type="S" visible="true" useFooter="false"/>
+          <field name="AP_FINAL" label="AP_FINAL" type="D" visible="true" useFooter="false"/>
+          <field name="VENCIMENTO" label="VENCIMENTO" type="D" visible="true" useFooter="false"/>
+          <field name="BASE" label="BASE" type="I" visible="true" useFooter="SUM"/>
+          <field name="ALIQUOTA" label="ALIQUOTA" type="I" visible="true" useFooter="false"/>
+          <field name="VALOR" label="VALOR" type="I" visible="true" useFooter="SUM"/>
+          <field name="OBS" label="OBS" type="S" visible="true" useFooter="false"/>
+          <field name="CODNAT" label="CODNAT" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRNAT" label="DESCRNAT" type="S" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

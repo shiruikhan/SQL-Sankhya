@@ -1,0 +1,57 @@
+<gadget ><prompt-parameters><parameter  id="P_DTPREVENT" description="Período de Entrega" metadata="datePeriod" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_DTPREVENT : Período" order="0"/><parameter  id="P_NUMPS" description="Nr. Plano" metadata="integer" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_NUMPS : Número Inteiro" order="1"/><parameter  id="P_NROLOTE" description="Ficha" metadata="text" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_NROLOTE : Texto" order="2"/><parameter  id="P_DESCRICAO" description="Setor" metadata="multiList:Text" listType="text" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_DESCRICAO : multiList:Text" order="3"><item value="APONTAMENTO INSERSORA" label="Insersora"/><item value="APONTAMENTO REVISORA" label="Revisora"/><item value="INSERÇÃO" label="Inserção"/><item value="SOLDA" label="Solda"/><item value="TESTE" label="Teste"/><item value="DISSIPADOR" label="Dissipador"/><item value="TAMPA/GABINETE" label="Tampa/Gabinete"/><item value="MONTAGEM FINAL" label="Montagem Final"/><item value="EXPEDIÇÃO/CONFERENCIA" label="Expedição"/><item value="DISPLAY" label="Display"/><item value="PRODUÇÃO KIT IBM" label="Kit BM"/></parameter></prompt-parameters><level id="02B" description="Principal"><container orientacao="H" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="50.03164556962025"><grid id="grd_01O" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRC.NROLOTE AS FICHA,
+    PRC.NUMPS AS PLANO,
+    PRC.DHINST AS DTINICIO,
+    PRC.DTPREVENT AS DTPREVENTREGA,
+    PRC.DHTERMINO AS DTFINALIZA,
+    PRC.IDPROC,
+    PRC.IDIPROC,
+    IPA.CODPRODPA AS CODPROD,
+    IPA.QTDPRODUZIR AS QTDTOTAL,
+    IPA.CONCLUIDO AS STATUSCONCLUSAO,
+    PRO.AD_REFINTERNA AS MODELO,
+    (CASE WHEN PRO.AD_LINHA = 1 THEN 'Linha 1' WHEN PRO.AD_LINHA = 2 THEN 'Linha 2' ELSE 'Sem info' END) AS LINHA,
+    (
+        SELECT MAX( LMP.CODPRODMP )
+        FROM TPRLMP LMP
+            INNER JOIN TGFPRO MP ON LMP.CODPRODMP = MP.CODPROD
+            INNER JOIN TGFGRU GRU ON MP.CODGRUPOPROD = GRU.CODGRUPOPROD AND GRU.CODGRUPOPROD = 2550000
+        WHERE LMP.CODPRODPA = IPA.CODPRODPA
+            AND SUBSTR(TO_CHAR(LMP.CODPRODMP), 1, 1) = '2'
+            AND LMP.IDEFX = EFX.IDEFX
+    ) AS CODPRODPLACA,
+    EFX.DESCRICAO AS SETOR,
+    TRUNC(APO.DHAPO) AS DTAPONTAMENTO,
+    SUM(NVL(APA.QTDAPONTADA, 0)) AS QTDAPONTADA,
+    NVL(TRUNC(APO.DHAPO), PRC.DTPREVENT) AS DATA_EIXO
+FROM TPRIPROC PRC
+    INNER JOIN TPRIPA IPA ON PRC.IDIPROC = IPA.IDIPROC
+    INNER JOIN TGFPRO PRO ON IPA.CODPRODPA = PRO.CODPROD
+    INNER JOIN TPRLPA LPA ON IPA.CODPRODPA = LPA.CODPRODPA AND PRC.IDPROC = LPA.IDPROC
+    INNER JOIN TPREFX EFX ON LPA.IDPROC = EFX.IDPROC/* AND EFX.DESCRICAO IN ('APONTAMENTO INSERSORA','APONTAMENTO REVISORA','INSERÇÃO','SOLDA','TESTE','DISSIPADOR','TAMPA/GABINETE','MONTAGEM FINAL','EXPEDIÇÃO/CONFERENCIA','DISPLAY','PRODUÇÃO KIT IBM')*/
+    LEFT JOIN TPRIATV TV ON TV.IDIPROC = PRC.IDIPROC AND TV.IDEFX = EFX.IDEFX
+    LEFT JOIN TPRAPO APO ON APO.IDIATV = TV.IDIATV AND APO.SITUACAO = 'C'
+    LEFT JOIN TPRAPA APA ON APA.NUAPO = APO.NUAPO
+WHERE (PRC.NROLOTE = :P_NROLOTE OR :P_NROLOTE IS NULL)
+    AND EFX.DESCRICAO IN :P_DESCRICAO
+    AND PRC.NROLOTE >= (TO_CHAR(SYSDATE, 'YY') || '00000') AND PRC.NROLOTE <= (TO_CHAR(SYSDATE, 'YY') || '99999')
+    --AND SUBSTR(TO_CHAR(PRC.NROLOTE), 1, 2) = TO_CHAR(SYSDATE, 'YY')
+    AND (PRC.NUMPS = :P_NUMPS OR :P_NUMPS IS NULL)
+    AND (PRC.DTPREVENT >= :P_DTPREVENT.INI OR :P_DTPREVENT.INI IS NULL)
+    AND (PRC.DTPREVENT <= :P_DTPREVENT.FIN OR :P_DTPREVENT.FIN IS NULL)
+GROUP BY 
+    PRC.NROLOTE, 
+    PRC.NUMPS, 
+    PRC.DHINST, 
+    PRC.DTPREVENT, 
+    PRC.DHTERMINO, 
+    PRC.IDPROC, 
+    PRC.IDIPROC, 
+    IPA.CODPRODPA, 
+    IPA.QTDPRODUZIR, 
+    IPA.CONCLUIDO, 
+    PRO.AD_REFINTERNA, 
+    PRO.AD_LINHA, 
+    EFX.IDEFX, 
+    EFX.DESCRICAO, 
+    TRUNC(APO.DHAPO)
+ORDER BY PRC.NROLOTE, PRC.DTPREVENT, TRUNC(APO.DHAPO)]]></expression><metadata><field name="FICHA" label="Ficha" type="S" visible="true" useFooter="false"></field><field name="PLANO" label="Plano" type="I" visible="true" useFooter="false"></field><field name="DTINICIO" label="Dt. Início" type="D" visible="true" useFooter="false"></field><field name="DTPREVENTREGA" label="Dt. Prev. Entrega" type="D" visible="true" useFooter="false"></field><field name="DTFINALIZA" label="Dt. Finalização" type="D" visible="false" useFooter="false"></field><field name="IDPROC" label="Id. Proc. Produtivo" type="I" visible="false" useFooter="false"></field><field name="IDIPROC" label="Id. Produção" type="I" visible="false" useFooter="false"></field><field name="CODPROD" label="Cód. PA" type="I" visible="true" useFooter="false"></field><field name="QTDTOTAL" label="Qtd. à produzir" type="I" visible="true" useFooter="false"></field><field name="STATUSCONCLUSAO" label="Status" type="S" visible="false" useFooter="false"></field><field name="MODELO" label="Modelo" type="S" visible="true" useFooter="false"></field><field name="LINHA" label="Linha" type="S" visible="true" useFooter="false"></field><field name="CODPRODPLACA" label="Cód. Placa" type="I" visible="true" useFooter="false"></field><field name="SETOR" label="Setor" type="S" visible="true" useFooter="false"></field><field name="DTAPONTAMENTO" label="Dt. Apontamento" type="D" visible="true" useFooter="false"></field><field name="QTDAPONTADA" label="Qtd. Apontamento" type="I" visible="true" useFooter="SUM"></field><field name="DATA_EIXO" label="Dt. Eixo" type="D" visible="true" useFooter="false"></field></metadata></grid></container></container></level></gadget>

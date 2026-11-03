@@ -1,0 +1,43 @@
+<gadget ><prompt-parameters><parameter  id="P_ANO" description="Ano" metadata="integer" required="true" keep-last="true" keep-date="false" limit-char="4" order="0" label="P_ANO : Número Inteiro"/><parameter  id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_CODVEND" description="Representante" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" order="2" label="P_CODVEND : Entidade/Tabela"/></prompt-parameters><level id="lvl_67fu72" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_67fu73" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Evolução de Vendas por Representante]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT T.*,
+    T.JANEIRO+T.FEVEREIRO+T.MAR+T.ABRIL+T.MAIO+T.JUNHO+T.JULHO+T.AGOSTO+T.SETEMBRO+T.OUTUBRO+T.NOVEMBRO+T.DEZEMBRO AS TOTAL,
+    (SELECT APELIDO FROM TGFVEN WHERE CODVEND = T.CODVEND) AS REPRESENTANTE,
+	(SELECT DISTINCT UF.DESCRICAO FROM TSIUFS UF INNER JOIN TSICID C ON UF.CODUF = C.UF WHERE C.CODCID = T.CODCID) AS UF
+FROM (SELECT V.CODPARC,
+            V.RAZAOSOCIAL,
+            SUM(CASE WHEN V.MES = 1 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS JANEIRO,
+            SUM(CASE WHEN V.MES = 2 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS FEVEREIRO,
+            SUM(CASE WHEN V.MES = 3 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS MAR,
+            SUM(CASE WHEN V.MES = 4 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS ABRIL,
+            SUM(CASE WHEN V.MES = 5 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS MAIO,
+            SUM(CASE WHEN V.MES = 6 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS JUNHO,
+            SUM(CASE WHEN V.MES = 7 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS JULHO,
+            SUM(CASE WHEN V.MES = 8 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS AGOSTO,
+            SUM(CASE WHEN V.MES = 9 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS SETEMBRO,
+            SUM(CASE WHEN V.MES = 10 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS OUTUBRO,
+            SUM(CASE WHEN V.MES = 11 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS NOVEMBRO,
+            SUM(CASE WHEN V.MES = 12 THEN V.VLRNOTA + V.VLROUTROS - V.VLRIPI - V.VLRSUBST - (CASE WHEN V.TIPFRETE = 'S' THEN V.VLRFRETE ELSE 0 END) /* + V.VLROUTROSFRETE */ ELSE 0 END) AS DEZEMBRO,
+            V.CODVEND,
+			V.CODCID
+        FROM (SELECT PAR.CODPARC,  
+                    PAR.RAZAOSOCIAL,
+                    EXTRACT(MONTH FROM CAB.DTNEG) AS MES,
+                    EXTRACT(YEAR FROM CAB.DTNEG) AS ANO,
+                    CAB.TIPFRETE,
+                    ROUND(SUM(CAB.VLRNOTA),2) AS VLRNOTA,
+                    ROUND(SUM(NVL(CAB.VLROUTROS,0)),2) AS VLROUTROS,
+                    ROUND(SUM(NVL(CAB.AD_VLROUTROSFRETE,0)),2) AS VLROUTROSFRETE,
+                    ROUND(SUM(CAB.VLRIPI),2) AS VLRIPI,
+                    ROUND(SUM(CAB.VLRSUBST),2) AS VLRSUBST,
+                    ROUND(SUM(CAB.VLRFRETE),2) AS VLRFRETE,
+                    CAB.CODVEND,
+					PAR.CODCID
+                FROM TGFPAR PAR
+                    INNER JOIN TGFCAB CAB ON (CAB.CODPARC = PAR.CODPARC AND CAB.TIPMOV = 'V' AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D') AND CAB.CODTIPOPER IN (1311) AND EXTRACT(YEAR FROM CAB.DTNEG) = :P_ANO)
+					INNER JOIN TGFVEN VEN ON PAR.CODVEND = VEN.CODVEND
+                WHERE (:P_CODPARC IS NULL OR PAR.CODPARC = :P_CODPARC)
+					AND VEN.TIPVEND <> 'C'
+					AND (:P_CODVEND IS NULL OR CAB.CODVEND = :P_CODVEND)
+                GROUP BY PAR.CODPARC, PAR.RAZAOSOCIAL, EXTRACT(MONTH FROM CAB.DTNEG), EXTRACT(YEAR FROM CAB.DTNEG), CAB.TIPFRETE, CAB.CODVEND, PAR.CODPARC, PAR.CODCID
+                ORDER BY PAR.CODPARC, EXTRACT(YEAR FROM CAB.DTNEG), EXTRACT(MONTH FROM CAB.DTNEG)) V
+        GROUP BY V.CODPARC, V.RAZAOSOCIAL, V.CODVEND, V.CODCID
+        ORDER BY V.CODPARC) T]]></expression><metadata><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="JANEIRO" label="Jan" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="FEVEREIRO" label="Fev" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="MAR" label="Mar" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="ABRIL" label="Abr" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="MAIO" label="Mai" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="JUNHO" label="Jun" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="JULHO" label="Jul" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="AGOSTO" label="Ago" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="SETEMBRO" label="Set" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="OUTUBRO" label="Out" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="NOVEMBRO" label="Nov" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="DEZEMBRO" label="Dez" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="CODVEND" label="Cód. Rep" type="I" visible="false" useFooter="false"></field><field name="CODCID" label="CODCID" type="I" visible="false" useFooter="false"></field><field name="TOTAL" label="Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="REPRESENTANTE" label="Representante" type="S" visible="false" useFooter="false"></field><field name="UF" label="UF" type="S" visible="true" useFooter="false"></field></metadata></grid></container></level></gadget>

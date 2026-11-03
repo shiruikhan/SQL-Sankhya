@@ -1,0 +1,50 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_PERIODO : Período" order="0"/>
+  </prompt-parameters>
+  <level id="02A" description="Principal">
+    <args>
+      <arg id="A_DTNEG" type="date"/>
+      <arg id="A_CODCENCUS" type="integer"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="100">
+        <grid id="grd_02B" multiplaSelecao="S" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT TRUNC(CAB.DTNEG) DTNEG,	COUNT(DISTINCT CAB.NUNOTA) AS CONTADORATENDIMENTO,	COUNT(ITE.CODPROD) AS CONTADORITEM,	SUM(ITE.QTDNEG) AS CONTADORQUANTIDADES,    CUS.DESCRCENCUS,	CAB.CODCENCUSFROM TGFITE ITE 	LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA 	LEFT JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD 	LEFT JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE (CAB.TIPMOV <> 'J') 	AND (ITE.STATUSNOTA = 'L') 	AND (CAB.AD_NUMPS IS NULL)	AND CAB.CODTIPOPER NOT IN (409)    AND CAB.CODUSUINC = 81        AND (TRUNC(CAB.DTNEG) >= :P_PERIODO.INI AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN) 	AND ITE.ATUALESTOQUE = -1GROUP BY TRUNC(CAB.DTNEG),    CUS.DESCRCENCUS,	CAB.CODCENCUSORDER BY TRUNC(CAB.DTNEG), CUS.DESCRCENCUS]]></expression>
+          <metadata>
+            <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="CONTADORATENDIMENTO" label="Cont. Atendimento" type="F" visible="true" useFooter="false"/>
+            <field name="CONTADORITEM" label="Cont. Itens" type="F" visible="true" useFooter="false"/>
+            <field name="CONTADORQUANTIDADES" label="Qtd. Atendida" type="F" visible="true" useFooter="SUM"/>
+            <field name="DESCRCENCUS" label="Solicitantes" type="S" visible="true" useFooter="false"/>
+            <field name="CODCENCUS" label="CODCENCUS" type="I" visible="false" useFooter="false"/>
+          </metadata>
+          <refresh-details ui-list="grd_at1tdjc">
+            <param id="A_DTNEG">$DTNEG</param>
+            <param id="A_CODCENCUS">$CODCENCUS</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="163">
+        <grid id="grd_at1tdjc" multiplaSelecao="S" useNewGrid="S">
+          <args>
+            <arg id="A_DTNEG" type="date"/>
+            <arg id="A_CODCENCUS" type="integer"/>
+          </args>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,	TRUNC(CAB.DTNEG) AS DTNEG,	ITE.CODPROD,	PRO.DESCRPROD,	ITE.QTDNEG,	CAB.OBSERVACAOFROM TGFITE ITE 	LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA 	LEFT JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD WHERE (CAB.TIPMOV <> 'J') 	AND (ITE.STATUSNOTA = 'L') 	AND (CAB.AD_NUMPS IS NULL)	AND CAB.CODTIPOPER NOT IN (409)    AND CAB.CODUSUINC = 81        AND TRUNC(CAB.DTNEG) = :A_DTNEG	AND CAB.CODCENCUS = :A_CODCENCUS	AND ITE.ATUALESTOQUE = -1ORDER BY CAB.NUNOTA, ITE.CODPROD]]></expression>
+          <metadata>
+            <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+            <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="QTDNEG" label="Qtd. Atendida" type="F" visible="true" useFooter="SUM"/>
+            <field name="OBSERVACAO" label="Observação" type="S" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

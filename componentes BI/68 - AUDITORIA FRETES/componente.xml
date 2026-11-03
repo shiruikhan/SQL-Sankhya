@@ -1,0 +1,207 @@
+<gadget ><prompt-parameters><parameter  id="P_PRAZO" description="Prazo" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="P_PRAZO : Período"/><parameter  id="P_CODPARC1" description="Parceiro CTe" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1" label="P_CODPARC1 : Entidade/Tabela"/><parameter  id="P_NUMNOTA" description="Nr Nota" metadata="integer" required="false" keep-last="false" keep-date="false" order="2" label="P_NUMNOTA : Número Inteiro"/><parameter  id="P_NUMNOTAVINCULADA" description="Nr Nota Vinculada" metadata="integer" required="false" keep-last="false" keep-date="false" order="3" label="P_NUMNOTAVINCULADA : Número Inteiro"/></prompt-parameters><level id="lvl_awyrft1" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_awyrft2" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+      CAB.NUNOTA,
+      CAB.CODEMP,
+      CAB.NUMNOTA,
+      ITE.CODCFO AS CODCFO,
+      CAB.CODPARC,
+      PAR.NOMEPARC,
+      CAB.CODTIPOPER,
+      CAB.DTENTSAI,
+      CAB.VLRNOTA,
+	  CAB.CODNAT,
+	  NAT.DESCRNAT,
+	  CAB.CODCENCUS,
+	  CUS.DESCRCENCUS,
+	  NAT.CODCTACTB,
+	  
+	 NVL((
+			SELECT PLA.DESCRCTA
+			FROM TCBPLA PLA
+			WHERE PLA.CODCTACTB = NVL(NAT.CODCTACTB, 0)
+		  ),'SEM CONTA') AS DESC_CONTA,
+	 (SELECT PLA.CTACTB FROM TCBPLA PLA WHERE PLA.CODCTACTB = NVL(NAT.CODCTACTB, 0)) AS EFD_CONTA,		  
+      MAX(ITE.CODTRIB) AS CST_ICMS,
+      SUM(CASE WHEN DIN.CODIMP = 1 THEN DIN.BASERED ELSE 0 END) AS BASEICMS,
+      SUM(CASE WHEN DIN.CODIMP = 1 THEN DIN.VALOR ELSE 0 END) AS ICMS,
+      MAX(CASE WHEN DIN.CODIMP = 6 THEN DIN.CST ELSE 0 END) AS CST_PIS,
+      SUM(CASE WHEN DIN.CODIMP = 6 THEN DIN.BASERED ELSE 0 END) AS BASEPIS,
+      SUM(CASE WHEN DIN.CODIMP = 6 THEN DIN.VALOR ELSE 0 END) AS PIS,
+      MAX(CASE WHEN DIN.CODIMP = 7 THEN DIN.CST ELSE 0 END) AS CST_COFINS,
+      SUM(CASE WHEN DIN.CODIMP = 7 THEN DIN.BASERED ELSE 0 END) AS BASECOFINS,
+      SUM(CASE WHEN DIN.CODIMP = 7 THEN DIN.VALOR ELSE 0 END) AS COFINS,
+      CAB2.NUNOTA AS NUNOTAVINCULADO,
+      MAX_NCT.NUMERO AS NUMERO,
+      CAB2.CHAVENFE,
+      CAB2.CODTIPOPER AS TOPVINCULADA,
+	  MAX((SELECT T.DESCROPER FROM TGFTOP T WHERE T.CODTIPOPER = CAB2.CODTIPOPER AND T.DHALTER = CAB2.DHTIPOPER)) AS TPO,
+      CASE 
+          WHEN (CAB.CODTIPOPER = 225 AND CAB2.CODTIPOPER IN (214,1125,305)) 
+            OR (CAB.CODTIPOPER = 226 AND CAB2.CODTIPOPER IN (1100,1117,1126,1200,2200,2202))
+            OR (CAB.CODTIPOPER = 234 AND CAB2.CODTIPOPER IN (201)) THEN 'SIM' 
+          WHEN CAB.CODTIPOPER = 242 AND CAB2.CODTIPOPER IN (201,267,231,1266,1267,1327) THEN 'NÃO' 
+          ELSE 'VERIFICAR' 
+      END AS VALIDADOR,
+      CASE 
+          WHEN CAB2.VLRFRETE > 0 THEN CAB2.VLRFRETE 
+          ELSE CAB2.AD_VLROUTROSFRETE 
+      END AS VLRFRETEVINCULADO
+FROM TGFCAB CAB
+
+	INNER JOIN TGFTOP TPO 
+		ON TPO.CODTIPOPER = CAB.CODTIPOPER
+		  AND TPO.DHALTER = CAB.DHTIPOPER
+
+	INNER JOIN TGFITE ITE 
+		ON ITE.NUNOTA = CAB.NUNOTA
+	
+	INNER JOIN TGFDIN DIN 
+		ON DIN.NUNOTA = ITE.NUNOTA 
+	AND DIN.SEQUENCIA = ITE.SEQUENCIA
+   
+	INNER JOIN TGFNAT NAT 
+		ON NAT.CODNAT = CAB.CODNAT
+	
+	INNER JOIN TGFPAR PAR 
+		ON CAB.CODPARC = PAR.CODPARC
+	
+	INNER JOIN TSICUS CUS 
+		ON CUS.CODCENCUS = CAB.CODCENCUS 
+	
+	INNER JOIN (
+		SELECT 
+			NUNOTA, 
+			MAX(NUMERO) AS NUMERO,
+			MAX(CHAVENFE) AS MAX_CAMPO 
+		FROM TGFNCT
+		GROUP BY NUNOTA
+	) MAX_NCT 
+		ON CAB.NUNOTA = MAX_NCT.NUNOTA
+		
+	LEFT JOIN TGFCAB CAB2 
+		ON CAB2.CHAVENFE = MAX_NCT.MAX_CAMPO
+		
+	LEFT JOIN TGFPAR PAR2
+		ON CAB2.CODPARC = PAR2.CODPARC
+		
+	LEFT JOIN TGFPAR PAR3 
+		ON CAB2.CODPARCTRANSP = PAR3.CODPARC
+		
+WHERE CAB.CODTIPOPER IN (225,226,234,242) 
+
+ AND TRUNC(CAB.DTENTSAI) BETWEEN :P_PRAZO.INI AND :P_PRAZO.FIN
+ AND (:P_CODPARC1 IS NULL OR CAB.CODPARC = :P_CODPARC1)
+ AND (:P_NUMNOTA IS NULL OR CAB.NUMNOTA = :P_NUMNOTA)
+ AND (:P_NUMNOTAVINCULADA IS NULL OR CAB2.NUMNOTA = :P_NUMNOTAVINCULADA)
+GROUP BY 
+      CAB.NUNOTA,
+      CAB.CODEMP,
+      CAB.NUMNOTA,
+      ITE.CODCFO,
+      CAB.CODPARC,
+      PAR.NOMEPARC,
+      CAB.CODTIPOPER,
+      CAB.DTENTSAI,
+      CAB.VLRNOTA,
+	  CAB.CODNAT,
+	  NAT.DESCRNAT,
+	  CAB.CODCENCUS,
+	  CUS.DESCRCENCUS,
+	  NAT.CODCTACTB,
+      CAB2.NUNOTA,
+      CAB2.CHAVENFE,
+      CAB2.CODTIPOPER,
+      CAB2.VLRFRETE,
+      CAB2.AD_VLROUTROSFRETE,
+      MAX_NCT.NUMERO
+	 
+UNION ALL 
+/***************************************CTE SEM VINCULACAO*************************************************/  
+
+SELECT 
+      CAB.NUNOTA,
+      CAB.CODEMP,
+      CAB.NUMNOTA,
+      ITE.CODCFO AS CODCFO,
+      CAB.CODPARC,
+      PAR.NOMEPARC,
+      CAB.CODTIPOPER,
+      CAB.DTENTSAI,
+      CAB.VLRNOTA,
+	  CAB.CODNAT,
+	  NAT.DESCRNAT,
+	  CAB.CODCENCUS,
+	  CUS.DESCRCENCUS,
+	  NAT.CODCTACTB,
+	 NVL((
+			SELECT PLA.DESCRCTA
+			FROM TCBPLA PLA
+			WHERE PLA.CODCTACTB = NVL(NAT.CODCTACTB, 0)
+		  ),'SEM CONTA') AS DESC_CONTA,
+	  (SELECT PLA.CTACTB FROM TCBPLA PLA WHERE PLA.CODCTACTB = NVL(NAT.CODCTACTB, 0)) AS EFD_CONTA,		 
+      MAX(ITE.CODTRIB) AS CST_ICMS,		  
+      SUM(CASE WHEN DIN.CODIMP = 1 THEN DIN.BASERED ELSE 0 END) AS BASEICMS,
+      SUM(CASE WHEN DIN.CODIMP = 1 THEN DIN.VALOR ELSE 0 END) AS ICMS,
+      MAX(CASE WHEN DIN.CODIMP = 6 THEN DIN.CST ELSE 0 END) AS CST_PIS,
+      SUM(CASE WHEN DIN.CODIMP = 6 THEN DIN.BASERED ELSE 0 END) AS BASEPIS,
+      SUM(CASE WHEN DIN.CODIMP = 6 THEN DIN.VALOR ELSE 0 END) AS PIS,
+      MAX(CASE WHEN DIN.CODIMP = 7 THEN DIN.CST ELSE 0 END) AS CST_COFINS,
+      SUM(CASE WHEN DIN.CODIMP = 7 THEN DIN.BASERED ELSE 0 END) AS BASECOFINS,
+      SUM(CASE WHEN DIN.CODIMP = 7 THEN DIN.VALOR ELSE 0 END) AS COFINS,
+     TO_NUMBER(0)     AS NUNOTAVINCULADO,
+     TO_CHAR(0)     AS NUMERO,
+     CAB.CHAVENFE   AS CHAVENFE,
+     0     AS TOPVINCULADA,
+     TO_CHAR('SEM TOP')     AS TPO,
+	  'NÃO' AS  VALIDADOR,
+	  0     AS VLRFRETEVINCULADO
+FROM TGFCAB CAB
+	
+	INNER JOIN TGFTOP TPO 
+		ON TPO.CODTIPOPER = CAB.CODTIPOPER
+		  AND TPO.DHALTER = CAB.DHTIPOPER
+		  	
+	
+	INNER JOIN TGFITE ITE 
+		ON ITE.NUNOTA = CAB.NUNOTA
+	
+	INNER JOIN TGFDIN DIN 
+		ON DIN.NUNOTA = ITE.NUNOTA 
+	AND DIN.SEQUENCIA = ITE.SEQUENCIA
+   
+	INNER JOIN TGFNAT NAT 
+		ON NAT.CODNAT = CAB.CODNAT
+	
+	INNER JOIN TGFPAR PAR 
+		ON CAB.CODPARC = PAR.CODPARC
+	
+	INNER JOIN TSICUS CUS 
+		ON CUS.CODCENCUS = CAB.CODCENCUS 
+	
+WHERE CAB.CODTIPOPER IN (225,226,234,242) 
+
+ AND TRUNC(CAB.DTENTSAI) BETWEEN :P_PRAZO.INI AND :P_PRAZO.FIN
+ AND (:P_CODPARC1 IS NULL OR CAB.CODPARC = :P_CODPARC1)
+ AND (:P_NUMNOTA IS NULL OR CAB.NUMNOTA = :P_NUMNOTA)
+ AND (:P_NUMNOTAVINCULADA IS NULL OR CAB.NUMNOTA = :P_NUMNOTAVINCULADA)
+ AND NOT EXISTS (SELECT 1
+					FROM TGFNCT NCT 
+				WHERE NCT.NUNOTA = CAB.NUNOTA 
+				 )
+ GROUP BY 
+      CAB.NUNOTA,
+      CAB.CODEMP,
+      CAB.NUMNOTA,
+      ITE.CODCFO,
+      CAB.CODPARC,
+      PAR.NOMEPARC,
+      CAB.CODTIPOPER,
+      CAB.DTENTSAI,
+      CAB.VLRNOTA,
+	  CAB.CODNAT,
+	  NAT.DESCRNAT,
+	  CAB.CODCENCUS,
+	  CUS.DESCRCENCUS,
+	  NAT.CODCTACTB,
+      CAB.CHAVENFE]]></expression><metadata><field name="NUNOTA" label="Nr Único" type="I" visible="true" useFooter="false"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr Nota" type="I" visible="true" useFooter="false"></field><field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cod Parceiro" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt Entrada" type="D" visible="true" useFooter="false"></field><field name="VLRNOTA" label="Vlr CTe" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="CODNAT" label="Cód. Natureza " type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Desc. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODCENCUS" label="Cód. Centro Custo " type="I" visible="true" useFooter="false"></field><field name="DESCRCENCUS" label="Desc. Centro Custo " type="S" visible="true" useFooter="false"></field><field name="CODCTACTB" label="CODCTACTB" type="I" visible="true" useFooter="false"></field><field name="DESC_CONTA" label="Descrição Contábil" type="S" visible="true" useFooter="false"></field><field name="EFD_CONTA" label="Conta Contabil" type="S" visible="true" useFooter="false"></field><field name="CST_ICMS" label="CST ICMS" type="I" visible="true" useFooter="false"></field><field name="BASEICMS" label="Base ICMS" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="ICMS" label="ICMS CTe" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="CST_PIS" label="CST PIS" type="I" visible="true" useFooter="false"></field><field name="BASEPIS" label="Base PIS" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="PIS" label="PIS CTe" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="CST_COFINS" label="CST COFINS" type="I" visible="true" useFooter="false"></field><field name="BASECOFINS" label="Base COFINS" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="COFINS" label="COFINS CTe" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="NUNOTAVINCULADO" label="Nr Único Vinculado" type="I" visible="true" useFooter="false"></field><field name="NUMERO" label="Nr Nota" type="S" visible="true" useFooter="false"></field><field name="CHAVENFE" label="Chave NFe" type="S" visible="true" useFooter="false"></field><field name="TOPVINCULADA" label="TOP Vinculada" type="I" visible="true" useFooter="false"></field><field name="TPO" label="Descrição TOP Vinculada" type="S" visible="true" useFooter="false"></field><field name="VALIDADOR" label="Validador" type="S" visible="true" useFooter="false"></field><field name="VLRFRETEVINCULADO" label="Vlr Frete Vinculado" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher></grid></container></level></gadget>

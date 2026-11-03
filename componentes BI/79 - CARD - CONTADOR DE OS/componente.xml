@@ -1,0 +1,19 @@
+<gadget refresh-time="300000">
+  <level id="lvl_at2dxvy" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <chart id="cht_at2dxvz" type="pizza">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(NUMOS) AS CONTADOR, 'EM ANDAMENTO' AS STATUSFROM AD_OSINTERNAWHERE STATUS='A'	AND SETOR = 'M'GROUP BY STATUSUNION ALLSELECT COUNT(NUMOS) AS CONTADOR, 'PROGRAMADA' AS STATUSFROM AD_OSINTERNAWHERE STATUS='P'	AND SETOR = 'M'GROUP BY STATUSUNION ALLSELECT COUNT(NUMOS) AS CONTADOR, 'EM ANÁLISE' AS STATUSFROM AD_OSINTERNAWHERE STATUS='I'	AND SETOR = 'M'GROUP BY STATUS]]></expression>
+        <metadata>
+          <field name="CONTADOR" label="CONTADOR" type="I" visible="true" useFooter="false"/>
+          <field name="STATUS" label="STATUS" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <series>
+          <serie type="pizza">
+            <field>CONTADOR</field>
+            <nameField>STATUS</nameField>
+          </serie>
+        </series>
+      </chart>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,27 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODPROD" description="Produt" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_ykomi3" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_ykomi4" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Informativos de Estoque]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,	PRO.DESCRPROD,	PRO.CODVOL,		(SELECT NVL(SUM(E101.ESTOQUE),0) FROM TGFEST E101 WHERE E101.CODPROD = PRO.CODPROD AND E101.CODLOCAL = 101) AS E101,	(SELECT NVL(SUM(E107.ESTOQUE),0) FROM TGFEST E107 WHERE E107.CODPROD = PRO.CODPROD AND E107.CODLOCAL = 107) AS E107,	(SELECT NVL(SUM(E114.ESTOQUE),0) FROM TGFEST E114 WHERE E114.CODPROD = PRO.CODPROD AND E114.CODLOCAL = 114) AS E114,	(SELECT NVL(SUM(E201.ESTOQUE),0) FROM TGFEST E201 WHERE E201.CODPROD = PRO.CODPROD AND E201.CODLOCAL = 201) AS E201,	(CASE WHEN PRO.ATIVO = 'S' THEN 'ATIVO' ELSE 'INATIVO' END) AS ATIVO,	CASE WHEN EXISTS (SELECT LMP.CODPRODMP 						FROM TPRLMP LMP 							INNER JOIN TGFPRO PRO2 ON(PRO2.CODPROD = LMP.CODPRODMP) 							INNER JOIN TPREFX EFX ON(EFX.IDEFX = LMP.IDEFX) 							INNER JOIN TGFLOC LOC ON(LOC.CODLOCAL = LMP.CODLOCALORIG) 						WHERE LMP.CODPRODMP = PRO.CODPROD 							AND (NVL(LMP.CONTROLEPA, ' ') = ' ' OR LMP.CONTROLEPA = ' ') 							AND (LMP.TIPOUSOMP IN ('N'))) 		THEN 'SIM' ELSE 'NÃO' END AS FICHA,	CASE WHEN EXISTS (SELECT LMP.CODPRODMP 						FROM TPRLMP LMP 							INNER JOIN TGFPRO PRO2 ON(PRO2.CODPROD = LMP.CODPRODMP) 							INNER JOIN TPREFX EFX ON(EFX.IDEFX = LMP.IDEFX) 							INNER JOIN TGFLOC LOC ON(LOC.CODLOCAL = LMP.CODLOCALORIG) 						WHERE LMP.CODPRODMP = PRO.CODPROD 							AND (NVL(LMP.CONTROLEPA, ' ') = ' ' OR LMP.CONTROLEPA = ' ') 							AND (LMP.TIPOUSOMP IN ('N'))) 		THEN '#cfe2f3' ELSE '#fff2cc' END AS BKCOLOR,		(SELECT MAX(C.DTENTSAI) FROM TGFCAB C INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA WHERE I.CODPROD = PRO.CODPROD AND C.TIPMOV = 'C') AS ULTCOMPRAFROM TGFPRO PRO WHERE (PRO.CODGRUPOPROD = :P_CODGRUPOPROD OR :P_CODGRUPOPROD IS NULL)	AND (PRO.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)	--AND PRO.ATIVO = 'S'	AND PRO.USOPROD = 'M'ORDER BY PRO.CODPROD]]></expression>
+        <metadata>
+          <field name="CODPROD" label="Cód. do Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Descr. do Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Un. de Medida" type="S" visible="true" useFooter="false"/>
+          <field name="E101" label="Almoxarifado - 101" type="F" visible="true" useFooter="false"/>
+          <field name="E107" label="Teste - 107" type="F" visible="true" useFooter="false"/>
+          <field name="E114" label="Desenvolvimento - 114" type="F" visible="true" useFooter="false"/>
+          <field name="E201" label="Assistência - 201" type="F" visible="true" useFooter="false"/>
+          <field name="ATIVO" label="Ativo?" type="S" visible="true" useFooter="false"/>
+          <field name="FICHA" label="Compõe Ficha?" type="S" visible="true" useFooter="false"/>
+          <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+          <field name="ULTCOMPRA" label="Últi. Compra" type="D" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

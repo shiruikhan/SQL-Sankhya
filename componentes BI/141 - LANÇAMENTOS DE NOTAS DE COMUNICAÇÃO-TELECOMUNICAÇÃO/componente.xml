@@ -1,0 +1,24 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período de Entrada/Saída" metadata="datePeriod" required="true" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_a42h8jk" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_a42h8jl" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUMNOTA,	CAB.DTFATUR,	CAB.DTENTSAI,	CAB.CODPARC,	PAR.RAZAOSOCIAL,	PAR.CGC_CPF,	PAR.IDENTINSCESTAD,	CAB.VLRNOTA,	(SELECT DISTINCT ITE.CODCFO FROM TGFITE ITE WHERE ITE.NUNOTA = CAB.NUNOTA) AS CODCFO,	UFS.UFFROM TGFCAB CAB	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC	INNER JOIN TSICID CID ON PAR.CODCID = CID.CODCID	INNER JOIN TSIUFS UFS ON CID.UF = UFS.CODUFWHERE CAB.CODTIPOPER IN (208,223)	AND CAB.DTENTSAI >= :P_PERIODO.INI	AND CAB.DTENTSAI <= :P_PERIODO.FINORDER BY CAB.DTENTSAI,	CAB.NUMNOTA]]></expression>
+        <metadata>
+          <field name="NUMNOTA" label="Nr. da Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTFATUR" label="Dt. de Faturamento" type="D" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. de Entrada/Saída" type="D" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="CGC_CPF" label="CNPJ" type="S" visible="true" useFooter="false"/>
+          <field name="IDENTINSCESTAD" label="IE" type="S" visible="true" useFooter="false"/>
+          <field name="VLRNOTA" label="Vlr. da Nota" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"/>
+          <field name="UF" label="UF" type="S" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

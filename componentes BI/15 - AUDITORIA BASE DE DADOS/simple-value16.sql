@@ -1,0 +1,3 @@
+SELECT COUNT(DISTINCT TGFTOP.CODTIPOPER) QTDE
+                     FROM TGFTOP 
+                    WHERE TGFTOP.TIPMOV NOT IN ( 'I','B','G','R' )

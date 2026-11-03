@@ -1,0 +1,30 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_of2jen" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_of2jeo" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT *FROM TECLOGWHERE CODPROD = :P_CODPROD OR :P_CODPROD IS NULL    AND TRUNC(DTHRALTER) >= :P_PERIODO.INI    AND TRUNC(DTHRALTER) <= :P_PERIODO.FINORDER BY DTHRALTER DESC]]></expression>
+        <metadata>
+          <field name="CODLOG" label="Id. Log" type="I" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Produto" type="I" visible="true" useFooter="false"/>
+          <field name="TIPO" label="Tipo" type="S" visible="true" useFooter="false"/>
+          <field name="INTEGRADO" label="Integrado" type="S" visible="true" useFooter="false"/>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="CODGRUPOPROD" label="Grupo Produto" type="I" visible="true" useFooter="false"/>
+          <field name="CODTIPONEG" label="Cód. Tip. Neg." type="I" visible="true" useFooter="false"/>
+          <field name="DTHRALTER" label="Dt. Operação" type="S" visible="true" useFooter="false"/>
+          <field name="PRIORIDADE" label="Prioridade" type="I" visible="true" useFooter="false"/>
+          <field name="ALTERACAO" label="Operação" type="S" visible="true" useFooter="false"/>
+          <field name="ATIVOLV" label="Ativo" type="S" visible="true" useFooter="false"/>
+          <field name="TIPPROD" label="Tipo Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODPRODPRINC" label="Cód. Prod. Variação" type="I" visible="true" useFooter="false"/>
+          <field name="CODTAB" label="Cód. Tabela" type="I" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

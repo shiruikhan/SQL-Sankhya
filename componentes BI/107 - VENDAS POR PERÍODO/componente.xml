@@ -1,0 +1,17 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DTENTSAI" description="Período" metadata="datePeriod" required="true" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_ape0eoq" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_ape0eor" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,	PRO.DESCRPROD,	sum(ITE.QTDNEG) AS QTDNEGFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPRODWHERE CAB.TIPMOV = 'V'	AND CAB.CODEMP IN (1,2,501)	AND TRUNC(CAB.DTENTSAI) >= :P_DTENTSAI.INI	AND TRUNC(CAB.DTENTSAI) <= :P_DTENTSAI.FIN	AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,1117,1116,2202)GROUP BY ITE.CODPROD, PRO.DESCRPRODORDER BY ITE.CODPROD																										 																																		   ]]></expression>
+        <metadata>
+          <field name="CODPROD" label="Cod. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="QTDNEG" label="Qtd. Negociada" type="I" visible="true" useFooter="SUM"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

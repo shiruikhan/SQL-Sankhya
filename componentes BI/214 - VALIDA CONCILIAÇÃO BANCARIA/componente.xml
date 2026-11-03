@@ -1,0 +1,27 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_PERIODO : Período" order="0"/><parameter  id="P_CONTA" description="Conta" metadata="entity:ContaBancaria@CODCTABCOINT" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_CONTA : Entidade/Tabela" order="1"/></prompt-parameters><level id="0LH" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_0LI" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    TGFMBC.NUBCO                                                    AS NUM_LANCAMENTO,
+    TGFMBC.DTLANC                                                   AS DT_LANCAMENTO,
+    TGFMBC.DHCONCILIACAO                                            AS DT_CONCILIACAO,
+    TGFMBC.NUMDOC                                                   AS NUM_DOCUMENTO,
+    TGFMBC.ORIGMOV                                                  AS TIPO_MOVIMENTO,
+    CASE TGFMBC.CONCILIADO
+        WHEN 'S' THEN 'Conciliado'
+        WHEN 'N' THEN 'Pendente'
+        ELSE TGFMBC.CONCILIADO
+    END                                                             AS STATUS,
+    CASE TGFMBC.RECDESP
+        WHEN  1 THEN 'Receita'
+        WHEN -1 THEN 'Despesa'
+    END                                                             AS NATUREZA,
+    TGFMBC.VLRLANC                                                  AS VLR_LANCAMENTO,
+    TGFMBC.VLRLANC * TGFMBC.RECDESP                                 AS VLR_LIQUIDO,
+    TGFMBC.HISTORICO                                                AS HISTORICO,
+    TSICTA.DESCRICAO                                                AS CONTA
+FROM TGFMBC
+INNER JOIN TSICTA ON TSICTA.CODCTABCOINT = TGFMBC.CODCTABCOINT
+WHERE TGFMBC.CODCTABCOINT = :P_CONTA
+  AND TGFMBC.DTLANC >= :P_PERIODO.INI
+  AND TGFMBC.DTLANC <=  :P_PERIODO.FIN
+  AND TGFMBC.ORIGMOV IN ('A','D','F','R','S','T')
+  AND TGFMBC.RECDESP IN (1, -1)
+ORDER BY TGFMBC.DTLANC, TGFMBC.NUBCO]]></expression><metadata><field name="NUM_LANCAMENTO" label="NUM_LANCAMENTO" type="I" visible="true" useFooter="false"></field><field name="DT_LANCAMENTO" label="DT_LANCAMENTO" type="D" visible="true" useFooter="false"></field><field name="DT_CONCILIACAO" label="DT_CONCILIACAO" type="D" visible="true" useFooter="false"></field><field name="NUM_DOCUMENTO" label="NUM_DOCUMENTO" type="I" visible="true" useFooter="false"></field><field name="TIPO_MOVIMENTO" label="TIPO_MOVIMENTO" type="S" visible="true" useFooter="false"></field><field name="STATUS" label="STATUS" type="S" visible="true" useFooter="false"></field><field name="NATUREZA" label="NATUREZA" type="S" visible="true" useFooter="false"></field><field name="VLR_LANCAMENTO" label="VLR_LANCAMENTO" type="F" visible="false" useFooter="SUM"></field><field name="VLR_LIQUIDO" label="VLR_LIQUIDO" type="F" visible="true" useFooter="SUM"></field><field name="HISTORICO" label="HISTORICO" type="S" visible="true" useFooter="false"></field><field name="CONTA" label="CONTA" type="S" visible="true" useFooter="false"></field></metadata></grid></container></level></gadget>

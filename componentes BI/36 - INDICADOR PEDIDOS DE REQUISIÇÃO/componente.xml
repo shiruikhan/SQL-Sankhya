@@ -1,0 +1,97 @@
+<gadget refresh-time="3600000">
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_a1rj4ea" description="Principal">
+    <args>
+      <arg id="A_DESCRCENCUS" type="text"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="100">
+        <container orientacao="V" tamanhoRelativo="279">
+          <grid id="grd_a1rj4eb" multiplaSelecao="S" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,	CAB.CODCENCUS,	CUS.DESCRCENCUS,	CAB.CODTIPOPER,	(SELECT DISTINCT DESCROPER FROM TGFTOP WHERE CODTIPOPER = CAB.CODTIPOPER) AS DESCROPER,	ITE.CODPROD,	PRO.DESCRPROD,	ITE.CODVOL,	ITE.QTDENTREGUE,	CAB.DTNEG,	CAB.AD_MOTIVO_DE_OPERACAOFROM TGFITE ITE 	LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA 	LEFT JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD 	LEFT JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE (TRUNC(CAB.DTNEG) >= :P_PERIODO.INI AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN) 	AND (CAB.TIPMOV = 'J') 	AND (ITE.STATUSNOTA = 'L') 	AND (CAB.AD_NUMPS IS NULL) AND CAB.CODTIPOPER NOT IN (409)ORDER BY CAB.NUNOTA]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="N. UNICO" type="I" visible="true" useFooter="false"/>
+              <field name="CODCENCUS" label="COD C. RESULT." type="I" visible="true" useFooter="false"/>
+              <field name="DESCRCENCUS" label="CENTRO DE RESULTADO" type="S" visible="true" useFooter="false"/>
+              <field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"/>
+              <field name="DESCROPER" label="DESCRIÇÃO TOP" type="S" visible="true" useFooter="false"/>
+              <field name="CODPROD" label="COD" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPROD" label="DESCRIÇÃO" type="S" visible="true" useFooter="false"/>
+              <field name="CODVOL" label="UNIDADE" type="S" visible="true" useFooter="false"/>
+              <field name="QTDENTREGUE" label="QTD ENTREGUE" type="F" visible="true" useFooter="SUM"/>
+              <field name="DTNEG" label="DT. EMISSÃO" type="D" visible="true" useFooter="false"/>
+              <field name="AD_MOTIVO_DE_OPERACAO" label="MOTIVO DE OPERAÇÃO" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.mgecom.mov.PortalMovInternas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="142">
+          <chart id="cht_df5xxg" type="pizza">
+            <args>
+              <arg id="A_DESCRCENCUS" type="text"/>
+            </args>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(CAB.NUNOTA) AS CONTADOR,	CAB.CODTIPOPER,	(SELECT DISTINCT DESCROPER FROM TGFTOP WHERE CODTIPOPER = CAB.CODTIPOPER) AS DESCROPERFROM TGFCAB CAB	INNER JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE (TRUNC(CAB.DTNEG) >= :P_PERIODO.INI AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN) 	AND (CAB.TIPMOV = 'J') 	AND (CAB.STATUSNOTA = 'L') 	AND (CAB.AD_NUMPS IS NULL)	AND (CUS.DESCRCENCUS = :A_DESCRCENCUS) AND CAB.CODTIPOPER NOT IN (409)GROUP BY CODTIPOPER]]></expression>
+            <metadata>
+              <field name="CONTADOR" label="CONTADOR" type="I" visible="true" useFooter="false"/>
+              <field name="CODTIPOPER" label="CODTIPOPER" type="I" visible="false" useFooter="false"/>
+              <field name="DESCROPER" label="DESCROPER" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <series>
+              <serie type="pizza">
+                <field>CONTADOR</field>
+                <nameField>DESCROPER</nameField>
+              </serie>
+            </series>
+          </chart>
+        </container>
+      </container>
+      <container orientacao="H" tamanhoRelativo="133">
+        <container orientacao="V" tamanhoRelativo="100">
+          <chart id="cht_jxd6os" type="donut">
+            <title><![CDATA[Centro de Resultado]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(CAB.NUNOTA) AS CONTADOR,	CUS.DESCRCENCUSFROM TGFCAB CAB 	INNER JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE (TRUNC(CAB.DTNEG) >= :P_PERIODO.INI AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN) 	AND (CAB.TIPMOV = 'J')	AND (CAB.STATUSNOTA = 'L') 	AND (CAB.AD_NUMPS IS NULL) AND CAB.CODTIPOPER NOT IN (409)GROUP BY CUS.DESCRCENCUS]]></expression>
+            <metadata>
+              <field name="CONTADOR" label="CONTADOR" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRCENCUS" label="CENTRO DE RESULTADO" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <series>
+              <serie type="donut" labelSize="10">
+                <field>CONTADOR</field>
+                <nameField>DESCRCENCUS</nameField>
+                <refresh-details ui-list="cht_df5xxg,cht_a1rj4ef">
+                  <param id="A_DESCRCENCUS">$DESCRCENCUS</param>
+                </refresh-details>
+                <tipoDonut>completo</tipoDonut>
+              </serie>
+            </series>
+            <legend position="left" direction="v"/>
+          </chart>
+        </container>
+        <container orientacao="V" tamanhoRelativo="110">
+          <chart id="cht_a1rj4ef" type="pizza" tamTexto="12">
+            <args>
+              <arg id="A_DESCRCENCUS" type="text"/>
+            </args>
+            <title><![CDATA[Motivos de Operação]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(CAB.NUNOTA) AS CONTADOR,	CAB.CODTIPOPER || ' - ' ||(SELECT DISTINCT T.DESCROPER FROM TGFTOP T WHERE T.CODTIPOPER = CAB.CODTIPOPER) AS MOTIVOFROM TGFCAB CAB	INNER JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE (TRUNC(CAB.DTNEG) >= :P_PERIODO.INI AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN) 	AND (CAB.TIPMOV = 'J') 	AND (CAB.STATUSNOTA = 'L') 	AND (CAB.AD_NUMPS IS NULL)	AND (CUS.DESCRCENCUS = :A_DESCRCENCUS) AND CAB.CODTIPOPER NOT IN (409)GROUP BY CAB.CODTIPOPER]]></expression>
+            <metadata>
+              <field name="CONTADOR" label="CONTADOR" type="I" visible="true" useFooter="false"/>
+              <field name="MOTIVO" label="MOTIVO" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <series>
+              <serie type="pizza" labelSize="50">
+                <field>CONTADOR</field>
+                <nameField>MOTIVO</nameField>
+              </serie>
+            </series>
+            <legend position="right" direction="v"/>
+          </chart>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

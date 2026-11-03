@@ -1,0 +1,25 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_NUMNFSAIDA" description="Nr da Nota" metadata="integer" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_NUMSERIAL" description="Série" metadata="text" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_v5iit0" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_v5iit1" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT NUMPEDVEN,	NUMNFSAIDA,	CODPRODUTO,	DESCPRODUTONOTA,	REFERENCIAINTERNA,	NUMSERIAL,	RAZAOSOCIAL,	PLANO,	ANO,	DATAEMISSAOFROM AD_ANDSER ANSWHERE (:P_NUMSERIAL IS NULL OR ANS.NUMSERIAL = :P_NUMSERIAL)	AND (:P_NUMNFSAIDA IS NULL OR ANS.NUMNFSAIDA = :P_NUMNFSAIDA)]]></expression>
+        <metadata>
+          <field name="NUMPEDVEN" label="Nr Pedido de Venda" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNFSAIDA" label="Nr Nota de Venda" type="I" visible="true" useFooter="false"/>
+          <field name="CODPRODUTO" label="Cód Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCPRODUTONOTA" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="REFERENCIAINTERNA" label="Referência Interna" type="S" visible="true" useFooter="false"/>
+          <field name="NUMSERIAL" label="Nr de Série" type="S" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="PLANO" label="Plano de Produção" type="I" visible="true" useFooter="false"/>
+          <field name="ANO" label="Ano de Produção" type="I" visible="true" useFooter="false"/>
+          <field name="DATAEMISSAO" label="Data de Emissão Venda" type="D" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

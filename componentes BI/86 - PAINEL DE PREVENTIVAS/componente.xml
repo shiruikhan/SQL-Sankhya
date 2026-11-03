@@ -1,0 +1,54 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODBEM" description="Código do Bem" metadata="entity:AD_ADCADBENS@CODBEM" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_PERIODO" description="Período de Manutenção" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_a5buqb1" description="Principal">
+    <args>
+      <arg id="A_CODBEM" type="integer"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="101">
+        <grid id="grd_a5buqb2" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT BEM.CODBEM,	BEM.DESCRICAO,	BEM.TEMPO,	(CASE WHEN BEM.TIPOTEMPO = 'D' THEN 'DIA' WHEN BEM.TIPOTEMPO = 'M' THEN 'MÊS' ELSE 'ANO' END) AS TIPOTEMPO,	BEM.LOCAL,	(SELECT (CASE WHEN BEM.TIPOTEMPO = 'D' THEN MAX(CTR.DTPREV) + BEM.TEMPO WHEN BEM.TIPOTEMPO = 'M' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO) WHEN BEM.TIPOTEMPO = 'A' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO*12) END) AS PROXIMAMANUTENCAO FROM AD_PRVCTR CTR	WHERE CTR.CODBEM = BEM.CODBEM) AS PROXIMAMANUTENCAO,	(CASE WHEN ((SELECT (CASE WHEN BEM.TIPOTEMPO = 'D' THEN MAX(CTR.DTPREV) + BEM.TEMPO WHEN BEM.TIPOTEMPO = 'M' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO) WHEN BEM.TIPOTEMPO = 'A' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO*12) END) FROM AD_PRVCTR CTR WHERE CTR.CODBEM = BEM.CODBEM) - TRUNC(SYSDATE)) > 5 THEN '#63b108'		WHEN ((SELECT (CASE WHEN BEM.TIPOTEMPO = 'D' THEN MAX(CTR.DTPREV) + BEM.TEMPO WHEN BEM.TIPOTEMPO = 'M' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO) WHEN BEM.TIPOTEMPO = 'A' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO*12) END) FROM AD_PRVCTR CTR WHERE CTR.CODBEM = BEM.CODBEM) - TRUNC(SYSDATE)) <= 5 THEN '#e9d90d'		WHEN ((SELECT (CASE WHEN BEM.TIPOTEMPO = 'D' THEN MAX(CTR.DTPREV) + BEM.TEMPO WHEN BEM.TIPOTEMPO = 'M' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO) WHEN BEM.TIPOTEMPO = 'A' THEN ADD_MONTHS(MAX(CTR.DTPREV),BEM.TEMPO*12) END) FROM AD_PRVCTR CTR WHERE CTR.CODBEM = BEM.CODBEM) - TRUNC(SYSDATE)) <= 0 THEN '#f44336' END) AS BKCOLORFROM AD_ADCADBENS BEMWHERE (BEM.CODBEM = :P_CODBEM OR :P_CODBEM IS NULL)]]></expression>
+          <metadata>
+            <field name="CODBEM" label="Código do Bem" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="TEMPO" label="Tempo de Prevenvitva" type="I" visible="true" useFooter="false"/>
+            <field name="TIPOTEMPO" label="Período de Tempo" type="S" visible="true" useFooter="false"/>
+            <field name="LOCAL" label="Local" type="S" visible="true" useFooter="false"/>
+            <field name="PROXIMAMANUTENCAO" label="Dt. Próxima Manutenção" type="D" visible="true" useFooter="false"/>
+            <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.menu.adicional.AD_ADCADBENS">
+            <CODBEM>$CODBEM</CODBEM>
+          </on-click-launcher>
+          <refresh-details ui-list="grd_a5buqb3">
+            <param id="A_CODBEM">$CODBEM</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="161">
+        <grid id="grd_a5buqb3" useNewGrid="S">
+          <args>
+            <arg id="A_CODBEM" type="integer"/>
+          </args>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CTR.NUPREV,	CTR.DTPREV,	CTR.CODBEM,	CTR.OBSERVACAO,	(CASE WHEN CTR.TIPOMANUTENCAO = 'CP' THEN 'CORRETIVA PROGRAMADA' WHEN CTR.TIPOMANUTENCAO = 'CE' THEN 'CORRETIVA EMERGENCIAL' WHEN CTR.TIPOMANUTENCAO = 'P' THEN 'PREVENTIVA' ELSE 'CONDICIONAL' END) AS TIPOMANUTENCAO,	CTR.OPERADOR,	CTR.CUSTO,	(CASE WHEN CTR.NATMENUTENCAO = 'E' THEN 'ELÉTRICA' WHEN CTR.NATMENUTENCAO = 'P' THEN 'PREDIAL' WHEN CTR.NATMENUTENCAO = 'M' THEN 'MECÂNICA' END) AS NATMENUTENCAOFROM AD_PRVCTR CTRWHERE CODBEM = :A_CODBEM	AND (:P_PERIODO IS NULL OR (:P_PERIODO.INI >= CTR.DTPREV AND :P_PERIODO.FIN <= CTR.DTPREV))]]></expression>
+          <metadata>
+            <field name="NUPREV" label="Número da Manutenção" type="I" visible="true" useFooter="false"/>
+            <field name="DTPREV" label="Data da Manutenção" type="D" visible="true" useFooter="false"/>
+            <field name="CODBEM" label="Código do Bem" type="I" visible="true" useFooter="false"/>
+            <field name="OBSERVACAO" label="Observação" type="S" visible="true" useFooter="false"/>
+            <field name="TIPOMANUTENCAO" label="Tipo da Manutenção" type="S" visible="true" useFooter="false"/>
+            <field name="OPERADOR" label="Operador" type="S" visible="true" useFooter="false"/>
+            <field name="CUSTO" label="Custo" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+            <field name="NATMENUTENCAO" label="Natureza da Manutenção" type="S" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.menu.adicional.AD_PRVCTR">
+            <NUPREV>$NUPREV</NUPREV>
+          </on-click-launcher>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

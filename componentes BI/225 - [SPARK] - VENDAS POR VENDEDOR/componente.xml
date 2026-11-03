@@ -1,0 +1,266 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_PERIODO : Período" order="0"/><parameter  id="P_VENDEDOR" description="Vendedor" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_VENDEDOR : Entidade/Tabela" order="1"/><parameter  id="P_GERENTE" description="Gerente" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_GERENTE : Entidade/Tabela" order="2"/></prompt-parameters><level id="01R" description="Principal"><args><arg  id="A_CODGER" type="integer" label="A_CODGER : Número Inteiro"/><arg  id="A_CODVEND" type="integer" label="A_CODVEND : Número Inteiro"/></args><container orientacao="H" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="995.574024"><container orientacao="V" tamanhoRelativo="28.058361391694724"><grid id="grd_051" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : RESUMO DE VENDAS POR VENDEDOR ? P1 (Resumo por Gerente)
+  Tipo           : Componente BI ? Tabela
+  Dashboard      : Resumo de Vendas por Vendedor
+  Descrição      : Visão gerencial do comercial: consolida o total de notas
+                   faturadas, total de produtos vendidos e total faturado no
+                   período, agrupado por GERENTE (TGFVEN.CODGER). Cada linha
+                   soma as vendas de todos os vendedores subordinados àquele
+                   gerente. Vendedores sem gerente cadastrado são agrupados
+                   na linha "SEM GERENTE".
+                   É o nível mais alto do painel; drill para P2 (resumo por
+                   vendedor) pelo clique sobre o gerente (:A_CODGER).
+
+  Parâmetros     : :P_PERIODO.INI / :P_PERIODO.FIN ? período sobre DTNEG
+                   (obrigatório)
+
+  Tabelas        : TGFCAB -- cabeçalho da nota (período, tipo de operação, status)
+                   TGFITE -- itens da nota (quantidade e valores)
+                   TGFPRO -- cadastro de produtos (filtro USOPROD)
+                   TGFVEN -- cadastro de vendedores; auto-relacionada por
+                            CODGER para agrupar por gerente
+
+  Uso            : Painel BI "Resumo de Vendas por Vendedor" ? visão
+                   gerencial por gerente; drill para P2 pelo campo CODGER
+                   (:A_CODGER).
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 14/09/2026
+
+  Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' seguem o mesmo
+                     critério usado nos demais componentes de faturamento do
+                     repositório (ex.: RESUMO DE RESULTADO DE VENDAS,
+                     FATURAMENTO POR PERIODO) e o restante deste dashboard.
+                   - CODGER = -1 é o sentinel usado para agrupar vendedores
+                     sem gerente cadastrado (GER.CODVEND é NULL nesse caso).
+                     Ele precisa ser tratado de forma simétrica em P2 ao
+                     receber o clique (:A_CODGER = -1 ¿ filtrar VEN.CODGER
+                     IS NULL), pois um bind NULL em :A_CODGER significa
+                     "sem filtro" por convenção do painel, não "sem
+                     gerente".
+                   - TOTALVENDEDORES conta vendedores distintos com venda no
+                     período dentro do grupo, não o quadro total do gerente.
+                   - Lista ordenada por faturamento decrescente.
+==============================================================================*/
+
+WITH VENDAS AS (
+    SELECT
+         CAB.NUNOTA
+        ,CAB.CODVEND
+        ,ITE.QTDNEG
+        ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRITEM
+    FROM TGFCAB CAB
+    INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+    WHERE CAB.DTNEG >= :P_PERIODO.INI
+      AND CAB.DTNEG <= :P_PERIODO.FIN
+      AND CAB.TIPMOV = 'V'
+      AND CAB.STATUSNOTA = 'L'
+      AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+      AND PRO.USOPROD = 'V'
+)
+SELECT
+     NVL(GER.CODVEND, -1)        AS CODGER
+    ,NVL(GER.APELIDO, 'SEM GERENTE') AS GERENTE
+    ,COUNT(DISTINCT VND.CODVEND) AS TOTALVENDEDORES
+    ,COUNT(DISTINCT VND.NUNOTA)  AS TOTALNOTAS
+    ,SUM(VND.QTDNEG)             AS TOTALPRODUTOS
+    ,SUM(VND.VLRITEM)            AS TOTALFATURAMENTO
+FROM VENDAS VND
+INNER JOIN TGFVEN VEN ON VEN.CODVEND = VND.CODVEND
+LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
+GROUP BY
+     NVL(GER.CODVEND, -1)
+    ,NVL(GER.APELIDO, 'SEM GERENTE')
+ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODGER" label="Cód. Gerente" type="I" visible="true" useFooter="false"></field><field name="GERENTE" label="Gerente" type="S" visible="true" useFooter="false"></field><field name="TOTALVENDEDORES" label="Total de Vendedores" type="I" visible="true" useFooter="SUM"></field><field name="TOTALNOTAS" label="Total de Notas" type="I" visible="true" useFooter="SUM"></field><field name="TOTALPRODUTOS" label="Total de Produtos" type="I" visible="true" useFooter="SUM"></field><field name="TOTALFATURAMENTO" label="Total de Faturamento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><refresh-details  ui-list="grd_01Y"><param id="A_CODGER">$CODGER</param></refresh-details></grid></container><container orientacao="H" tamanhoRelativo="72.9517396184063"><container orientacao="H" tamanhoRelativo="587"><grid id="grd_01Y" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODGER" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : RESUMO DE VENDAS POR VENDEDOR ? P2 (Resumo por Vendedor)
+  Tipo           : Componente BI ? Tabela
+  Dashboard      : Resumo de Vendas por Vendedor
+  Descrição      : Consolida, por vendedor, o total de notas faturadas, o total
+                   de produtos vendidos e o total faturado no período.
+                   Identifica também o gerente responsável pelo vendedor
+                   (TGFVEN.CODGER, auto-relacionamento para outro CODVEND).
+                   É o nível intermediário do painel: pode ser aberto direto
+                   (filtrando manualmente por :P_VENDEDOR / :P_GERENTE) ou
+                   como drill-down de P1, recebendo o gerente clicado em
+                   :A_CODGER. O detalhe nota a nota está em P3, acionado pelo
+                   clique sobre o vendedor (:A_CODVEND).
+
+  Parâmetros     : :P_PERIODO.INI / :P_PERIODO.FIN ? período sobre DTNEG
+                   (obrigatório)
+                   :P_VENDEDOR ? filtra um vendedor específico (opcional)
+                   :P_GERENTE ? filtra pelos vendedores subordinados a um
+                   gerente (TGFVEN.CODGER), uso manual (opcional)
+                   :A_CODGER ? gerente selecionado na linha de P1 (clique);
+                   opcional para permitir abertura direta do painel
+
+  Tabelas        : TGFCAB -- cabeçalho da nota (período, tipo de operação, status)
+                   TGFITE -- itens da nota (quantidade e valores)
+                   TGFPRO -- cadastro de produtos (filtro USOPROD)
+                   TGFVEN -- cadastro de vendedores (nome); auto-relacionada
+                            por CODGER para identificar o gerente
+
+  Uso            : Painel BI "Resumo de Vendas por Vendedor" ? resumo por
+                   vendedor; drill de entrada a partir de P1 (:A_CODGER) e
+                   drill de saída para P3 pelo campo CODVEND (:A_CODVEND).
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 14/09/2026
+  Última Revisão : Setembro/2026 ? Adicionada identificação do gerente do
+                   vendedor via TGFVEN.CODGER.
+                   Setembro/2026 ? Adicionado parâmetro :P_GERENTE para
+                   filtrar por gerente.
+                   Setembro/2026 ? Renumerado de P1 para P2 e adicionado
+                   :A_CODGER para servir de drill-down do novo painel de
+                   resumo por gerente (P1).
+
+  Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' seguem o mesmo
+                     critério usado nos demais componentes de faturamento do
+                     repositório (ex.: RESUMO DE RESULTADO DE VENDAS,
+                     FATURAMENTO POR PERIODO).
+                   - TOTALFATURAMENTO soma valor líquido do item (VLRTOT -
+                     VLRDESC) mais outros valores (AD_VLROUTROS), mesma regra
+                     usada em Faturamento por período Gestão/p2.sql.
+                   - Lista ordenada por faturamento decrescente para
+                     facilitar o ranking de vendedores.
+                   - GER é o próprio TGFVEN relacionado por CODGER = CODVEND
+                     do gerente; LEFT JOIN porque nem todo vendedor tem
+                     gerente cadastrado (CODGER pode ser NULL).
+                   - :P_GERENTE e :A_CODGER filtram a mesma coluna
+                     (VEN.CODGER) por dois caminhos distintos ? prompt manual
+                     e clique vindo de P1 ? e podem ser usados
+                     independentemente (painel aberto direto não tem
+                     :A_CODGER; drill a partir de P1 não tem :P_GERENTE).
+                   - :A_CODGER = -1 replica o sentinel "SEM GERENTE" de P1:
+                     ao clicar naquela linha, filtra vendedores com
+                     VEN.CODGER IS NULL. Um :A_CODGER NULL (painel aberto
+                     direto) significa "sem filtro", nunca "sem gerente".
+==============================================================================*/
+
+WITH VENDAS AS (
+    SELECT
+         CAB.NUNOTA
+        ,CAB.CODVEND
+        ,ITE.QTDNEG
+        ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRITEM
+    FROM TGFCAB CAB
+    INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+    WHERE CAB.DTNEG >= :P_PERIODO.INI
+      AND CAB.DTNEG <= :P_PERIODO.FIN
+      AND CAB.TIPMOV = 'V'
+      AND CAB.STATUSNOTA = 'L'
+      AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+      AND PRO.USOPROD = 'V'
+      AND (CAB.CODVEND = :P_VENDEDOR OR :P_VENDEDOR IS NULL)
+)
+SELECT
+     VEN.CODVEND
+    ,VEN.APELIDO
+    ,GER.CODVEND AS CODGER
+    ,GER.APELIDO AS GERENTE
+    ,COUNT(DISTINCT VND.NUNOTA) AS TOTALNOTAS
+    ,SUM(VND.QTDNEG)            AS TOTALPRODUTOS
+    ,SUM(VND.VLRITEM)           AS TOTALFATURAMENTO
+FROM VENDAS VND
+INNER JOIN TGFVEN VEN ON VEN.CODVEND = VND.CODVEND
+LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
+WHERE (VEN.CODGER = :P_GERENTE OR :P_GERENTE IS NULL)
+  AND (
+        (:A_CODGER = -1 AND VEN.CODGER IS NULL)
+     OR VEN.CODGER = :A_CODGER
+     OR :A_CODGER IS NULL
+      )
+GROUP BY
+     VEN.CODVEND
+    ,VEN.APELIDO
+    ,GER.CODVEND
+    ,GER.APELIDO
+ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="CODGER" label="CODGER" type="I" visible="true" useFooter="false"></field><field name="GERENTE" label="GERENTE" type="S" visible="true" useFooter="false"></field><field name="TOTALNOTAS" label="Total de Notas" type="I" visible="true" useFooter="SUM"></field><field name="TOTALPRODUTOS" label="Total de Produtos" type="I" visible="true" useFooter="SUM"></field><field name="TOTALFATURAMENTO" label="Total de Faturamento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><refresh-details  ui-list="grd_028"><param id="A_CODVEND">$CODVEND</param></refresh-details></grid></container><container orientacao="H" tamanhoRelativo="924"><grid id="grd_028" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODVEND" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : RESUMO DE VENDAS POR VENDEDOR ? P3 (Detalhe)
+  Tipo           : Componente BI ? Tabela
+  Dashboard      : Resumo de Vendas por Vendedor
+  Descrição      : Lista nota a nota as vendas do vendedor selecionado em P2.
+                   É o detalhe (drill-down) de P2: recebe o vendedor
+                   selecionado em :A_CODVEND (clique na linha) e honra o
+                   mesmo período do painel. Mesmo critério de venda de P1/P2
+                   (TIPMOV, STATUSNOTA, CODTIPOPER, USOPROD). Repete o
+                   vendedor e o gerente (TGFVEN.CODGER) em cada linha para
+                   identificação sem depender do contexto de P1/P2.
+
+  Parâmetros     : :P_PERIODO.INI / :P_PERIODO.FIN ? período sobre DTNEG
+                   (obrigatório)
+                   :A_CODVEND ? vendedor selecionado na linha de P2
+                   (obrigatório, vindo do clique)
+
+  Colunas        : NUNOTA / NUMNOTA / DTNEG ? identificação da nota
+                   PARCEIRO             ? código + razão social do cliente
+                   CODPROD / DESCRPROD / CODVOL ? produto e unidade
+                   QTDNEG               ? quantidade vendida do item
+                   VLRTOTALITEM         ? valor líquido do item (VLRTOT -
+                                          VLRDESC + AD_VLROUTROS)
+                   VENDEDOR / GERENTE   ? nome do vendedor da nota e do seu
+                                          gerente (TGFVEN.CODGER)
+
+  Tabelas        : TGFCAB -- cabeçalho da nota (período, tipo de operação, status)
+                   TGFPAR -- cadastro de parceiros (razão social)
+                   TGFITE -- itens da nota (quantidade e valores)
+                   TGFPRO -- cadastro de produtos (descrição, unidade, filtro USOPROD)
+                   TGFVEN -- cadastro de vendedores; auto-relacionada por
+                            CODGER para identificar o gerente
+
+  Uso            : Painel BI "Resumo de Vendas por Vendedor" ? detalhe
+                   acionado pelo clique em P2 sobre o vendedor.
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 14/09/2026
+  Última Revisão : Setembro/2026 ? Adicionadas colunas VENDEDOR e GERENTE
+                   (TGFVEN.CODGER) em cada linha do detalhe.
+                   Setembro/2026 ? Renumerado de P2 para P3 com a introdução
+                   do painel de resumo por gerente (novo P1).
+
+  Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' idênticos a P1/P2;
+                     SUM(VLRTOTALITEM) deste detalhe deve fechar com
+                     TOTALFATURAMENTO da linha correspondente em P2.
+                   - Como o vendedor já vem fixado por :A_CODVEND, os
+                     parâmetros :P_VENDEDOR, :P_GERENTE e :A_CODGER do painel
+                     não são reaplicados aqui ? o gerente do vendedor
+                     selecionado já está implícito na cadeia
+                     CODVEND -> CODGER.
+                   - GER é o próprio TGFVEN relacionado por CODGER = CODVEND
+                     do gerente; LEFT JOIN porque nem todo vendedor tem
+                     gerente cadastrado (CODGER pode ser NULL).
+==============================================================================*/
+
+SELECT
+     CAB.NUNOTA
+    ,CAB.NUMNOTA
+    ,CAB.DTNEG
+    ,PAR.CODPARC || ' - ' || PAR.RAZAOSOCIAL AS PARCEIRO
+    ,ITE.CODPROD
+    ,PRO.DESCRPROD
+    ,PRO.CODVOL
+    ,ITE.QTDNEG
+    ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRTOTALITEM
+    ,VEN.APELIDO AS VENDEDOR
+    ,GER.APELIDO AS GERENTE
+FROM TGFCAB CAB
+INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
+INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+INNER JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
+WHERE CAB.DTNEG >= :P_PERIODO.INI
+  AND CAB.DTNEG <= :P_PERIODO.FIN
+  AND CAB.CODVEND = :A_CODVEND
+  AND CAB.TIPMOV = 'V'
+  AND CAB.STATUSNOTA = 'L'
+  AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+  AND PRO.USOPROD = 'V'
+ORDER BY CAB.DTNEG, CAB.NUNOTA]]></expression><metadata><field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"></field><field name="PARCEIRO" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="*" type="S" visible="true" useFooter="false"></field><field name="QTDNEG" label="Qtd." type="I" visible="true" useFooter="SUM"></field><field name="VLRTOTALITEM" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VENDEDOR" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="GERENTE" label="Gerente" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas"><NUNOTA>$NUNOTA</NUNOTA></on-click-launcher></grid></container></container></container></container></level></gadget>

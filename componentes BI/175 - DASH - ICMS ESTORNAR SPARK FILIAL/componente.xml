@@ -1,0 +1,44 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="0" label="P_PERIODO : Período"/></prompt-parameters><level id="lvl_a47lpkp" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_a47lpkq" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+     TAB.NUNOTA
+	,TAB.NUMNOTA
+    ,TAB.CODPROD
+    ,TAB.SEQUENCIA
+    ,TAB.BASEICMS
+    ,TAB.VLRICMS
+    ,TAB.CODCFO
+    ,TAB.NR_PEDIDO
+    ,(SELECT C.AD_NUNOTASAI
+            FROM TGFCAB C
+           WHERE C.NUNOTA = TAB.NR_PEDIDO
+          ) AS TRANSFERENCIA
+    ,(SELECT SUM(I.VLRICMS)
+        FROM TGFITE I 
+        WHERE I.NUNOTA = (SELECT CASE WHEN TAB.NR_PEDIDO = 708606 AND CODPROD = 3125030 THEN 708992 ELSE C.AD_NUNOTASAI END
+                             FROM TGFCAB C
+                            WHERE C.NUNOTA = TAB.NR_PEDIDO
+                          )
+         AND I.CODPROD = TAB.CODPROD) AS ICMS_ORIGEM
+    
+FROM ( 
+SELECT 
+         CAB.NUNOTA
+        ,CAB.NUMNOTA
+        ,ITE.CODPROD
+        ,ITE.SEQUENCIA
+        ,ITE.BASEICMS
+        ,ITE.VLRICMS
+        ,ITE.CODCFO
+        ,(SELECT MAX(VAR.NUNOTAORIG)
+            FROM TGFVAR VAR
+         WHERE VAR.NUNOTA =  CAB.NUNOTA
+         ) AS NR_PEDIDO
+
+FROM TGFCAB CAB
+INNER JOIN TGFITE ITE 
+    ON ITE.NUNOTA = CAB.NUNOTA 
+WHERE CAB.DTNEG >= :P_PERIODO.INI
+ AND  CAB.DTNEG <= :P_PERIODO.FIN
+ AND  CAB.CODEMP = 2
+ AND  CAB.STATUSNFE = 'A'
+ AND  CAB.TIPMOV ='V'
+)TAB]]></expression><metadata><field name="NUNOTA" label="Nr. Unico" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field><field name="CODPROD" label="Cod. Produto" type="I" visible="true" useFooter="false"></field><field name="SEQUENCIA" label="Sequencia " type="I" visible="true" useFooter="false"></field><field name="BASEICMS" label="Base ICMS " type="F" visible="true" useFooter="false"></field><field name="VLRICMS" label="Vlr. ICMS " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"></field><field name="NR_PEDIDO" label="Nr. Pedido " type="I" visible="true" useFooter="false"></field><field name="TRANSFERENCIA" label="Nr. Transferencia" type="I" visible="true" useFooter="false"></field><field name="ICMS_ORIGEM" label="Vlr. ICMS da Transferencia " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata></grid></container></level></gadget>

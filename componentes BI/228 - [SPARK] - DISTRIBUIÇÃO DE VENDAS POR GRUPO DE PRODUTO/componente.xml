@@ -1,0 +1,345 @@
+<gadget ><prompt-parameters><parameter  id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_CODGRUPOPROD : Entidade/Tabela" order="0"/><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_PERIODO : Período" order="1"/><parameter  id="P_CODVEND" description="Vendedor/Gerente" metadata="multiList:Text" listType="sql" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_CODVEND : multiList:Text" order="2"><expression type="SQL"><![CDATA[SELECT CODVEND AS VALUE 
+ ,CODVEND  || ' - ' || APELIDO AS LABEL
+FROM TGFVEN 
+WHERE TIPVEND IN ('G','R','V')]]></expression></parameter></prompt-parameters><level id="0GH" description="Principal"><args><arg  id="A_CODPARC" type="integer" label="A_CODPARC : Número Inteiro"/><arg  id="A_CODVEND" type="integer" label="A_CODVEND : Número Inteiro"/></args><container orientacao="H" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_0GN" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : [SPARK] - Distribuição de vendas por Grupo de Produto — P1
+  Tipo           : Componente BI — Tabela
+  Dashboard      : [SPARK] - Distribuição de vendas por Grupo de Produto
+  Descrição      : Relaciona os parceiros que compraram o grupo de produto
+                   selecionado no período, com a quantidade de produtos, a
+                   quantidade de notas emitidas e o valor vendido. Considera
+                   apenas os itens que pertencem ao grupo selecionado (os
+                   demais itens das mesmas notas ficam de fora). É o painel
+                   de entrada: o clique na linha (parceiro x vendedor)
+                   aciona o P2 (:A_CODPARC e :A_CODVEND).
+
+  Parâmetros     : :P_CODGRUPOPROD — grupo de produto (entidade simples,
+                   obrigatório); aceita grupo pai (sintético) ou grupo direto
+                   (analítico)
+                   :P_PERIODO.INI / :P_PERIODO.FIN — período sobre DTNEG
+                   (obrigatório)
+                   :P_CODVEND — vendedores/gerentes (multilist, obrigatório);
+                   filtra TGFCAB.CODVEND e, para gerente, a equipe via
+                   TGFVEN.CODGER
+
+  Colunas        : CODPARC     — código do parceiro (chave do drill para o P2)
+                   PARCEIRO    — código + razão social do parceiro
+                   CODVEND     — código do vendedor da nota (chave do drill
+                                 para o P2, :A_CODVEND)
+                   VENDEDOR    — apelido do vendedor (TGFVEN.APELIDO)
+                   QTDPRODUTOS — quantidade LÍQUIDA de devolução (vendas -
+                                 devoluções) dos itens do grupo
+                   QTDNOTAS    — notas de venda distintas com ao menos um item
+                                 do grupo (notas de devolução não entram)
+                   VLRTOTAL    — valor líquido de devolução dos itens do grupo
+                                 (VLRTOT - VLRDESC + AD_VLROUTROS; vendas -
+                                 devoluções)
+                   QTDDEVOLVIDA / VLRDEVOLVIDO — parcela de devolução já
+                                 abatida em QTDPRODUTOS / VLRTOTAL
+
+  Tabelas        : TGFCAB -- cabeçalho da nota (período, tipo, status)
+                   TGFITE -- itens da nota (quantidade e valores)
+                   TGFPRO -- cadastro de produtos (grupo, filtro USOPROD)
+                   TGFGRU -- grupos de produto (hierarquia CODGRUPAI)
+                   TGFPAR -- cadastro de parceiros (razão social)
+                   TGFVEN -- cadastro de vendedores (CODGER do vendedor da nota)
+
+  Uso            : Painel BI "[SPARK] - Distribuição de vendas por Grupo de
+                   Produto" — painel 1 (parceiros). O clique na linha aciona o
+                   P2 com :A_CODPARC e :A_CODVEND.
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 07/10/2026
+  Última Revisão : Outubro/2026 — Criação do componente
+                   Outubro/2026 — Adicionado parâmetro :P_CODVEND (multilist)
+                   com tratativa de gerente (TGFVEN.CODGER).
+                   Outubro/2026 — Adicionadas colunas CODVEND e VENDEDOR; a
+                   linha passa a ser parceiro x vendedor.
+                   Outubro/2026 — Devoluções abatidas de QTDPRODUTOS e
+                   VLRTOTAL; adicionadas QTDDEVOLVIDA e VLRDEVOLVIDO.
+
+  Observações    : - A granularidade é parceiro x vendedor: parceiro atendido
+                     por mais de um vendedor no período aparece em uma linha
+                     por vendedor.
+                   - :P_CODVEND segue o padrão multilist do BI (IN :P_CODVEND,
+                     sem guarda de NULL). A nota entra se o vendedor da nota
+                     (CAB.CODVEND) estiver na lista OU se o gerente dele
+                     (VEN.CODGER) estiver: selecionar um gerente traz as
+                     vendas dele e de toda a equipe subordinada.
+                   - Critério de venda idêntico ao de RESUMO DE VENDAS POR
+                     VENDEDOR (TIPMOV 'V', STATUSNOTA 'L', CODTIPOPER de venda,
+                     USOPROD 'V').
+                   - Devoluções (TIPMOV 'D', CODTIPOPER 1200,1201,1216,1217,
+                     1272; 1206 fora de propósito, como no Faturamento por
+                     período Gestão) entram com sinal negativo, no período em
+                     que a devolução ocorreu (DTNEG da nota de devolução), e
+                     com a regra (CODEMP = 501 OR STATUSNFE <> 'D') de
+                     p2.sql daquele componente. Os filtros de grupo, vendedor
+                     (CAB.CODVEND / CODGER) e parceiro valem para a nota de
+                     devolução. Parceiro com devolução e sem venda no período
+                     aparece com valores negativos.
+                   - O grupo é expandido pela hierarquia TGFGRU (CODGRUPAI) em
+                     qualquer profundidade: se o grupo informado for pai,
+                     entram todos os descendentes; se for direto, entra só ele.
+                   - O mesmo filtro de grupo/período/critério de venda é
+                     repetido em P2 e P3; manter os três sincronizados.
+==============================================================================*/
+
+SELECT  PAR.CODPARC
+       ,PAR.CODPARC || ' - ' || PAR.RAZAOSOCIAL      AS PARCEIRO
+       ,CAB.CODVEND
+       ,VEN.APELIDO                                  AS VENDEDOR
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D' THEN -ITE.QTDNEG ELSE ITE.QTDNEG END) AS QTDPRODUTOS
+       ,COUNT(DISTINCT CASE WHEN CAB.TIPMOV = 'V' THEN CAB.NUNOTA END)        AS QTDNOTAS
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D'
+                 THEN -((ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0))
+                 ELSE  ((ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0))
+            END)                                                            AS VLRTOTAL
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D' THEN ITE.QTDNEG ELSE 0 END)            AS QTDDEVOLVIDA
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D'
+                 THEN (ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0)
+                 ELSE 0
+            END)                                                            AS VLRDEVOLVIDO
+  FROM TGFCAB CAB
+       INNER JOIN TGFITE ITE ON ITE.NUNOTA  = CAB.NUNOTA
+       INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+       INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
+       LEFT  JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+ WHERE CAB.DTNEG >= :P_PERIODO.INI
+   AND CAB.DTNEG <= :P_PERIODO.FIN
+   AND (CAB.CODVEND IN :P_CODVEND OR VEN.CODGER IN :P_CODVEND)
+   AND (
+           (    CAB.TIPMOV = 'V'
+            AND CAB.STATUSNOTA = 'L'
+            AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+           )
+        OR (    CAB.TIPMOV = 'D'
+            AND CAB.CODTIPOPER IN (1200,1201,1216,1217,1272)
+            AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
+           )
+       )
+   AND PRO.USOPROD = 'V'
+   AND PRO.CODGRUPOPROD IN (
+           SELECT  GRU.CODGRUPOPROD
+             FROM  TGFGRU GRU
+            START  WITH GRU.CODGRUPOPROD = :P_CODGRUPOPROD
+          CONNECT  BY NOCYCLE PRIOR GRU.CODGRUPOPROD = GRU.CODGRUPAI
+       )
+ GROUP BY PAR.CODPARC
+         ,PAR.RAZAOSOCIAL
+         ,CAB.CODVEND
+         ,VEN.APELIDO
+ ORDER BY VLRTOTAL DESC]]></expression><metadata><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="PARCEIRO" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"></field><field name="VENDEDOR" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="QTDPRODUTOS" label="Qtd. Produtos" type="I" visible="true" useFooter="SUM"></field><field name="QTDNOTAS" label="Qtd. Notas" type="I" visible="true" useFooter="SUM"></field><field name="VLRTOTAL" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="QTDDEVOLVIDA" label="QTDDEVOLVIDA" type="I" visible="true" useFooter="false"></field><field name="VLRDEVOLVIDO" label="VLRDEVOLVIDO" type="I" visible="true" useFooter="false"></field></metadata><refresh-details  ui-list="grd_0GO"><param id="A_CODPARC">$CODPARC</param><param id="A_CODVEND">$CODVEND</param></refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_0GO" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODPARC" type="integer"></arg><arg id="A_CODVEND" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : [SPARK] - Distribuição de vendas por Grupo de Produto — P2
+  Tipo           : Componente BI — Tabela
+  Dashboard      : [SPARK] - Distribuição de vendas por Grupo de Produto
+  Descrição      : Lista os produtos do grupo selecionado que o parceiro
+                   selecionado em P1 comprou no período, com quantidade,
+                   número de notas e valor por produto. É o detalhe
+                   (drill-down) de P1: recebe o parceiro em :A_CODPARC
+                   (clique na linha) e honra o mesmo grupo e período do
+                   painel.
+
+  Parâmetros     : :P_CODGRUPOPROD — grupo de produto (entidade simples,
+                   obrigatório); aceita grupo pai ou grupo direto
+                   :P_PERIODO.INI / :P_PERIODO.FIN — período sobre DTNEG
+                   (obrigatório)
+                   :P_CODVEND — vendedores/gerentes (multilist, obrigatório);
+                   filtra TGFCAB.CODVEND e, para gerente, a equipe via
+                   TGFVEN.CODGER
+                   :A_CODPARC — parceiro selecionado na linha de P1; NULL
+                   (painel aberto sem clique) significa "sem filtro de
+                   parceiro"
+                   :A_CODVEND — vendedor da linha selecionada em P1; NULL
+                   significa "sem filtro de vendedor"
+
+  Colunas        : CODVEND / VENDEDOR — vendedor da nota (TGFVEN.APELIDO)
+                   CODPROD / DESCRPROD / CODVOL — produto e unidade
+                   QTDNEG   — quantidade LÍQUIDA de devolução (vendas -
+                              devoluções)
+                   QTDNOTAS — notas de venda distintas em que o produto
+                              aparece (notas de devolução não entram)
+                   VLRTOTAL — valor líquido de devolução (VLRTOT - VLRDESC +
+                              AD_VLROUTROS; vendas - devoluções)
+                   QTDDEVOLVIDA / VLRDEVOLVIDO — parcela de devolução já
+                              abatida em QTDNEG / VLRTOTAL
+
+  Tabelas        : TGFCAB -- cabeçalho da nota (período, parceiro, tipo, status)
+                   TGFITE -- itens da nota (quantidade e valores)
+                   TGFPRO -- cadastro de produtos (descrição, unidade, grupo)
+                   TGFGRU -- grupos de produto (hierarquia CODGRUPAI)
+                   TGFVEN -- cadastro de vendedores (CODGER do vendedor da nota)
+
+  Uso            : Painel BI "[SPARK] - Distribuição de vendas por Grupo de
+                   Produto" — painel 2 (produtos do parceiro), acionado pelo
+                   clique em P1.
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 07/10/2026
+  Última Revisão : Outubro/2026 — Criação do componente
+                   Outubro/2026 — Adicionado parâmetro :P_CODVEND (multilist)
+                   com tratativa de gerente (TGFVEN.CODGER).
+                   Outubro/2026 — Adicionadas colunas CODVEND e VENDEDOR e o
+                   drill :A_CODVEND vindo de P1.
+                   Outubro/2026 — Devoluções abatidas de QTDNEG e VLRTOTAL
+                   (mesma regra de P1); adicionadas QTDDEVOLVIDA e
+                   VLRDEVOLVIDO.
+
+  Observações    : - A granularidade é produto x vendedor. :A_CODVEND (clique
+                     em P1) restringe ao vendedor da linha, para que
+                     SUM(VLRTOTAL) feche com a linha parceiro x vendedor de P1.
+                   - :P_CODVEND: mesma regra de P1 (vendedor da nota na lista
+                     OU gerente dele na lista; IN :P_CODVEND sem guarda de
+                     NULL).
+                   - Mesmo critério de venda e mesma expansão de grupo de P1;
+                     SUM(VLRTOTAL) deste painel fecha com o VLRTOTAL da linha
+                     do parceiro em P1.
+                   - O NULL em :A_CODPARC segue a convenção de RESUMO DE
+                     VENDAS POR VENDEDOR (P2): sem clique, lista os produtos
+                     do grupo para todos os parceiros.
+==============================================================================*/
+
+SELECT  CAB.CODVEND
+       ,VEN.APELIDO                                  AS VENDEDOR
+       ,ITE.CODPROD
+       ,PRO.DESCRPROD
+       ,PRO.CODVOL
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D' THEN -ITE.QTDNEG ELSE ITE.QTDNEG END) AS QTDNEG
+       ,COUNT(DISTINCT CASE WHEN CAB.TIPMOV = 'V' THEN CAB.NUNOTA END)        AS QTDNOTAS
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D'
+                 THEN -((ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0))
+                 ELSE  ((ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0))
+            END)                                                            AS VLRTOTAL
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D' THEN ITE.QTDNEG ELSE 0 END)            AS QTDDEVOLVIDA
+       ,SUM(CASE WHEN CAB.TIPMOV = 'D'
+                 THEN (ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS, 0)
+                 ELSE 0
+            END)                                                            AS VLRDEVOLVIDO
+  FROM TGFCAB CAB
+       INNER JOIN TGFITE ITE ON ITE.NUNOTA  = CAB.NUNOTA
+       INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+       LEFT  JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+ WHERE CAB.DTNEG >= :P_PERIODO.INI
+   AND CAB.DTNEG <= :P_PERIODO.FIN
+   AND (CAB.CODVEND IN :P_CODVEND OR VEN.CODGER IN :P_CODVEND)
+   AND (CAB.CODPARC = :A_CODPARC OR :A_CODPARC IS NULL)
+   AND (CAB.CODVEND = :A_CODVEND OR :A_CODVEND IS NULL)
+   AND (
+           (    CAB.TIPMOV = 'V'
+            AND CAB.STATUSNOTA = 'L'
+            AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+           )
+        OR (    CAB.TIPMOV = 'D'
+            AND CAB.CODTIPOPER IN (1200,1201,1216,1217,1272)
+            AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
+           )
+       )
+   AND PRO.USOPROD = 'V'
+   AND PRO.CODGRUPOPROD IN (
+           SELECT  GRU.CODGRUPOPROD
+             FROM  TGFGRU GRU
+            START  WITH GRU.CODGRUPOPROD = :P_CODGRUPOPROD
+          CONNECT  BY NOCYCLE PRIOR GRU.CODGRUPOPROD = GRU.CODGRUPAI
+       )
+ GROUP BY CAB.CODVEND
+         ,VEN.APELIDO
+         ,ITE.CODPROD
+         ,PRO.DESCRPROD
+         ,PRO.CODVOL
+ ORDER BY QTDNEG DESC]]></expression><metadata><field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"></field><field name="VENDEDOR" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="Cód. Vol." type="S" visible="true" useFooter="false"></field><field name="QTDNEG" label="Qtd. Produtos" type="I" visible="true" useFooter="SUM"></field><field name="QTDNOTAS" label="Qtd. Notas" type="I" visible="true" useFooter="SUM"></field><field name="VLRTOTAL" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="QTDDEVOLVIDA" label="QTDDEVOLVIDA" type="I" visible="true" useFooter="false"></field><field name="VLRDEVOLVIDO" label="VLRDEVOLVIDO" type="I" visible="true" useFooter="false"></field></metadata></grid></container></container><container orientacao="V" tamanhoRelativo="50"><geochart id="gch_0JC"><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : [SPARK] - Distribuição de vendas por Grupo de Produto — P3
+  Tipo           : Componente BI — Gráfico (mapa de calor do Brasil)
+  Dashboard      : [SPARK] - Distribuição de vendas por Grupo de Produto
+  Descrição      : Distribuição geográfica das vendas do grupo de produto
+                   selecionado, por estado (UF do parceiro), em quantidade
+                   de produtos. Alimenta o mapa de calor do Brasil, no mesmo
+                   formato de saída do GEOGUESSER (INFORMATIVO DE GESTÃO
+                   ASSISTÊNCIA (DETALHES)): QTD, CODUF e UF.
+
+  Parâmetros     : :P_CODGRUPOPROD — grupo de produto (entidade simples,
+                   obrigatório); aceita grupo pai ou grupo direto
+                   :P_PERIODO.INI / :P_PERIODO.FIN — período sobre DTNEG
+                   (obrigatório)
+                   :P_CODVEND — vendedores/gerentes (multilist, obrigatório);
+                   filtra TGFCAB.CODVEND e, para gerente, a equipe via
+                   TGFVEN.CODGER
+
+  Colunas        : QTD   — quantidade LÍQUIDA de devolução (vendas -
+                           devoluções) dos itens do grupo no estado
+                   CODUF — código da UF (TSICID.UF = TSIUFS.CODUF)
+                   UF    — sigla da UF
+
+  Tabelas        : TGFCAB -- cabeçalho da nota (período, parceiro, tipo, status)
+                   TGFITE -- itens da nota (quantidade)
+                   TGFPRO -- cadastro de produtos (grupo, filtro USOPROD)
+                   TGFGRU -- grupos de produto (hierarquia CODGRUPAI)
+                   TGFPAR -- cadastro de parceiros (cidade)
+                   TSICID -- cidades (UF)
+                   TSIUFS -- unidades federativas (sigla)
+                   TGFVEN -- cadastro de vendedores (CODGER do vendedor da nota)
+
+  Uso            : Painel BI "[SPARK] - Distribuição de vendas por Grupo de
+                   Produto" — painel 3 (mapa de calor).
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 07/10/2026
+  Última Revisão : Outubro/2026 — Criação do componente
+                   Outubro/2026 — Adicionado parâmetro :P_CODVEND (multilist)
+                   com tratativa de gerente (TGFVEN.CODGER).
+                   Outubro/2026 — QTD passa a abater as devoluções (mesma
+                   regra de P1).
+
+  Observações    : - :P_CODVEND: mesma regra de P1 (vendedor da nota na lista
+                     OU gerente dele na lista; IN :P_CODVEND sem guarda de
+                     NULL).
+                   - Mesmo critério de venda, de devolução e mesma expansão
+                     de grupo de P1. UF cujas devoluções superem as vendas no
+                     período fica com QTD negativa.
+                   - O mapa não é filtrado por :A_CODPARC: mostra a
+                     distribuição do grupo para todos os parceiros, e não
+                     apenas do parceiro clicado em P1.
+                   - A UF vem do cadastro do parceiro (TGFPAR.CODCID), como
+                     no GEOGUESSER e no DASHBOARD DE VENDAS. Parceiros sem
+                     cidade/UF cadastrada não aparecem no mapa, então a soma
+                     de QTD pode ficar abaixo do total de P1.
+==============================================================================*/
+
+SELECT  SUM(CASE WHEN CAB.TIPMOV = 'D' THEN -ITE.QTDNEG ELSE ITE.QTDNEG END) AS QTD
+       ,CID.UF          AS CODUF
+       ,UFS.UF          AS UF
+  FROM TGFCAB CAB
+       INNER JOIN TGFITE ITE ON ITE.NUNOTA  = CAB.NUNOTA
+       INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+       INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
+       INNER JOIN TSICID CID ON CID.CODCID  = PAR.CODCID
+       INNER JOIN TSIUFS UFS ON UFS.CODUF   = CID.UF
+       LEFT  JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+ WHERE CAB.DTNEG >= :P_PERIODO.INI
+   AND CAB.DTNEG <= :P_PERIODO.FIN
+   AND (CAB.CODVEND IN :P_CODVEND OR VEN.CODGER IN :P_CODVEND)
+   AND (
+           (    CAB.TIPMOV = 'V'
+            AND CAB.STATUSNOTA = 'L'
+            AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+           )
+        OR (    CAB.TIPMOV = 'D'
+            AND CAB.CODTIPOPER IN (1200,1201,1216,1217,1272)
+            AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
+           )
+       )
+   AND PRO.USOPROD = 'V'
+   AND PRO.CODGRUPOPROD IN (
+           SELECT  GRU.CODGRUPOPROD
+             FROM  TGFGRU GRU
+            START  WITH GRU.CODGRUPOPROD = :P_CODGRUPOPROD
+          CONNECT  BY NOCYCLE PRIOR GRU.CODGRUPOPROD = GRU.CODGRUPAI
+       )
+ GROUP BY CID.UF
+         ,UFS.UF
+ ORDER BY QTD DESC]]></expression><metadata><field name="QTD" label="QTD" type="I" visible="true" useFooter="false"></field><field name="CODUF" label="CODUF" type="I" visible="true" useFooter="false"></field><field name="UF" label="UF" type="S" visible="true" useFooter="false"></field></metadata><country>BR</country><legend show="true" colors="#CC0000,#669900"></legend><region-marker><name>$UF</name><value>$QTD</value></region-marker></geochart></container></container></level></gadget>

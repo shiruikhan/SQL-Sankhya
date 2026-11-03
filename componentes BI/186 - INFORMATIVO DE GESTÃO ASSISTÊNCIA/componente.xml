@@ -1,0 +1,133 @@
+<gadget ><prompt-parameters><parameter  id="P_ANO" description="Ano de Conserto" metadata="integer" required="false" keep-last="true" keep-date="false" order="0" label="P_ANO : Número Inteiro"/><parameter  id="P_DTFAB" description="Período de Fabricação" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="1" label="P_DTFAB : Período"/><parameter  id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="2" label="P_CODPROD : Entidade/Tabela"/><parameter  id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="false" keep-date="false" order="3" label="P_CODGRUPOPROD : Entidade/Tabela"/></prompt-parameters><level id="lvl_aabd2f9" description="Principal"><args><arg  id="A_DEFEITO" type="text" label="A_DEFEITO : Texto"/><arg  id="A_MES" type="integer" label="A_MES : Número Inteiro"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="62.60321849675462"><container orientacao="V" tamanhoRelativo="292"><chart id="cht_aabd2ga" type="column" nroColuna="12"><title><![CDATA[Relação de OS por mês]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+    TO_CHAR(A.DTRECEB, 'MM') AS MES,
+    TO_CHAR(TO_DATE(TO_CHAR(A.DTRECEB, 'MM'), 'MM'), 'fmMonth', 'NLS_DATE_LANGUAGE=PORTUGUESE') AS MES_EXTENSO,
+    COUNT(A.NUMOS) AS TOTAL_OS,
+    SUM(CASE WHEN A.DEFEITO = 'ATT' THEN 1 ELSE 0 END) AS QTD_ATT,
+    SUM(CASE WHEN A.DEFEITO = 'MU' THEN 1 ELSE 0 END) AS QTD_MU,
+    SUM(CASE WHEN A.DEFEITO = 'DC' THEN 1 ELSE 0 END) AS QTD_DC,
+    SUM(CASE WHEN A.DEFEITO = 'FAB' THEN 1 ELSE 0 END) AS QTD_FAB,
+    SUM(CASE WHEN A.DEFEITO = 'SD' OR A.DEFEITO IS NULL THEN 1 ELSE 0 END) AS QTD_SD
+FROM AD_TGFASS A
+    LEFT JOIN TGFPRO P ON A.T_CODPROD = P.CODPROD
+WHERE A.DTRECEB IS NOT NULL
+    AND EXTRACT(YEAR FROM A.DTRECEB) = :P_ANO
+    AND (:P_DTFAB.INI IS NULL OR TRUNC(A.T_DTFABRICACAO) >= :P_DTFAB.INI)
+    AND (:P_DTFAB.FIN IS NULL OR TRUNC(A.T_DTFABRICACAO) <= :P_DTFAB.FIN)
+    AND (:P_CODPROD IS NULL OR T_CODPROD = :P_CODPROD)
+    AND (:P_CODGRUPOPROD IS NULL OR P.CODGRUPOPROD = :P_CODGRUPOPROD)
+GROUP BY TO_CHAR(DTRECEB, 'MM'),
+    TO_CHAR(TO_DATE(TO_CHAR(DTRECEB, 'MM'), 'MM'), 'fmMonth', 'NLS_DATE_LANGUAGE=PORTUGUESE')
+ORDER BY TO_CHAR(DTRECEB, 'MM')]]></expression><metadata><field name="MES" label="MES" type="S" visible="true" useFooter="false"></field><field name="MES_EXTENSO" label="MES_EXTENSO" type="S" visible="true" useFooter="false"></field><field name="TOTAL_OS" label="TOTAL_OS" type="I" visible="true" useFooter="false"></field><field name="QTD_ATT" label="QTD_ATT" type="I" visible="true" useFooter="false"></field><field name="QTD_MU" label="QTD_MU" type="I" visible="true" useFooter="false"></field><field name="QTD_DC" label="QTD_DC" type="I" visible="true" useFooter="false"></field><field name="QTD_FAB" label="QTD_FAB" type="I" visible="true" useFooter="false"></field><field name="QTD_SD" label="QTD_SD" type="I" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="MES_EXTENSO" rotation="0" dropLabel="false"><initView value="disabled"></initView><title>Mês</title></category></horizontal-axis><vertical-axis><linear resultRotation="-90" vResizing="false"><mask></mask><showStackLabels /><title>Nr de OS</title></linear></vertical-axis><series><set type="stacked"><serie type="column"><xField>$MES_EXTENSO</xField><yField>$QTD_ATT</yField><display><![CDATA[Necessidade de Atualização]]></display><color>0x1e88e5</color><refresh-details  ui-list="grd_aabd2gk,grd_aabd2g7,grd_aabd2hb">
+                    <param id="A_DEFEITO">ATT</param>
+                    <param id="A_MES">$MES</param>
+                  </refresh-details></serie><serie type="column"><xField>$MES_EXTENSO</xField><yField>$QTD_MU</yField><display><![CDATA[Mau Uso]]></display><color>0xe53935</color><refresh-details  ui-list="grd_aabd2gk,grd_aabd2g7,grd_aabd2hb">
+                    <param id="A_DEFEITO">MU</param>
+                    <param id="A_MES">$MES</param>
+                  </refresh-details></serie><serie type="column"><xField>$MES_EXTENSO</xField><yField>$QTD_DC</yField><display><![CDATA[Desgaste (Cronológico)]]></display><color>0x757575</color><refresh-details  ui-list="grd_aabd2gk,grd_aabd2g7,grd_aabd2hb">
+                    <param id="A_MES">$MES</param>
+                    <param id="A_DEFEITO">DC</param>
+                  </refresh-details></serie><serie type="column"><xField>$MES_EXTENSO</xField><yField>$QTD_FAB</yField><display><![CDATA[Montagem (Fábrica)]]></display><color>0x8e24aa</color><refresh-details  ui-list="grd_aabd2gk,grd_aabd2g7,grd_aabd2hb">
+                    <param id="A_MES">$MES</param>
+                    <param id="A_DEFEITO">FAB</param>
+                  </refresh-details></serie><serie type="column"><xField>$MES_EXTENSO</xField><yField>$QTD_SD</yField><display><![CDATA[Sem Defeito]]></display><color>0x43a047</color><refresh-details  ui-list="grd_aabd2gk,grd_aabd2g7,grd_aabd2hb">
+                    <param id="A_MES">$MES</param>
+                    <param id="A_DEFEITO">SD</param>
+                  </refresh-details></serie><serie type="column"><xField>$MES_EXTENSO</xField><yField>$QTD_NV</yField><display><![CDATA[Não Verificado]]></display><color>0x212121</color></serie></set><serie type="column"><xField>$MES_EXTENSO</xField><yField>$TOTAL_OS</yField><display><![CDATA[Total OS]]></display><color>0x212121</color><refresh-details  ui-list="grd_aabd2gk,grd_aabd2g7,grd_aabd2hb">
+                  <param id="A_MES">$MES</param>
+                  <param id="A_DEFEITO">NULL</param>
+                </refresh-details></serie></series><legend position="bottom" direction="h"></legend></chart></container></container><container orientacao="H" tamanhoRelativo="38.40688251334639"><container orientacao="V" tamanhoRelativo="37.28973303009814"><grid id="grd_aabd2gk" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_MES" type="integer"></arg><arg id="A_DEFEITO" type="text"></arg></args><title><![CDATA[Produtos do período]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    CASE 
+        WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
+            TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
+                      '1' || 
+                      SUBSTR(TO_CHAR(F.T_CODPROD), 3))
+        ELSE F.T_CODPROD
+    END AS CODPROD_TRATADO,
+    P.DESCRPROD,
+    COUNT(F.NUMOS) AS TOTAL_OS,
+    G.DESCRGRUPOPROD
+FROM
+    AD_TGFASS F
+LEFT JOIN
+    TGFPRO P ON P.CODPROD = CASE 
+                                WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
+                                    TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
+                                              '1' || 
+                                              SUBSTR(TO_CHAR(F.T_CODPROD), 3))
+                                ELSE F.T_CODPROD
+                            END
+    LEFT JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+WHERE
+    F.DTRECEB IS NOT NULL
+    AND EXTRACT(YEAR FROM F.DTRECEB) = :P_ANO
+    AND EXTRACT(MONTH FROM F.DTRECEB) = :A_MES
+	AND ( :P_DTFAB.INI IS NULL OR TRUNC(T_DTFABRICACAO) >= :P_DTFAB.INI )
+    AND ( :P_DTFAB.FIN IS NULL OR TRUNC(T_DTFABRICACAO) <= :P_DTFAB.FIN )
+	AND ( :P_CODPROD IS NULL OR T_CODPROD = :P_CODPROD )
+	AND ( :P_CODGRUPOPROD IS NULL OR P.CODGRUPOPROD = :P_CODGRUPOPROD )
+    AND ( :A_DEFEITO = 'NULL' OR F.DEFEITO = :A_DEFEITO)
+GROUP BY
+    CASE 
+        WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
+            TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
+                      '1' || 
+                      SUBSTR(TO_CHAR(F.T_CODPROD), 3))
+        ELSE F.T_CODPROD
+    END,
+    P.DESCRPROD,
+    G.DESCRGRUPOPROD
+ORDER BY
+    TOTAL_OS DESC]]></expression><metadata><field name="CODPROD_TRATADO" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="TOTAL_OS" label="Total" type="I" visible="true" useFooter="SUM"></field><field name="DESCRGRUPOPROD" label="Grupo" type="S" visible="true" useFooter="false"></field></metadata></grid></container><container orientacao="V" tamanhoRelativo="34.4212920277829"><grid id="grd_aabd2g7" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_MES" type="integer"></arg><arg id="A_DEFEITO" type="text"></arg></args><title><![CDATA[Componentes Utilizados]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    C.CODPROD,
+    P.DESCRPROD,
+    SUM(C.QTDMOV) AS TOTAL_COMPONENTES,
+    G.DESCRGRUPOPROD
+FROM
+    AD_TGFIASS C
+JOIN
+    AD_TGFASS F ON F.NUMOS = C.NUMOS
+LEFT JOIN
+    TGFPRO P ON P.CODPROD = C.CODPROD
+LEFT JOIN 
+    TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+LEFT JOIN
+    TGFPRO PRD ON PRD.CODPROD = F.T_CODPROD
+WHERE
+    F.DTRECEB IS NOT NULL
+    AND EXTRACT(YEAR FROM F.DTRECEB) = :P_ANO
+    AND EXTRACT(MONTH FROM F.DTRECEB) = :A_MES
+	AND ( :P_DTFAB.INI IS NULL OR TRUNC(T_DTFABRICACAO) >= :P_DTFAB.INI )
+    AND ( :P_DTFAB.FIN IS NULL OR TRUNC(T_DTFABRICACAO) <= :P_DTFAB.FIN )
+	AND ( :P_CODPROD IS NULL OR F.T_CODPROD = :P_CODPROD )
+	AND ( :P_CODGRUPOPROD IS NULL OR PRD.CODGRUPOPROD = :P_CODGRUPOPROD )
+    AND ( :A_DEFEITO = 'NULL' OR F.DEFEITO = :A_DEFEITO)
+GROUP BY
+    C.CODPROD,
+    P.DESCRPROD,
+    G.DESCRGRUPOPROD
+ORDER BY
+    TOTAL_COMPONENTES DESC]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Material" type="S" visible="true" useFooter="false"></field><field name="TOTAL_COMPONENTES" label="Total" type="F" visible="true" useFooter="SUM"></field><field name="DESCRGRUPOPROD" label="Grupo" type="S" visible="true" useFooter="false"></field></metadata></grid></container><container orientacao="V" tamanhoRelativo="29.29907595221997"><grid id="grd_aabd2hb" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_MES" type="integer"></arg><arg id="A_DEFEITO" type="text"></arg></args><title><![CDATA[Técnicos]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    F.TECNICO AS IDFUNC,
+    C.NOME AS NOME_TECNICO,
+    COUNT(F.NUMOS) AS TOTAL_OS
+FROM
+    AD_TGFASS F
+JOIN
+    AD_CADFUNC C ON C.IDFUNC = F.TECNICO
+LEFT JOIN
+	TGFPRO P ON F.T_CODPROD = P.CODPROD
+WHERE
+    F.DTRECEB IS NOT NULL
+    AND F.TECNICO IS NOT NULL
+    AND EXTRACT(YEAR FROM F.DTRECEB) = :P_ANO
+    AND EXTRACT(MONTH FROM F.DTRECEB) = :A_MES
+    AND ( :P_DTFAB.INI IS NULL OR TRUNC(T_DTFABRICACAO) >= :P_DTFAB.INI )
+    AND ( :P_DTFAB.FIN IS NULL OR TRUNC(T_DTFABRICACAO) <= :P_DTFAB.FIN )
+	AND ( :P_CODPROD IS NULL OR T_CODPROD = :P_CODPROD )
+	AND ( :P_CODGRUPOPROD IS NULL OR P.CODGRUPOPROD = :P_CODGRUPOPROD )
+    AND ( :A_DEFEITO = 'NULL' OR F.DEFEITO = :A_DEFEITO)
+GROUP BY
+    F.TECNICO,
+    C.NOME
+ORDER BY
+    TOTAL_OS DESC]]></expression><metadata><field name="IDFUNC" label="IDFUNC" type="I" visible="false" useFooter="false"></field><field name="NOME_TECNICO" label="Colaborador" type="S" visible="true" useFooter="false"></field><field name="TOTAL_OS" label="Total" type="I" visible="true" useFooter="SUM"></field></metadata></grid></container></container></container></level></gadget>

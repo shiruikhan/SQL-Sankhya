@@ -1,0 +1,28 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="CODPARC" description="CODPARC" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="CODPARCMATRIZ" description="CODPARCMATRIZ" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_aywkx8p" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_a2t8xq0" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	LIB.CODPARC, LIB.NUNOTA, LIB.DHLIB, USU.NOMEUSU, LIB.VLRLIBERADO, LIB.VLRTOTPED, LIB.VLRLIMITE, LIB.VLRTOTFINFROM TGSLOGLIB LIB INNER JOIN TSIUSU USU ON LIB.CODUSULIB = USU.CODUSUWHERE (LIB.CODPARC = :CODPARC OR LIB.CODPARCMATRIZ = :CODPARCMATRIZ) AND LIB.DHLIB >= ADD_MONTHS(SYSDATE, -12)ORDER BY (LIB.VLRTOTFIN + LIB.VLRTOTPED - LIB.VLRLIMITE) DESCFETCH FIRST 5 ROWS ONLY]]></expression>
+        <metadata>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="NUNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"/>
+          <field name="DHLIB" label="Dt. Liberação " type="D" visible="true" useFooter="false"/>
+          <field name="NOMEUSU" label="Nome Usuario" type="S" visible="true" useFooter="false"/>
+          <field name="VLRLIBERADO" label="Vlr. Liberado " type="F" visible="false" useFooter="false"/>
+          <field name="VLRTOTPED" label="Vlr. Total Pedido " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          <field name="VLRLIMITE" label="Vlr. Limite " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          <field name="VLRTOTFIN" label="Vlr. Em aberto" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          <field name="AD_VLRLIBERADO" label="Vlr. Liberado" type="F" visible="true" useFooter="false" mask="R$ #.##0,00">
+            <calculated>
+              <formula><![CDATA[$VLRTOTFIN + $VLRTOTPED - $VLRLIMITE]]></formula>
+            </calculated>
+          </field>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

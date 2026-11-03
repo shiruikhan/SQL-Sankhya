@@ -1,0 +1,31 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODTIPOPERBAIXA" description="Top de Baixa" metadata="multiList:Text" listType="sql" required="true" keep-last="false" keep-date="false" order="1">
+      <expression type="SQL"><![CDATA[SELECT DISTINCT CODTIPOPERBAIXA AS VALUE,	(CODTIPOPERBAIXA || ' - ' || (SELECT DESCROPER FROM TGFTOP WHERE CODTIPOPER = CODTIPOPERBAIXA)) AS LABELFROM TGFFINWHERE CODEMP IN (1,2)	AND (VLRJURO > 0 OR VLRMULTA > 0)ORDER BY 1]]></expression>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_aobokqf" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_aobokqg" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT FIN.NUFIN, 	FIN.CODEMP, FIN.CODPARC,(SELECT PAR.NOMEPARC FROM TGFPAR PAR WHERE PAR.CODPARC=FIN.CODPARC) AS PARCEIRO,	FIN.NUMNOTA, 	FIN.DTNEG, 	FIN.DHBAIXA, 	FIN.CODTIPOPER, 	FIN.VLRDESDOB, 	FIN.VLRJURO, 	FIN.VLRMULTAFROM TGFFIN FINWHERE (FIN.DHBAIXA >= :P_PERIODO.INI AND FIN.DHBAIXA <=:P_PERIODO.FIN)	AND FIN.CODTIPOPERBAIXA IN :P_CODTIPOPERBAIXA	AND FIN.CODEMP IN (1,2)	AND (FIN.VLRJURO > 0 OR FIN.VLRMULTA > 0)]]></expression>
+        <metadata>
+          <field name="NUFIN" label="Nr Financeiro" type="I" visible="true" useFooter="false"/>
+          <field name="CODEMP" label="Cod Empresa" type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parc." type="I" visible="true" useFooter="false"/>
+          <field name="PARCEIRO" label="Nome Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt Negociação" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="DHBAIXA" label="Dt Baixa" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRJURO" label="Vlr. Juros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRMULTA" label="Vlr. Multa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

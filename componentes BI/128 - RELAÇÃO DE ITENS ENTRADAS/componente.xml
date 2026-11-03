@@ -1,0 +1,50 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODPARC" description="Código do Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="2"/>
+    <parameter id="P_CODPROD" description="Código do Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="3"/>
+    <parameter id="P_CODNAT" description="Natureza" metadata="entity:Natureza@CODNAT" required="false" keep-last="false" keep-date="false" order="4"/>
+    <parameter id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="false" keep-date="false" order="6"/>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:EmpresaFinanceiro@CODEMP" required="false" keep-last="false" keep-date="false" order="7"/>
+  </prompt-parameters>
+  <level id="lvl_au6b1zp" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_acwtkw9" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Relação de Entradas]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA, 	CAB.CODEMP,	CAB.NUMNOTA,		CAB.CODTIPOPER,	(SELECT MAX(TOP2.DESCROPER) FROM TGFTOP TOP2 WHERE TOP2.CODTIPOPER = CAB.CODTIPOPER) AS DESCROPER,	CAB.DTENTSAI,	CAB.CODPARC,	PAR.NOMEPARC,	ITE.CODPROD, 	PRO.DESCRPROD, 	PRO.CODVOL, 	ITE.QTDNEG, 	(ITE.QTDNEG - ITE.QTDENTREGUE) AS PENDENTE,	ITE.VLRUNIT,	CASE WHEN NVL(ITE.QTDNEG, 0) = 0 THEN 0 ELSE NVL(ITE.VLRIPI, 0) / ITE.QTDNEG END AS VLRIPI,	CASE WHEN NVL(ITE.QTDNEG, 0) = 0 THEN 0 ELSE NVL(ITE.VLRICMS, 0) / ITE.QTDNEG END AS VLRICMS,	(CASE WHEN CAB.CODEMP = 501 		THEN ITE.VLRUNIT		WHEN ITE.AD_VLRCHEIOCOM IS NULL 		THEN ITE.VLRUNIT 		ELSE (CASE WHEN VOA.CODPROD IS NULL 				THEN ITE.AD_VLRCHEIOCOM 				WHEN VOA.DIVIDEMULTIPLICA = 'D' 				THEN ITE.AD_VLRCHEIOCOM * VOA.QUANTIDADE 				ELSE ITE.AD_VLRCHEIOCOM / VOA.QUANTIDADE 				END)		END) AS VLRCHEIO, 	NVL(ITE.ALIQICMS,0) AS ALIQICMS,	NVL(ITE.ALIQIPI,0) AS ALIQIPI,	NVL(ITE.VLRSUBST,0) AS VLRSUBST,	USU.NOMEUSU AS INCLUSOR,	NAT.DESCRNAT,	PRO.ESTMIN,    III.VLRIMPOSTO / ITE.QTDNEG AS VLRIMPOSTO,    III.VLRDESPADUA / ITE.QTDNEG AS VLRDESPADUA,    IDI.VLRPISIMP / ITE.QTDNEG AS VLRPISIMP,    IDI.VLRCOFINSIMP / ITE.QTDNEG AS VLRCOFINSIMPFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD	LEFT JOIN TSIUSU USU ON CAB.CODUSUINC = USU.CODUSU	INNER JOIN TGFNAT NAT ON CAB.CODNAT = NAT.CODNAT	INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD	LEFT JOIN TGFVOA VOA ON (VOA.CODPROD = ITE.CODPROD AND VOA.CODVOL = ITE.CODVOL AND ((ITE.CONTROLE IS NULL AND VOA.CONTROLE = ' ') OR (ITE.CONTROLE IS NOT NULL AND ITE.CONTROLE = VOA.CONTROLE)))    LEFT JOIN TGFIII III ON (III.NUNOTA = ITE.NUNOTA AND III.SEQUENCIA = ITE.SEQUENCIA)    LEFT JOIN TGFIDI IDI ON (IDI.NUNOTA = ITE.NUNOTA AND IDI.SEQUENCIA = ITE.SEQUENCIA)WHERE (CAB.CODPARC = :P_CODPARC OR :P_CODPARC IS NULL) 	AND (ITE.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL) 	AND (CAB.DTENTSAI >= :P_PERIODO.INI AND CAB.DTENTSAI <= :P_PERIODO.FIN) 	AND (CAB.TIPMOV IN ('C','D')) 	AND CAB.STATUSNOTA = 'L' 	AND (CAB.CODNAT = :P_CODNAT OR :P_CODNAT IS NULL) 	AND ((SUBSTR(PRO.CODGRUPOPROD,0,4) = SUBSTR(:P_CODGRUPOPROD,0,4)) OR :P_CODGRUPOPROD IS NULL) 	AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)ORDER BY CAB.DTENTSAI, 	CAB.NUNOTA, 	CAB.CODEMP, 	CAB.CODPARC, 	CAB.NUMNOTA]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr Único" type="I" visible="true" useFooter="false"/>
+          <field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr Nota" type="I" visible="true" useFooter="false"/>
+          <field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"/>
+          <field name="DESCROPER" label="Desc Top" type="S" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt Entrada" type="D" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cod Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="*" type="S" visible="true" useFooter="false"/>
+          <field name="QTDNEG" label="Qtd" type="F" visible="true" useFooter="false"/>
+          <field name="PENDENTE" label="Qtd Pendente" type="F" visible="true" useFooter="false"/>
+          <field name="VLRUNIT" label="Vlr Unitário" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="VLRICMS" label="Vlr. ICMS" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="VLRCHEIO" label="Vlr Cheio" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="ALIQICMS" label="Aliq ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00 %"/>
+          <field name="ALIQIPI" label="Aliq Ipi" type="F" visible="true" useFooter="false" mask="#.##0,00 %"/>
+          <field name="VLRSUBST" label="Vlr. ST" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="INCLUSOR" label="Inclusor" type="S" visible="true" useFooter="false"/>
+          <field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"/>
+          <field name="ESTMIN" label="Est. Mínimo" type="F" visible="true" useFooter="false"/>
+          <field name="VLRIMPOSTO" label="Vlr. Imposto Imp." type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="VLRDESPADUA" label="Vlr. das Desp. Adu." type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="VLRPISIMP" label="Vlr. PIS Imp. " type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="VLRCOFINSIMP" label="Vlr. COFINS Imp. " type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

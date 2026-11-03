@@ -1,0 +1,21 @@
+<gadget ><prompt-parameters><parameter  id="P_DTCORTE" description="Dt. de Corte" metadata="date" required="true" keep-last="true" keep-date="false" order="0" label="P_DTCORTE : Data"/></prompt-parameters><level id="lvl_ocbl3n" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_ocbl4e" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT V.CODPROD,
+	V.DESCRPROD,
+	SUM(V.QTDNEG) AS QTDNEG,
+	V.PARCEIRO
+FROM (SELECT SUBSTR(ITE.CODPROD,1,1) || SUBSTR(ITE.CODPROD,3) AS CODPROD,
+			PRO.DESCRPROD,
+			SUM(ITE.QTDNEG) AS QTDNEG,
+			CAB.CODPARC || ' - ' || PAR.NOMEPARC AS PARCEIRO
+		FROM TGFITE ITE
+			INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D') /*AND CAB.STATUSNOTA = 'L'*/ AND CAB.TIPMOV = 'P' AND CAB.PENDENTE = 'S'
+			INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD AND SUBSTR(PRO.CODPROD,1,1) = '3'
+			INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+		WHERE CAB.DTPREVENT <= :P_DTCORTE
+		GROUP BY ITE.CODPROD,
+			PRO.DESCRPROD,
+			CAB.CODPARC || ' - ' || PAR.NOMEPARC
+		ORDER BY ITE.CODPROD) V
+GROUP BY V.CODPROD,
+	V.DESCRPROD,
+	V.PARCEIRO
+ORDER BY V.CODPROD]]></expression><metadata><field name="CODPROD" label="CODPROD" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="DESCRPROD" type="S" visible="true" useFooter="false"></field><field name="QTDNEG" label="QTDNEG" type="I" visible="true" useFooter="false"></field><field name="PARCEIRO" label="PARCEIRO" type="S" visible="true" useFooter="false"></field></metadata></grid></container></level></gadget>

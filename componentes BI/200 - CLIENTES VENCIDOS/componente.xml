@@ -1,0 +1,124 @@
+<gadget ><prompt-parameters><parameter  id="CODEMP" description="Empresa" metadata="multiList:Text" listType="sql" required="false" keep-last="false" keep-date="false" show-inactives="false" label="CODEMP : multiList:Text" order="0"><expression type="SQL"><![CDATA[SELECT 
+CODEMP AS VALUE, 
+CODEMP||'-'||RAZAOABREV AS LABEL
+FROM
+TSIEMP WHERE CODEMP < 999
+ORDER BY
+CODEMP]]></expression></parameter></prompt-parameters><level id="lvl_5q18al" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="50"><container orientacao="V" tamanhoRelativo="113"><grid id="grd_5q18cm" useNewGrid="S"><title><![CDATA[GESTÃO DE RECEBÍVEIS - TÍTULOS VENCIDOS - VISÃO POR CLIENTE - <strong>Empresa(s) Selecionada(s):</strong> :CODEMP</p>]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+1 AS ORDEM,
+D.CODPARC,
+D.RAZAOSOCIAL,
+(SELECT V.APELIDO FROM TGFVEN V WHERE V.CODVEND = D.CODVEND) AS VENDEDOR,
+NULLIF(D.TOTALVENCIDO,0) AS TOTALVENCIDO,
+(D.TOTALVENCIDO / SUM(TOTALVENCIDO) OVER () )*100 AS REP,
+NULLIF(D.VENC_MES,0) AS VENC_MES,
+NULLIF(D.VENC_ATE30,0) AS VENC_ATE30,
+NULLIF(D.VENC_ATE60,0) AS VENC_ATE60,
+NULLIF(D.VENC_ATE90,0) AS VENC_ATE90,
+NULLIF(D.VENC_ATE120,0) AS VENC_ATE120,
+NULLIF(D.VENC_ATE150,0) AS VENC_ATE150,
+NULLIF(D.VENC_ATE180,0) AS VENC_ATE180,
+NULLIF(D.VENC_MAIS180,0) AS VENC_MAIS180
+FROM(
+
+	SELECT 
+	CODPARC,
+	UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL,
+	CODVEND,
+	SUM(TOTALVENCIDO) AS TOTALVENCIDO,
+	SUM(VENC_MES) AS VENC_MES,
+	SUM(VENC_ATE30) AS VENC_ATE30,
+	SUM(VENC_ATE60) AS VENC_ATE60,
+	SUM(VENC_ATE90) AS VENC_ATE90,
+	SUM(VENC_ATE120) AS VENC_ATE120,
+	SUM(VENC_ATE150) AS VENC_ATE150,
+	SUM(VENC_ATE180) AS VENC_ATE180,
+	SUM(VENC_MAIS180) AS VENC_MAIS180
+	FROM(
+		--ORIGEM PORTAL - TIPMOV= "V"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		PAR.CODVEND,
+		T.TIPMOV,
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT AS TOTALVENCIDO,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') = TO_CHAR(SYSDATE,'YYYY/MM') THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_MES,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 0 AND 30 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE30,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 31 AND 60 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE60,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 61 AND 90 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE90,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC)BETWEEN 91 AND 120 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE120,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 121 AND 150 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE150,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 151 AND 180 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE180,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) > 180 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_MAIS180
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+		WHERE
+		FIN.CODEMP IN :CODEMP AND  
+		TRUNC(FIN.DTNEG) <= TRUNC(SYSDATE) AND  
+		FIN.DHBAIXA is null AND
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+		T.TIPMOV IN ('V') AND 
+		FIN.RECDESP = 1 AND
+		TRUNC(FIN.DTVENC) < TRUNC(SYSDATE)
+		)
+		GROUP BY
+		CODPARC,
+		UPPER(RAZAOSOCIAL),
+		CODVEND
+		
+	)D
+	
+UNION ALL
+
+SELECT 0 AS ORDEM, 0 AS CODPARC, '. TODOS' AS RAZAOSOCIAL, NULL AS VENDEDOR, NULL AS TOTALVENCIDO,NULL AS REP, NULL AS VENC_MES,
+NULL AS VENC_ATE30,NULL AS VENC_ATE60,NULL AS VENC_ATE90,NULL AS VENC_ATE120,NULL AS VENC_ATE150,NULL AS VENC_ATE180,NULL AS VENC_MAIS180 FROM DUAL
+ORDER BY ORDEM,TOTALVENCIDO DESC, RAZAOSOCIAL]]></expression><metadata><field name="ORDEM" label="ORDEM" type="F" visible="false" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VENDEDOR" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="TOTALVENCIDO" label="Total Vencido" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter></field><field name="REP" label="%" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b><i>$VALUE</i></b></span>]]></formatter></field><field name="VENC_MES" label="No Mês" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_ATE30" label="Até 30 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_ATE60" label="Até 60 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_ATE90" label="Até 90 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_ATE120" label="Até 120 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_ATE150" label="Até 150 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_ATE180" label="Até 180 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VENC_MAIS180" label="+ 180 dias" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field></metadata><refresh-details  ui-list="grd_5q18el">
+        <param id="PARCEIRO">$CODPARC</param>
+        <param id="NOMEPARC">$RAZAOSOCIAL</param>
+      </refresh-details></grid></container></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_5q18el" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="NOMEPARC" type="text"></arg></args><title><![CDATA[GESTÃO DE RECEBÍVEIS - TÍTULOS VENCIDOS - VISÃO POR TÍTULO - CLIENTE: :CODPARC - :NOMEPARC]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+FIN.CODEMP, 
+FIN.DTNEG,
+FIN.DTENTSAI, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+FIN.DTVENC, 
+(TRUNC(SYSDATE) - FIN.DTVENC) as DIAS_ATRASO,
+FIN.CODTIPTIT||'-'||TIT.DESCRTIPTIT AS TIPTITULO,
+FIN.CODNAT||'-'||NAT.DESCRNAT AS NATUREZA,
+FIN.CODTIPOPER,
+FIN.HISTORICO,
+VEN.APELIDO,
+CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') = TO_CHAR(SYSDATE,'YYYY/MM') THEN 'Vencido no mês'
+	WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 0 AND 30 THEN 'Vencido até 30 dias'
+     WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 31 AND 60 THEN 'Vencido até 60 dias'
+     WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 61 AND 90 THEN 'Vencido até 90 dias'
+     WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 91 AND 120 THEN 'Vencido até 120 dias'
+     WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 121 AND 150 THEN 'Vencido até 150 dias'
+	WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 151 AND 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO
+FROM 
+TGFFIN FIN, TGFPAR PAR, TGFNAT NAT, TGFTOP T , TGFTIT TIT, TGFVEN VEN
+WHERE 
+FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODTIPTIT = TIT.CODTIPTIT AND
+PAR.CODVEND = VEN.CODVEND AND
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+FIN.CODEMP IN :CODEMP AND  
+TRUNC(FIN.DTNEG) <= TRUNC(SYSDATE) AND  
+FIN.DHBAIXA is null AND
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('V') AND 
+FIN.RECDESP = 1 AND
+TRUNC(FIN.DTVENC) < TRUNC(SYSDATE)]]></expression><metadata><field name="CODEMP" label="CODEMP" type="I" visible="false" useFooter="false"></field><field name="DTNEG" label="Dt. Negoc." type="D" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. EntSai" type="D" visible="false" useFooter="false"></field><field name="NUMNOTA" label="Nº Nota" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nº Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="DTVENC" label="Dt. Vencimento" type="D" visible="true" useFooter="false"></field><field name="DIAS_ATRASO" label="Atraso (em dias)" type="I" visible="true" useFooter="false"></field><field name="TIPTITULO" label="Tipo Título" type="S" visible="true" useFooter="false"></field><field name="NATUREZA" label="Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field></metadata></grid></container></container></level></gadget>

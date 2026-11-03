@@ -1,0 +1,134 @@
+<gadget ><prompt-parameters><parameter  id="P_DTBASE" description="Data Base" metadata="date" required="true" keep-last="false" keep-date="true" order="0" label="P_DTBASE : Data"/></prompt-parameters><level id="lvl_aem3n81" description="Principal"><container orientacao="H" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="790.5"><container orientacao="H" tamanhoRelativo="16.54172385879703"><container orientacao="H" tamanhoRelativo="33.043109079033314"><simple-value id="svl_aem3oay"><value-expression ><![CDATA[<div class="titulo">Apontamentos da Montagem Final</div>
+<style>
+    .titulo {
+        width: 800px;
+        height: 80px;
+        background: linear-gradient(135deg, #4a90e2, #357abd); /* Gradiente azul */
+        color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 600;
+        text-align: center;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        margin: 10px;
+        transition: transform 0.2s ease;
+    }
+    .titulo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+</style>]]></value-expression></simple-value></container><container orientacao="H" tamanhoRelativo="33.043109079033314"><simple-value id="svl_aem3oa2"><value-expression ><![CDATA[<div class="titulo">Conferência da Expedição</div>
+<style>
+    .titulo {
+        width: 800px;
+        height: 80px;
+        background: linear-gradient(135deg, #50c878, #32a852); /* Gradiente verde */
+        color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 600;
+        text-align: center;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        margin: 10px;
+        transition: transform 0.2s ease;
+    }
+    .titulo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+</style>]]></value-expression></simple-value></container><container orientacao="H" tamanhoRelativo="34.03004572175049"><simple-value id="svl_074"><value-expression ><![CDATA[<div class="titulo">Divergências Produção vs Expedição</div>
+<style>
+    .titulo {
+        width: 800px;
+        height: 80px;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52); /* Gradiente vermelho */
+        color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 600;
+        text-align: center;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        margin: 10px;
+        transition: transform 0.2s ease;
+    }
+    .titulo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+</style>]]></value-expression></simple-value></container></container><container orientacao="H" tamanhoRelativo="84.46837715130397"><container orientacao="H" tamanhoRelativo="33.043109079033314"><grid id="grd_aem3n82" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,
+	PRO.DESCRPROD,
+	SUM(APA.QTDAPONTADA) AS PRODUCAO,
+	APO.CODUSU || ' - ' || (SELECT NOMEUSU FROM TSIUSU WHERE CODUSU = APO.CODUSU) AS APONTADOR,
+    PRO.AD_LINHA
+FROM TPRAPA APA 
+	INNER JOIN TPRAPO APO ON APA.NUAPO = APO.NUAPO 
+	INNER JOIN TPRIATV TV ON APO.IDIATV = TV.IDIATV 
+	INNER JOIN TPREFX FX ON TV.IDEFX = FX.IDEFX
+	INNER JOIN TGFPRO PRO ON APA.CODPRODPA = PRO.CODPROD
+WHERE TRUNC(APO.DHAPO) = TO_CHAR(:P_DTBASE, 'DD/MM/YYYY') 
+	AND FX.DESCRICAO IN ('MONTAGEM FINAL')
+GROUP BY PRO.CODPROD,
+	PRO.DESCRPROD,
+	APO.CODUSU,PRO.AD_LINHA
+ORDER BY PRO.CODPROD]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="PRODUCAO" label="Produção" type="I" visible="true" useFooter="SUM"></field><field name="APONTADOR" label="Apontador" type="S" visible="true" useFooter="false"></field><field name="AD_LINHA" label="Linha" type="S" visible="true" useFooter="false"></field></metadata></grid></container><container orientacao="H" tamanhoRelativo="33.043109079033314"><grid id="grd_aem3n83" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,
+	PRO.DESCRPROD,
+	SUM(APA.QTDAPONTADA) AS PRODUCAO,
+	APO.CODUSU || ' - ' || (SELECT NOMEUSU FROM TSIUSU WHERE CODUSU = APO.CODUSU) AS APONTADOR,
+    PRO.AD_LINHA
+FROM TPRAPA APA 
+	INNER JOIN TPRAPO APO ON APA.NUAPO = APO.NUAPO 
+	INNER JOIN TPRIATV TV ON APO.IDIATV = TV.IDIATV 
+	INNER JOIN TPREFX FX ON TV.IDEFX = FX.IDEFX
+	INNER JOIN TGFPRO PRO ON APA.CODPRODPA = PRO.CODPROD
+WHERE TRUNC(APO.DHAPO) = TO_CHAR(:P_DTBASE, 'DD/MM/YYYY') 
+	AND FX.DESCRICAO IN ('EXPEDIÇÃO/CONFERENCIA')
+GROUP BY PRO.CODPROD,
+	PRO.DESCRPROD,
+	APO.CODUSU, PRO.AD_LINHA
+ORDER BY PRO.CODPROD]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="PRODUCAO" label="Conferência" type="I" visible="true" useFooter="SUM"></field><field name="APONTADOR" label="Conferente" type="S" visible="true" useFooter="false"></field><field name="AD_LINHA" label="Linha" type="S" visible="true" useFooter="false"></field></metadata></grid></container><container orientacao="H" tamanhoRelativo="34.03004572175049"><grid id="grd_05U" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    COALESCE(P1.CODPROD, P2.CODPROD) AS CODPROD,
+    COALESCE(P1.DESCRPROD, P2.DESCRPROD) AS DESCRPROD,
+    P1.PRODUCAO AS PRODUCAO_APONTADA,
+    P2.PRODUCAO AS EXPEDICAO_RECEBIDA,
+    (COALESCE(P1.PRODUCAO, 0) - COALESCE(P2.PRODUCAO, 0)) AS DIFERENCA
+FROM
+    (SELECT PRO.CODPROD,
+            PRO.DESCRPROD,
+            SUM(APA.QTDAPONTADA) AS PRODUCAO
+     FROM TPRAPA APA
+         INNER JOIN TPRAPO APO ON APA.NUAPO = APO.NUAPO
+         INNER JOIN TPRIATV TV ON APO.IDIATV = TV.IDIATV
+         INNER JOIN TPREFX FX ON TV.IDEFX = FX.IDEFX
+         INNER JOIN TGFPRO PRO ON APA.CODPRODPA = PRO.CODPROD
+     WHERE TRUNC(APO.DHAPO) = TO_CHAR(:P_DTBASE, 'DD/MM/YYYY')
+         AND FX.DESCRICAO IN ('MONTAGEM FINAL')
+     GROUP BY PRO.CODPROD, PRO.DESCRPROD) P1
+FULL OUTER JOIN
+    (SELECT PRO.CODPROD,
+            PRO.DESCRPROD,
+            SUM(APA.QTDAPONTADA) AS PRODUCAO
+     FROM TPRAPA APA
+         INNER JOIN TPRAPO APO ON APA.NUAPO = APO.NUAPO
+         INNER JOIN TPRIATV TV ON APO.IDIATV = TV.IDIATV
+         INNER JOIN TPREFX FX ON TV.IDEFX = FX.IDEFX
+         INNER JOIN TGFPRO PRO ON APA.CODPRODPA = PRO.CODPROD
+     WHERE TRUNC(APO.DHAPO) = TO_CHAR(:P_DTBASE, 'DD/MM/YYYY')
+         AND FX.DESCRICAO IN ('EXPEDIÇÃO/CONFERENCIA')
+     GROUP BY PRO.CODPROD, PRO.DESCRPROD) P2
+ON P1.CODPROD = P2.CODPROD
+WHERE COALESCE(P1.PRODUCAO, 0) != COALESCE(P2.PRODUCAO, 0)
+   OR P1.CODPROD IS NULL
+   OR P2.CODPROD IS NULL
+ORDER BY COALESCE(P1.CODPROD, P2.CODPROD)]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="PRODUCAO_APONTADA" label="Produção Apontada" type="I" visible="true" useFooter="SUM"></field><field name="EXPEDICAO_RECEBIDA" label="Expedição Apontada" type="I" visible="true" useFooter="SUM"></field><field name="DIFERENCA" label="Diferença" type="I" visible="true" useFooter="false"></field></metadata></grid></container></container></container></container></level></gadget>

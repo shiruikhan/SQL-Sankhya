@@ -1,0 +1,17 @@
+<gadget ><prompt-parameters><parameter  id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_CODPARC : Entidade/Tabela" order="0"/><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_PERIODO : Período" order="1"/></prompt-parameters><level id="01R" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_01S" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,
+    PRO.DESCRPROD,
+    SER.SERIE,
+    CAB.NUMNOTA,
+    CAB.DTNEG
+FROM TGFITE ITE
+    INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFSER SER ON CAB.NUNOTA = SER.NUNOTA AND ITE.CODPROD = SER.CODPROD
+    INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD AND PRO.USOPROD = 'V'
+WHERE CAB.CODPARC = :P_CODPARC
+    AND TRUNC(CAB.DTNEG) >= :P_PERIODO.INI
+    AND TRUNC(CAB.DTNEG) <= :P_PERIODO.FIN
+    AND ITE.ATUALESTOQUE = -1
+    AND SER.ATUALESTOQUE = -1
+    AND CAB.TIPMOV = 'V' 
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+    AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="SERIE" label="Série" type="S" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Faturamento" type="D" visible="true" useFooter="false"></field></metadata></grid></container></level></gadget>

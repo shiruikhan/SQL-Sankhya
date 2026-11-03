@@ -1,0 +1,39 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Periodo" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="P_PERIODO : Período"/><parameter  id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="2" label="P_CODEMP : Entidade/Tabela"/><parameter  id="P_CODVEND" description="Vendedor" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_CODVEND : Entidade/Tabela" order="3"/></prompt-parameters><level id="lvl_mi3odc" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_mi3odd" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Resumo de Resultado de Vendas]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT DISTINCT CAB.NUMNOTA,
+	MAX(ITE.CODCFO) AS CFOP,
+	CAB.DTNEG,
+	PAR.CODPARC || ' - ' || PAR.RAZAOSOCIAL AS PARCEIRO,
+	UFS.UF,
+	SUM(ITE.VLRTOT - ITE.VLRDESC) AS VLRNOTA,
+    CAB.VLRIPI,
+    CAB.VLRFRETE,
+    NVL(CAB.AD_VLROUTROSFRETE,0) AS AD_VLROUTROSFRETE,
+    SUM(NVL(ITE.AD_VLROUTROS,0)) AS VLROUTROS,
+    SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS,0)) AS VLR_TOTAL,
+	SUM(ITE.QTDNEG) AS QUANTIDADE,
+	NVL(CAB.AD_RESULTADO,0) AS RESULTADO,
+    CAB.VLRSUBST
+FROM TGFCAB CAB
+	INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA	
+	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+	INNER JOIN TSICID CID ON PAR.CODCID = CID.CODCID
+	INNER JOIN TSIUFS UFS ON CID.UF = UFS.CODUF
+    INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+WHERE (:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC)
+	AND CAB.DTNEG >= :P_PERIODO.INI
+	AND CAB.DTNEG <= :P_PERIODO.FIN
+	AND CAB.STATUSNOTA = 'L'
+	AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+	AND (:P_CODEMP IS NULL OR CAB.CODEMP = :P_CODEMP)
+    AND PRO.USOPROD = 'V'
+	AND (CAB.CODVEND = :P_CODVEND OR :P_CODVEND IS NULL)
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+GROUP BY CAB.NUMNOTA,
+	CAB.DTNEG,
+	PAR.CODPARC || ' - ' || PAR.RAZAOSOCIAL,
+	UFS.UF,
+    CAB.VLRIPI,
+    CAB.VLRFRETE,
+    CAB.AD_VLROUTROSFRETE,
+	NVL(CAB.AD_RESULTADO,0),
+    CAB.VLRSUBST,
+	(CASE WHEN CAB.AD_RESULTADO > 0 THEN (CAB.AD_RESULTADO / (CAB.VLRNOTA + NVL(CAB.VLROUTROS,0)))*100 ELSE 0 END)]]></expression><metadata><field name="NUMNOTA" label="Nr. da Nota" type="I" visible="true" useFooter="false"></field><field name="CFOP" label="CFOP" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. de Faturamento" type="D" visible="true" useFooter="false"></field><field name="PARCEIRO" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="UF" label="UF" type="S" visible="true" useFooter="false"></field><field name="VLRNOTA" label="Vlr. dos Produtos" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLRFRETE" label="Vlr. Frete" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="AD_VLROUTROSFRETE" label="Vlr. Frete Outros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLROUTROS" label="Vlr. Outros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLR_TOTAL" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="QUANTIDADE" label="Quantidade" type="I" visible="true" useFooter="SUM"></field><field name="RESULTADO" label="Resultado" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLRSUBST" label="Vlr. ST" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="Percentual" label="Percentual" type="F" visible="true" useFooter="AVG" mask="#.##0,00 %"><calculated><formula><![CDATA[($RESULTADO / $VLR_TOTAL) * 100]]></formula></calculated></field></metadata></grid></container></level></gadget>

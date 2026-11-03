@@ -1,0 +1,58 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="0" label="P_PERIODO : Período"/></prompt-parameters><level id="lvl_ezvzv1" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_ezvzv2" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+     TAB.NUNOTA
+	   ,TAB.NUMNOTA
+	   ,TAB.DTNEG
+    ,TAB.CODPARC
+    ,TAB.NOMEPARC
+    ,TAB.CODPARCTRANSP
+    ,TAB.TRASNP
+    ,TAB.VLROUTROSFRETE
+    ,TAB.VLR_FRETE_NOTA
+    ,TAB.FRETE_COBRADO
+    ,TAB.VLR_FRETE_NOTA + TAB.VLROUTROSFRETE - TAB.FRETE_COBRADO AS DIF
+	,(ABS(TAB.VLR_FRETE_NOTA + TAB.VLROUTROSFRETE - TAB.FRETE_COBRADO) / (TAB.VLR_FRETE_NOTA +TAB.VLROUTROSFRETE))*100 AS ANALISEP
+FROM(
+SELECT 
+    CAB.NUNOTA,
+	   CAB.NUMNOTA,
+    CAB.DTNEG,
+    CAB.CODPARC,
+    PAR.NOMEPARC,
+    CAB.CODPARCTRANSP,
+    (SELECT P.NOMEPARC FROM TGFPAR P WHERE CAB.CODPARCTRANSP = P.CODPARC) AS TRASNP,
+    NVL(CAB.AD_VLROUTROSFRETE, 0) AS VLROUTROSFRETE,
+    (
+        SELECT NVL(SUM(DIN.BASE),0)
+        FROM TGFDIN DIN 
+        WHERE DIN.NUNOTA = CAB.NUNOTA 
+          AND DIN.CODINC = 3 
+          AND DIN.CODIMP = 1
+    ) AS VLR_FRETE_NOTA,
+    NVL(SUM(C.VLRNOTA), 0) AS FRETE_COBRADO
+FROM TGFCAB CAB
+INNER JOIN TGFPAR PAR 
+    ON PAR.CODPARC = CAB.CODPARC
+INNER JOIN TGFNCT NCT 
+    ON NCT.CHAVENFE = CAB.CHAVENFE
+INNER JOIN TGFCAB C 
+    ON C.NUNOTA = NCT.NUNOTA
+   AND C.TIPMOV = 'C'
+WHERE CAB.TIPMOV = 'V'
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+  AND ((CAB.TIPFRETE = 'S' AND CAB.VLRFRETE > 0)
+        OR CAB.AD_VLROUTROSFRETE > 0)
+  AND CAB.DTNEG >= :P_PERIODO.INI  
+	 AND CAB.DTNEG <= :P_PERIODO.FIN
+  AND CAB.CODTIPOPER IN (1100,1124)
+GROUP BY 
+    CAB.NUNOTA,
+	   CAB.NUMNOTA,
+	   CAB.DTNEG,
+    CAB.CODPARC,
+    PAR.NOMEPARC,
+    CAB.CODPARCTRANSP,
+    CAB.AD_VLROUTROSFRETE,
+    CAB.CHAVENFE
+)TAB]]></expression><metadata><field name="NUNOTA" label="Nr. Unico " type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Emissão" type="D" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parc" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Nome Parceiro " type="S" visible="true" useFooter="false"></field><field name="CODPARCTRANSP" label="Cód. Transp." type="I" visible="true" useFooter="false"></field><field name="TRASNP" label="Transportadora" type="S" visible="true" useFooter="false"></field><field name="VLROUTROSFRETE" label="Vlr. Frete Outros" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="VLR_FRETE_NOTA" label="Vlr. Frete Nota " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="FRETE_COBRADO" label="Frete Cobrado " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="DIF" label="Dif" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="ANALISEP" label="Analise Percentual" type="F" visible="true" useFooter="false" mask="#.##0,00 %"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher></grid></container></level></gadget>

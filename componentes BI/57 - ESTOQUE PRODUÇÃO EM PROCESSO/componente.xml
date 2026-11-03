@@ -1,0 +1,163 @@
+<gadget ><prompt-parameters><parameter  id="PER" description="Período Início OP" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="PER : Período"/><parameter  id="P_CODPRC" description="Processo Produtivo" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false" order="1" label="P_CODPRC : multiList:Text"><expression type="SQL"><![CDATA[SELECT PRC.CODPRC AS VALUE,
+PRC.DESCRABREV AS LABEL
+FROM TPRPRC PRC WHERE 
+PRC.IDPROC IN (SELECT MAX(P.IDPROC) FROM TPRPRC P WHERE P.CODPRC = PRC.CODPRC)
+ORDER BY 1]]></expression></parameter><parameter  id="P_CODPRODPA" description="Código PA" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="2" label="P_CODPRODPA : Entidade/Tabela"/></prompt-parameters><level id="lvl_5qzv1y" description="Principal"><args><arg  id="A_CODPRODPA" type="integer" label="A_CODPRODPA : Número Inteiro"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="69.14571583341299"><container orientacao="H" tamanhoRelativo="6.681805131417534"><simple-value id="svl_ad8ivo7"><value-expression><![CDATA[<span style='color: #FF0000;'><b>Consolidação por PA, clique aqui!</b></span>]]></value-expression><on-click  navigate-to="lvl_ad8ivpe"/></simple-value></container><container orientacao="V" tamanhoRelativo="94.32829587868348"><grid id="grd_ad8ivo6" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[WITH BASE_KEYS AS (
+  SELECT DISTINCT MP.CODPRODMP AS CODPRODMP, TRUNC(PROC.DHINST) AS DTINST
+  FROM TPRIPROC PROC
+  INNER JOIN TPRLPA LPA ON PROC.IDPROC = LPA.IDPROC
+  INNER JOIN TPRPRC PRC ON PRC.IDPROC = PROC.IDPROC
+  INNER JOIN TPREFX FX ON FX.IDPROC = PROC.IDPROC
+  INNER JOIN TPRLMP MP ON MP.IDEFX = FX.IDEFX AND MP.CODPRODPA = LPA.CODPRODPA
+  WHERE TRUNC(PROC.DHINST) BETWEEN :PER.INI AND :PER.FIN
+    AND PRC.CODPRC IN :P_CODPRC
+),
+CUSTOS AS (
+  SELECT CODPRODMP, DTINST,
+         OBTEMCUSTO_SPARK(CODPRODMP,'S',1,'N',0,'N',' ',DTINST,6) AS CUSTO_6,
+         OBTEMCUSTO_SPARK(CODPRODMP,'S',1,'N',0,'N',' ',DTINST,1) AS CUSTO_1
+  FROM BASE_KEYS
+)
+  SELECT   CODPRODPA,
+           DESCRPA,
+          ROUND(SUM(QTDPRODUZIR), 4) AS QTDPRODUZIR,
+           CODPRODMP,
+           DESCRMP,
+          ROUND(AVG(QTDMISTURA), 4) AS QTDMISTURA,
+          ROUND(SUM(SALDOPRODPA), 4) AS SALDOPRODPA,
+          ROUND(SUM(SALDOMP), 4) AS SALDOMP,
+          ROUND(AVG(CUSTOUNITMP), 4) AS CUSTOUNIMP,
+          ROUND(AVG(CUSTOSALDOMP), 4) AS CUSTOSALDOMP,
+          ROUND(AVG(CUSTOUNITMPGERENCIAL), 4) AS CUSTOUNIMPGERENCIAL,
+          ROUND(AVG(CUSTOSALDOMPGERENCIAL), 4) AS CUSTOSALDOMPGERENCIAL,
+          ROUND(SUM(NVL(QTDPA, 0)), 4) AS QTDPA
+    FROM   (  SELECT   PROC.IDIPROC,
+                       LPA.CODPRODPA,
+                       PROPA.DESCRPROD AS DESCRPA,
+                       IPA.QTDPRODUZIR,
+                       MP.CODPRODMP,
+                       PROMP.DESCRPROD AS DESCRMP,
+                       SUM (MP.QTDMISTURA) AS QTDMISTURA,
+                       NVL (PROD.QTDPA, 0) AS QTDPA,
+                       IPA.QTDPRODUZIR - NVL (PROD.QTDPA, 0) AS SALDOPRODPA,
+                      CAST((IPA.QTDPRODUZIR - NVL(PROD.QTDPA, 0))
+                           * SUM(MP.QTDMISTURA) AS NUMBER(20,4)) AS SALDOMP,
+                      CAST(ROUND(MAX(CS.CUSTO_6), 4) AS NUMBER(18,4)) AS CUSTOUNITMP,
+                      CAST(ROUND(MAX(CS.CUSTO_6)
+                           * (IPA.QTDPRODUZIR - NVL(PROD.QTDPA, 0))
+                           * SUM(MP.QTDMISTURA), 4) AS NUMBER(20,4)) AS CUSTOSALDOMP,
+                      CAST(ROUND(MAX(CS.CUSTO_1), 4) AS NUMBER(18,4)) AS CUSTOUNITMPGERENCIAL,
+                      CAST(ROUND(MAX(CS.CUSTO_1)
+                           * (IPA.QTDPRODUZIR - NVL(PROD.QTDPA, 0))
+                           * SUM(MP.QTDMISTURA), 4) AS NUMBER(20,4)) AS CUSTOSALDOMPGERENCIAL,
+                       PRC.DESCRABREV AS PROCESSOPROD,
+                       PRC.CODPRC AS CODIGOPRC
+                FROM                           TPRIPROC PROC
+                                            INNER JOIN
+                                               TPRLPA LPA
+                                            ON (PROC.IDPROC = LPA.IDPROC)
+                                         INNER JOIN
+                                            TPRPRC PRC
+                                         ON (PRC.IDPROC = PROC.IDPROC)
+                                      INNER JOIN
+                                         TPREFX FX
+                                      ON (FX.IDPROC = PROC.IDPROC)
+                                   INNER JOIN
+                                   TPRIPA IPA
+                                   ON (IPA.IDIPROC = PROC.IDIPROC
+                                       AND IPA.CODPRODPA = LPA.CODPRODPA)
+                                INNER JOIN
+                                   TPRLMP MP
+                                ON (MP.IDEFX = FX.IDEFX
+                                    AND MP.CODPRODPA = LPA.CODPRODPA)
+                             INNER JOIN
+                                TGFPRO PROPA
+                             ON (PROPA.CODPROD = LPA.CODPRODPA)
+                          INNER JOIN
+                             TGFPRO PROMP
+                          ON (PROMP.CODPROD = MP.CODPRODMP)
+                       LEFT JOIN
+                          (  SELECT   NVL (SUM (I.QTDNEG), 0) AS QTDPA, C.IDIPROC
+                               FROM      TGFCAB C
+                                      INNER JOIN
+                                         TGFITE I
+                                      ON (C.NUNOTA = I.NUNOTA)
+                              WHERE       C.TIPMOV = 'F'
+                                      AND I.USOPROD = 'V'
+                                      AND I.ATUALESTOQUE = 1
+                                      AND C.DTNEG BETWEEN :PER.INI AND :PER.FIN
+                           GROUP BY   C.IDIPROC) PROD
+                       ON (PROD.IDIPROC = PROC.IDIPROC)
+                       LEFT JOIN CUSTOS CS ON CS.CODPRODMP = MP.CODPRODMP AND CS.DTINST = TRUNC(PROC.DHINST)
+               WHERE   TRUNC (PROC.DHINST) BETWEEN :PER.INI AND :PER.FIN
+            AND PRC.CODPRC IN :P_CODPRC
+            GROUP BY   PROC.IDIPROC,
+                       LPA.CODPRODPA,
+                       PROPA.DESCRPROD,
+                       IPA.QTDPRODUZIR,
+                       MP.CODPRODMP,
+                       PROMP.DESCRPROD,
+                       NVL (PROD.QTDPA, 0),
+                       TRUNC (PROC.DHINST),
+                       PRC.DESCRABREV,
+                       PRC.CODPRC) DADOS
+   WHERE   SALDOMP > 0
+AND (CODPRODPA = :P_CODPRODPA OR :P_CODPRODPA IS NULL)
+GROUP BY   CODPRODPA,
+           DESCRPA,
+           CODPRODMP,
+           DESCRMP
+ORDER BY   SALDOPRODPA DESC, CODPRODPA, CODPRODMP]]></expression><metadata><field name="CODPRODPA" label="Cód. PA" type="I" visible="true" useFooter="false"></field><field name="DESCRPA" label="Produto Acabado" type="S" visible="true" useFooter="false"></field><field name="QTDPRODUZIR" label="Qtde Produzir" type="F" visible="true" useFooter="false"></field><field name="CODPRODMP" label="Cód. MP" type="I" visible="true" useFooter="false"></field><field name="DESCRMP" label="Matéria Prima" type="S" visible="true" useFooter="false"></field><field name="QTDMISTURA" label="Qtd. Fórmula" type="F" visible="true" useFooter="false" mask="###0,0000"></field><field name="SALDOPRODPA" label="Saldo a Produzir PA" type="F" visible="true" useFooter="false" mask="###0,0000"></field><field name="SALDOMP" label="Saldo MPs em Processo" type="F" visible="true" useFooter="SUM" mask="###0,0000"></field><field name="CUSTOUNIMP" label="Custo Unit. MP" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"></field><field name="CUSTOSALDOMP" label="Custo MP Saldo Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,0000"></field><field name="CUSTOUNIMPGERENCIAL" label="Custo Unit. MP Gerencial" type="I" visible="true" useFooter="false" mask="R$ #.##0,0000"></field><field name="CUSTOSALDOMPGERENCIAL" label="Custo MP Saldo Total Gerencial" type="I" visible="true" useFooter="SUM" mask="R$ #.##0,0000"></field><field name="QTDPA" label="Qtde Apontada PA" type="I" visible="true" useFooter="SUM" mask="###0,0000"></field></metadata><refresh-details  ui-list="grd_ad8ivnw">
+              <param id="A_CODPRODPA">$CODPRODPA</param>
+            </refresh-details></grid></container></container><container orientacao="V" tamanhoRelativo="31.86438517668802"><grid id="grd_ad8ivnw" useNewGrid="S"><args><arg id="A_CODPRODPA" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[WITH PROD AS (
+  SELECT C.IDIPROC, NVL(SUM(I.QTDNEG),0) AS QTDPA
+  FROM TGFCAB C
+  INNER JOIN TGFITE I ON I.NUNOTA = C.NUNOTA
+  WHERE C.TIPMOV='F'
+    AND I.USOPROD='V'
+    AND I.ATUALESTOQUE=1
+    AND C.DTNEG BETWEEN :PER.INI AND :PER.FIN
+  GROUP BY C.IDIPROC
+)
+SELECT DISTINCT PROC.IDIPROC,
+       PROC.NROLOTE,
+       LPA.CODPRODPA,
+       PROPA.DESCRPROD AS DESCRPA,
+       IPA.QTDPRODUZIR,
+       NVL(PROD.QTDPA,0) AS QTDPA,
+       IPA.QTDPRODUZIR - NVL(PROD.QTDPA,0) AS SALDOPRODPA,
+       PRC.DESCRABREV AS PROCESSOPROD,
+       PRC.CODPRC AS CODIGOPRC
+FROM TPRIPROC PROC
+INNER JOIN TPRLPA LPA ON PROC.IDPROC = LPA.IDPROC
+INNER JOIN TPRPRC PRC ON PRC.IDPROC = PROC.IDPROC
+INNER JOIN TPREFX FX ON FX.IDPROC = PROC.IDPROC
+INNER JOIN TPRIPA IPA ON IPA.IDIPROC = PROC.IDIPROC AND IPA.CODPRODPA = LPA.CODPRODPA
+INNER JOIN TGFPRO PROPA ON PROPA.CODPROD = LPA.CODPRODPA
+LEFT JOIN PROD ON PROD.IDIPROC = PROC.IDIPROC
+WHERE TRUNC(PROC.DHINST) BETWEEN :PER.INI AND :PER.FIN
+  AND PRC.CODPRC IN :P_CODPRC
+  AND IPA.QTDPRODUZIR - NVL(PROD.QTDPA,0) > 0
+  AND IPA.CODPRODPA = :A_CODPRODPA
+ORDER BY PROC.IDIPROC]]></expression><metadata><field name="IDIPROC" label="Nro OP" type="I" visible="true" useFooter="false"></field><field name="NROLOTE" label="Nro Lote" type="S" visible="true" useFooter="false"></field><field name="CODPRODPA" label="Código PA" type="I" visible="true" useFooter="false"></field><field name="DESCRPA" label="Produto" type="S" visible="true" useFooter="false"></field><field name="QTDPRODUZIR" label="Qtde Lote" type="I" visible="true" useFooter="SUM"></field><field name="QTDPA" label="Qtde Apontada PA" type="I" visible="true" useFooter="SUM"></field><field name="SALDOPRODPA" label="Saldo a Produzir PA" type="I" visible="true" useFooter="SUM"></field><field name="PROCESSOPROD" label="Processo Produtivo" type="S" visible="true" useFooter="false"></field><field name="CODIGOPRC" label="Código Processo" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.producao.rotina.OrdemProducao">
+            <IDIPROC>$IDIPROC</IDIPROC>
+          </on-click-launcher></grid></container></container></level><level id="lvl_ad8ivpe" description="ConsolidadoPA"><args >
+          <arg id="A_CODPRODPA" type="integer"/>
+        </args><container orientacao="V" tamanhoRelativo="100"><grid id="grd_ad8ivpg" useNewGrid="S"><args><arg id="A_CODPRODPA" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[SELECT DISTINCT PROC.IDIPROC, PROC.NROLOTE,LPA.CODPRODPA, PROPA.DESCRPROD AS DESCRPA, IPA.QTDPRODUZIR, 
+ NVL(PROD.QTDPA,0) AS QTDPA, IPA.QTDPRODUZIR-NVL(PROD.QTDPA,0) AS SALDOPRODPA, PRC.DESCRABREV AS PROCESSOPROD,
+PRC.CODPRC AS CODIGOPRC
+FROM TPRIPROC PROC INNER JOIN TPRLPA LPA ON (PROC.IDPROC = LPA.IDPROC)
+INNER JOIN TPRPRC PRC ON (PRC.IDPROC = PROC.IDPROC)
+INNER JOIN TPREFX FX ON (FX.IDPROC = PROC.IDPROC)
+INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC AND IPA.CODPRODPA = LPA.CODPRODPA)
+INNER JOIN TGFPRO PROPA ON (PROPA.CODPROD = LPA.CODPRODPA)
+LEFT JOIN (SELECT NVL(SUM(I.QTDNEG),0) AS QTDPA, C.IDIPROC FROM TGFCAB C INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)
+WHERE C.TIPMOV='F' AND I.USOPROD='V' AND I.ATUALESTOQUE=1 AND C.DTNEG  BETWEEN :PER.INI AND :PER.FIN
+GROUP BY C.IDIPROC) PROD ON (PROD.IDIPROC = PROC.IDIPROC)
+WHERE TRUNC(PROC.DHINST) BETWEEN :PER.INI AND :PER.FIN
+AND PRC.CODPRC IN :P_CODPRC
+AND IPA.QTDPRODUZIR-NVL(PROD.QTDPA,0) > 0
+AND (IPA.CODPRODPA = :P_CODPRODPA OR :P_CODPRODPA IS NULL)
+ORDER BY PROC.IDIPROC]]></expression><metadata><field name="IDIPROC" label="Nro OP" type="I" visible="true" useFooter="false"></field><field name="NROLOTE" label="Nro Lote" type="S" visible="true" useFooter="false"></field><field name="CODPRODPA" label="Código PA" type="I" visible="true" useFooter="false"></field><field name="DESCRPA" label="Produto" type="S" visible="true" useFooter="false"></field><field name="QTDPRODUZIR" label="Qtde Lote" type="I" visible="true" useFooter="SUM" mask="#.##0"></field><field name="QTDPA" label="Qtde Apontada PA" type="I" visible="true" useFooter="SUM" mask="#.##0"></field><field name="SALDOPRODPA" label="Saldo a Produzir PA" type="I" visible="true" useFooter="SUM" mask="#.##0"></field><field name="PROCESSOPROD" label="Processo Produtivo" type="S" visible="true" useFooter="false"></field><field name="CODIGOPRC" label="Código Processo" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.producao.rotina.OrdemProducao">
+          <IDIPROC>$IDIPROC</IDIPROC>
+        </on-click-launcher></grid></container></level></gadget>

@@ -19,8 +19,8 @@ java/precos/recalcpreco.java
 
 # ── Dados sensíveis ──────────────────────────────────────────────────────────
 # dash PRODUCAO DIARIA POR SETOR (volumetria e estrutura interna)
-componentes BI/PRODUCAO DIARIA POR SETOR/README.md
-componentes BI/PRODUCAO DIARIA POR SETOR/00_MAPEAMENTO_TABELAS.sql
+componentes BI/216 - PRODUÇÃO DIARIA POR SETOR/README.md
+componentes BI/216 - PRODUÇÃO DIARIA POR SETOR/00_MAPEAMENTO_TABELAS.sql
 # dash PRODUCAO DIARIA POR COLABORADOR (volumetria e nomes de colaboradores)
-componentes BI/PRODUCAO DIARIA POR COLABORADOR/README.md
-componentes BI/PRODUCAO DIARIA POR COLABORADOR/00_MAPEAMENTO_COLABORADOR.sql
+componentes BI/209 - PRODUÇÃO DIÁRIA POR COLABORADOR/README.md
+componentes BI/209 - PRODUÇÃO DIÁRIA POR COLABORADOR/00_MAPEAMENTO_COLABORADOR.sql

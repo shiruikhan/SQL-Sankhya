@@ -1,0 +1,24 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_NUNOTA" description="Nr. Único do Pedido" metadata="integer" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_uurr1l" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_uurr1m" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CO2.NUNOTAORIG,	CO2.NUCONF,	CASE WHEN CO2.STATUS = 'F' THEN 'FINALIZADO' ELSE 'EM ABERTO' END AS STATUS,	CO2.CODUSUCONF,	(SELECT DISTINCT NOMEUSU FROM TSIUSU WHERE CODUSU = CO2.CODUSUCONF) AS NOMECONF,	to_char(DHINICONF, 'DD/MM/yyyy hh24:mi:ss') AS INICONF,	to_char(DHFINCONF, 'DD/MM/yyyy hh24:mi:ss') AS FIMCONF,	COI.CODBARRA,	COI.CODPROD,	PRO.DESCRPRODFROM TGFCON2 CO2	INNER JOIN TGFCOI2 COI ON CO2.NUCONF = COI.NUCONF	INNER JOIN TGFPRO PRO ON COI.CODPROD = PRO.CODPRODWHERE CO2.NUNOTAORIG = :P_NUNOTA]]></expression>
+        <metadata>
+          <field name="NUNOTAORIG" label="Nr. Único do Pedido" type="I" visible="true" useFooter="false"/>
+          <field name="NUCONF" label="Nr. Conferência" type="I" visible="true" useFooter="false"/>
+          <field name="STATUS" label="Status" type="S" visible="true" useFooter="false"/>
+          <field name="CODUSUCONF" label="Cód. Usuário" type="I" visible="true" useFooter="false"/>
+          <field name="NOMECONF" label="Nome do Conferente" type="S" visible="true" useFooter="false"/>
+          <field name="INICONF" label="Início da Conferência" type="S" visible="true" useFooter="false"/>
+          <field name="FIMCONF" label="Fim da Conferência" type="S" visible="true" useFooter="false"/>
+          <field name="CODBARRA" label="Código de Barra" type="S" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

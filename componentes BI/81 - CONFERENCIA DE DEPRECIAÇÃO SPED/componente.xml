@@ -1,0 +1,120 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="P_PERIODO : Período"/></prompt-parameters><level id="lvl_a3y6591" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_a3y6592" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+    'F120'          AS REGISTRO,
+    PRO.CODPROD     AS CODPROD,
+    BEM.CODBEM      AS CODBEM,
+    PRO.DESCRPROD   AS DESCRPROD,
+    BEM.NUMNOTA     AS NUMNOTA, 
+    BEM.DTINICIODEP AS DTINICIODEP,
+    PRO.IDENTIMOB   AS IDENTIMOB,
+    CAST(SNK_GET_ORIGEM_PRODUTO(PRO.CODPROD, 2) AS VARCHAR2(10)) AS ORIGPROD,
+    (CASE WHEN NVL(BEM.UTILIMOB, 0) = 0 THEN PRO.UTILIMOB ELSE BEM.UTILIMOB END) AS UTILIMOB, 
+    PRO.GRUPOPIS       AS GRUPOPIS,
+    PRO.GRUPOCOFINS    AS GRUPOCOFINS,
+    PRO.NATBCPISCOFINS AS NATBCPISCOFINS,
+    MOV.CODEMP         AS CODEMP,
+    BEM.CSTCOFINS      AS CSTCOFINS,
+    BEM.CSTPIS         AS CSTPIS,
+    BEM.VLREXCBASECRED AS VLREXCBASECRED,
+    BEM.ALIQPIS        AS ALIQPIS,
+    BEM.ALIQCOFINS     AS ALIQCOFINS,
+    CAST(SNK_GET_CONTACONTABIL_IMOB_EFD('C', 'F120', MOV.CODEMP, MOV.CODPROD, MOV.NUMLOTE, MOV.NUMLANC, MOV.REFERENCIA) AS VARCHAR2(60)) AS CTACTB,
+    CAST(SNK_GET_CENTROCUSTO_IMOB_EFD('C', 'F120', MOV.CODEMP, MOV.CODPROD, MOV.NUMLOTE, MOV.NUMLANC, MOV.REFERENCIA) AS FLOAT) AS CODCENCUS, 
+    SUM(MOV.VLRDEP) AS VLRDEP, 
+    SUM(CASE WHEN ((PRO.TEMCREDPISCOFINSDEPR = 'S') OR (BEM.TEMCREDPISCOFINSDEPR = 'S')) THEN MOV.VLRDEP ELSE 0 END) AS BASECRED
+
+FROM TCIMOV MOV
+INNER JOIN TGFPRO PRO ON MOV.CODPROD = PRO.CODPROD
+INNER JOIN TCIBEM BEM ON (MOV.CODBEM = BEM.CODBEM AND MOV.CODPROD = BEM.CODPROD)
+
+WHERE MOV.REFERENCIA BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN
+    AND (MOV.CODEMP = 1 OR MOV.CODEMP IS NULL)
+    AND MOV.TIPMOV = 'A'
+    AND NVL(BEM.TEMCREDPISCOFINSDEPR,'N') = 'S'
+   
+GROUP BY
+    PRO.CODPROD, BEM.CODBEM, PRO.DESCRPROD, BEM.NUMNOTA, BEM.DTINICIODEP, PRO.IDENTIMOB, 
+    CAST(SNK_GET_ORIGEM_PRODUTO(PRO.CODPROD, 2) AS VARCHAR2(10)),
+    (CASE WHEN NVL(BEM.UTILIMOB, 0) = 0 THEN PRO.UTILIMOB ELSE BEM.UTILIMOB END),
+    PRO.GRUPOPIS, PRO.GRUPOCOFINS, PRO.NATBCPISCOFINS, MOV.CODEMP, BEM.CSTCOFINS, BEM.CSTPIS,
+    BEM.VLREXCBASECRED, BEM.ALIQPIS, BEM.ALIQCOFINS,
+    CAST(SNK_GET_CONTACONTABIL_IMOB_EFD('C', 'F120', MOV.CODEMP, MOV.CODPROD, MOV.NUMLOTE, MOV.NUMLANC, MOV.REFERENCIA) AS VARCHAR2(60)),
+    CAST(SNK_GET_CENTROCUSTO_IMOB_EFD('C', 'F120', MOV.CODEMP, MOV.CODPROD, MOV.NUMLOTE, MOV.NUMLANC, MOV.REFERENCIA) AS FLOAT)
+
+UNION ALL 
+
+SELECT 
+    'F130'          AS REGISTRO,
+    BM.CODPROD      AS CODPROD,    
+    BM.CODBEM       AS CODBEM,
+    BM.DESCRPROD    AS DESCRPROD, 
+    BM.NUMNOTA      AS NUMNOTA,
+    BM.DTINICIODEP  AS DTINICIODEP,
+    BM.IDENTIMOB    AS IDENTIMOB,
+    CAST(BM.ORIGPROD AS VARCHAR2(10)) AS ORIGPROD,
+    BM.UTILIMOB     AS UTILIMOB,
+    BM.GRUPOPIS     AS GRUPOPIS,
+    BM.GRUPOCOFINS  AS GRUPOCOFINS,
+    BM.NATBCPISCOFINS AS NATBCPISCOFINS,
+    BM.CODEMP       AS CODEMP,
+    BM.CSTCOFINS    AS CSTCOFINS,
+    BM.CSTPIS       AS CSTPIS,
+    BM.VLREXCBASECRED AS VLREXCBASECRED,
+    BM.ALIQPIS      AS ALIQPIS,
+    BM.ALIQCOFINS   AS ALIQCOFINS,
+    '0'             AS CTACTB,
+    0               AS CODCENCUS,
+    0               AS VLRDEP,
+    SUM(BM.VL_BC_PISCOFINS) AS BASECRED
+FROM
+  (SELECT
+        BEM.IDENTIMOB, BEM.NUMNOTA, BEM.CODBEM, BEM.CODEMP, BEM.CODPROD, BEM.NATBCPISCOFINS,
+        BEM.DESCRPROD, BEM.ORIGPROD, BEM.GRUPOPIS, BEM.GRUPOCOFINS, BEM.DTINICIODEP, BEM.UTILIMOB,
+        BEM.MES_OPER_AQUIS, BEM.MES_OPER_AQUIS_INSERT, BEM.IND_NR_PARC, BEM.CSTPIS, BEM.ALIQPIS,
+        BEM.CSTCOFINS, BEM.ALIQCOFINS, BEM.VLRAQUISICAO, BEM.VL_BC_PISCOFINS, BEM.VLREXCBASECRED
+   FROM
+    (SELECT
+        BEM.CODEMP, BEM.NUMNOTA, BEM.CODPROD, PRO.DESCRPROD, PRO.GRUPOPIS, PRO.GRUPOCOFINS, BEM.CODBEM, PRO.IDENTIMOB,
+        CASE WHEN SNK_GET_ORIGEM_PRODUTO(PRO.CODPROD, 1) IN ('0','3','4','5','8') THEN 0 ELSE 1 END AS ORIGPROD,
+        CASE WHEN BEM.UTILIMOB IS NOT NULL THEN BEM.UTILIMOB ELSE PRO.UTILIMOB END AS UTILIMOB,
+        SNK_FORMAT_DATE(BEM.DTCOMPRA, 'MMYYYY') AS MES_OPER_AQUIS,
+        BEM.DTCOMPRA AS MES_OPER_AQUIS_INSERT,
+        CASE WHEN BEM.PISCOFMP540 = 'S' THEN 9
+             WHEN BEM.NPARCPISCOF = 1 THEN 1
+             WHEN BEM.NPARCPISCOF = 12 THEN 2
+             WHEN BEM.NPARCPISCOF = 24 THEN 3
+             WHEN BEM.NPARCPISCOF = 48 THEN 4
+             WHEN BEM.NPARCPISCOF = 6 THEN 5
+             ELSE 9 END AS IND_NR_PARC,
+        BEM.CSTPIS, BEM.DTINICIODEP, BEM.ALIQPIS, PRO.NATBCPISCOFINS, BEM.CSTCOFINS, BEM.ALIQCOFINS, BEM.VLRAQUISICAO,
+        ROUND(BEM.VLRAQUISICAO / SNK_GETNPARCPISCOF(BEM.NPARCPISCOF, BEM.PISCOFMP540, BEM.DTCOMPRA), 2) AS VL_BC_PISCOFINS,
+        BEM.VLREXCBASECRED
+      FROM TCIBEM BEM
+      LEFT JOIN TGFPRO PRO ON BEM.CODPROD = PRO.CODPROD
+      WHERE BEM.TEMCREDPISCOFINSDEPR <> 'S'
+      AND (SNK_GETDTBAIXABEM(BEM.CODPROD, BEM.CODBEM,:P_PERIODO.INI) > :P_PERIODO.INI OR
+           SNK_GETDTBAIXABEM(BEM.CODPROD, BEM.CODBEM, :P_PERIODO.INI) IS NULL)
+      AND (SNK_TRUNC_DATE(BEM.DTCOMPRA, 'MM') <= :P_PERIODO.INI )
+      AND SNK_GETNPARCPISCOF(BEM.NPARCPISCOF, BEM.PISCOFMP540, BEM.DTCOMPRA) > 0
+      AND :P_PERIODO.INI <= SNK_DATE_ADD(SNK_TRUNC_DATE(BEM.DTCOMPRA, 'MM'), 'MM',
+                                SNK_GETNPARCPISCOF(BEM.NPARCPISCOF, BEM.PISCOFMP540, BEM.DTCOMPRA) +
+                                SNK_GETMESESSEMPIS(BEM.CODPROD, BEM.CODBEM,:P_PERIODO.INI) - 1)
+      AND (BEM.CODEMP = 1)
+      AND NVL(BEM.VLRAQUISICAO,0) > 0
+    ) BEM
+    LEFT JOIN TCIMOV MOV ON MOV.CODPROD = BEM.CODPROD
+                            AND MOV.CODBEM = BEM.CODBEM
+                            AND MOV.REFERENCIA = :P_PERIODO.INI
+                            AND MOV.TIPMOV IN ('A','C')
+    WHERE (MOV.SEQUENCIA IS NULL OR
+           MOV.SEQUENCIA = (SELECT MAX(M2.SEQUENCIA) FROM TCIMOV M2
+                            WHERE M2.CODPROD = MOV.CODPROD
+                            AND M2.CODBEM = MOV.CODBEM
+                            AND M2.REFERENCIA = :P_PERIODO.INI
+                            AND M2.TIPMOV IN ('A','C')))
+  ) BM
+GROUP BY
+    BM.IDENTIMOB, BM.NUMNOTA, BM.GRUPOPIS, BM.GRUPOCOFINS, BM.CODBEM, BM.CODEMP, BM.CODPROD, BM.NATBCPISCOFINS,
+    BM.DESCRPROD, BM.ORIGPROD, BM.UTILIMOB, BM.DTINICIODEP, BM.MES_OPER_AQUIS, BM.MES_OPER_AQUIS_INSERT,
+    BM.IND_NR_PARC, BM.CSTPIS, BM.VLREXCBASECRED, BM.ALIQPIS, BM.CSTCOFINS, BM.ALIQCOFINS
+
+ORDER BY 1, 2, 3, 4]]></expression><metadata><field name="REGISTRO" label="Registro" type="S" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto " type="I" visible="true" useFooter="false"></field><field name="CODBEM" label="Cód. Bem" type="S" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Descrição Produto" type="S" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. da Nota " type="I" visible="true" useFooter="false"></field><field name="DTINICIODEP" label="Dt. Inicio Depreciação " type="D" visible="true" useFooter="false"></field><field name="IDENTIMOB" label="Identificação Imobilizado" type="I" visible="true" useFooter="false"></field><field name="ORIGPROD" label="Origem " type="S" visible="true" useFooter="false"></field><field name="UTILIMOB" label="Utilização Imobilizado" type="I" visible="true" useFooter="false"></field><field name="GRUPOPIS" label="Grupo de PIS " type="S" visible="true" useFooter="false"></field><field name="GRUPOCOFINS" label="Grupo de COFINS " type="S" visible="true" useFooter="false"></field><field name="NATBCPISCOFINS" label="Natureza de PIS/COFINS" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="CSTCOFINS" label="CST COFINS " type="I" visible="true" useFooter="false"></field><field name="CSTPIS" label="CST PIS " type="I" visible="true" useFooter="false"></field><field name="VLREXCBASECRED" label="Vlr. Parcela Exclusão BC Crédito" type="F" visible="true" useFooter="false"></field><field name="ALIQPIS" label="Aliq. PIS " type="F" visible="true" useFooter="false"></field><field name="ALIQCOFINS" label="Aliq. COFINS " type="F" visible="true" useFooter="false"></field><field name="CTACTB" label="Conta Contábil " type="S" visible="true" useFooter="false"></field><field name="CODCENCUS" label="Centro de Resultado " type="F" visible="true" useFooter="false"></field><field name="VLRDEP" label="Vlr. depreciação " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="BASECRED" label="Base de Credito" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata></grid></container></level></gadget>

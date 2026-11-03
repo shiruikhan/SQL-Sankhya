@@ -1,0 +1,51 @@
+<gadget ><prompt-parameters><parameter  id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="0" label="P_CODPROD : Entidade/Tabela"/><parameter  id="P_CODPARC" description="Fornecedor" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_ANO" description="Ano" metadata="integer" required="true" keep-last="true" keep-date="false" default="2024" order="2" label="P_ANO : Número Inteiro"/><parameter  id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="false" keep-date="false" order="3" label="P_CODGRUPOPROD : Entidade/Tabela"/></prompt-parameters><level id="lvl_aos106o" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_aos106p" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Relação de Vendas/Produtos por Previsão de Entrega]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT V.CODPROD,
+	V.DESCRPROD,
+	V.CODVOL,
+	SUM(CASE WHEN V.MES = 1 THEN V.QTDNEG ELSE 0 END) AS JANEIRO,
+	SUM(CASE WHEN V.MES = 2 THEN V.QTDNEG ELSE 0 END) AS FEVEREIRO,
+	SUM(CASE WHEN V.MES = 3 THEN V.QTDNEG ELSE 0 END) AS MAR,
+	SUM(CASE WHEN V.MES = 4 THEN V.QTDNEG ELSE 0 END) AS ABRIL,
+	SUM(CASE WHEN V.MES = 5 THEN V.QTDNEG ELSE 0 END) AS MAIO,
+	SUM(CASE WHEN V.MES = 6 THEN V.QTDNEG ELSE 0 END) AS JUNHO,
+	SUM(CASE WHEN V.MES = 7 THEN V.QTDNEG ELSE 0 END) AS JULHO,
+	SUM(CASE WHEN V.MES = 8 THEN V.QTDNEG ELSE 0 END) AS AGOSTO,
+	SUM(CASE WHEN V.MES = 9 THEN V.QTDNEG ELSE 0 END) AS SETEMBRO,
+	SUM(CASE WHEN V.MES = 10 THEN V.QTDNEG ELSE 0 END) AS OUTUBRO,
+	SUM(CASE WHEN V.MES = 11 THEN V.QTDNEG ELSE 0 END) AS NOVEMBRO,
+	SUM(CASE WHEN V.MES = 12 THEN V.QTDNEG ELSE 0 END) AS DEZEMBRO,
+	V.RAZAOSOCIAL
+FROM (
+	SELECT ITE.CODPROD,
+		PRO.DESCRPROD,
+		ITE.CODVOL, 
+		SUM((ITE.QTDNEG - ITE.QTDENTREGUE)) AS QTDNEG, 
+		EXTRACT(MONTH FROM CAB.DTPREVENT) AS MES,
+		EXTRACT(YEAR FROM CAB.DTPREVENT) AS ANO,
+		PAR.CODPARC || '-' || PAR.RAZAOSOCIAL AS RAZAOSOCIAL
+	FROM TGFITE ITE
+		INNER JOIN TGFCAB CAB ON (ITE.NUNOTA = CAB.NUNOTA AND CAB.STATUSNOTA = 'L')
+		INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+		INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+	WHERE (:P_CODPROD IS NULL OR ITE.CODPROD = :P_CODPROD)
+		AND (:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC)
+		AND CAB.TIPMOV = 'P'
+		AND CAB.DTPREVENT IS NOT NULL
+		AND CAB.PENDENTE = 'S'
+		AND ITE.PENDENTE = 'S'
+        AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+		AND (ITE.QTDNEG - ITE.QTDENTREGUE) > 0
+		AND (:P_CODGRUPOPROD IS NULL OR PRO.CODGRUPOPROD = :P_CODGRUPOPROD)
+	GROUP BY ITE.CODPROD,
+		PRO.DESCRPROD,
+		ITE.CODVOL,
+		EXTRACT(MONTH FROM CAB.DTPREVENT),
+		EXTRACT(YEAR FROM CAB.DTPREVENT),
+		PAR.CODPARC || '-' || PAR.RAZAOSOCIAL
+	ORDER BY ITE.CODPROD
+	) V
+WHERE V.ANO = :P_ANO
+GROUP BY V.CODPROD,
+	V.DESCRPROD,
+	V.CODVOL,
+	V.RAZAOSOCIAL
+ORDER BY V.CODPROD]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="Un. Medida" type="S" visible="true" useFooter="false"></field><field name="JANEIRO" label="Janeiro" type="F" visible="true" useFooter="SUM"></field><field name="FEVEREIRO" label="Fevereiro" type="F" visible="true" useFooter="SUM"></field><field name="MAR" label="Março" type="F" visible="true" useFooter="SUM"></field><field name="ABRIL" label="Abril" type="F" visible="true" useFooter="SUM"></field><field name="MAIO" label="Maio" type="F" visible="true" useFooter="SUM"></field><field name="JUNHO" label="Junho" type="F" visible="true" useFooter="SUM"></field><field name="JULHO" label="Julho" type="F" visible="true" useFooter="SUM"></field><field name="AGOSTO" label="Agosto" type="F" visible="true" useFooter="SUM"></field><field name="SETEMBRO" label="Setembro" type="F" visible="true" useFooter="SUM"></field><field name="OUTUBRO" label="Outubro" type="F" visible="true" useFooter="SUM"></field><field name="NOVEMBRO" label="Novembro" type="F" visible="true" useFooter="SUM"></field><field name="DEZEMBRO" label="Dezembro" type="F" visible="true" useFooter="SUM"></field><field name="RAZAOSOCIAL" label="Parceiro do Pedido" type="S" visible="true" useFooter="false"></field><field name="TOTAL" label="Total" type="F" visible="true" useFooter="SUM"><calculated><formula><![CDATA[$SETEMBRO + $OUTUBRO + $NOVEMBRO + $MAR + $MAIO + $JUNHO + $JULHO + $ABRIL + $AGOSTO + $DEZEMBRO + $FEVEREIRO + $JANEIRO]]></formula></calculated></field></metadata></grid></container></level></gadget>

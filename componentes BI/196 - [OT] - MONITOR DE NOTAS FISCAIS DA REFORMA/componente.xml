@@ -1,0 +1,129 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="0" label="P_PERIODO : Período"/><parameter  id="P_CODEMP" description="Empresa" metadata="multiList:Text" listType="sql" required="false" keep-last="false" keep-date="false" order="1" label="P_CODEMP : multiList:Text"><expression type="SQL"><![CDATA[SELECT CODEMP AS VALUE           ,CODEMP || ' - ' ||  RAZAOABREV AS LABELFROM TSIEMP WHERE CODEMP < 100]]></expression></parameter><parameter  id="P_CODTIPOPER" description="Cod. Tipo de operação " metadata="entity:TipoOperacao@CODTIPOPER,DHALTER" required="false" keep-last="false" keep-date="false" order="2" label="P_CODTIPOPER : Entidade/Tabela"/></prompt-parameters><level id="lvl_ae3r8nv" description="Principal"><args><arg  id="A_STATUS" type="text" label="A_STATUS : Texto"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><chart id="cht_ae3r8nw" type="pizza"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT            COUNT(DISTINCT CAB.NUNOTA) AS QTD_NOTAS    ,'DENTRO DA REFORMA' AS SITUACAOFROM TGFCAB CABINNER JOIN TGFITE ITE         ON ITE.NUNOTA = CAB.NUNOTA INNER JOIN TGFTOP TOP         ON TOP.CODTIPOPER = CAB.CODTIPOPER        AND TOP.DHALTER   = CAB.DHTIPOPER WHERE CAB.DTNEG >= :P_PERIODO.INI  AND CAB.DTNEG <= :P_PERIODO.FIN  AND CAB.CODEMP IN :P_CODEMP  AND (CAB.CODTIPOPER = :P_CODTIPOPER OR :P_CODTIPOPER IS NULL )  AND CAB.STATUSNFE = 'A'  AND EXISTS (SELECT 1              FROM TGFDIN DIN             WHERE DIN.NUNOTA = ITE.NUNOTA              AND DIN.SEQUENCIA = ITE.SEQUENCIA             AND DIN.CCLASSTRIB IS NOT NULL             AND DIN.CODIMP = 14              )UNION ALL SELECT      COUNT(DISTINCT CAB.NUNOTA) AS QTD_NOTAS    ,'FORA DA REFORMA' AS SITUACAOFROM TGFCAB CABINNER JOIN TGFITE ITE         ON ITE.NUNOTA = CAB.NUNOTA INNER JOIN TGFTOP TOP         ON TOP.CODTIPOPER = CAB.CODTIPOPER        AND TOP.DHALTER   = CAB.DHTIPOPER WHERE CAB.DTNEG >= :P_PERIODO.INI  AND CAB.DTNEG <= :P_PERIODO.FIN  AND (CAB.CODTIPOPER = :P_CODTIPOPER OR :P_CODTIPOPER IS NULL )  AND CAB.CODEMP IN :P_CODEMP  AND CAB.STATUSNFE = 'A'  AND NOT EXISTS (SELECT 1              FROM TGFDIN DIN             WHERE DIN.NUNOTA = ITE.NUNOTA              AND DIN.SEQUENCIA = ITE.SEQUENCIA             AND DIN.CCLASSTRIB IS NOT NULL             AND DIN.CODIMP = 14                 )]]></expression><metadata><field name="QTD_NOTAS" label="Qtd. Notas " type="F" visible="true" useFooter="false"></field><field name="SITUACAO" label="Status" type="S" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>QTD_NOTAS</field><nameField>SITUACAO</nameField><refresh-details  ui-list="grd_ae3r8oz">
+                <param id="A_STATUS">$SITUACAO</param>
+              </refresh-details></serie></series></chart></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_ae3r8oz" useNewGrid="S"><args><arg id="A_STATUS" type="text"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+     CAB.NUNOTA 
+    ,CAB.NUMNOTA
+    ,CAB.DTNEG
+    ,CAB.CODEMP
+    ,CAB.CODTIPOPER 
+    ,TOP.DESCROPER
+    ,CAB.NUFOP
+    ,FOP.DESCRICAO
+    ,CAB.CODPARC
+    ,PAR.NOMEPARC
+    ,MAX(CAB.VLRNOTA)    AS VLR_NOTA
+    ,MAX(DIN.CODCST)     AS CST
+    ,MAX(DIN.CCLASSTRIB) AS CLASSIFICACAO
+    ,SUM(CASE WHEN  DIN.CODIMP = 14 THEN DIN.VALOR ELSE 0 END) AS VLR_CBS
+    ,SUM(CASE WHEN  DIN.CODIMP = 12 THEN DIN.VALOR ELSE 0 END) AS VLR_IBS
+    
+
+FROM TGFCAB CAB
+
+INNER JOIN TGFITE ITE 
+        ON ITE.NUNOTA = CAB.NUNOTA 
+
+INNER JOIN TGFPAR PAR 
+    ON PAR.CODPARC = CAB.CODPARC 
+
+INNER JOIN TGFTOP TOP 
+        ON TOP.CODTIPOPER = CAB.CODTIPOPER 
+       AND TOP.DHALTER   = CAB.DHTIPOPER 
+
+
+INNER JOIN TGFDIN DIN 
+    ON DIN.NUNOTA = ITE.NUNOTA 
+      AND DIN.SEQUENCIA = ITE.SEQUENCIA 
+
+LEFT JOIN TGFFOP FOP 
+    ON FOP.NUFOP = CAB.NUFOP
+
+WHERE CAB.DTNEG  >=  :P_PERIODO.INI
+  AND CAB.DTNEG  <=  :P_PERIODO.FIN
+  AND (CAB.CODTIPOPER = :P_CODTIPOPER OR :P_CODTIPOPER IS NULL )
+  AND CAB.CODEMP IN :P_CODEMP  
+  AND CAB.STATUSNFE = 'A'
+  AND 'DENTRO DA REFORMA' = :A_STATUS
+  AND  EXISTS (SELECT 1
+              FROM TGFDIN DIN 
+            WHERE DIN.NUNOTA = ITE.NUNOTA 
+             AND DIN.SEQUENCIA = ITE.SEQUENCIA
+             AND DIN.CCLASSTRIB IS NOT NULL
+             AND DIN.CODIMP IN (12,14)
+              )
+
+GROUP BY  CAB.NUNOTA 
+         ,CAB.NUMNOTA
+         ,CAB.DTNEG		 
+         ,CAB.CODEMP
+         ,CAB.CODPARC
+         ,PAR.NOMEPARC
+         ,CAB.CODTIPOPER 
+         ,TOP.DESCROPER
+         ,CAB.NUFOP
+         ,FOP.DESCRICAO
+UNION ALL 
+
+SELECT 
+     CAB.NUNOTA 
+    ,CAB.NUMNOTA
+    ,CAB.DTNEG
+    ,CAB.CODEMP
+    ,CAB.CODTIPOPER 
+    ,TOP.DESCROPER
+    ,CAB.NUFOP
+    ,FOP.DESCRICAO
+    ,CAB.CODPARC
+    ,PAR.NOMEPARC
+    ,MAX(CAB.VLRNOTA)    AS VLR_NOTA
+    ,MAX(DIN.CODCST)     AS CST
+    ,MAX(DIN.CCLASSTRIB) AS CLASSIFICACAO
+    ,SUM(CASE WHEN  DIN.CODIMP = 14 THEN DIN.VALOR ELSE 0 END) AS VLR_CBS
+    ,SUM(CASE WHEN  DIN.CODIMP = 12 THEN DIN.VALOR ELSE 0 END) AS VLR_IBS
+
+FROM TGFCAB CAB
+
+INNER JOIN TGFITE ITE 
+        ON ITE.NUNOTA = CAB.NUNOTA 
+
+INNER JOIN TGFPAR PAR 
+    ON PAR.CODPARC = CAB.CODPARC 
+
+INNER JOIN TGFTOP TOP 
+        ON TOP.CODTIPOPER = CAB.CODTIPOPER 
+       AND TOP.DHALTER   = CAB.DHTIPOPER 
+
+
+LEFT JOIN TGFDIN DIN 
+    ON DIN.NUNOTA = ITE.NUNOTA 
+      AND DIN.SEQUENCIA = ITE.SEQUENCIA 
+
+LEFT JOIN TGFFOP FOP 
+    ON FOP.NUFOP = CAB.NUFOP
+
+WHERE CAB.DTNEG  >=  :P_PERIODO.INI
+  AND CAB.DTNEG  <=  :P_PERIODO.FIN
+  AND (CAB.CODTIPOPER = :P_CODTIPOPER OR :P_CODTIPOPER IS NULL )
+  AND CAB.CODEMP IN :P_CODEMP
+  AND CAB.STATUSNFE = 'A'
+  AND NOT EXISTS (SELECT 1
+              FROM TGFDIN DIN 
+            WHERE DIN.NUNOTA = ITE.NUNOTA 
+             AND DIN.SEQUENCIA = ITE.SEQUENCIA
+             AND DIN.CCLASSTRIB IS NOT NULL
+             AND DIN.CODIMP IN(12, 14)
+              )
+  AND 'FORA DA REFORMA' = :A_STATUS
+
+GROUP BY  CAB.NUNOTA 
+         ,CAB.NUMNOTA
+		 ,CAB.DTNEG	
+         ,CAB.CODEMP
+         ,CAB.CODPARC
+         ,PAR.NOMEPARC
+         ,CAB.CODTIPOPER 
+         ,TOP.DESCROPER
+         ,CAB.NUFOP
+         ,FOP.DESCRICAO]]></expression><metadata><field name="NUNOTA" label="Nr. Unico " type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"></field><field name="CODEMP" label="Cód. Empresa " type="I" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Cód. tipo de Operação " type="I" visible="true" useFooter="false"></field><field name="DESCROPER" label="Descrição TOP " type="S" visible="true" useFooter="false"></field><field name="NUFOP" label="Cód. Finalidade " type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Descrição " type="S" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parcerio " type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parcerio " type="S" visible="true" useFooter="false"></field><field name="VLR_NOTA" label="Vlr. Nota " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="CST" label="CST" type="S" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Cód. Classificação " type="S" visible="true" useFooter="false"></field><field name="VLR_CBS" label="Vlr. CBS " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="VLR_IBS" label="Vlr. IBS" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher></grid></container></container></level></gadget>

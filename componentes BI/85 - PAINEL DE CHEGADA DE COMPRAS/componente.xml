@@ -1,0 +1,46 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="false" keep-date="true" order="0" label="P_PERIODO : Período"/><parameter  id="P_CODPARC" description="Fornecedor" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_CODPROD" description="Cód. Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="2" label="P_CODPROD : Entidade/Tabela"/></prompt-parameters><level id="lvl_9him0r" description="Principal"><args><arg  id="A_NUNOTA" type="integer" label="A_NUNOTA : Número Inteiro"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="70.21433850702144"><grid id="grd_9him0s" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT DISTINCT CAB.NUNOTA,
+	CAB.DTPREVENT,
+	CAB.NUMNOTA,
+	CAB.VLRNOTA,
+	CAB.DTNEG,
+	CAB.CODPARC,
+	PAR.NOMEPARC,
+	CAB.CODVEND,
+	VEN.APELIDO,
+	CAB.CODEMP,
+	EMP.NOMEFANTASIA,
+	CAB.CODTIPOPER,
+	(SELECT DISTINCT DESCROPER FROM TGFTOP WHERE CODTIPOPER = CAB.CODTIPOPER) AS DESCROPER,
+	CAB.CODNAT,
+	(SELECT DESCRNAT FROM TGFNAT WHERE CODNAT = CAB.CODNAT) AS DESCRNAT
+FROM TGFCAB CAB
+	INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA
+	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+	INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+	INNER JOIN TSIEMP EMP ON CAB.CODEMP = EMP.CODEMP
+WHERE (TRUNC(CAB.DTPREVENT) >= :P_PERIODO.INI AND TRUNC(CAB.DTPREVENT) <= :P_PERIODO.FIN)
+	AND (:P_CODPARC = CAB.CODPARC OR :P_CODPARC IS NULL)
+	AND (:P_CODPROD = ITE.CODPROD OR :P_CODPROD IS NULL)
+	AND CAB.TIPMOV = 'O'
+	AND CAB.STATUSNOTA = 'L'
+	AND CAB.PENDENTE = 'S'
+ORDER BY CAB.DTPREVENT]]></expression><metadata><field name="NUNOTA" label="Nro. Único" type="I" visible="true" useFooter="false"></field><field name="DTPREVENT" label="Previsão de Entrega" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro. Nota" type="I" visible="true" useFooter="false"></field><field name="VLRNOTA" label="Vlr. Nota" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="DTNEG" label="Dt. Neg." type="D" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"></field><field name="CODVEND" label="Comprador" type="I" visible="true" useFooter="false"></field><field name="APELIDO" label="Nome Comprador" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="NOMEFANTASIA" label="Nome Empresa" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Tipo Operação" type="I" visible="true" useFooter="false"></field><field name="DESCROPER" label="Descrição Operação" type="S" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descrição Natureza" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.mgecom.mov.PortalCompras">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher><refresh-details  ui-list="grd_9him07">
+            <param id="A_NUNOTA">$NUNOTA</param>
+          </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="30.79576250307958"><grid id="grd_9him07" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_NUNOTA" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,
+	PRO.DESCRPROD,
+	ITE.CODVOL,
+	ITE.QTDNEG - ITE.QTDENTREGUE AS QTDPENDENTE,
+	ITE.QTDNEG,
+	ITE.VLRUNIT,
+	ITE.VLRTOT,
+	ITE.SEQUENCIA,
+	ITE.CODLOCALORIG,
+	LOC.DESCRLOCAL,
+	ITE.OBSERVACAO
+FROM TGFITE ITE
+	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+	INNER JOIN TGFLOC LOC ON ITE.CODLOCALORIG = LOC.CODLOCAL
+WHERE ITE.NUNOTA = :A_NUNOTA
+ORDER BY ITE.SEQUENCIA]]></expression><metadata><field name="CODPROD" label="Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Descrição Produto" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="Unidade" type="S" visible="true" useFooter="false"></field><field name="QTDPENDENTE" label="Qtd. Pendente" type="F" visible="true" useFooter="false" mask="#.##0,0000"></field><field name="QTDNEG" label="Quantidade" type="F" visible="true" useFooter="false" mask="#.##0,0000"></field><field name="VLRUNIT" label="Vlr. Unitário" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="VLRTOT" label="Vlr. Total" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="SEQUENCIA" label="Sequência" type="I" visible="true" useFooter="false"></field><field name="CODLOCALORIG" label="Local Origem" type="I" visible="true" useFooter="false"></field><field name="DESCRLOCAL" label="Descrição Local" type="S" visible="true" useFooter="false"></field><field name="OBSERVACAO" label="Observação" type="S" visible="true" useFooter="false"></field></metadata></grid></container></container></level></gadget>

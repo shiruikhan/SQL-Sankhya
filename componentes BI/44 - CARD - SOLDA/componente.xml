@@ -1,0 +1,23 @@
+<gadget refresh-time="1800000">
+  <level id="lvl_lpjv8i" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="25">
+          <chart id="cht_lpjv8n" type="gauge" tamTexto="18">
+            <title><![CDATA[Solda]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(APA.QTDAPONTADA) AS PRODUCAO, FX.DESCRICAOFROM TPRAPA APA INNER JOIN TPRAPO APO ON APA.NUAPO = APO.NUAPO INNER JOIN TPRIATV TV ON APO.IDIATV = TV.IDIATV INNER JOIN TPREFX FX ON TV.IDEFX = FX.IDEFXWHERE TRUNC(APO.DHAPO) = TO_CHAR(SYSDATE, 'DD/MM/YYYY') AND FX.DESCRICAO = 'SOLDA'GROUP BY FX.DESCRICAO]]></expression>
+            <metadata>
+              <field name="PRODUCAO" label="PRODUCAO" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRICAO" label="DESCRICAO" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <show-ticks>true</show-ticks>
+            <min-value>0</min-value>
+            <max-value>620</max-value>
+            <value-field>$PRODUCAO</value-field>
+            <alert-colors values="0,206,412,620" colors="0xff0000,0xffff00,0xff00"/>
+          </chart>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

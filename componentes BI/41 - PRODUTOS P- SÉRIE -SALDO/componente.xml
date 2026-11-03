@@ -1,0 +1,74 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="CODEMP" description="Empresa" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false">
+      <expression type="SQL"><![CDATA[SELECT CODEMP AS VALUE, CODEMP||' - '||RAZAOABREV AS LABEL FROM TSIEMP
+ORDER BY 1]]></expression>
+    </parameter>
+    <parameter id="CODGRUPOPROD" description="Grupo produto Pai" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false">
+      <expression type="SQL"><![CDATA[SELECT DISTINCT NVL(G2.CODGRUPOPROD,G.CODGRUPOPROD) AS VALUE, NVL(G2.CODGRUPOPROD,G.CODGRUPOPROD)||' - '||NVL(G2.DESCRGRUPOPROD,G.DESCRGRUPOPROD) AS LABEL FROM TGFGRU G, TGFGRU G1, TGFGRU G2
+WHERE G1.CODGRUPOPROD = G.CODGRUPAI AND G2.CODGRUPOPROD = G1.CODGRUPAI  AND G2.ATIVO = 'S'
+ORDER BY 1]]></expression>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_9gyy0" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_9gyy1">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT T.*
+FROM
+(SELECT Cabecalho.CODEMP||' - '||Empresa.RAZAOABREV AS EMPRESA
+    , Produto.CODPROD
+    , Produto.REFERENCIA
+    , Produto.DESCRPROD
+    , Locais.CODLOCAL
+    , Locais.DESCRLOCAL
+    , Serie.SERIE
+    , SUM(Serie.ATUALESTOQUE) AS ATUALESTOQUE
+    , Produto.CODGRUPOPROD
+    , Grupo.DESCRGRUPOPROD
+    
+    , NVL(G2.CODGRUPOPROD,Produto.CODGRUPOPROD) AS COD_GRUP_2
+    
+    , nvl(G2.DESCRGRUPOPROD ,Grupo.DESCRGRUPOPROD) AS DESC_GRUP_2
+    , '__________________'  AS OBS       
+
+FROM TGFSER Serie
+    INNER JOIN TGFITE Item ON Serie.NUNOTA = Item.NUNOTA AND Serie.SEQUENCIA = Item.SEQUENCIA
+    INNER JOIN TGFCAB Cabecalho ON Serie.NUNOTA = Cabecalho.NUNOTA AND Cabecalho.NUNOTA = Item.NUNOTA
+    INNER JOIN TGFPRO Produto ON Produto.CODPROD = Item.CODPROD
+    INNER JOIN TSIEMP Empresa ON Empresa.CODEMP = Cabecalho.CODEMP
+    INNER JOIN TGFLOC Locais ON Locais.CODLOCAL = Item.CODLOCALORIG
+    INNER JOIN TGFGRU Grupo ON Grupo.CODGRUPOPROD = Produto.CODGRUPOPROD
+    LEFT JOIN TGFGRU G1 ON G1.CODGRUPOPROD = Grupo.CODGRUPAI
+    LEFT JOIN TGFGRU G2 ON G2.CODGRUPOPROD = G1.CODGRUPAI
+
+WHERE 1=1
+   AND Cabecalho.CODEMP IN :CODEMP
+
+GROUP BY Serie.SERIE, Produto.CODPROD, Produto.REFERENCIA, Produto.DESCRPROD, Cabecalho.CODEMP, Empresa.RAZAOABREV, Locais.CODLOCAL
+                , Locais.DESCRLOCAL, Produto.codgrupoprod, Grupo.DESCRGRUPOPROD,G2.CODGRUPOPROD, G2.DESCRGRUPOPROD
+
+HAVING SUM(Serie.ATUALESTOQUE) != 0
+
+ORDER BY Produto.CODPROD) T
+
+WHERE 1=1
+   AND T.COD_GRUP_2 IN :CODGRUPOPROD]]></expression>
+        <metadata>
+          <field name="EMPRESA" label="Empresa" type="S" visible="true" useFooter="false" />
+          <field name="CODPROD" label="Cód. Prod." type="I" visible="true" useFooter="false" />
+          <field name="REFERENCIA" label="Referência" type="S" visible="true" useFooter="false" />
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false" />
+          <field name="CODLOCAL" label="Cód. Local" type="I" visible="true" useFooter="false" />
+          <field name="DESCRLOCAL" label="Local" type="S" visible="true" useFooter="false" />
+          <field name="SERIE" label="Série" type="S" visible="true" useFooter="false" />
+          <field name="ATUALESTOQUE" label="Estoque" type="I" visible="true" useFooter="false" />
+          <field name="CODGRUPOPROD" label="Cód. Grupo" type="I" visible="true" useFooter="false" />
+          <field name="DESCRGRUPOPROD" label="Grupo" type="S" visible="true" useFooter="false" />
+          <field name="COD_GRUP_2" label="Cód. Grupo Pai" type="I" visible="true" useFooter="false" />
+          <field name="DESC_GRUP_2" label="Grupo Pai" type="S" visible="true" useFooter="false" />
+          <field name="OBS" label="Observação" type="S" visible="true" useFooter="false" />
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

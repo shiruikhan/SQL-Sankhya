@@ -1,0 +1,44 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_DTENTSAI" description="Dt. Entrada e Saída" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="1"/>
+    <parameter id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="true" keep-date="false" order="2"/>
+    <parameter id="P_NUNOTA" description="Nro Único Nota" metadata="integer" required="false" keep-last="true" keep-date="false" order="3"/>
+    <parameter id="P_NUMNOTA" description="Nro Nota" metadata="integer" required="false" keep-last="true" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_x6mpzo" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_x6mpzp" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT EMPRESA, NUNOTA,NUMNOTA,DTNEG, DTENTSAI, CODPARC,RAZAOSOCIAL,SERVICO, DESCRPROD,CODCFO, VLRNOTA,SUM (VLR_TOT_SERV) AS VLR_TOT_SERV, SUM (BASE_INSS) AS BASE_INSS,SUM (VALOR_INSS) AS VALOR_INSS,ALIQ_INSS, EMP_ATIVA,NF_TEM_SERV,CLASS_CESSAO_MB_SERV,TIPMOV_CPA,ATUAL_LIV_ENT,NF_CONFIRMADA,CNPJ_VALIDO,INSS_CALC_OUT_IMPFROM (SELECT CAB.CODEMP AS "EMPRESA", CAB.NUNOTA AS "NUNOTA",CAB.NUMNOTA AS "NUMNOTA",CAB.DTNEG, CAB.DTENTSAI, CAB.CODPARC,PAR.RAZAOSOCIAL,ITE.CODPROD AS "SERVICO", PRO.DESCRPROD, ITE.CODCFO, CAB.VLRNOTA,ITE.VLRTOT AS VLR_TOT_SERV,IMN.BASE AS BASE_INSS,IMN.VALOR AS VALOR_INSS,IMN.ALIQUOTA AS ALIQ_INSS, (SELECT EMP.ATIVO FROM TGFEMP EMP WHERE EMP.CODEMP=ITE.CODEMP) AS "EMP_ATIVA", CASE WHEN ITE.USOPROD='S' THEN 'S' ELSE 'N' END AS "NF_TEM_SERV", CASE WHEN (SELECT PRO.CLASSIFCESSAOOBRA FROM TGFPRO PRO WHERE PRO.CODPROD=ITE.CODPROD) IS NULL THEN 'N' ELSE 'S' END AS "CLASS_CESSAO_MB_SERV", CASE WHEN (SELECT TPO.TIPMOV FROM TGFTOP TPO, TGFCAB CAB WHERE TPO.CODTIPOPER=CAB.CODTIPOPER AND TPO.DHALTER=CAB.DHTIPOPER AND CAB.NUNOTA=ITE.NUNOTA) = 'C' THEN 'S' ELSE 'N' END AS "TIPMOV_CPA", CASE WHEN (SELECT TPO.ATUALLIVISS FROM TGFTOP TPO, TGFCAB CAB WHERE TPO.CODTIPOPER=CAB.CODTIPOPER AND TPO.DHALTER=CAB.DHTIPOPER AND CAB.NUNOTA=ITE.NUNOTA) = 'E' THEN 'S' ELSE 'N' END AS "ATUAL_LIV_ENT" , CASE WHEN (SELECT CAB.STATUSNOTA FROM TGFCAB CAB WHERE CAB.NUNOTA=ITE.NUNOTA) = 'L' THEN 'S' ELSE 'N' END AS "NF_CONFIRMADA", CASE WHEN (SELECT LENGTH(PAR.CGC_CPF) FROM TGFPAR PAR WHERE PAR.CODPARC=CAB.CODPARC) = 14 THEN 'S' ELSE 'N' END AS "CNPJ_VALIDO", CASE WHEN (SELECT NVL(1,0) FROM TGFIMN IMN  WHERE IMN.NUNOTA = ITE.NUNOTAAND IMN.SEQUENCIA = ITE.SEQUENCIAAND IMN.TIPOIMPOSTO = 5 AND (IMN.TIPIMP = -1 OR (IMN.TIPIMP = 0 AND EXISTS(SELECT 1 FROM TSIPAR WHERE CHAVE = 'GERIMPINCREINF' AND LOGICO = 'S'))) AND ((ROUND(NVL(IMN.ALIQUOTA, 0), 2) - ROUND(NVL(IMN.PERCINSSESPECIAL, 0), 2)) IN (3.5, 11))) = 1 THEN 'S' ELSE 'N' END AS "INSS_CALC_OUT_IMP"FROM TGFCAB CAB, TGFITE ITE, TGFIMN IMN, TGFPAR PAR, TGFPRO PROWHERE CAB.NUNOTA=ITE.NUNOTAAND ITE.NUNOTA = IMN.NUNOTA AND ITE.SEQUENCIA = IMN.SEQUENCIAAND CAB.CODPARC = PAR.CODPARCAND ITE.CODPROD = PRO.CODPRODAND IMN.CODIMP IN (7,8)AND ITE.CODCFO IN (1933,2933)AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)AND (CAB.CODPARC = :P_CODPARC OR :P_CODPARC IS NULL)AND (CAB.DTENTSAI >= :P_DTENTSAI.INI or :P_DTENTSAI.INI is null)AND (CAB.DTENTSAI <= :P_DTENTSAI.FIN or :P_DTENTSAI.FIN is null)AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)AND (CAB.NUMNOTA = :P_NUMNOTA OR :P_NUMNOTA IS NULL)) VGROUP BY EMPRESA, NUNOTA, NUMNOTA, DTNEG, DTENTSAI, CODPARC, RAZAOSOCIAL, SERVICO, DESCRPROD, 		CODCFO, VLRNOTA, ALIQ_INSS, EMP_ATIVA,NF_TEM_SERV, CLASS_CESSAO_MB_SERV, TIPMOV_CPA, 		ATUAL_LIV_ENT, NF_CONFIRMADA, CNPJ_VALIDO, INSS_CALC_OUT_IMPORDER BY EMPRESA, DTNEG, DTENTSAI, NUMNOTA, CODPARC, SERVICO, CODCFO]]></expression>
+        <metadata>
+          <field name="EMPRESA" label="Empresa" type="I" visible="true" useFooter="false"/>
+          <field name="NUNOTA" label="Nro Unico" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Neg." type="D" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Ent/Sai" type="D" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razao Social" type="S" visible="true" useFooter="false"/>
+          <field name="SERVICO" label="Cód. Servico" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Servico" type="S" visible="true" useFooter="false"/>
+          <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"/>
+          <field name="VLRNOTA" label="Vlr. Nota" type="F" visible="true" useFooter="SUM"/>
+          <field name="VLR_TOT_SERV" label="Vlr Total Servicos" type="F" visible="true" useFooter="SUM"/>
+          <field name="BASE_INSS" label="Base INSS" type="F" visible="true" useFooter="SUM"/>
+          <field name="VALOR_INSS" label="Valor INSS" type="F" visible="true" useFooter="SUM"/>
+          <field name="ALIQ_INSS" label="Aliquota INSS" type="F" visible="true" useFooter="false">
+            <formatter equalThan="11"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter>
+            <formatter equalThan="3.5"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter>
+          </field>
+          <field name="EMP_ATIVA" label="Empresa Ativa?" type="S" visible="true" useFooter="false"/>
+          <field name="NF_TEM_SERV" label="NF tem Serviço?" type="S" visible="true" useFooter="false"/>
+          <field name="CLASS_CESSAO_MB_SERV" label="Class. Cessão Config. Serv.?" type="S" visible="true" useFooter="false"/>
+          <field name="TIPMOV_CPA" label="Tipo Movimento Compra?" type="S" visible="true" useFooter="false"/>
+          <field name="ATUAL_LIV_ENT" label="Atualiza Livro de Entrada?" type="S" visible="true" useFooter="false"/>
+          <field name="NF_CONFIRMADA" label="NF Confirmada?" type="S" visible="true" useFooter="false"/>
+          <field name="CNPJ_VALIDO" label="CNPJ Valido?" type="S" visible="true" useFooter="false"/>
+          <field name="INSS_CALC_OUT_IMP" label="INSS Calc. Outros Imp?" type="S" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,7 @@
+<gadget>
+  <level id="lvl_5xcogw" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <simple-value id="svl_5xcogx"/>
+    </container>
+  </level>
+</gadget>

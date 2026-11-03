@@ -1,0 +1,2498 @@
+<gadget ><prompt-parameters><parameter  id="DAT1" description="Data Referência" metadata="date" required="true" keep-last="false" keep-date="true" order="0" label="DAT1 : Data"/><parameter  id="CODEMP" description="Empresa" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false" show-inactives="false" label="CODEMP : multiList:Text" order="1"><expression type="SQL"><![CDATA[
+        
+        SELECT 
+CODEMP AS VALUE, 
+CODEMP||'-'||RAZAOABREV AS LABEL
+FROM
+TSIEMP WHERE CODEMP < 999
+ORDER BY
+CODEMP
+      
+      ]]></expression></parameter><parameter  id="OUTROS" description="Origem à listar em Ctas a Receber / Pagar " metadata="singleList:Text" listType="text" required="false" keep-last="false" keep-date="false" order="2" label="OUTROS : singleList:Text"><item value="A" label="Ambos"/><item value="P" label="Portal"/><item value="F" label="Financeiro"/></parameter></prompt-parameters><local-vars><var  id="DATAREF" label="DATAREF"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT lower(TO_CHAR(:DAT1, 'DD "de" fmMONTH "de" YYYY')) FROM DUAL
+      
+      ]]></expression></var><var  id="P_CTACTB" label="P_CTACTB"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT CTACTB||' - '||CODCTACTB||' - '||DESCRCTA FROM TCBPLA WHERE CTACTB = :CTACTB
+      
+      ]]></expression></var><var  id="P_NATUREZA" label="P_NATUREZA"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT CASE WHEN :NATUREZA = 0 THEN 'Todos' ELSE :NATUREZA||' - '||(SELECT DESCRNAT FROM TGFNAT WHERE CODNAT= SUBSTR(:NATUREZA,1,7)) END FROM DUAL
+      
+      ]]></expression></var><var  id="P_NOME" label="P_NOME"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT CASE WHEN :PARCEIRO = 0 THEN 'Todos' ELSE :PARCEIRO||' - '||(SELECT NOMEPARC FROM TGFPAR WHERE CODPARC= :PARCEIRO) END FROM DUAL
+      
+      ]]></expression></var><var  id="P_PARCEIRO" label="P_PARCEIRO"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT CASE WHEN :PARCEIRO = 0 THEN 'Todos' ELSE :PARCEIRO||' - '||(SELECT RAZAOSOCIAL FROM TGFPAR WHERE CODPARC= :PARCEIRO) END FROM DUAL
+      
+      ]]></expression></var><var  id="P_PROCESSO" label="P_PROCESSO"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT CASE WHEN :PROCESSO = 0 THEN 'Todos' ELSE TO_CHAR(:PROCESSO) END FROM DUAL
+      
+      ]]></expression></var><var  id="V_REFERENCIAATE" label="V_REFERENCIAATE"><expression type="sql" data-source="MGEDS"><![CDATA[
+        
+        SELECT '01/'||TO_CHAR(:DAT1,'YYYY')||' à '||TO_CHAR(:DAT1,'MM/YYYY') AS REF FROM DUAL
+      
+      ]]></expression></var></local-vars><level id="lvl_ve47zv" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="23"><container orientacao="V" tamanhoRelativo="29"><simple-value id="svl_ve47zx"><value-expression><![CDATA[<div style="text-align: center;">              <a title="ROSSATO"  target="_blank" rel="noopener">                <img src="/mge/EmpresaContabilidade@AD_LOGOEMPRESA@CODEMP=01 .dbimage"  height="100"/>              </a>            </div>]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="43"><simple-value id="svl_zln0k6"><value-expression><![CDATA[<h3 style="text-align: center;">   <span style="color: #000080;">PAINEL DE GESTÃO</span>      </h3>    <p style="text-align: center;">   <strong>Data de Referência:</strong> $DATAREF<br />            <strong>Empresa(s) Selecionada(s):</strong> :CODEMP</p>            <hr />]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="28"><simple-value id="svl_zln0lu"><value-expression><![CDATA[<div style="text-align: center;">            <a title="ROSSATO"  target="_blank" rel="noopener">              <img src="/mge/EmpresaContabilidade@AD_LOGOCONTADOR@CODEMP=1 .dbimage"  height="100"/>            </a>          </div>]]></value-expression></simple-value></container></container><container orientacao="H" tamanhoRelativo="77"><container orientacao="H" tamanhoRelativo="134"><container orientacao="V" tamanhoRelativo="34.162523364942416"><container orientacao="V" tamanhoRelativo="21.226222548779493"><simple-value id="svl_ve48cb"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+SUM(CASE WHEN TIPO = 'Corrente' THEN SALDOREAL2 ELSE 0 END) AS SALDOCORRENTE, 
+SUM(CASE WHEN TIPO = 'Aplicação' THEN SALDOREAL2 ELSE 0 END) AS SALDOAPLIC,
+SUM(CASE WHEN TIPO = 'Espécie' THEN SALDOREAL2 ELSE 0 END) AS SALDOESP
+FROM (
+SELECT 
+CTA.CODEMP, 
+(SELECT RAZAOABREV FROM TSIEMP E WHERE E.CODEMP = CTA.CODEMP) AS RAZAOABREV,
+CASE WHEN CLASSE = 'A' THEN 'Aplicação' 
+	     WHEN CLASSE = 'D' THEN 'Adiantamento'
+	     WHEN CLASSE = 'C' THEN 'Corrente'
+	     WHEN CLASSE = 'X' THEN 'Espécie' 
+	     WHEN CLASSE = 'G' THEN 'Garantida'
+	     WHEN CLASSE = 'E' THEN 'Empréstimo'
+	     WHEN CLASSE = 'O' THEN 'Outras' 
+	     ELSE 'Corrente' END AS TIPO,  
+CTA.CODCTABCO, 
+CTA.DESCRICAO, 
+CTA.CODCTABCOINT, 
+SBC.REFERENCIA, 
+(NVL(SBC.SALDOREAL,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+FROM TGFMBC T7 
+WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+T7.DTLANC  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+T7.DTLANC  < to_char(:DAT1+1,'dd/mm/yyyy')),0)) AS SALDOREAL2,
+(NVL(SBC.SALDOBCO,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+FROM TGFMBC T7 
+WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+T7.DHCONCILIACAO  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+T7.DHCONCILIACAO  < to_char(:DAT1+1,'dd/mm/yyyy') AND
+T7.CONCILIADO = 'S'),0)) AS SALDOBCO2,
+CTA.CODCTACTB
+FROM   TGFSBC SBC, TSICTA CTA
+WHERE  
+CTA.CODEMP IN :CODEMP AND CTA.ATIVA='S' AND 
+SBC.REFERENCIA = (SELECT MAX(REFERENCIA) FROM   TGFSBC T2  WHERE T2.CODCTABCOINT = SBC.CODCTABCOINT AND T2.REFERENCIA < to_char(:DAT1+1,'dd/mm/yyyy')) AND 
+SBC.CODCTABCOINT = CTA.CODCTABCOINT
+ORDER BY 2, 4)]]></expression><metadata><field name="SALDOCORRENTE" label="SALDOCORRENTE" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="SALDOAPLIC" label="SALDOAPLIC" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="SALDOESP" label="SALDOESP" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<div style='text-align: center;'>   <p style="text-align:center">  <u>   <strong>   <u>   <span style='color: #0000FF;'>SALDOS BANCARIOS</span></u>   
+</strong>  </u></p>
+<span style="color:#000000">Saldo Contas Bancárias e Espécie: <strong>R$  $SALDOCORRENTE</strong>
+Saldo Aplicações: <strong>R$  $SALDOAPLIC</strong>]]></value-expression><on-click  navigate-to="lvl_zlnzv8">
+          <param id="TIPO">.Todos</param>
+        </on-click></simple-value></container><container orientacao="V" tamanhoRelativo="8.163931749530574"><simple-value id="svl_zdua9x"><value-expression><![CDATA[<p style="text-align: center;">          <span style="text-decoration: underline;">            <strong>              <span style="color: #0000ff; text-decoration: underline;">CONTAS A RECEBER</span>            </strong>          </span>        </p>]]></value-expression><on-click  navigate-to="lvl_ve47zv"/></simple-value></container><container orientacao="V" tamanhoRelativo="30.354982595981866"><container orientacao="V" tamanhoRelativo="43.17367220593027"><simple-value id="svl_zlnzxy"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+SUM(VALOR) AS VALOR 
+FROM(
+--ORIGEM PORTAL - TIPMOV= "V"
+SELECT 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+(CASE WHEN T.TIPMOV = 'V' THEN FIN.DTNEG ELSE FIN.DTENTSAI END) <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+((T.TIPMOV IN ('V') AND FIN.RECDESP = 1) OR
+(T.TIPMOV IN ('D') AND FIN.RECDESP = -1)) AND
+:OUTROS IN ('A','P')
+
+UNION ALL
+
+--ORIGEM FINANCEIRO - TIPMOV= "I"
+SELECT 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('I') AND 
+NAT.AD_TIPOCTBZ = 'N' AND
+FIN.RECDESP = 1 AND
+:OUTROS IN ('A','F')
+)]]></expression><metadata><field name="VALOR" label="VALOR" type="I" visible="true" useFooter="false" mask="#.##0,00;-n"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">Clientes a Receber<br />
+          <strong>R$ $VALOR</strong>]]></value-expression><on-click  navigate-to="lvl_zdua78"/></simple-value></container><container orientacao="V" tamanhoRelativo="57.836428804170744"><simple-value id="svl_7kvvvr"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+	SUM(TOTALVENCIDO) AS TOTALVENCIDO
+	FROM(
+		--ORIGEM PORTAL - TIPMOV= "V"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		PAR.CODVEND,
+		T.TIPMOV,
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT AS TOTALVENCIDO,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') = TO_CHAR(SYSDATE,'YYYY/MM') THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_MES,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 0 AND 30 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE30,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 31 AND 60 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE60,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 61 AND 90 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE90,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC)BETWEEN 91 AND 120 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE120,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 121 AND 150 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE150,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) BETWEEN 151 AND 180 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_ATE180,
+		CASE WHEN TO_CHAR(FIN.DTVENC,'YYYY/MM') < TO_CHAR(SYSDATE,'YYYY/MM')  AND (TRUNC(SYSDATE) - FIN.DTVENC) > 180 THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE NULL END AS VENC_MAIS180
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+		WHERE
+		FIN.CODEMP IN :CODEMP AND  
+		TRUNC(FIN.DTNEG) <= TRUNC(SYSDATE) AND  
+		FIN.DHBAIXA is null AND
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+		T.TIPMOV IN ('V') AND 
+		FIN.RECDESP = 1 AND
+		TRUNC(FIN.DTVENC) < TRUNC(SYSDATE)
+		)]]></expression><metadata><field name="TOTALVENCIDO" label="TOTALVENCIDO" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">Clientes Vencidos<br />          <strong>R$ $TOTALVENCIDO</strong>        </p>]]></value-expression><on-click-launcher  resource-id="br.com.sankhya.menu.adicional.nuDsb.154.1"/></simple-value></container></container><container orientacao="V" tamanhoRelativo="41.26496411580908"><container orientacao="V" tamanhoRelativo="25.41976051909826"><simple-value id="svl_0qu96k"><value-expression><![CDATA[<p style="text-align: center;">        <span style="text-decoration: underline;">          <strong>            <span style="color: #0000ff; text-decoration: underline;">DEVOLUÇÕES A COMPENSAR</span>          </strong>        </span>      </p>]]></value-expression><on-click  navigate-to="lvl_ve47zv"/></simple-value></container><container orientacao="V" tamanhoRelativo="33.00109260374161"><simple-value id="svl_0s05ht"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+SUM(FIN.VLRDESDOB) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+(FIN.CODEMP IN :CODEMP AND  
+Nvl(FIN.DTENTSAI, FIN.DTNEG) <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('E')) 
+ORDER BY FIN.CODPARC]]></expression><metadata><field name="VALOR" label="VALOR" type="I" visible="true" useFooter="false" mask="#.##0,00;-n"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">Devoluções de Compras a Receber/Compensar<br />      <strong>R$ $VALOR</strong>    </p>]]></value-expression><on-click  navigate-to="lvl_0s05na"/></simple-value></container><container orientacao="V" tamanhoRelativo="42.58924788726112"><container orientacao="V" tamanhoRelativo="112"><simple-value id="svl_0s053s"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+NVL(SUM(FIN.VLRDESDOB*FIN.RECDESP),0) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+(FIN.CODEMP IN :CODEMP AND  
+Nvl(FIN.DTENTSAI, FIN.DTNEG) <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('D'))]]></expression><metadata><field name="VALOR" label="VALOR" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">Devoluções de Vendas a Pagar/Compensar<br />        <strong>R$ $VALOR</strong>      </p>]]></value-expression><on-click  navigate-to="lvl_0s05u8"/></simple-value></container></container></container></container><container orientacao="V" tamanhoRelativo="34.162523364942416"><container orientacao="V" tamanhoRelativo="9.799514519464172"><simple-value id="svl_ve471a"><value-expression><![CDATA[<p style="text-align: center;"> <span style="text-align: center; color: #0000ff;"> <strong> <span style="text-decoration: underline;">       <span style="color: #ff0000; text-decoration: underline;">CONTAS A PAGAR</span>     </span>          </strong>        </span>      </p>]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="9.709610716533309"><simple-value id="svl_ve471j"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+	SUM(VALOR) AS VLRTOTAL
+	FROM(
+	
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "C"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		T.TIPMOV,
+		NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR,
+		PAR.CODCTACTB2
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+        LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		((T.TIPMOV IN ('C') AND FIN.RECDESP = -1) OR 
+         (T.TIPMOV IN ('O') AND FIN.RECDESP = -1 AND T.ATUALCTB = 'S') OR 
+		 (T.TIPMOV IN ('E') AND FIN.RECDESP = 1)) AND
+		:OUTROS IN ('A','P')
+		GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL, T.TIPMOV, PAR.CODCTACTB2
+		
+		UNION ALL
+		
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL,
+		T.TIPMOV,
+		NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR,
+		PAR.CODCTACTB2
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+        LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE 
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		T.TIPMOV IN ('I') AND 
+		FIN.CODTIPOPER <> 0 AND  
+		FIN.RECDESP = -1 AND
+		NAT.AD_TIPOCTBZ = 'N' AND
+        T.TIPMOV||'-'||NAT.CODNAT NOT IN ('I-301006') AND
+		:OUTROS IN ('A','F')
+		GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL, T.TIPMOV, PAR.CODCTACTB2
+		)]]></expression><metadata><field name="VLRTOTAL" label="VLRTOTAL" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">Fornecedores a Pagar<br />    <strong>R$ $VLRTOTAL</strong>  </p>]]></value-expression><on-click  navigate-to="lvl_bfayxs">
+    <param id="PARCEIRO"/>
+    <param id="CLASSIFICACAO"/>
+  </on-click></simple-value></container><container orientacao="V" tamanhoRelativo="82.53169109053313"><container orientacao="V" tamanhoRelativo="50"><container orientacao="V" tamanhoRelativo="29.259929293638496"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_ve472y"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+	SUM(VALOR) AS VLRTOTAL
+	FROM(
+	
+		
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL,
+		T.TIPMOV,
+		NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR,
+		PAR.CODCTACTB2
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+        LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE 
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		T.TIPMOV IN ('I') AND 
+		FIN.CODTIPOPER <> 0 AND  
+		FIN.RECDESP = -1 AND
+		NAT.AD_TIPOCTBZ = 'N' AND
+        T.TIPMOV||'-'||NAT.CODNAT IN ('I-301006') AND
+		:OUTROS IN ('A','F')
+		GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL, T.TIPMOV, PAR.CODCTACTB2
+		)]]></expression><metadata><field name="VLRTOTAL" label="VLRTOTAL" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">Comissões a Pagar<br />            <strong>R$ $VLRTOTAL</strong>          </p>]]></value-expression><on-click  navigate-to="39F"/></simple-value></container><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_0RD"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+SUM(VALOR) AS VALOR,
+SUM(VLRRECUP) AS VLRRECUP,
+SUM(VLRPAGAR) AS VLRPAGAR
+FROM(
+SELECT 
+NVL(SUM(FIN.VLRDESDOB*FIN.RECDESP),0) AS VALOR,
+CASE WHEN FIN.RECDESP > 0 THEN NVL(SUM(FIN.VLRDESDOB*FIN.RECDESP),0) ELSE 0 END AS VLRRECUP,
+CASE WHEN FIN.RECDESP < 0 THEN NVL(SUM(FIN.VLRDESDOB*FIN.RECDESP),0) ELSE 0 END AS VLRPAGAR
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+NVL(FIN.DTENTSAI,FIN.DTNEG) <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+NAT.AD_TIPOCTBZ = 'D'
+GROUP BY RECDESP
+)]]></expression><metadata><field name="VALOR" label="VALOR" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VLRRECUP" label="VLRRECUP" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VLRPAGAR" label="VLRPAGAR" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<div style="text-align: center;">Folha, Impostos, Outros
+A Receber: <strong>R$ $VLRRECUP </strong>
+A Pagar: <strong>R$ $VLRPAGAR </strong>
+        </div>]]></value-expression><on-click  navigate-to="lvl_ve48e0"/></simple-value></container></container><container orientacao="V" tamanhoRelativo="28.150821279238457"><simple-value id="svl_0vfjj0"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(VRCP) AS VRCP, SUM(VRLP) AS VRLP, SUM(VRTOT) AS VRTOT FROM (
+SELECT 
+FIN.CODPARC,
+PAR.RAZAOSOCIAL,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN (FIN.VLRDESDOB)*FIN.RECDESP ELSE 0 END As VRCP,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN 0 ELSE (FIN.VLRDESDOB)*FIN.RECDESP END As VRLP,
+FIN.VLRDESDOB*FIN.RECDESP AS VRTOT, 
+FIN.DTENTSAI, 
+FIN.NUMNOTA,
+FIN.NUFIN, 
+FIN.DTVENC, 
+(FIN.VLRDESDOB*FIN.RECDESP) As VALORDESDOB, 
+FIN.CODTIPOPER, 
+FIN.HISTORICO
+FROM 
+TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+(NAT.AD_TIPOCTBZ='E')
+)]]></expression><metadata><field name="VRCP" label="VRCP" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VRLP" label="VRLP" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VRTOT" label="VRTOT" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">      <span style="text-decoration: underline; color: #ff0000;">        <strong>EMPRÉSTIMOS E FINANCIAMENTOS</strong>      </span>    </p>    <p style="text-align: center;">      <span style="color: #000000;">Sd Devedor Curto Prazo: <strong>R$ $VRCP</strong>      <br />Sd Devedor Longo Prazo: <strong>R$ $VRLP<br />Sd. Devedor Total:<strong> R$ $VRTOT</strong>    </span>]]></value-expression><on-click  navigate-to="lvl_2b3dey"/></simple-value></container><container orientacao="V" tamanhoRelativo="19.98708310825931"><simple-value id="svl_q2w3qm"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(VRCP) AS VRCP, SUM(VRLP) AS VRLP, SUM(VRTOT) AS VRTOT FROM (
+SELECT 
+FIN.CODNAT,
+NAT.DESCRNAT,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN (FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP ELSE 0 END As VRCP,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN 0 ELSE (FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP END As VRLP,
+FIN.DTENTSAI As "DtOperacao", 
+FIN.NUMNOTA As "Nro_Nota", 
+FIN.DTVENC As "DtVencto", 
+(FIN.VLRDESDOB*FIN.RECDESP) As "Vlr_Amortizacao", 
+(FIN.VLRJURO*FIN.RECDESP) As "Vlr_Juros", 
+((FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP) As "VRTOT", 
+FIN.CODTIPOPER As "Top", 
+FIN.HISTORICO As "Historico", 
+FIN.NUFIN As Nufin 
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+NAT.CODNATPAI= 040500
+)]]></expression><metadata><field name="VRCP" label="VRCP" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VRLP" label="VRLP" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VRTOT" label="VRTOT" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><value-expression><![CDATA[<p style="text-align: center;">      <span style="text-decoration: underline; color: #ff0000;">        <strong>PARCELAMENTOS TRIBUTÁRIOS</strong>      </span>    </p>    <p style="text-align: center;">      <span style="color: #000000;">Total Curto Prazo: <strong>R$ $VRCP</strong> <br />Total Longo Prazo: <strong>R$ $VRLP<br />Total Geral:<strong> R$ $VRTOT</strong>  </span>]]></value-expression><on-click  navigate-to="lvl_ax0j1b6"/></simple-value></container><container orientacao="V" tamanhoRelativo="24.033419101097376"><simple-value id="svl_ax0j041"><value-expression><![CDATA[<p style="text-align: center;">      <span style="text-decoration: underline; color: #993366;">        <strong>          
+<span>ADIANTAMENTOS EM GERAL</span>        </strong>      </span>    </p>
+<p style="text-align: center;">  <span style="color: #000000;">Adtos Clientes/Fornecedores/Viagem<br />   </span>]]></value-expression><on-click  navigate-to="lvl_ve47y3"/></simple-value></container></container></container></container><container orientacao="V" tamanhoRelativo="34.162523364942416"><container orientacao="V" tamanhoRelativo="9"><simple-value id="svl_0qu95s"><value-expression><![CDATA[<p style="text-align: center;">        <span style="text-align: center; color: #000000;">          <strong>            <span style="text-decoration: underline;">              <span>OUTRAS INFORMAÇÕES</span>            </span>          </strong>        </span>      </p>]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="10"><simple-value id="svl_0vfjfz"><value-expression><![CDATA[<p style="text-align: center;">Balanço Patrimonial<br />      <strong>      </strong>    </p>]]></value-expression><on-click-launcher  resource-id="br.com.sankhya.menu.adicional.nuDsb.158.1"/></simple-value></container><container orientacao="V" tamanhoRelativo="81"><container orientacao="V" tamanhoRelativo="586"><container orientacao="V" tamanhoRelativo="14"><simple-value id="svl_8sgjt9"><value-expression><![CDATA[<p style="text-align: center;">DRE Contábil<br />          <strong>          </strong>        </p>]]></value-expression><on-click-launcher  resource-id="br.com.sankhya.menu.adicional.nuDsb.157.1"/></simple-value></container><container orientacao="V" tamanhoRelativo="86"><container orientacao="V" tamanhoRelativo="20"><simple-value id="svl_pp9ev1"><value-expression><![CDATA[<p style="text-align: center;">Balancete<br />          <strong>          </strong>        </p>]]></value-expression><on-click-launcher  resource-id="br.com.sankhya.mgecontab.rel.balanceteverificacao"/></simple-value></container><container orientacao="V" tamanhoRelativo="21"><simple-value id="svl_pp9esu"><value-expression><![CDATA[<p style="text-align: center;">Razão Contábil<br />        <strong>        </strong>      </p>]]></value-expression><on-click-launcher  resource-id="br.com.sankhya.mgecontab.rel.razaoanalitico"/></simple-value></container><container orientacao="V" tamanhoRelativo="21"><container orientacao="V" tamanhoRelativo="33"><simple-value id="svl_pt0psx"><value-expression><![CDATA[<p style="text-align: center;">Controle Patrimonial<br />        <strong>        </strong>      </p>]]></value-expression><on-click-launcher  resource-id="br.com.sankhya.menu.adicional.nuDsb.156.1"/></simple-value></container></container><container orientacao="V" tamanhoRelativo="19"><simple-value id="svl_pt0qd3"><value-expression><![CDATA[<p style="text-align: center;">Auditoria Contábil<br />      <strong>      </strong>    </p>]]></value-expression><on-click  navigate-to="lvl_btf5c4"/></simple-value></container><container orientacao="V" tamanhoRelativo="19"><simple-value id="svl_062"><value-expression><![CDATA[<p style="text-align: center;">Exportação Contábil - Book<br />      <strong>      </strong>    </p>]]></value-expression><on-click  navigate-to="0C1"/></simple-value></container></container></container></container></container></container></container></container></level><level id="lvl_zlnzv8" description="Saldos Bancários"><args >
+    <arg id="TIPO" type="text"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="40"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_zlnzv9" multiplaSelecao="N" useNewGrid="S"><title><![CDATA[Resumo por Tipo de Conta - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+TIPO, 
+SUM(CASE WHEN TIPO = 'Espécie' OR TIPO = 'Corrente' OR TIPO = 'Aplicação' THEN SALDOREAL2 ELSE NULL END) AS SALDOREAL, 
+SUM(CASE WHEN TIPO = 'Espécie' OR TIPO = 'Corrente' OR TIPO = 'Aplicação' THEN SALDOBCO2 ELSE NULL END) AS SALDOBCO,
+SUM(CASE WHEN TIPO = 'Empréstimo' THEN SALDOREAL2 ELSE NULL END) AS SALDOEMP,
+SUM(CASE WHEN TIPO <> 'Adiantamento' THEN NULL ELSE SALDOREAL2 END) AS SALDOADTOS, 
+SUM(CASE WHEN TIPO <>'Outras' THEN NULL ELSE SALDOBCO2 END) AS SALDOOUTRAS
+FROM (
+	SELECT 
+	CTA.CODEMP, 
+	(SELECT RAZAOABREV FROM TSIEMP E WHERE E.CODEMP = CTA.CODEMP) AS RAZAOABREV,
+	CASE WHEN CLASSE = 'A' THEN 'Aplicação' 
+	     WHEN CLASSE = 'D' THEN 'Adiantamento'
+	     WHEN CLASSE = 'C' THEN 'Corrente'
+	     WHEN CLASSE = 'X' THEN 'Espécie' 
+	     WHEN CLASSE = 'G' THEN 'Garantida'
+	     WHEN CLASSE = 'E' THEN 'Empréstimo'
+	     WHEN CLASSE = 'O' THEN 'Outras' 
+	     ELSE 'Corrente' END AS TIPO,  
+	CTA.CODCTABCO, 
+	CTA.DESCRICAO, 
+	CTA.CODCTABCOINT, 
+	SBC.REFERENCIA, 
+	(NVL(SBC.SALDOREAL,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+	FROM TGFMBC T7 
+	WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+	T7.DTLANC  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+	T7.DTLANC  < to_char(:DAT1+1,'dd/mm/yyyy')),0)) AS SALDOREAL2,
+	(NVL(SBC.SALDOBCO,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+	FROM TGFMBC T7 
+	WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+	T7.DHCONCILIACAO  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+	T7.DHCONCILIACAO  < to_char(:DAT1+1,'dd/mm/yyyy') AND
+	T7.CONCILIADO = 'S'),0)) AS SALDOBCO2,
+	CTA.CODCTACTB
+	FROM   TGFSBC SBC, TSICTA CTA
+	WHERE  
+	CTA.CODEMP IN :CODEMP AND CTA.ATIVA='S' AND CTA.CODCTABCOINT NOT IN (30) AND 
+	SBC.REFERENCIA = (SELECT MAX(REFERENCIA) FROM   TGFSBC T2  WHERE T2.CODCTABCOINT = SBC.CODCTABCOINT AND T2.REFERENCIA < to_char(:DAT1+1,'dd/mm/yyyy')) AND 
+	SBC.CODCTABCOINT = CTA.CODCTABCOINT      
+	ORDER BY 2, 4) 
+	GROUP BY TIPO
+	UNION ALL
+	SELECT ' .Todos' AS TIPO, NULL AS SALDOREAL, NULL AS SALDOBCO, NULL AS SALDOEMP, NULL AS SALDOADTOS, NULL AS SALDOOUTRAS FROM DUAL
+	ORDER BY  TIPO]]></expression><metadata><field name="TIPO" label="Tipo" type="S" visible="true" useFooter="false"></field><field name="SALDOREAL" label="Saldo Real" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOBCO" label="Saldo Conciliado" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOEMP" label="Saldo Empréstimos" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOADTOS" label="Saldo Adtos" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOOUTRAS" label="Saldo Outras" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field></metadata><refresh-details  ui-list="cht_zpbhqz,grd_zln09j">
+            <param id="TIPO">$TIPO</param>
+          </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_zpbhqz" type="donut"><args><arg id="TIPO" type="text"></arg></args><title><![CDATA[Representatividade dos Saldos por Tipo de Conta - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT TIPO, CASE WHEN SUM(SALDOREAL2) <0 THEN SUM(SALDOREAL2) *-1 ELSE SUM(SALDOREAL2) END AS SALDOREAL FROM (
+SELECT 
+CTA.CODEMP, 
+(SELECT RAZAOABREV FROM TSIEMP E WHERE E.CODEMP = CTA.CODEMP) AS RAZAOABREV,
+CASE WHEN CLASSE = 'A' THEN 'Aplicação' 
+	     WHEN CLASSE = 'D' THEN 'Adiantamento'
+	     WHEN CLASSE = 'C' THEN 'Corrente'
+	     WHEN CLASSE = 'X' THEN 'Espécie' 
+	     WHEN CLASSE = 'G' THEN 'Garantida'
+	     WHEN CLASSE = 'E' THEN 'Empréstimo'
+	     WHEN CLASSE = 'O' THEN 'Outras' 
+	     ELSE 'Corrente' END AS TIPO, 
+CTA.CODCTABCO, 
+CTA.DESCRICAO, 
+CTA.CODCTABCOINT, 
+SBC.REFERENCIA, 
+(NVL(SBC.SALDOREAL,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+FROM TGFMBC T7 
+WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+T7.DTLANC  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+T7.DTLANC  < to_char(:DAT1+1,'dd/mm/yyyy')),0)) AS SALDOREAL2,
+(NVL(SBC.SALDOBCO,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+FROM TGFMBC T7 
+WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+T7.DHCONCILIACAO  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+T7.DHCONCILIACAO  < to_char(:DAT1+1,'dd/mm/yyyy') AND
+T7.CONCILIADO = 'S'),0)) AS SALDOBCO2,
+CTA.CODCTACTB
+FROM   TGFSBC SBC, TSICTA CTA
+WHERE  
+CTA.CODEMP IN :CODEMP AND CTA.ATIVA='S' AND CTA.CODCTABCOINT NOT IN (30) AND 
+SBC.REFERENCIA = (SELECT MAX(REFERENCIA) FROM   TGFSBC T2  WHERE T2.CODCTABCOINT = SBC.CODCTABCOINT AND T2.REFERENCIA < to_char(:DAT1+1,'dd/mm/yyyy')) AND 
+SBC.CODCTABCOINT = CTA.CODCTABCOINT      
+ORDER BY 2, 4)
+WHERE (TIPO= :TIPO OR :TIPO= '.Todos')
+GROUP BY TIPO]]></expression><metadata><field name="TIPO" label="TIPO" type="S" visible="true" useFooter="false"></field><field name="SALDOREAL" label="SALDOREAL" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field></metadata><series><serie type="donut"><field>$SALDOREAL</field><nameField>$TIPO</nameField><refresh-details  ui-list="grd_zln09j">
+                <param id="TIPO">$TIPO</param>
+              </refresh-details><tipoDonut>completo</tipoDonut></serie></series><legend position="right" direction="v"></legend></chart></container></container><container orientacao="V" tamanhoRelativo="60"><grid id="grd_zln09j" useNewGrid="S"><args><arg id="TIPO" type="text"></arg></args><title><![CDATA[Detalhamento por Conta - Referência: :DAT1 (duplo clique abre a tela de conciliação bancária)]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+CODEMP,
+RAZAOABREV,
+TIPO,
+CODCTABCO,
+DESCRICAO,
+CODCTABCOINT,
+ATIVA,
+(CASE WHEN TIPO = 'Outras' OR TIPO = 'Adiantamento' THEN NULL ELSE SALDOREAL END) AS SALDOREAL, 
+(CASE WHEN TIPO = 'Outras' OR TIPO = 'Adiantamento' THEN NULL ELSE SALDOBCO END) AS SALDOBCO,
+(CASE WHEN TIPO <> 'Adiantamento' THEN NULL ELSE SALDOREAL END) AS SALDOADTOS, 
+(CASE WHEN TIPO <>'Outras' THEN NULL ELSE SALDOBCO END) AS SALDOOUTRAS,
+CODCTACTB
+FROM (
+	SELECT 
+	CTA.CODEMP, 
+	(SELECT INITCAP(NOMEFANTASIA) FROM TSIEMP E WHERE E.CODEMP = CTA.CODEMP) AS RAZAOABREV,
+	CASE WHEN CLASSE = 'A' THEN 'Aplicação' 
+	     WHEN CLASSE = 'D' THEN 'Adiantamento'
+	     WHEN CLASSE = 'C' THEN 'Corrente'
+	     WHEN CLASSE = 'X' THEN 'Espécie' 
+	     WHEN CLASSE = 'G' THEN 'Garantida'
+	     WHEN CLASSE = 'E' THEN 'Empréstimo'
+	     WHEN CLASSE = 'O' THEN 'Outras' 
+	     ELSE 'Corrente' END AS TIPO,  
+	CTA.CODCTABCO, 
+	CTA.DESCRICAO, 
+	CTA.CODCTABCOINT, 
+	SBC.REFERENCIA,
+	CTA.ATIVA,
+	(NVL(SBC.SALDOREAL,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+	FROM TGFMBC T7 
+	WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+	T7.DTLANC  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+	T7.DTLANC  < to_char(:DAT1+1,'dd/mm/yyyy')),0)) AS SALDOREAL,
+	(NVL(SBC.SALDOBCO,0) + NVL((SELECT SUM(T7.VLRLANC * T7.RECDESP)
+	FROM TGFMBC T7 
+	WHERE T7.CODCTABCOINT = SBC.CODCTABCOINT AND	  
+	T7.DHCONCILIACAO  >= to_date( '01/'||to_char(:DAT1, 'mm/yyyy')   , 'dd/mm/yyyy') AND 
+	T7.DHCONCILIACAO  < to_char(:DAT1+1,'dd/mm/yyyy')  AND
+	T7.CONCILIADO = 'S'),0)) AS SALDOBCO,
+	CTA.CODCTACTB
+	FROM   TGFSBC SBC, TSICTA CTA
+	WHERE  
+	CTA.CODEMP IN :CODEMP AND CTA.ATIVA='S' AND CTA.CODCTABCOINT NOT IN (30) AND  
+	SBC.REFERENCIA = (SELECT MAX(REFERENCIA) FROM   TGFSBC T2  WHERE T2.CODCTABCOINT = SBC.CODCTABCOINT AND T2.REFERENCIA < to_char(:DAT1+1,'dd/mm/yyyy')) AND 
+	SBC.CODCTABCOINT = CTA.CODCTABCOINT  
+	ORDER BY 2, 4)
+WHERE
+(ATIVA = 'S' OR (ATIVA='N' AND SALDOREAL<>0)) AND
+(TIPO = :TIPO OR :TIPO = '.Todos')
+ORDER BY TIPO, CODCTABCOINT]]></expression><metadata><field name="CODEMP" label="Cód." type="I" visible="true" useFooter="false"></field><field name="RAZAOABREV" label="Empresa" type="S" visible="true" useFooter="false"></field><field name="TIPO" label="Tipo" type="S" visible="true" useFooter="false"></field><field name="CODCTABCO" label="Conta" type="S" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="CODCTABCOINT" label="Código" type="I" visible="true" useFooter="false"></field><field name="ATIVA" label="ATIVA" type="S" visible="false" useFooter="false"></field><field name="SALDOREAL" label="Saldo Real" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOBCO" label="Saldo Conciliado" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOADTOS" label="Saldo Adtos" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SALDOOUTRAS" label="Saldo Outras" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.conciliacaoBancaria">
+          <CODCTABCOINT>$CODCTABCOINT</CODCTABCOINT>
+        </on-click-launcher></grid></container></container></level><level id="lvl_zdua78" description="Clientes"><args >
+    <arg id="CLASSIFICACAO" type="text" label="CLASSIFICACAO : Texto"/>
+    <arg id="PARCEIRO" type="text" label="PARCEIRO : Texto"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="41"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_zdua8a" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Clientes a Receber - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+1 AS ORDEM,
+D.CODPARC,
+D.RAZAOSOCIAL,
+NULLIF(D.VLR,0) AS VLR,
+NULLIF(D.VLRFIN,0) AS VLRFIN,
+NULLIF(D.VLRDEVOL,0) AS VLRDEVOL,
+D.VLRTOTAL,
+(D.VLRTOTAL / SUM(VLRTOTAL) OVER () )*100 AS REP,
+CODCTACTB,
+CTACTB
+FROM(
+
+	SELECT 
+	CODPARC,
+	UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL,
+	CODCTACTB,
+	CTACTB,
+	SUM(VLR) AS VLR,
+     SUM(VLRFIN) AS VLRFIN,
+	SUM(VLRDEVOL) AS VLRDEVOL,
+	SUM(VALOR) AS VLRTOTAL
+	FROM(
+	
+		--ORIGEM PORTAL - TIPMOV= "V"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		T.TIPMOV,
+		PAR.CODCTACTB,
+           PLA.CTACTB,
+		CASE WHEN T.TIPMOV <> 'D' THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE 0 END AS VLR,
+           0 AS VLRFIN, 
+		CASE WHEN T.TIPMOV = 'D' THEN (FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT ELSE 0 END AS VLRDEVOL,
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+		WHERE
+		FIN.CODEMP IN :CODEMP AND  
+		(CASE WHEN T.TIPMOV = 'V' THEN FIN.DTNEG ELSE FIN.DTENTSAI END) <= :DAT1 AND  
+		(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+		((T.TIPMOV IN ('V') AND FIN.RECDESP = 1) OR
+		 (T.TIPMOV IN ('D') AND FIN.RECDESP = -1)) AND
+		:OUTROS IN ('A','P')
+		
+		UNION ALL
+		
+		--ORIGEM FINANCEIRO - TIPMOV= "I"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		T.TIPMOV,
+		PAR.CODCTACTB,
+		PLA.CTACTB,
+           0 AS VLR,
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT AS VLRFIN,
+		0 AS VLRDESC,
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+		WHERE
+		FIN.CODEMP IN :CODEMP AND  
+		FIN.DTENTSAI <= :DAT1 AND  
+		(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+		T.TIPMOV IN ('I') AND 
+		FIN.RECDESP = 1 AND
+		NAT.AD_TIPOCTBZ = 'N' AND
+		:OUTROS IN ('A','F')
+		)
+		GROUP BY CODPARC, RAZAOSOCIAL, CODCTACTB, CTACTB
+	)D
+	
+UNION ALL
+
+SELECT 0 AS ORDEM, 0 AS CODPARC, '. TODOS' AS RAZAOSOCIAL, NULL AS VLR,NULL AS VLRFIN, NULL AS VLRDEVOL, NULL AS VLRTOTAL,NULL AS REP, NULL AS CODCTACTB, NULL AS CTACTB FROM DUAL
+ORDER BY ORDEM,VLRTOTAL DESC, RAZAOSOCIAL]]></expression><metadata><field name="ORDEM" label="ORDEM" type="F" visible="false" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VLR" label="Vlr. Portal" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRFIN" label="Vlr. Financ." type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#6600CC">$VALUE</span>]]></formatter></field><field name="VLRDEVOL" label="Vlr. Devol." type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  lessEqualThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRTOTAL" label="Vlr. Líquido" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field><field name="REP" label="%" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field><field name="CTACTB" label="Analítica" type="S" visible="true" useFooter="false"></field></metadata><refresh-details  ui-list="cht_zdua8c,grd_zdua8e">
+        <param id="PARCEIRO">$CODPARC</param>
+      </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_zdua8c" type="pizza"><args><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Clientes a Receber por Status - Cliente: $P_PARCEIRO - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT abs(SUM(VALOR)) AS VALOR, CLASSIFICACAO, :PARCEIRO AS PARCEIRO2 FROM(
+--ORIGEM PORTAL - TIPMOV= "V"
+SELECT 
+NVL(SUM((FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT),0) As VALOR, 
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO 
+FROM 
+TGFFIN FIN 
+LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+WHERE
+(FIN.CODPARC = :PARCEIRO OR :PARCEIRO = 0) AND 
+FIN.CODEMP IN :CODEMP AND  
+(CASE WHEN T.TIPMOV = 'V' THEN FIN.DTNEG ELSE FIN.DTENTSAI END) <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+ DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('V') AND
+FIN.RECDESP = 1 AND
+:OUTROS IN ('A','P')
+GROUP BY FIN.DTVENC, FIN.DHBAIXA
+
+UNION ALL
+
+--ORIGEM PORTAL - TIPMOV= "I"
+SELECT 
+NVL(SUM((FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT),0) As VALOR, 
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO 
+FROM 
+TGFFIN FIN 
+LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+WHERE
+(FIN.CODPARC = :PARCEIRO OR :PARCEIRO = 0) AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+ DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('I') AND
+FIN.RECDESP = 1 AND
+NAT.AD_TIPOCTBZ = 'N' AND
+:OUTROS IN ('A','F')
+GROUP BY FIN.DTVENC, FIN.DHBAIXA)
+GROUP BY CLASSIFICACAO]]></expression><metadata><field name="VALOR" label="Valor" type="I" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="PARCEIRO2" label="PARCEIRO2" type="S" visible="false" useFooter="false"></field></metadata><series><serie type="pizza"><field>$VALOR</field><nameField>$CLASSIFICACAO</nameField><refresh-details  ui-list="grd_zdua8e">
+            <param id="PARCEIRO">$PARCEIRO2</param>
+            <param id="CLASSIFICACAO">$CLASSIFICACAO</param>
+          </refresh-details></serie></series><legend position="top" direction="v"></legend></chart></container></container><container orientacao="V" tamanhoRelativo="59"><grid id="grd_zdua8e" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Cliente: $P_PARCEIRO - Referência: :DAT1 (duplo clique abre o título financeiro)]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+--TITULOS ORIGEM FINANCEIRO - TOP TIPO "V"
+SELECT 
+CASE WHEN T.TIPMOV = 'V' THEN 'Portal'
+	 WHEN T.TIPMOV = 'D' THEN 'Devolução'
+     ELSE 'Financeiro' END AS ORIGEM,
+FIN.CODEMP, 
+FIN.DTNEG,
+FIN.DTENTSAI, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODTIPOPER,
+FIN.NURENEG,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+CASE WHEN DHBAIXA IS NOT NULL THEN 1
+	 WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 2
+     ELSE 3 END AS CLASSIF,
+FIN.HISTORICO,
+PAR.CODCTACTB
+FROM 
+TGFFIN FIN 
+LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+WHERE
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+FIN.CODEMP IN :CODEMP AND  
+(CASE WHEN T.TIPMOV = 'V' THEN FIN.DTNEG ELSE FIN.DTENTSAI END) <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+ DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+((T.TIPMOV IN ('V') AND FIN.RECDESP = 1) OR
+(T.TIPMOV IN ('D') AND FIN.RECDESP = -1)) AND
+:OUTROS IN ('A','P')
+
+UNION ALL
+
+--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+SELECT 
+CASE WHEN T.TIPMOV <> 'I' THEN 'Portal'
+     ELSE 'Financeiro' END AS ORIGEM,
+FIN.CODEMP, 
+FIN.DTNEG, 
+FIN.DTENTSAI,
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODTIPOPER,
+FIN.NURENEG,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+CASE WHEN DHBAIXA IS NOT NULL THEN 1
+	 WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 2
+     ELSE 3 END AS CLASSIF,
+FIN.HISTORICO,
+159 AS CODCTACTB
+FROM 
+TGFFIN FIN 
+LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+WHERE
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTNEG <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+ DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('I') AND 
+FIN.RECDESP = 1 AND
+NAT.AD_TIPOCTBZ = 'N' AND
+:OUTROS IN ('A','F')
+)
+WHERE (CLASSIFICACAO = :CLASSIFICACAO OR :CLASSIFICACAO IS NULL)
+ORDER BY CODPARC, DTVENC, DTNEG]]></expression><metadata><field name="ORIGEM" label="Origem" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Emp." type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negoc.." type="D" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Dcto" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  lessThan="0"><![CDATA[<span style="color:#000000; background-color:#FFFF00">$VALUE</span>]]></formatter><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vencto" type="D" visible="true" useFooter="false"><formatter  formula="true"><formula ><![CDATA[$CLASSIF == 3]]></formula><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="TIPTIT" label="Tipo Título" type="S" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descr. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="Nro Reneg." type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="CLASSIF" label="CLASSIF" type="F" visible="false" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+      <NUFIN>$NUFIN</NUFIN>
+    </on-click-launcher></grid></container></container></level><level id="lvl_7kvw15" description="Clientes - Vencidos"><args >
+    <arg id="PARCEIRO" type="text"/>
+    <arg id="CLASSIFICACAO" type="text"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="37"><grid id="grd_7kvw17" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Clientes Vencidos]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+1 AS ORDEM,
+D.CODPARC,
+D.RAZAOSOCIAL,
+D.APELIDO,
+D.VALOR,
+(D.VALOR / SUM(VALOR) OVER () )*100 AS REP
+FROM(
+SELECT 
+CODPARC,
+UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL,
+APELIDO,
+SUM(VALOR) AS VALOR 
+FROM(
+--ORIGEM PORTAL - TIPMOV= "V"
+SELECT 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+VEN.APELIDO,
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T, TGFVEN VEN 
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+NVL(PAR.CODVEND,0) = NVL(VEN.CODVEND,0) AND
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTNEG <= :DAT1 AND  
+FIN.DHBAIXA is null AND
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('V') AND 
+FIN.RECDESP = 1 AND
+((FIN.CODTIPOPER <> 3206 AND :VDAGER = 'S') OR :VDAGER = 'N') AND
+to_date(SYSDATE,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') > 0 AND
+:OUTROS IN ('A','P')
+
+UNION ALL
+
+--ORIGEM FINANCEIRO - TIPMOV= "I"
+SELECT 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+VEN.APELIDO,
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T, TGFVEN VEN  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+NVL(PAR.CODVEND,0) = NVL(VEN.CODVEND,0) AND
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+FIN.DHBAIXA is null AND
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('I') AND 
+NAT.AD_TIPOCTBZ = 'N' AND
+((FIN.CODTIPOPER <> 3206 AND :VDAGER = 'S') OR :VDAGER = 'N') AND
+FIN.RECDESP = 1 AND
+to_date(SYSDATE,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') > 0 AND
+:OUTROS IN ('A','F')
+)
+GROUP BY CODPARC, RAZAOSOCIAL, APELIDO
+)D
+UNION ALL
+SELECT 0 AS ORDEM, 0 AS CODPARC, '. TODOS' AS RAZAOSOCIAL, NULL AS APELIDO, 0 AS VALOR, NULL AS REP FROM DUAL
+ORDER BY ORDEM, VALOR DESC]]></expression><metadata><field name="ORDEM" label="ORDEM" type="F" visible="false" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social Parceiro" type="S" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="REP" label="%" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field></metadata><refresh-details  ui-list="grd_7kvw19">
+          <param id="PARCEIRO">$CODPARC</param>
+        </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="63"><grid id="grd_7kvw19" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Detalhamento por Título Vencido - Cliente: $P_PARCEIRO - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+--TITULOS ORIGEM FINANCEIRO - TOP TIPO "V"
+SELECT 
+CASE WHEN T.TIPMOV <> 'I' THEN 'Portal'
+     ELSE 'Financeiro' END AS ORIGEM,
+FIN.CODEMP, 
+FIN.DTNEG,
+FIN.DTENTSAI, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODTIPOPER,
+FIN.NURENEG,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+FIN.HISTORICO,
+PAR.CODCTACTB
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT, TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTNEG <= :DAT1 AND  
+FIN.DHBAIXA is null AND
+ DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('V') AND 
+to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') > 0 AND
+FIN.RECDESP = 1
+
+UNION ALL
+
+--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+SELECT 
+CASE WHEN T.TIPMOV <> 'I' THEN 'Portal'
+     ELSE 'Financeiro' END AS ORIGEM,
+FIN.CODEMP, 
+FIN.DTNEG, 
+FIN.DTENTSAI,
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODTIPOPER,
+FIN.NURENEG,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+FIN.HISTORICO,
+159 AS CODCTACTB
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT, TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTNEG <= :DAT1 AND  
+FIN.DHBAIXA is null AND
+ DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+T.TIPMOV IN ('I') AND 
+to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') > 0 AND
+/* NAT.AD_TIPOCTBZ IS NULL AND */
+FIN.RECDESP = 1
+)
+ORDER BY CODPARC, DTVENC, DTNEG]]></expression><metadata><field name="ORIGEM" label="Origem" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Emissão" type="D" visible="true" useFooter="false"></field><field name="DTENTSAI" label="DTENTSAI" type="D" visible="false" useFooter="false"></field><field name="NUMNOTA" label="Nro Doc." type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parc." type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social Parceiro" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vcto" type="D" visible="true" useFooter="false"><formatter  formula="true"><formula ><![CDATA[$CLASSIFICACAO != 'Recebido' &amp;amp;amp;amp;amp;amp;amp;&amp;amp;amp;amp;amp;amp;amp; $CLASSIFICACAO != 'A Vencer']]></formula><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODNAT" label="Cód. Nat." type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descrição Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="Nro Reneg." type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher></grid></container></container></level><level id="lvl_0s05na" description="Devol. Compras"><args><arg  id="CLASSIFICACAO" type="text" label="CLASSIFICACAO : Texto"/><arg  id="PARCEIRO" type="text" label="PARCEIRO : Texto"/></args><container orientacao="H" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><container orientacao="H" tamanhoRelativo="44"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_0s05nc" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Devoluções de Compras a Receber/Compensar - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+FIN.CODPARC, 
+UPPER(PAR.RAZAOSOCIAL) AS RAZAOSOCIAL, 
+NVL(SUM(FIN.VLRDESDOB),0) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('E')
+GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL
+UNION ALL
+SELECT 0 AS CODPARC, '. TODOS' AS RAZAOSOCIAL, 0 AS VALOR FROM DUAL
+ORDER BY RAZAOSOCIAL]]></expression><metadata><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field></metadata><refresh-details  ui-list="cht_0s05ne,grd_0s05ng">
+              <param id="PARCEIRO">$CODPARC</param>
+            </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_0s05ne" type="pizza"><args><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Devoluções de Compra por Status - Fornecedor: $P_PARCEIRO - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ABS(SUM(VALOR)) AS VALOR, CLASSIFICACAO, :PARCEIRO AS PARCEIRO2 FROM(
+SELECT
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Crédito Recebido/Compensado'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 0 THEN 'Crédito a compensar'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 30 THEN 'Crédito gerado até 30 dias'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 60 THEN 'Crédito gerado até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 90 THEN 'Crédito gerado até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 180 THEN 'Crédito gerado até 180 dias'
+     ELSE 'Crédito gerado a mais de 180 dias' END AS CLASSIFICACAO,
+NVL(SUM(FIN.VLRDESDOB),0) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('E')
+AND (FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0)
+GROUP BY FIN.DTENTSAI, FIN.DHBAIXA)
+Group by classificacao]]></expression><metadata><field name="VALOR" label="Valor" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="PARCEIRO2" label="PARCEIRO2" type="S" visible="false" useFooter="false"></field></metadata><series><serie type="pizza"><field>$VALOR</field><nameField>$CLASSIFICACAO</nameField><refresh-details  ui-list="grd_0s05ng">
+                  <param id="PARCEIRO">$PARCEIRO2</param>
+                  <param id="CLASSIFICACAO">$CLASSIFICACAO</param>
+                </refresh-details></serie></series><legend position="top" direction="v"></legend></chart></container></container><container orientacao="V" tamanhoRelativo="56"><grid id="grd_0s05ng" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Fornecedor: $P_PARCEIRO - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+SELECT 
+FIN.CODEMP, 
+FIN.DTENTSAI,
+FIN.DTNEG, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) AS VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODTIPOPER,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Crédito Recebido/Compensado'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 30 THEN 'Crédito gerado até 30 dias'
+	    WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 60 THEN 'Crédito gerado até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 90 THEN 'Crédito gerado até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 180 THEN 'Crédito gerado até 180 dias'
+     ELSE 'Crédito gerado a mais de 180 dias' END AS CLASSIFICACAO,
+FIN.HISTORICO,
+198 AS CTACTB
+FROM 
+TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE 
+FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('E') AND
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0)
+ORDER BY FIN.CODPARC, FIN.DTVENC
+)
+WHERE (CLASSIFICACAO = :CLASSIFICACAO OR :CLASSIFICACAO IS NULL)]]></expression><metadata><field name="CODEMP" label="Emp." type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negoc." type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vcto" type="D" visible="true" useFooter="false"></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descr. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NUFIN</NUFIN>
+          </on-click-launcher></grid></container></container></container></level><level id="lvl_0s05u8" description="Devol. Vendas"><args >
+    <arg id="CLASSIFICACAO" type="text" label="CLASSIFICACAO : Texto"/>
+    <arg id="PARCEIRO" type="text" label="PARCEIRO : Texto"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="43"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_0s05vc" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Devoluções de Vendas a Pagar/Compensar - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+FIN.CODPARC, 
+upper(PAR.RAZAOSOCIAL) AS RAZAOSOCIAL, 
+NVL(SUM(FIN.VLRDESDOB*FIN.RECDESP),0) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND T.TIPMOV IN ('D')
+GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL
+UNION ALL
+SELECT 0 AS CODPARC, ' .TODOS' AS RAZAOSOCIAL, 0 AS VALOR FROM DUAL
+ORDER BY RAZAOSOCIAL]]></expression><metadata><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Total" type="I" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field></metadata><refresh-details  ui-list="cht_0s05x2,grd_0s05zy">
+            <param id="PARCEIRO">$CODPARC</param>
+          </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_0s05x2" type="pizza"><args><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Devoluções de Vendas por Status - Cliente: $P_PARCEIRO - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT abs(SUM(VALOR)) AS VALOR, CLASSIFICACAO, :PARCEIRO AS PARCEIRO2 FROM(
+SELECT
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Débito Pago/Compensado'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 0 THEN 'Débito a compensar'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 30 THEN 'Débito gerado até 30 dias'
+	    WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 60 THEN 'Débito gerado até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 90 THEN 'Débito gerado até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 180 THEN 'Débito gerado até 180 dias'
+     ELSE 'Débito gerado a mais de 180 dias' END AS CLASSIFICACAO,
+NVL(SUM(FIN.VLRDESDOB),0) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('D') AND 
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0)
+GROUP BY FIN.DTENTSAI, FIN.DHBAIXA)
+Group by classificacao]]></expression><metadata><field name="VALOR" label="Valor" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="PARCEIRO2" label="PARCEIRO2" type="S" visible="false" useFooter="false"></field></metadata><series><serie type="pizza"><field>$VALOR</field><nameField>$CLASSIFICACAO</nameField><refresh-details  ui-list="grd_0s05zy">
+                <param id="PARCEIRO">$PARCEIRO2</param>
+                <param id="CLASSIFICACAO">$CLASSIFICACAO</param>
+              </refresh-details></serie></series><legend position="top" direction="v"></legend></chart></container></container><container orientacao="V" tamanhoRelativo="57"><grid id="grd_0s05zy" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Cliente: $P_PARCEIRO - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+SELECT 
+FIN.CODEMP,
+FIN.DTENTSAI, 
+FIN.DTNEG, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) As VALOR,
+FIN.DTVENC,  
+FIN.DHBAIXA,
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODTIPOPER,
+FIN.NURENEG,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Débito Pago/Compensado'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 0 THEN 'Débito a compensar'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 30 THEN 'Débito gerado até 30 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 60 THEN 'Débito gerado até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 90 THEN 'Débito gerado até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTENTSAI,'DD/MM/YYYY') <= 180 THEN 'Débito gerado até 180 dias'
+     ELSE 'Débito gerado a mais de 180 dias' END AS CLASSIFICACAO,
+HISTORICO,
+197 AS CTACTB
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1  AND  
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null)  AND  
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não'  AND  
+FIN.VLRDESDOB * FIN.RECDESP <> 0  
+AND  T.TIPMOV IN ('D')  AND
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0)
+ORDER BY FIN.CODPARC, FIN.DTVENC
+)
+WHERE (CLASSIFICACAO = :CLASSIFICACAO OR :CLASSIFICACAO IS NULL)]]></expression><metadata><field name="CODEMP" label="Emp." type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negoc." type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vcto" type="D" visible="true" useFooter="false"></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descr. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="Nro. Reneg." type="I" visible="false" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher></grid></container></container></level><level id="lvl_bfayxs" description="Fornecedores"><args >
+    <arg id="CLASSIFICACAO" type="text" label="CLASSIFICACAO : Texto"/>
+    <arg id="PARCEIRO" type="text" label="PARCEIRO : Texto"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="49"><container orientacao="H" tamanhoRelativo="347"><container orientacao="V" tamanhoRelativo="56"><grid id="grd_bfayxt" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Total a Pagar por Fornecedor - Referência: :DAT1 - Empresa(s): :CODEMP]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+1 AS ORDEM,
+D.CODPARC, 
+D.RAZAOSOCIAL, 
+NULLIF(D.VLR,0) AS VLR,
+NULLIF(D.VLRFIN,0) AS VLRFIN,
+NULLIF(D.VLRDEVOL,0) AS VLRDEVOL,
+D.VLRTOTAL,
+(D.VLRTOTAL / SUM(D.VLRTOTAL) OVER () )*100 AS REP,
+CODCTACTB2
+FROM(
+
+	SELECT 
+	CODPARC, 
+	UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL, 
+	SUM(VLR) AS VLR,
+    SUM(VLRFIN) AS VLRFIN,
+	SUM(VLRDEVOL) AS VLRDEVOL,
+	SUM(VALOR) AS VLRTOTAL,
+	CODCTACTB2
+	FROM(
+	
+		--TITULOS ORIGEM PORTAL - TOP TIPO "C"/"E"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		T.TIPMOV,
+		CASE WHEN T.TIPMOV <> 'E' THEN NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) ELSE 0 END AS VLR,
+        0 AS VLRFIN,
+		CASE WHEN T.TIPMOV = 'E' THEN NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) ELSE 0 END AS VLRDEVOL,
+		NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR,
+		PAR.CODCTACTB2
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+        LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		((T.TIPMOV IN ('C') AND FIN.RECDESP = -1) OR 
+         (T.TIPMOV IN ('O') AND FIN.RECDESP = -1 AND T.ATUALCTB = 'S') OR 
+		 (T.TIPMOV IN ('E') AND FIN.RECDESP = 1)) AND
+		:OUTROS IN ('A','P')
+		GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL, T.TIPMOV, PAR.CODCTACTB2
+		
+		UNION ALL
+		
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL,
+		T.TIPMOV,
+		0 AS VLR,
+        NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VLRFIN,
+		0 AS VLRDEVOL,
+		NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR,
+		PAR.CODCTACTB2
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+        LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE 
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		T.TIPMOV IN ('I') AND 
+		FIN.CODTIPOPER <> 0 AND  
+		FIN.RECDESP = -1 AND
+		NAT.AD_TIPOCTBZ = 'N' AND
+        T.TIPMOV||'-'||NAT.CODNAT NOT IN ('I-301006') AND
+		:OUTROS IN ('A','F')
+		GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL, T.TIPMOV, PAR.CODCTACTB2
+		)
+		
+	GROUP BY CODPARC, RAZAOSOCIAL, CODCTACTB2
+	)D
+
+UNION ALL
+
+SELECT 0 AS ORDEM, 0 AS CODPARC, ' .TODOS' AS RAZAOSOCIAL, NULL AS VLR, NULL AS VLRFIN, NULL AS VLRDEVOL, NULL AS VLRTOTAL, NULL AS REP, NULL AS CODCTACTB FROM DUAL
+ORDER BY ORDEM, VLRTOTAL, RAZAOSOCIAL]]></expression><metadata><field name="ORDEM" label="ORDEM" type="F" visible="false" useFooter="false"></field><field name="CODPARC" label="Cód. Parc." type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VLR" label="Vlr. Portal" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessEqualThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRFIN" label="Vlr. Financ." type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VLRDEVOL" label="Vlr. Devoluções" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRTOTAL" label="Vlr. Líquido" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessEqualThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field><field name="REP" label="%" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field><field name="CODCTACTB2" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><refresh-details  ui-list="cht_fnz5rv,grd_bfay0f">
+          <param id="PARCEIRO">$CODPARC</param>
+        </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="44"><chart id="cht_fnz5rv" type="pizza"><args><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Total por Status - Referência: :DAT1 - Empresa(s): :CODEMP - Fornecedor: $P_PARCEIRO]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT abs(SUM(VALOR)) AS VALOR, CLASSIFICACAO, :PARCEIRO AS PARCEIRO2 FROM(
+--TITULOS ORIGEM PORTAL - TOP TIPO "C"/"E"
+SELECT
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR
+FROM 
+TGFFIN FIN 
+LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+WHERE
+FIN.CODEMP IN :CODEMP  AND  
+FIN.DTENTSAI <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+((T.TIPMOV IN ('C') AND FIN.RECDESP = -1) OR 
+(T.TIPMOV IN ('O') AND FIN.RECDESP = -1 AND T.ATUALCTB = 'S') OR 
+ (T.TIPMOV IN ('E') AND FIN.RECDESP = 1)) AND
+FIN.CODTIPOPER <> 0 AND  
+FIN.RECDESP = -1 AND
+(FIN.CODPARC = :PARCEIRO OR :PARCEIRO = 0) AND
+:OUTROS IN ('A','P')
+GROUP BY FIN.DTVENC, FIN.DHBAIXA
+UNION ALL
+--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+SELECT
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago/Compensado'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR
+FROM 
+TGFFIN FIN 
+LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+WHERE
+FIN.CODEMP IN :CODEMP  AND  
+FIN.DTENTSAI <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+T.TIPMOV IN ('I') AND 
+NAT.AD_TIPOCTBZ = 'N' AND
+FIN.CODTIPOPER <> 0 AND  
+FIN.RECDESP = -1 AND
+(FIN.CODPARC = :PARCEIRO OR :PARCEIRO = 0) AND
+T.TIPMOV||'-'||NAT.CODNAT NOT IN ('I-301006') AND
+:OUTROS IN ('A','P')
+GROUP BY FIN.DTVENC, FIN.DHBAIXA)
+Group by classificacao]]></expression><metadata><field name="VALOR" label="Valor" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="PARCEIRO2" label="Cód. Parc." type="S" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>$VALOR</field><nameField>$CLASSIFICACAO</nameField><refresh-details  ui-list="grd_bfay0f">
+              <param id="PARCEIRO">$PARCEIRO2</param>
+              <param id="CLASSIFICACAO">$CLASSIFICACAO</param>
+            </refresh-details></serie></series><legend position="top" direction="v"></legend></chart></container></container></container><container orientacao="V" tamanhoRelativo="51"><container orientacao="V" tamanhoRelativo="325"><grid id="grd_bfay0f" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Referência: :DAT1 - Empresa(s): :CODEMP - Fornecedor: $P_PARCEIRO]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+	--TITULOS ORIGEM PORTAL - TOP TIPO "C"/"E"
+	SELECT
+	CASE WHEN T.TIPMOV = 'C' THEN 'Compra'
+		 WHEN T.TIPMOV = 'E' THEN 'Devolução'
+		 ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTENTSAI, 
+	FIN.DTNEG, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	(FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 1
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 2
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 3
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 3
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 3
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 3
+	     ELSE 3 END AS CLASS,
+	PAR.CODCTACTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+    LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+	WHERE
+	FIN.CODEMP IN :CODEMP  AND  
+	FIN.DTENTSAI <= :DAT1 AND 
+	(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+	DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+	((T.TIPMOV IN ('C') AND FIN.RECDESP = -1) OR
+     (T.TIPMOV IN ('O') AND FIN.RECDESP = -1 AND T.ATUALCTB = 'S') OR  
+	 (T.TIPMOV IN ('E') AND FIN.RECDESP = 1)) AND
+	(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+	:OUTROS IN ('A','P')
+	
+	UNION ALL
+	
+	--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+	SELECT
+	CASE WHEN T.TIPMOV <> 'I' THEN 'Outro'
+		 ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTENTSAI, 
+	FIN.DTNEG, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	(FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 1
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 2
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 3
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 3
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 3
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 3
+	     ELSE 3 END AS CLASS,
+	PAR.CODCTACTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+    LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+	WHERE
+	FIN.CODEMP IN :CODEMP  AND  
+	FIN.DTENTSAI <= :DAT1 AND 
+	(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+	DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+	T.TIPMOV IN ('I') AND
+	FIN.CODTIPOPER <> 0 AND  
+	FIN.RECDESP = -1 AND
+	NAT.AD_TIPOCTBZ = 'N' AND
+	(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+    T.TIPMOV||'-'||NAT.CODNAT NOT IN ('I-301006') AND
+	:OUTROS IN ('A','F')
+	)
+WHERE (CLASSIFICACAO = :CLASSIFICACAO OR :CLASSIFICACAO IS NULL)
+ORDER BY CODPARC, DTVENC]]></expression><metadata><field name="ORIGEM" label="Origem" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Dcto" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vencto" type="D" visible="true" useFooter="false"><formatter  formula="true"><formula ><![CDATA[$CLASS == 3]]></formula><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descr. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="Nro. Reneg." type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="CLASS" label="CLASS" type="F" visible="false" useFooter="false"></field><field name="CODCTACTB2" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+        <NUFIN>$NUFIN</NUFIN>
+      </on-click-launcher></grid></container></container></container></level><level id="lvl_ve48e0" description="Folha e Impostos a Pagar"><args >
+    <arg id="CLASSIFICACAO" type="text" label="CLASSIFICACAO : Texto"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="44"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_zduam4" useNewGrid="S"><args><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Folha e Impostos a Pagar/Recuperar - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+FIN.CODNAT, 
+NAT.DESCRNAT, 
+NVL(SUM(FIN.VLRDESDOB*FIN.RECDESP),0) AS VALOR
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+NVL(FIN.DTENTSAI,FIN.DTNEG) <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+NAT.AD_TIPOCTBZ = 'D' AND
+NAT.CODNAT NOT IN (340002)
+GROUP BY FIN.CODNAT, NAT.DESCRNAT
+UNION ALL
+SELECT 0 AS CODNAT, '. Todos' AS DESCRNAT, 0 AS VALOR FROM DUAL
+ORDER BY CODNAT]]></expression><metadata><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field></metadata><refresh-details  ui-list="cht_zduanb,grd_zduand">
+            <param id="NATUREZA">$CODNAT</param>
+          </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_zduanb" type="pizza"><args><arg id="NATUREZA" type="text"></arg></args><title><![CDATA[Folha e Impostos por Status - Natureza: $P_NATUREZA - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(ABS(VALOR)) AS VALOR, CLASSIFICACAO, :NATUREZA AS NATUREZA2 FROM(
+SELECT
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+NVL(SUM(FIN.VLRDESDOB),0) AS VALOR
+FROM TGFFIN FIN , TGFPAR PAR , TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+NVL(FIN.DTENTSAI,FIN.DTNEG) <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+NAT.AD_TIPOCTBZ = 'D' AND
+NAT.CODNAT NOT IN (340002) AND
+(FIN.CODNAT = :NATUREZA OR :NATUREZA = 0)
+GROUP BY FIN.DTVENC, FIN.DHBAIXA)
+GROUP BY CLASSIFICACAO]]></expression><metadata><field name="VALOR" label="Valor" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="NATUREZA2" label="NATUREZA2" type="S" visible="false" useFooter="false"></field></metadata><series><serie type="pizza"><field>$VALOR</field><nameField>$CLASSIFICACAO</nameField><refresh-details  ui-list="grd_zduand">
+                <param id="NATUREZA">$NATUREZA2</param>
+                <param id="CLASSIFICACAO">$CLASSIFICACAO</param>
+              </refresh-details></serie></series><legend position="top" direction="v"></legend></chart></container></container><container orientacao="V" tamanhoRelativo="56"><grid id="grd_zduand" useNewGrid="S"><args><arg id="NATUREZA" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Natureza: $P_NATUREZA - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+SELECT 
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODEMP,
+FIN.DTENTSAI, 
+FIN.DTNEG, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) As VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.CODTIPOPER,
+FIN.NURENEG,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+	WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+HISTORICO,
+NAT.CODCTACTB
+FROM TGFFIN FIN , TGFPAR PAR, TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+NVL(FIN.DTENTSAI,FIN.DTNEG) <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+NAT.AD_TIPOCTBZ = 'D' AND
+NAT.CODNAT NOT IN (340002) AND
+(FIN.CODNAT = :NATUREZA or :NATUREZA = 0)
+ORDER BY FIN.CODPARC, FIN.DTVENC
+)
+WHERE (CLASSIFICACAO = :CLASSIFICACAO OR :CLASSIFICACAO IS NULL)]]></expression><metadata><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Emp." type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negoc." type="D" visible="false" useFooter="false"></field><field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Unico" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter><formatter  formula="true"><formula ><![CDATA[$CLASSIFICACAO LIKE "Vencido"]]></formula><![CDATA[<span style="; src:iconWarning">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vcto" type="D" visible="true" useFooter="false"></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="Nro Reneg." type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher></grid></container></container></level><level id="lvl_2b3dey" description="Empréstimos"><args >
+    <arg id="PARCEIRO" type="text" label="PARCEIRO : Texto"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="43"><container orientacao="V" tamanhoRelativo="43"><grid id="grd_sywx5v" useNewGrid="S"><title><![CDATA[Saldo Devedor por Instituição - Referência: :DAT1 - Empresa(s): :CODEMP]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CODPARC, RAZAOSOCIAL, SUM(VRCP) AS VRCP, SUM(VRLP) AS VRLP, SUM(VRTOT) AS VRTOT  FROM (
+SELECT 
+FIN.CODPARC,
+NVL(PAR.NOMEPARC,PAR.RAZAOSOCIAL) AS RAZAOSOCIAL,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN (FIN.VLRDESDOB)*FIN.RECDESP ELSE 0 END As VRCP,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN 0 ELSE (FIN.VLRDESDOB)*FIN.RECDESP END As VRLP,
+FIN.VLRDESDOB*FIN.RECDESP AS VRTOT, 
+FIN.DTENTSAI, 
+FIN.NUMNOTA,
+FIN.NUFIN, 
+FIN.DTVENC, 
+(FIN.VLRDESDOB*FIN.RECDESP) As VALORDESDOB, 
+FIN.CODTIPOPER, 
+FIN.HISTORICO
+FROM 
+TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+(NAT.AD_TIPOCTBZ = 'E')
+)
+GROUP BY CODPARC, RAZAOSOCIAL
+UNION ALL
+SELECT 0 AS CODPARC, ' .TODOS' AS RAZAOSOCIAL, 0 AS VRCP, 0 AS VRLP, 0 AS VRTOT FROM DUAL
+
+ORDER BY RAZAOSOCIAL]]></expression><metadata><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VRCP" label="Curto Prazo" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VRLP" label="Longo Prazo" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VRTOT" label="Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field></metadata><refresh-details  ui-list="cht_8nq1k9,grd_sywxtb,grd_0WO">
+        <param id="PARCEIRO">$CODPARC</param>
+      </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="57"><chart id="cht_8nq1k9" type="column" nroColuna="6"><args><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Saldo Devedor por Contrato - Referência: :DAT1 - Empresa(s): :CODEMP - Instituição: $P_NOME]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT REPLACE(RAZAOSOCIAL,'BANCO ','') AS RAZAOSOCIAL, CODNAT, NUMNOTA, :PARCEIRO AS PARCEIRO2, ABS(SUM(VRCP)) AS VRCP, ABS(SUM(VRLP)) AS VRLP, COUNT(NUFIN) AS QTDE FROM (
+SELECT 
+FIN.CODPARC,
+CASE WHEN FIN.CODNAT = 0902010 THEN PAR.NOMEPARC ELSE PAR.NOMEPARC||' - '||NUMNOTA END AS RAZAOSOCIAL,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN (FIN.VLRDESDOB)*FIN.RECDESP ELSE 0 END As VRCP,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN 0 ELSE (FIN.VLRDESDOB)*FIN.RECDESP END As VRLP,
+FIN.VLRDESDOB*FIN.RECDESP AS VRTOT,
+FIN.DTENTSAI, 
+FIN.CODNAT,
+NAT.DESCRNAT AS NUMNOTA,
+FIN.NUFIN, 
+FIN.DTVENC, 
+(FIN.VLRDESDOB*FIN.RECDESP) As VALORDESDOB, 
+FIN.CODTIPOPER, 
+FIN.HISTORICO
+FROM 
+TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+(NAT.AD_TIPOCTBZ = 'E') AND
+(FIN.CODPARC = :PARCEIRO OR :PARCEIRO = 0)
+)
+GROUP BY RAZAOSOCIAL, NUMNOTA, CODNAT
+ORDER BY RAZAOSOCIAL, NUMNOTA]]></expression><metadata><field name="RAZAOSOCIAL" label="Contrato" type="S" visible="true" useFooter="false"></field><field name="CODNAT" label="CODNAT" type="I" visible="false" useFooter="false"></field><field name="NUMNOTA" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="PARCEIRO2" label="PARCEIRO2" type="S" visible="true" useFooter="false"></field><field name="VRCP" label="Total Curto Prazo:" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="VRLP" label="Total Longo Prazo:" type="F" visible="true" useFooter="false" mask="#.##0,00;(n)"></field><field name="QTDE" label="Qtde Parcelas:" type="I" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="$NUMNOTA" rotation="-17" dropLabel="false"><initView value="disabled"></initView><title>Contratos</title></category></horizontal-axis><vertical-axis><linear resultRotation="-20" vResizing="true"><mask>#.##0;-n</mask><showStackLabels /><title>Endividamento</title></linear></vertical-axis><series><set type="stacked"><serie type="column"><xField>$RAZAOSOCIAL</xField><yField>$VRLP</yField><display><![CDATA[Qtde Parcelas: $QTDE]]></display><refresh-details  ui-list="grd_sywxtb,grd_0WO">
+              <param id="PARCEIRO">$PARCEIRO2</param>
+              <param id="CODNAT">$CODNAT</param>
+            </refresh-details></serie><serie type="column"><xField>$RAZAOSOCIAL</xField><yField>$VRCP</yField><display><![CDATA[Qtde Parcelas: $QTDE]]></display><refresh-details  ui-list="grd_sywxtb,grd_0WO">
+              <param id="PARCEIRO">$PARCEIRO2</param>
+              <param id="CODNAT">$CODNAT</param>
+            </refresh-details></serie></set></series></chart></container></container><container orientacao="H" tamanhoRelativo="57"><container orientacao="H" tamanhoRelativo="79"><grid id="grd_sywxtb" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CODNAT" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Rerefência: :DAT1 - Empresa(s): :CODEMP - Instituição: $P_NOME]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+FIN.CODPARC, 
+NVL(PAR.NOMEPARC,PAR.RAZAOSOCIAL) AS RAZAOSOCIAL, 
+FIN.DTENTSAI, 
+FIN.NUMNOTA, 
+FIN.NUFIN,
+CASE WHEN NAT.AD_TIPOCTBZ= 'E' THEN FIN.VLRDESDOB*FIN.RECDESP ELSE NULL END As VALOR, 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+     WHEN MONTHS_BETWEEN(TRUNC(DTVENC),TO_CHAR(:DAT1,'DD/MM/YYYY')) <= 12 THEN 'Vencidos ou a Vencer até 12 meses' 
+     ELSE 'Vencimento maior que 12 meses' END As "Prazo_CP_ou_LP", 
+FIN.CODTIPOPER, 
+FIN.HISTORICO,
+PAR.CODCTACTB3 AS CTBCP,
+PAR.CODCTACTB4 AS CTBLP
+FROM 
+TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+(NAT.AD_TIPOCTBZ = 'E') AND
+(FIN.CODPARC= :PARCEIRO OR :PARCEIRO = 0) AND
+(FIN.CODNAT = :CODNAT OR :CODNAT IS NULL)
+ORDER BY CODPARC, DTVENC, DTENTSAI, NUMNOTA, FIN.CODNAT DESC]]></expression><metadata><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Operação" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Contrato" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="VALOR" label="Valor Parcela" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vcto" type="D" visible="true" useFooter="false"></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="Prazo_CP_ou_LP" label="Status" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CTBCP" label="CTBCP" type="I" visible="true" useFooter="false"></field><field name="CTBLP" label="CTBLP" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+        <NUFIN>$NUFIN</NUFIN>
+      </on-click-launcher></grid></container><container orientacao="H" tamanhoRelativo="21"><grid id="grd_0WO" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CODNAT" type="text"></arg></args><title><![CDATA[Posição por Vencimento]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ANOMES, MESANO, SUM(VRTOT) AS VRTOT FROM (
+SELECT 
+TO_CHAR(FIN.DTVENC,'YYYY/MM') AS ANOMES,
+TO_CHAR(FIN.DTVENC,'MM/YYYY') AS MESANO,
+FIN.VLRDESDOB*FIN.RECDESP AS VRTOT
+FROM 
+TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+(NAT.AD_TIPOCTBZ = 'E') AND
+(FIN.CODPARC= :PARCEIRO OR :PARCEIRO = 0) AND
+(FIN.CODNAT = :CODNAT OR :CODNAT IS NULL)
+)
+GROUP BY 
+ANOMES,MESANO
+ORDER BY ANOMES]]></expression><metadata><field name="ANOMES" label="ANOMES" type="S" visible="false" useFooter="false"></field><field name="MESANO" label="Mês/Ano" type="S" visible="true" useFooter="false"></field><field name="VRTOT" label="A Pagar" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field></metadata></grid></container></container></container></level><level id="lvl_ax0j1b6" description="Parcelamentos"><args >
+    <arg id="NATUREZA2" type="text"/>
+    <arg id="PROCESSO" type="integer"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="37"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_ax0j1b7" useNewGrid="S"><args><arg id="NATUREZA2" type="text"></arg><arg id="PROCESSO" type="integer"></arg></args><title><![CDATA[Parcelamentos por Processo - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CODNAT, DESCRNAT, SUM(VRCP) AS VRCP, SUM(VRLP) AS VRLP, SUM(VRTOT) AS VRTOT FROM (
+SELECT 
+FIN.CODNAT,
+NAT.DESCRNAT,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN (FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP ELSE 0 END As VRCP,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN 0 ELSE (FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP END As VRLP,
+FIN.DTENTSAI As "DtOperacao", 
+FIN.NUMNOTA As "Nro_Nota", 
+FIN.DTVENC As "DtVencto", 
+(FIN.VLRDESDOB*FIN.RECDESP) As "Vlr_Amortizacao", 
+(FIN.VLRJURO*FIN.RECDESP) As "Vlr_Juros", 
+((FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP) As "VRTOT", 
+FIN.CODTIPOPER As "Top", 
+FIN.HISTORICO As "Historico", 
+FIN.NUFIN As Nufin 
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+NAT.CODNATPAI= 040500
+)
+GROUP BY CODNAT, DESCRNAT
+
+UNION ALL
+
+SELECT 0 AS CODNAT, ' .Todos' AS DESCRNAT, 0 AS VRCP, 0 AS VRLP, 0 AS VRTOT FROM DUAL
+
+ORDER BY CODNAT]]></expression><metadata><field name="CODNAT" label="Natureza" type="S" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="VRCP" label="Vr. Curto Prazo" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VRLP" label="Vr. Longo Prazo" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VRTOT" label="Vr. Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field></metadata><refresh-details  ui-list="grd_azopkp0">
+        <param id="NATUREZA">$CODNAT</param>
+      </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_azopkp0" useNewGrid="S"><args><arg id="NATUREZA" type="text"></arg></args><title><![CDATA[Parcelamentos por Processo - Referência: :DAT1 - Selecionado: $P_NATUREZA]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT NUMNOTA,DTENTSAI, COUNT(NUFIN) AS QTDE, SUM(VRCP) AS VRCP, SUM(VRLP) AS VRLP, SUM(VRTOT) AS VRTOT, :NATUREZA AS NATUREZA2 FROM (
+SELECT 
+FIN.NUMNOTA,
+FIN.CODNAT,
+NAT.DESCRNAT,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN (FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP ELSE 0 END As VRCP,
+CASE WHEN MONTHS_BETWEEN(DTVENC,:DAT1) <= 12 THEN 0 ELSE (FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP END As VRLP,
+FIN.DTENTSAI, 
+FIN.NUMNOTA As "Nro_Nota", 
+FIN.DTVENC As "DtVencto", 
+(FIN.VLRDESDOB*FIN.RECDESP) As "Vlr_Amortizacao", 
+(FIN.VLRJURO*FIN.RECDESP) As "Vlr_Juros", 
+((FIN.VLRDESDOB + FIN.VLRJURO)*FIN.RECDESP) As "VRTOT", 
+FIN.CODTIPOPER As "Top", 
+FIN.HISTORICO As "Historico", 
+FIN.NUFIN As Nufin 
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+NAT.CODNATPAI= 040500 AND
+(NAT.CODNAT = :NATUREZA OR :NATUREZA = 0)
+
+)
+GROUP BY NUMNOTA, DTENTSAI
+
+UNION ALL
+
+SELECT 0 AS NUMNOTA, TO_DATE('01/01/1900','DD/MM/YYYY') AS DTENTSAI, 0 AS QTDE, 0 AS VRCP, 0 AS VRLP, 0 AS VRTOT, :NATUREZA AS NATUREZA2 FROM DUAL
+
+ORDER BY DTENTSAI, NUMNOTA]]></expression><metadata><field name="NUMNOTA" label="Nro Processo" type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Operação" type="D" visible="true" useFooter="false"></field><field name="QTDE" label="Qtde" type="I" visible="true" useFooter="null"></field><field name="VRCP" label="Vr. Curto Prazo" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VRLP" label="Vr. Longo Prazo" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VRTOT" label="Vr. Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field><field name="NATUREZA2" label="NATUREZA2" type="S" visible="false" useFooter="false"></field></metadata><refresh-details  ui-list="grd_ax0j1k9">
+    <param id="NATUREZA">$NATUREZA2</param>
+    <param id="PROCESSO">$NUMNOTA</param>
+  </refresh-details></grid></container></container><container orientacao="V" tamanhoRelativo="63"><grid id="grd_ax0j1k9" useNewGrid="S"><args><arg id="NATUREZA" type="text"></arg><arg id="PROCESSO" type="integer"></arg></args><title><![CDATA[Detalhamento dos Parcelamentos - Referência: :DAT1 - Selecionado: $P_NATUREZA - Processo: $P_PROCESSO]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM (
+SELECT 
+FIN.DTENTSAI, 
+FIN.CODPARC ||' - '||PAR.RAZAOSOCIAL AS "PARCEIRO", 
+FIN.NUFIN,
+FIN.NUMNOTA, 
+(FIN.VLRDESDOB*FIN.RECDESP) As "VLRDESDOB", 
+FIN.DTVENC, 
+FIN.DHBAIXA,
+FIN.HISTORICO,
+CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago' 
+     WHEN MONTHS_BETWEEN(TRUNC(DTVENC),TO_CHAR(:DAT1,'DD/MM/YYYY')) < 0 THEN 'Vencido' 
+     WHEN MONTHS_BETWEEN(TRUNC(DTVENC),TO_CHAR(:DAT1,'DD/MM/YYYY')) <= 12 THEN 'A vencer até 12 meses' 
+     ELSE 'Vencimento maior que 12 meses' END As "Prazo_CP_ou_LP",
+FIN.CODNAT||' - '||NAT.DESCRNAT AS "NATUREZA",
+FIN.CODNAT,
+NAT.CODCTACTB AS CTACTBCP,
+NAT.CODCTACTB2 AS CTACTBLP
+FROM TGFFIN FIN, TGFPAR PAR, TGFNAT NAT
+WHERE PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.CODNAT = NAT.CODNAT AND
+FIN.CODEMP IN :CODEMP AND  
+FIN.DTENTSAI <= :DAT1 AND  
+(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+FIN.RECDESP = -1 AND 
+FIN.PROVISAO = 'N' AND 
+NAT.CODNATPAI= 040500 AND
+(FIN.NUMNOTA = :PROCESSO OR :PROCESSO = 0)
+)
+WHERE
+(CODNAT= :NATUREZA OR :NATUREZA = 0)
+ORDER BY 
+NATUREZA,
+DTVENC,
+DTENTSAI,
+NUMNOTA,
+NUFIN]]></expression><metadata><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="PARCEIRO" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Dcto" type="I" visible="true" useFooter="false"></field><field name="VLRDESDOB" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vencto" type="D" visible="true" useFooter="false"></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="Prazo_CP_ou_LP" label="Status" type="S" visible="true" useFooter="false"></field><field name="NATUREZA" label="Natureza" type="S" visible="true" useFooter="false"></field><field name="CODNAT" label="CODNAT" type="I" visible="false" useFooter="false"></field><field name="CTACTBCP" label="Cta Ctb CP" type="I" visible="true" useFooter="false"></field><field name="CTACTBLP" label="Cta Ctb LP" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+      <NUFIN>$NUFIN</NUFIN>
+    </on-click-launcher></grid></container></container></level><level id="lvl_ve47y3" description="Adtos"><args >
+    <arg id="NATUREZA" type="text"/>
+  </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="37"><container orientacao="H" tamanhoRelativo="116"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_ve47y8" useNewGrid="S"><title><![CDATA[Posição por Tipo - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CODNAT, DESCRNAT, SUM(VALOR) AS TOTAL FROM(
+SELECT 
+FIN.CODNAT, 
+NAT.DESCRNAT AS DESCRNAT,
+(FIN.VLRDESDOB * FIN.RECDESP) AS VALOR,
+FIN.DHBAIXA,
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+FIN.CODEMP,
+FIN.DTENTSAI, 
+FIN.DTNEG, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODTIPOPER
+FROM TGFFIN FIN , TGFPAR PAR, TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+FIN.DTNEG <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+T.TIPMOV IN ('I')  AND
+NAT.AD_TIPOCTBZ = 'A'
+)GROUP BY CODNAT, DESCRNAT
+UNION ALL
+SELECT 0 AS CODNAT, ' .TODOS' AS DESCRNAT, NULL AS TOTAL FROM DUAL
+ORDER BY CODNAT]]></expression><metadata><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="TOTAL" label="Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field></metadata><refresh-details  ui-list="grd_a7xegt4">
+          <param id="NATUREZA">$CODNAT</param>
+        </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_a7xegt4" useNewGrid="S"><args><arg id="NATUREZA" type="text"></arg></args><title><![CDATA[Posição Adiantamentos - Referência: :DAT1 - Natureza: $P_NATUREZA]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CODPARC, RAZAOSOCIAL, SUM(TOTAL) AS TOTAL, :NATUREZA AS NATUREZA2 FROM(
+SELECT 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL,
+((FIN.VLRDESDOB)* FIN.RECDESP) AS TOTAL,
+FIN.DHBAIXA,
+FIN.CODEMP,
+FIN.DTENTSAI, 
+FIN.DTNEG, 
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.CODTIPOPER
+FROM TGFFIN FIN , TGFPAR PAR, TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+FIN.DTNEG <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+T.TIPMOV IN ('I')  AND
+NAT.AD_TIPOCTBZ = 'A' AND
+(FIN.CODNAT = :NATUREZA or :NATUREZA = 0)
+)GROUP BY CODPARC, RAZAOSOCIAL
+UNION ALL
+SELECT 0 AS CODPARC, ' .TODOS' AS RAZAOSOCIAL, NULL AS TOTAL, :NATUREZA AS NATUREZA2 FROM DUAL
+ORDER BY TOTAL DESC]]></expression><metadata><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="TOTAL" label="Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field><field name="NATUREZA2" label="NATUREZA2" type="S" visible="false" useFooter="false"></field></metadata><refresh-details  ui-list="grd_ve47zc">
+      <param id="NATUREZA">$NATUREZA2</param>
+      <param id="PARCEIRO">$CODPARC</param>
+    </refresh-details></grid></container></container></container><container orientacao="V" tamanhoRelativo="63"><grid id="grd_ve47zc" useNewGrid="S"><args><arg id="NATUREZA" type="text"></arg><arg id="PARCEIRO" type="text"></arg></args><title><![CDATA[Detalhamento por Título - Referência: :DAT1 - Natureza: $P_NATUREZA]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+SELECT 
+FIN.CODNAT, 
+NAT.DESCRNAT,
+FIN.CODEMP,
+FIN.NUMNOTA, 
+FIN.NUFIN, 
+FIN.DTENTSAI, 
+FIN.DTNEG, 
+FIN.CODPARC, 
+PAR.RAZAOSOCIAL, 
+(FIN.VLRDESDOB * FIN.RECDESP) AS VALOR,
+FIN.DHBAIXA,
+FIN.CODTIPOPER,
+FIN.HISTORICO,
+NAT.CODCTACTB
+FROM TGFFIN FIN , TGFPAR PAR, TGFNAT NAT , TGFTOP T  
+WHERE FIN.CODTIPOPER = T.CODTIPOPER AND 
+PAR.CODPARC = FIN.CODPARC AND 
+FIN.CODPARC = PAR.CODPARC AND 
+FIN.DHTIPOPER = T.DHALTER AND 
+FIN.CODNAT = NAT.CODNAT AND 
+FIN.CODEMP IN :CODEMP  AND  
+FIN.DTENTSAI <= :DAT1 AND 
+(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+T.TIPMOV IN ('I')  AND
+NAT.AD_TIPOCTBZ = 'A' AND
+(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+(FIN.CODNAT = :NATUREZA or :NATUREZA = 0)
+ORDER BY FIN.CODPARC, FIN.DTVENC
+)
+ORDER BY
+RAZAOSOCIAL, DTENTSAI, NUMNOTA]]></expression><metadata><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descr. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Emp." type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Doc." type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Operação" type="D" visible="false" useFooter="false"></field><field name="DTNEG" label="Dt. Negoc." type="D" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Principal" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+      <NUFIN>$NUFIN</NUFIN>
+    </on-click-launcher></grid></container></container></level><level id="lvl_btf5c4" description="Auditoria Contábil"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_izlfrd" useNewGrid="S"><title><![CDATA[Auditoria Contábil x Financeira - Referência: :DAT1]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+
+SELECT 
+TIPO,
+CODPARC,
+RAZAOSOCIAL,
+SUM(VLRTOTALFIN) AS VLRTOTALFIN,
+SUM(VLRTOTALFIN) - SUM(VLRTOTALCTB) AS VLRDIVERGENCIA,
+SUM(VLRTOTALCTB) AS VLRTOTALCTB,
+CODCTACTB,
+CTACTB,
+DESCRCTA
+FROM(
+
+	-- CLIENTES - POSIÇÃO FINANCEIRA
+	SELECT 
+	TIPO,
+	CODPARC,
+	UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL,
+	SUM(VALOR) AS VLRTOTALFIN,
+	CODCTACTB,
+	CTACTB,
+	DESCRCTA,
+	0 AS VLRTOTALCTB
+	FROM(
+	
+	/*CLIENTES EM ABERTO E DEVOLUÇÕES DE CLIENTES EM ABERTO - INICIO*/
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "V"
+		SELECT 
+		CASE WHEN T.TIPMOV = 'V' THEN 'CLIENTES'
+			 WHEN T.TIPMOV = 'D' THEN 'DEVOL. VENDA'
+		     ELSE 'CLIENTES' END AS TIPO,
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+		CASE WHEN T.TIPMOV = 'V' THEN PAR.CODCTACTB
+			 WHEN T.TIPMOV = 'D' THEN 197
+		     ELSE PAR.CODCTACTB END AS CODCTACTB,
+		CASE WHEN T.TIPMOV = 'V' THEN PLA.CTACTB
+			 WHEN T.TIPMOV = 'D' THEN '2.1.01.10.004'
+		     ELSE PLA.CTACTB END AS CTACTB,
+		CASE WHEN T.TIPMOV = 'V' THEN PLA.DESCRCTA
+			 WHEN T.TIPMOV = 'D' THEN 'DEVOL. VENDAS A COMPENSAR'
+		     ELSE PLA.CTACTB END AS DESCRCTA
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+		LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+		WHERE
+		FIN.CODEMP IN :CODEMP AND  
+		(CASE WHEN T.TIPMOV = 'V' THEN FIN.DTNEG ELSE FIN.DTENTSAI END) <= :DAT1 AND  
+		(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+		 DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+		((T.TIPMOV IN ('V') AND FIN.RECDESP = 1) OR
+		(T.TIPMOV IN ('D') AND FIN.RECDESP = -1))
+		
+		UNION ALL
+		
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+		SELECT 
+		'CLIENTES' AS TIPO,
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+		PAR.CODCTACTB AS CODCTACTB,
+		PLA.CTACTB,
+		PLA.DESCRCTA
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+		LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+		WHERE
+		FIN.CODEMP IN :CODEMP AND  
+		FIN.DTNEG <= :DAT1 AND  
+		(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+		 DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+		T.TIPMOV IN ('I') AND 
+		FIN.RECDESP = 1 AND
+		NAT.AD_TIPOCTBZ = 'N'
+		/*CLIENTES EM ABERTO E DEVOLUÇÕES DE CLIENTES EM ABERTO - FIM*/	
+	) GROUP BY
+	TIPO, CODPARC, UPPER(RAZAOSOCIAL),CODCTACTB, CTACTB, DESCRCTA
+			
+		UNION ALL
+		
+		--CLIENTES - POSIÇÃO CONTÁBIL
+		SELECT
+		CASE WHEN CODCTACTB = 197 THEN 'DEVOL. VENDA' ELSE 'CLIENTES' END AS TIPO,
+		CODPARC,
+		RAZAOSOCIAL,
+		0 AS VLRTOTALFIN,
+		CODCTACTB,
+		CTACTB,
+		DESCRCTA,
+		SUM(VLRTOTAL) AS VLRTOTALCTB
+		FROM(
+			SELECT
+			PAR.CODPARC,
+			PAR.RAZAOSOCIAL,
+			LAN.CODCTACTB,
+			PLA.CTACTB,
+			PLA.DESCRCTA,
+			LAN.VLRLANC*DECODE(LAN.TIPLANC,'R',-1,1) AS VLRTOTAL
+			FROM
+			TCBLAN LAN
+			LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = LAN.CODCTACTB
+			LEFT JOIN TGFPAR PAR ON PAR.CODCTACTB = PLA.CODCTACTB
+			WHERE
+			LAN.DTMOV <= :DAT1 AND 
+			LAN.CODEMP IN :CODEMP AND
+			(PLA.CODCTACTBPAI = 169 OR LAN.CODCTACTB = 197)
+		)
+		GROUP BY CODPARC, RAZAOSOCIAL, CODCTACTB, CTACTB, DESCRCTA
+		HAVING SUM(VLRTOTAL) <> 0
+)
+GROUP BY TIPO, CODPARC, RAZAOSOCIAL, CODCTACTB, CTACTB, DESCRCTA
+HAVING SUM(VLRTOTALFIN) <> SUM(VLRTOTALCTB)
+
+UNION ALL
+
+SELECT 
+TIPO,
+CODPARC,
+RAZAOSOCIAL,
+SUM(VLRTOTALFIN) AS VLRTOTALFIN,
+SUM(VLRTOTALFIN) - SUM(VLRTOTALCTB) AS VLRDIVERGENCIA,
+SUM(VLRTOTALCTB) AS VLRTOTALCTB,
+CODCTACTB,
+CTACTB,
+DESCRCTA
+FROM(
+
+	-- FORNECEDORES - POSIÇÃO FINANCEIRA
+	SELECT 
+	TIPO,
+	CODPARC,
+	UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL,
+	SUM(VALOR) AS VLRTOTALFIN,
+	CODCTACTB AS CODCTACTB,
+	CTACTB,
+	DESCRCTA,
+	0 AS VLRTOTALCTB
+	FROM(	
+		/*FORNECEDORES EM ABERTO E DEVOLUÇÕES DE FORNECEDORES EM ABERTO - INICIO*/
+		--TITULOS ORIGEM PORTAL - TOP TIPO "C"/"E"
+		SELECT
+		CASE WHEN T.TIPMOV = 'C' THEN 'FORNECEDORES'
+			 WHEN T.TIPMOV = 'E' THEN 'DEVOL. COMPRA'
+		     ELSE 'FORNECEDORES' END AS TIPO,
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		NVL(((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) As VALOR, 
+		CASE WHEN T.TIPMOV = 'C' THEN PAR.CODCTACTB2
+			 WHEN T.TIPMOV = 'E' THEN 198
+			 ELSE PAR.CODCTACTB2 END AS CODCTACTB,
+		CASE WHEN T.TIPMOV = 'C' THEN PLA.CTACTB
+			 WHEN T.TIPMOV = 'E' THEN '1.1.03.10.003'
+			 ELSE PLA.CTACTB END AS CTACTB,
+		CASE WHEN T.TIPMOV = 'C' THEN PLA.DESCRCTA
+			 WHEN T.TIPMOV = 'E' THEN 'DEVOL. DE COMPRAS A COMPENSAR'
+			 ELSE PLA.DESCRCTA END AS DESCRCTA
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+		LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+		LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		((T.TIPMOV IN ('C') AND FIN.RECDESP = -1) OR 
+		 (T.TIPMOV IN ('E') AND FIN.RECDESP = 1))
+		
+		UNION ALL
+		
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+		SELECT
+		'FORNECEDORES' AS TIPO,
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL, 
+		NVL(((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) As VALOR, 
+		PAR.CODCTACTB2 AS CODCTACTB,
+		PLA.CTACTB AS CTACTB,
+		PLA.DESCRCTA
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+		LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+		LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		T.TIPMOV IN ('I') AND
+		FIN.CODTIPOPER <> 0 AND  
+		FIN.RECDESP = -1 AND
+		NAT.AD_TIPOCTBZ = 'N' AND
+        T.TIPMOV||'-'||NAT.CODNAT NOT IN ('I-301006')
+		/*FORNECEDORES EM ABERTO E DEVOLUÇÕES DE FORNECEDORES EM ABERTO - FIM*/
+	)	
+	GROUP BY TIPO, CODPARC, RAZAOSOCIAL, CODCTACTB, CTACTB, DESCRCTA
+
+	UNION ALL
+	
+	--FORNECEDORES - POSIÇÃO CONTÁBIL
+	SELECT
+	CASE WHEN CODCTACTB = 198 THEN 'DEVOL. COMPRA' ELSE 'FORNECEDORES' END AS TIPO,
+	CODPARC,
+	RAZAOSOCIAL,
+	0 AS VLRTOTALFIN,
+	CODCTACTB,
+	CTACTB,
+	DESCRCTA,
+	SUM(VLRTOTAL) AS VLRTOTALCTB
+	FROM(
+		SELECT
+		PAR.CODPARC,
+		UPPER(PAR.RAZAOSOCIAL) AS RAZAOSOCIAL,
+		LAN.CODCTACTB,
+		PLA.CTACTB,
+		PLA.DESCRCTA,
+		LAN.VLRLANC*DECODE(LAN.TIPLANC,'R',-1,1) AS VLRTOTAL
+		FROM
+		TCBLAN LAN
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = LAN.CODCTACTB
+		LEFT JOIN TGFPAR PAR ON PAR.CODCTACTB2 = PLA.CODCTACTB
+		WHERE
+		LAN.DTMOV <= :DAT1 AND 
+		LAN.CODEMP IN :CODEMP AND
+		(PLA.CODCTACTBPAI = 194 OR PLA.CODCTACTB = 198)
+	)
+	GROUP BY CODPARC, RAZAOSOCIAL, CODCTACTB, CTACTB, DESCRCTA
+	HAVING SUM(VLRTOTAL) <> 0
+)
+GROUP BY TIPO, CODPARC, RAZAOSOCIAL, CODCTACTB, CTACTB, DESCRCTA
+HAVING SUM(VLRTOTALFIN) <> SUM(VLRTOTALCTB)
+
+)
+ORDER BY 1,5]]></expression><metadata><field name="TIPO" label="Tipo" type="S" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VLRTOTALFIN" label="Posição Financeira" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRDIVERGENCIA" label="Divergência" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  formula="true"><formula ><![CDATA[$CODCTACTB == 101191]]></formula><![CDATA[<span style="; background-color:#FF9933">$VALUE</span>]]></formatter><formatter  notEqualThan="0"><![CDATA[<span style="; background-color:#FFFF00">$VALUE</span>]]></formatter></field><field name="VLRTOTALCTB" label="Posição Contábil" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="CODCTACTB" label="Cta Ctb" type="I" visible="true" useFooter="false"></field><field name="CTACTB" label="Analítica" type="S" visible="true" useFooter="false"></field><field name="DESCRCTA" label="Descrição" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.mgecontab.mov.lancamentos.contabeis"/></grid></container></level><level id="0C1" description="Exportação Contábil"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_0C3" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM
+(
+
+	/*CLIENTES EM ABERTO E DEVOLUÇÕES DE CLIENTES EM ABERTO - INICIO*/
+	--TITULOS ORIGEM FINANCEIRO - TOP TIPO "V"
+	SELECT 
+	CASE WHEN T.TIPMOV = 'V' THEN '1 - Clientes em Aberto'
+		 WHEN T.TIPMOV = 'D' THEN '3 - Devoluções de Clientes em Aberto'
+	     ELSE '2 - Financeiro Receita em Aberto' END AS RELATORIO,
+	CASE WHEN T.TIPMOV = 'V' THEN 'Portal'
+		 WHEN T.TIPMOV = 'D' THEN 'Devolução'
+	     ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP, 
+	FIN.DTNEG,
+	FIN.DTENTSAI, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	FIN.HISTORICO,
+	CASE WHEN T.TIPMOV = 'V' THEN PAR.CODCTACTB
+		 WHEN T.TIPMOV = 'D' THEN 197
+	     ELSE PAR.CODCTACTB END AS CODCTACTB1,
+	NULL AS CODCTACTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+	LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+	WHERE
+	FIN.CODEMP IN :CODEMP AND  
+	(CASE WHEN T.TIPMOV = 'V' THEN FIN.DTNEG ELSE FIN.DTENTSAI END) <= :DAT1 AND  
+	(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+	 DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+	((T.TIPMOV IN ('V') AND FIN.RECDESP = 1) OR
+	(T.TIPMOV IN ('D') AND FIN.RECDESP = -1))
+	
+	UNION ALL
+	
+	--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+	SELECT
+	CASE WHEN T.TIPMOV = 'V' THEN '1 - Clientes em Aberto'
+		 WHEN T.TIPMOV = 'D' THEN '3 - Devoluções de Clientes em Aberto'
+	     ELSE '2 - Financeiro Receita em Aberto' END AS RELATORIO,
+	CASE WHEN T.TIPMOV <> 'I' THEN 'Portal'
+	     ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP, 
+	FIN.DTNEG, 
+	FIN.DTENTSAI,
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	(FIN.VLRDESDOB * FIN.RECDESP) - FIN.VLRJUROEMBUT - FIN.VLRMULTAEMBUT + FIN.VLRDESCEMBUT As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Recebido'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	FIN.HISTORICO,
+	PAR.CODCTACTB AS CODCTACTB,
+	NULL AS CODCTACTB
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+	LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+	WHERE
+	FIN.CODEMP IN :CODEMP AND  
+	FIN.DTNEG <= :DAT1 AND  
+	(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND
+	 DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0 AND  
+	T.TIPMOV IN ('I') AND 
+	FIN.RECDESP = 1 AND
+	NAT.AD_TIPOCTBZ = 'N'
+	/*CLIENTES EM ABERTO E DEVOLUÇÕES DE CLIENTES EM ABERTO - FIM*/
+
+UNION ALL
+
+	/*FORNECEDORES EM ABERTO E DEVOLUÇÕES DE FORNECEDORES EM ABERTO - INICIO*/
+	--TITULOS ORIGEM PORTAL - TOP TIPO "C"/"E"
+	SELECT
+	CASE WHEN T.TIPMOV = 'C' THEN '4 - Fornecedores em Aberto'
+		 WHEN T.TIPMOV = 'E' THEN '6 - Devolução à Fornecedores em Aberto'
+		 ELSE '5 - Financeiro Despesa em Aberto' END AS RELATORIO,
+	CASE WHEN T.TIPMOV = 'C' THEN 'Compra'
+		 WHEN T.TIPMOV = 'E' THEN 'Devolução'
+		 ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTNEG, 
+	FIN.DTENTSAI, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	NVL(((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) as VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	FIN.HISTORICO,
+	CASE WHEN T.TIPMOV = 'C' THEN PAR.CODCTACTB2
+		 WHEN T.TIPMOV = 'E' THEN 198
+		 ELSE PAR.CODCTACTB2 END AS CODCTACTB1,
+	NULL AS CODCTACTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+	LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+    LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+	WHERE
+	FIN.CODEMP IN :CODEMP  AND  
+	FIN.DTENTSAI <= :DAT1 AND 
+	(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+	DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+	((T.TIPMOV IN ('C') AND FIN.RECDESP = -1) OR 
+	 (T.TIPMOV IN ('E') AND FIN.RECDESP = 1))
+	
+	UNION ALL
+	
+	--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+	SELECT
+	CASE WHEN T.TIPMOV = 'C' THEN '4 - Fornecedores em Aberto'
+		 WHEN T.TIPMOV = 'E' THEN '6 - Devolução à Fornecedores em Aberto'
+		 ELSE '5 - Financeiro Despesa em Aberto' END AS RELATORIO,
+	CASE WHEN T.TIPMOV <> 'I' THEN 'Portal'
+	     ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTNEG, 
+	FIN.DTENTSAI, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	NVL(((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	FIN.HISTORICO,
+	PAR.CODCTACTB2 AS CODCTACTB1,
+	NULL AS CODCTACTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+	LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+    LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+	WHERE
+	FIN.CODEMP IN :CODEMP  AND  
+	FIN.DTENTSAI <= :DAT1 AND 
+	(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+	DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+	T.TIPMOV IN ('I') AND
+	FIN.CODTIPOPER <> 0 AND  
+	FIN.RECDESP = -1 AND
+	NAT.AD_TIPOCTBZ = 'N' AND
+    T.TIPMOV||'-'||NAT.CODNAT NOT IN ('I-301006')
+	/*FORNECEDORES EM ABERTO E DEVOLUÇÕES DE FORNECEDORES EM ABERTO - FIM*/
+
+UNION ALL
+
+	/*PARCELAMENTOS TRIBUTÁRIOS - INÍCIO*/
+	SELECT 
+	'8 - Parcelamentos Tributários em Aberto' AS RELATORIO,
+	'Financeiro' AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTNEG, 
+	FIN.DTENTSAI, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	(FIN.VLRDESDOB)*FIN.RECDESP As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODTIPTIT||' - '||upper(TIT.DESCRTIPTIT) AS TIPTIT,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago' 
+	     WHEN MONTHS_BETWEEN(TRUNC(DTVENC),TO_CHAR(:DAT1,'DD/MM/YYYY')) < 0 THEN 'Vencido' 
+	     WHEN MONTHS_BETWEEN(TRUNC(DTVENC),TO_CHAR(:DAT1,'DD/MM/YYYY')) <= 12 THEN 'A vencer até 12 meses' 
+	     ELSE 'Vencimento maior que 12 meses' END AS CLASSIFICACAO,
+	FIN.HISTORICO,
+	NAT.CODCTACTB AS CODCTACTB1,
+	NAT.CODCTACTB2 AS CODCATCTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+	LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+	WHERE
+	FIN.CODEMP IN :CODEMP AND  
+	FIN.DTENTSAI <= :DAT1 AND  
+	(FIN.DHBAIXA > :DAT1 OR FIN.DHBAIXA is null) AND 
+	FIN.RECDESP = -1 AND 
+	FIN.PROVISAO = 'N' AND 
+	NAT.CODNATPAI= 999999
+	/*PARCELAMENTOS TRIBUTÁRIOS - FIM*/	
+
+UNION ALL
+
+	/*ADIANTAMENTOS - INÍCIO*/	
+	SELECT 
+	'9 - Adiantamentos em Aberto' AS RELATORIO,
+	'Financeiro' AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTNEG, 
+	FIN.DTENTSAI, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	(FIN.VLRDESDOB)*FIN.RECDESP As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODTIPTIT||' - '||UPPER(TIT.DESCRTIPTIT) AS TIPTIT,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+		 WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	FIN.HISTORICO,
+	NAT.CODCTACTB AS CODCTACTB1,
+	NULL AS CODCATCTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB
+	LEFT JOIN TGFTIT TIT ON TIT.CODTIPTIT = FIN.CODTIPTIT
+	WHERE 
+	FIN.CODEMP IN :CODEMP  AND  
+	FIN.DTENTSAI <= :DAT1 AND 
+	(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+	DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+	T.TIPMOV IN ('I')  AND
+	NAT.AD_TIPOCTBZ = 'A'
+	/*ADIANTAMENTOS - FIM*/		
+	
+)
+ORDER BY 
+RELATORIO,
+CODPARC,
+DTENTSAI,
+CODNAT,
+DTVENC,
+NUMNOTA,
+NUFIN]]></expression><metadata><field name="RELATORIO" label="RELATORIO" type="S" visible="true" useFooter="false"></field><field name="ORIGEM" label="ORIGEM" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="CODEMP" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="DTNEG" type="D" visible="true" useFooter="false"></field><field name="DTENTSAI" label="DTENTSAI" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="NUMNOTA" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="NUFIN" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="CODPARC" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="RAZAOSOCIAL" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="VALOR" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="DTVENC" label="DTVENC" type="D" visible="true" useFooter="false"></field><field name="DHBAIXA" label="DHBAIXA" type="D" visible="true" useFooter="false"></field><field name="TIPTIT" label="TIPTIT" type="S" visible="true" useFooter="false"></field><field name="CODNAT" label="CODNAT" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="DESCRNAT" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="CODTIPOPER" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="NURENEG" type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="CLASSIFICACAO" type="S" visible="true" useFooter="false"></field><field name="HISTORICO" label="HISTORICO" type="S" visible="true" useFooter="false"></field><field name="CODCTACTB1" label="CODCTACTB1" type="I" visible="true" useFooter="false"></field><field name="CODCTACTB2" label="CODCTACTB2" type="I" visible="true" useFooter="false"></field></metadata></grid></container></level><level id="39F" description="Comissões"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="31.28128128128128"><grid id="grd_39J" useNewGrid="S"><args><arg id="PARCEIRO" type="text"></arg><arg id="CLASSIFICACAO" type="text"></arg></args><title><![CDATA[Total a Pagar por Fornecedor - Referência: :DAT1 - Empresa(s): :CODEMP]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+1 AS ORDEM,
+D.CODPARC, 
+D.RAZAOSOCIAL, 
+NULLIF(D.VLR,0) AS VLR,
+NULLIF(D.VLRFIN,0) AS VLRFIN,
+NULLIF(D.VLRDEVOL,0) AS VLRDEVOL,
+D.VLRTOTAL,
+(D.VLRTOTAL / SUM(D.VLRTOTAL) OVER () )*100 AS REP,
+CODCTACTB2
+FROM(
+
+	SELECT 
+	CODPARC, 
+	UPPER(RAZAOSOCIAL) AS RAZAOSOCIAL, 
+	SUM(VLR) AS VLR,
+    SUM(VLRFIN) AS VLRFIN,
+	SUM(VLRDEVOL) AS VLRDEVOL,
+	SUM(VALOR) AS VLRTOTAL,
+	CODCTACTB2
+	FROM(
+	
+		--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+		SELECT 
+		FIN.CODPARC, 
+		PAR.RAZAOSOCIAL,
+		T.TIPMOV,
+		0 AS VLR,
+        NVL(SUM((FIN.VLRDESDOB)*FIN.RECDESP),0) AS VLRFIN,
+		0 AS VLRDEVOL,
+		NVL(SUM((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) AS VALOR,
+		285 AS CODCTACTB2
+		FROM 
+		TGFFIN FIN 
+		LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+		LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+		LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+		LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+        LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+		WHERE 
+		FIN.CODEMP IN :CODEMP  AND  
+		FIN.DTENTSAI <= :DAT1 AND 
+		(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+		DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+		FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+		T.TIPMOV IN ('I') AND 
+		FIN.CODTIPOPER <> 0 AND  
+		FIN.RECDESP = -1 AND
+		NAT.AD_TIPOCTBZ = 'N' AND
+        T.TIPMOV||'-'||NAT.CODNAT IN ('I-301006') AND
+		:OUTROS IN ('A','F')
+		GROUP BY FIN.CODPARC, PAR.RAZAOSOCIAL, T.TIPMOV, PAR.CODCTACTB2
+		)
+		
+	GROUP BY CODPARC, RAZAOSOCIAL, CODCTACTB2
+	)D
+
+UNION ALL
+
+SELECT 0 AS ORDEM, 0 AS CODPARC, ' .TODOS' AS RAZAOSOCIAL, NULL AS VLR, NULL AS VLRFIN, NULL AS VLRDEVOL, NULL AS VLRTOTAL, NULL AS REP, NULL AS CODCTACTB FROM DUAL
+ORDER BY ORDEM, VLRTOTAL, RAZAOSOCIAL]]></expression><metadata><field name="ORDEM" label="ORDEM" type="F" visible="false" useFooter="false"></field><field name="CODPARC" label="Cód. Parc." type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VLR" label="Vlr. Portal" type="F" visible="false" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessEqualThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRFIN" label="Vlr. Comissão" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="VLRDEVOL" label="Vlr. Devoluções" type="F" visible="false" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="VLRTOTAL" label="Vlr. Líquido" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF"><b>$VALUE</b></span>]]></formatter><formatter  lessEqualThan="0"><![CDATA[<span style="color:#FF0000"><b>$VALUE</b></span>]]></formatter></field><field name="REP" label="%" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field><field name="CODCTACTB2" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><refresh-details  ui-list="grd_41Z">
+      <param id="PARCEIRO">$CODPARC</param>
+    </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="69.72881972881973"><grid id="grd_41Z" useNewGrid="S"><args><arg id="PARCEIRO" type="integer"></arg></args><title><![CDATA[Detalhamento por Título - Referência: :DAT1 - Empresa(s): :CODEMP - Fornecedor: $P_PARCEIRO]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM(
+	
+	--TITULOS ORIGEM FINANCEIRO - TOP TIPO "I"
+	SELECT
+	CASE WHEN T.TIPMOV <> 'I' THEN 'Outro'
+		 ELSE 'Financeiro' END AS ORIGEM,
+	FIN.CODEMP,
+	FIN.DTENTSAI, 
+	FIN.DTNEG, 
+	FIN.NUMNOTA, 
+	FIN.NUFIN, 
+	FIN.CODPARC, 
+	PAR.RAZAOSOCIAL, 
+	NVL(((FIN.VLRDESDOB-NVL(IMF.VALOR,0))*FIN.RECDESP),0) As VALOR, 
+	FIN.DTVENC, 
+	FIN.DHBAIXA,
+	FIN.CODNAT, 
+	NAT.DESCRNAT,
+	FIN.CODTIPOPER,
+	FIN.NURENEG,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 'Pago'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 'A Vencer'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 'Vencido até 30 dias'
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 'Vencido até 60 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 'Vencido até 90 dias'
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 'Vencido até 180 dias'
+	     ELSE 'Vencido mais de 180 dias' END AS CLASSIFICACAO,
+	CASE WHEN DHBAIXA IS NOT NULL THEN 1
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 0 THEN 2
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 30 THEN 3
+		WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 60 THEN 3
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 90 THEN 3
+	     WHEN to_date(:DAT1,'DD/MM/YYYY') - TO_DATE(FIN.DTVENC,'DD/MM/YYYY') <= 180 THEN 3
+	     ELSE 3 END AS CLASS,
+	285 AS CODCTACTB2
+	FROM 
+	TGFFIN FIN 
+	LEFT JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	LEFT JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	LEFT JOIN TGFTOP T ON T.CODTIPOPER = FIN.CODTIPOPER AND T.DHALTER = FIN.DHTIPOPER
+	LEFT JOIN TCBPLA PLA ON PLA.CODCTACTB = PAR.CODCTACTB2
+    LEFT JOIN (SELECT NUFIN, SUM(VALOR) AS VALOR FROM TGFIMF GROUP BY NUFIN) IMF ON IMF.NUFIN = FIN.NUFIN
+	WHERE
+	FIN.CODEMP IN :CODEMP  AND  
+	FIN.DTENTSAI <= :DAT1 AND 
+	(FIN.DHBAIXA > :DAT1  OR  FIN.DHBAIXA is null) AND 
+	DECODE(FIN.PROVISAO, 'S', 'Sim', 'Não') = 'Não' AND 
+	FIN.VLRDESDOB * FIN.RECDESP <> 0  AND  
+	T.TIPMOV IN ('I') AND
+	FIN.CODTIPOPER <> 0 AND  
+	FIN.RECDESP = -1 AND
+	NAT.AD_TIPOCTBZ = 'N' AND
+	(FIN.CODPARC = :PARCEIRO or :PARCEIRO = 0) AND
+    T.TIPMOV||'-'||NAT.CODNAT IN ('I-301006') AND
+	:OUTROS IN ('A','F')
+	)
+ORDER BY CODPARC, DTVENC]]></expression><metadata><field name="ORIGEM" label="Origem" type="S" visible="true" useFooter="false"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Entrada" type="D" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Dcto" type="I" visible="true" useFooter="false"></field><field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="SUM" mask="#.##0,00;(n)"><formatter  greaterThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter><formatter  lessThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DTVENC" label="Dt. Vencto" type="D" visible="true" useFooter="false"><formatter  formula="true"><formula ><![CDATA[$CLASS == 3]]></formula><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Descr. Natureza" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"></field><field name="NURENEG" label="Nro. Reneg." type="I" visible="true" useFooter="false"></field><field name="CLASSIFICACAO" label="Classificação" type="S" visible="true" useFooter="false"></field><field name="CLASS" label="CLASS" type="F" visible="false" useFooter="false"></field><field name="CODCTACTB2" label="Cta Ctb" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+      <NUFIN>$NUFIN</NUFIN>
+    </on-click-launcher></grid></container></container></level></gadget>

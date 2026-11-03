@@ -1,0 +1,64 @@
+<gadget ><prompt-parameters><parameter  id="DTINICIO" description="Data Inicial" metadata="date" required="true" keep-last="true" keep-date="false" order="0" label="DTINICIO : Data"/><parameter  id="DTFIM" description="Data Final" metadata="date" required="true" keep-last="true" keep-date="false" order="1" label="DTFIM : Data"/><parameter  id="P_NUMNOTA" description="Nrº Nota" metadata="integer" required="false" keep-last="false" keep-date="false" order="2" label="P_NUMNOTA : Número Inteiro"/></prompt-parameters><level id="lvl_ck4ihb" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_ck4ihc" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Conferencia DIFAL Entrada]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+		LIV.CODEMP,
+		CAB.CODTIPOPER,
+		CAB.CODPARC,
+		PAR.NOMEPARC,
+		LIV.NUMNOTA, 
+		ITE.NUNOTA, 
+		LIV.SERIENOTA, 
+		LIV.DTDOC,
+		LIV.DHMOV,
+		ITE.CODPROD, 
+		PRO.DESCRPROD,
+		PRO.NCM,
+		LIV.VLRCTB, 
+		
+		(SELECT DIF.BASEAJD
+		  FROM VGF_CALDIFAL_SPARK DIF
+         WHERE DIF.NUNOTA = LIV.NUNOTA 
+           AND DIF.SEQUENCIA = LIV.SEQUENCIA 
+	    ) AS BASEAJD,
+		
+		(SELECT DIF.ICMS
+		  FROM VGF_CALDIFAL_SPARK DIF
+         WHERE DIF.NUNOTA = LIV.NUNOTA 
+           AND DIF.SEQUENCIA = LIV.SEQUENCIA 
+	    ) AS ICMS,
+
+		ITE.ALIQICMS,
+		
+		(SELECT DIF.DIFAL
+		  FROM VGF_CALDIFAL_SPARK DIF
+         WHERE DIF.NUNOTA = LIV.NUNOTA 
+           AND DIF.SEQUENCIA = LIV.SEQUENCIA 
+	    ) AS DIFAL,	
+	
+		LIV.DIFICMS, 
+		LIV.CODCFO, 
+		LIV.UFORIGEM, 
+		LIV.UFDESTINO, 
+		AJD.VLRICMS AS VLRICMS195,
+		(CASE WHEN NVL(ROUND(LIV.DIFICMS,2),0)-NVL(ROUND(AJD.VLRICMS,2),0)<>0 THEN 0 ELSE 1 END) AS CONFERENCIA
+		
+FROM TGFLIV LIV,
+     TGFPAR PAR,
+	 TGFITE ITE, 
+	 TGFPRO PRO, 
+	 TGFAJD AJD,
+	 TGFCAB CAB
+
+
+WHERE   LIV.NUNOTA = ITE.NUNOTA
+	AND LIV.SEQUENCIA = ITE.SEQUENCIA
+	AND LIV.NUNOTA = AJD.NUNOTA
+    AND CAB.CODPARC = PAR.CODPARC
+	AND LIV.SEQUENCIA = AJD.SEQUENCIA
+	AND ITE.CODPROD = PRO.CODPROD
+	AND ITE.NUNOTA = CAB.NUNOTA
+	AND TRUNC(DHMOV) BETWEEN :DTINICIO AND :DTFIM
+	AND (LIV.NUMNOTA = :P_NUMNOTA OR :P_NUMNOTA IS NULL )
+	AND LIV.DIFICMS <> 0 
+	
+ORDER BY 1, 2, LIV.SEQUENCIA]]></expression><metadata><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parceiro " type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Nome Parceiro " type="S" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field><field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"></field><field name="SERIENOTA" label="Série" type="S" visible="true" useFooter="false"></field><field name="DTDOC" label="Dt. Documento" type="D" visible="true" useFooter="false"></field><field name="DHMOV" label="Dt. Ent/Sai" type="D" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="NCM" label="NCM" type="S" visible="true" useFooter="false"></field><field name="VLRCTB" label="Valor" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="BASEAJD" label="Base DIFAL " type="F" visible="true" useFooter="false"></field><field name="ICMS" label="Vlr. ICMS " type="F" visible="true" useFooter="false"></field><field name="ALIQICMS" label="Aliq. ICMS" type="F" visible="true" useFooter="false"></field><field name="DIFAL" label="Vlr. Difal Calculado" type="F" visible="true" useFooter="false"></field><field name="DIFICMS" label="Vlr. DIFAL" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#FF0000">$VALUE</span>]]></formatter></field><field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"></field><field name="UFORIGEM" label="UF Origem" type="S" visible="true" useFooter="false"></field><field name="UFDESTINO" label="UF Destino" type="S" visible="true" useFooter="false"></field><field name="VLRICMS195" label="Vlr. Ajuste DIFAL" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"><formatter  greaterEqualThan="0"><![CDATA[<span style="color:#0000FF">$VALUE</span>]]></formatter></field><field name="CONFERENCIA" label="Conferência" type="F" visible="true" useFooter="false"><formatter  equalThan="1"><![CDATA[<span style="; src:iconAccept; somente-icone:S">$VALUE</span>]]></formatter><formatter  notEqualThan="1"><![CDATA[<span style="; src:iconWarningCircle; somente-icone:S">$VALUE</span>]]></formatter></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher></grid></container></level></gadget>

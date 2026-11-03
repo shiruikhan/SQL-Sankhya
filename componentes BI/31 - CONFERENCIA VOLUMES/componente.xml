@@ -1,0 +1,52 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_NUNOTA" description="Nro Único Nota" metadata="integer" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_agg6kgl" description="Principal">
+    <args>
+      <arg id="A_CODRPOD" type="integer"/>
+      <arg id="A_FRACIONADO" type="text"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_agg6kgm" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT V.CODPROD , PRO.DESCRPROD, PRO.M3, PRO.PESOBRUTO,CASE WHEN FRACIONADO = 'S' THEN 'Fracionado' ELSE 'Fechado' END AS FRACIONADO,FRACIONADO AS FRAC,SUM(V.VOLUME) AS VOLUME, SUM(V.PESO) AS PESO, --SUM(QTDNEG) AS QTDITENS, COUNT(*) AS QTDCAIXA ,PRO.M3 * COUNT(*) AS M3TOT  FROM AD_VOLPED V, TGFPRO PRO WHERE V.CODPROD = PRO.CODPROD   AND V.NUNOTA = :P_NUNOTA GROUP BY V.CODPROD , PRO.DESCRPROD, CASE WHEN FRACIONADO = 'S' THEN 'Fracionado' ELSE 'Fechado' END, FRACIONADO, PRO.M3, PRO.PESOBRUTO]]></expression>
+          <metadata>
+            <field name="CODPROD" label="Cód. Embalagem" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Embalagem" type="S" visible="true" useFooter="false"/>
+            <field name="M3" label="M3 Embalagem" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"/>
+            <field name="PESOBRUTO" label="Peso Embalagem" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="FRACIONADO" label="Fracionado" type="S" visible="true" useFooter="false"/>
+            <field name="FRAC" label="FRAC" type="S" visible="false" useFooter="false"/>
+            <field name="VOLUME" label="Volume Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="PESO" label="Peso Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="QTDCAIXA" label="Qtd. de Caixas" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="M3TOT" label="Volume Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          </metadata>
+          <refresh-details ui-list="grd_agg6kgo">
+            <param id="A_CODPROD">$CODPROD</param>
+            <param id="A_FRACIONADO">$FRAC</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_agg6kgo" useNewGrid="S">
+          <args>
+            <arg id="A_CODPROD" type="integer"/>
+            <arg id="A_FRACIONADO" type="text"/>
+          </args>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT I.SEQUENCIA, I.CODPROD, PRO.DESCRPROD, I.QTDNEG, I.PESO, I.QTDNEG * I.PESO AS PESOTOT, I.QTDNEG * I.VOLUME AS VOLUMEFROM AD_VOLPED CAB, AD_VOLPEDITE I , TGFPRO PROWHERE CAB.NUNOTA = I.NUNOTA AND I.CODPROD = PRO.CODPROD AND CAB.NUNOTA = :P_NUNOTA AND I.SEQ = CAB.SEQ AND CAB.CODPROD = :A_CODPROD AND CAB.FRACIONADO = :A_FRACIONADO]]></expression>
+          <metadata>
+            <field name="SEQUENCIA" label="SEQUENCIA" type="I" visible="true" useFooter="false"/>
+            <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+            <field name="QTDNEG" label="Qtd." type="F" visible="true" useFooter="SUM"/>
+            <field name="PESO" label="Peso Unitário" type="F" visible="true" useFooter="false"/>
+            <field name="PESOTOT" label="Peso Total" type="F" visible="true" useFooter="SUM"/>
+            <field name="VOLUME" label="Volume Total" type="F" visible="true" useFooter="SUM"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

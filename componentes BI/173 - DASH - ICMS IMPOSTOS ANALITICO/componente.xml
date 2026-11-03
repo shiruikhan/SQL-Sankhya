@@ -1,0 +1,650 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="0" label="P_PERIODO : Período"/><parameter  id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="2" label="P_CODEMP : Entidade/Tabela"/><parameter  id="P_CODCFOPINI" description="CFOP Inicial" metadata="integer" required="true" keep-last="true" keep-date="false" order="3" label="P_CODCFOPINI : Número Inteiro"/><parameter  id="P_CODCFOPFIN" description="CFOP Final" metadata="integer" required="true" keep-last="true" keep-date="false" order="4" label="P_CODCFOPFIN : Número Inteiro"/><parameter  id="P_NUNOTA" description="Nro Único Nota" metadata="integer" required="false" keep-last="true" keep-date="false" order="5" label="P_NUNOTA : Número Inteiro"/><parameter  id="P_NUMNOTA" description="Nro Nota" metadata="integer" required="false" keep-last="false" keep-date="false" order="6" label="P_NUMNOTA : Número Inteiro"/><parameter  id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="7" label="P_CODPROD : Entidade/Tabela"/><parameter  id="P_CODTIPOPER" description="Tipo de Operação " metadata="entity:TipoOperacao@CODTIPOPER,DHALTER" required="false" keep-last="false" keep-date="false" order="8" label="P_CODTIPOPER : Entidade/Tabela"/><parameter  id="P_PARCEIRO" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="9" label="P_PARCEIRO : Entidade/Tabela"/></prompt-parameters><level id="lvl_x6mpzo" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_x6mpzp" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+	CAB.NUNOTA,
+	CAB.NUMNOTA,
+	CAB.DTNEG,
+	CAB.DTENTSAI,
+	CASE 
+
+		WHEN CAB.STATUSNFE IS NULL AND CAB.TIPMOV = 'P' THEN '-----' 
+		WHEN CAB.STATUSNFE = 'A' THEN 'Aprovada'
+		WHEN CAB.STATUSNFE = 'D' THEN 'Denegada'
+		WHEN CAB.STATUSNFE = 'E' THEN 'Aguardando Autorização'
+		WHEN CAB.STATUSNFE = 'I' THEN 'Enviada'
+		WHEN CAB.STATUSNFE = 'M' THEN 'Não é NF-e'
+		WHEN CAB.STATUSNFE = 'P' THEN 'Pendente de Retorno'
+		WHEN CAB.STATUSNFE = 'R' THEN 'Aguardando Correção'
+		WHEN CAB.STATUSNFE = 'S' THEN 'Enviada EPEC'
+		WHEN CAB.STATUSNFE = 'T' THEN 'NF-e Terceiro'
+		WHEN CAB.STATUSNFE = 'V' THEN 'Com erro de Validação' 
+		ELSE 'Não Enviada' END AS STATUSNFE,
+	CAB.CODTIPOPER,
+	CAB.CODNAT || ' - ' || (SELECT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = CAB.CODNAT) AS CODNAT,
+	TPO.DESCROPER,
+	PAR.CODPARC, 
+	PAR.NOMEPARC,
+	PAR.IDENTINSCESTAD,
+	CASE WHEN PAR.SIMPLES = 'S' THEN 'Optante Simples' ELSE 'Não optante' END AS SIMPLES,
+    OPTION_LABEL('TGFPAR','CLASSIFICMS',PAR.CLASSIFICMS)  AS CLASSIFICMS,	
+	ITE.SEQUENCIA,
+	ITE.CODPROD,
+	PRO.DESCRPROD,
+	PRO.NCM,
+	PRO.CODCTACTBEFD,
+	(SELECT PLA.DESCRCTA FROM TCBPLA PLA WHERE PLA.CODCTACTB = PRO.CODCTACTBEFD) AS CONTA_CTB,
+	ITE.QTDNEG,
+	ITE.VLRUNIT, 
+	ITE.VLRTOT,
+	ITE.VLRDESC,
+	LIV.CODCFO,
+	ITE.ORIGPROD,
+	CASE WHEN NVL(LIV.DIGITADO,'N') = 'S' THEN LIV.CODTRIB ELSE ITE.CODTRIB END AS CODTRIB,
+	CASE WHEN NVL(LIV.DIGITADO,'N') = 'S' THEN LIV.ALIQICMS ELSE ITE.ALIQICMS END AS ALIQICMS ,	
+	ITE.CSTIPI,
+	ITE.ALIQIPI,
+	LIV.VLRCTB,
+	LIV.OUTRASICMS,
+	LIV.ISENTASICMS,
+	LIV.OUTRASIPI,
+	NVL(LIV.VLRCTB,0) - NVL(LIV.BASEIPI,0) - NVL(LIV.OUTRASIPI,0) - NVL(LIV.VLRIPI,0) AS VAL_IPI,
+	LIV.ISENTASIPI,
+   CASE WHEN CAB.TIPMOV = 'C' THEN (NVL(ITE.VLRTOT,0) - NVL(ITE.VLRREPRED,0))
+                              ELSE (NVL(ITE.VLRTOT,0) - NVL(ITE.VLRREPRED,0) - NVL(ITE.VLRDESC,0)) END   AS VLREFD,
+
+	(SELECT SUM(LIV1.VLRCTB - LIV.ICMSRETENCAO - LIV.VLRIPI)
+
+		FROM TGFLIV LIV1
+
+		WHERE LIV1.NUNOTA = ITE.NUNOTA
+
+			AND LIV1.SEQUENCIA = ITE.SEQUENCIA) AS VLRITELIQ,
+			
+	CASE WHEN NVL(LIV.DIGITADO,'N') = 'N'
+	THEN NVL((SELECT SUM(DIN.BASERED)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 1
+
+				AND DIN.CODINC IN (1,3,5)),LIV.BASEICMS)
+	  ELSE LIV.BASEICMS END AS BASEICMS,
+	CASE WHEN NVL(LIV.DIGITADO,'N') = 'N'
+	THEN 
+	NVL((SELECT SUM(DIN.VALOR) 
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 1
+
+				AND DIN.CODINC IN (1,3,5)),LIV.VLRICMS) 
+				
+	ELSE LIV.VLRICMS END AS VLRICMS,
+				
+	(SELECT SUM(AJD.VLRICMS) FROM TGFAJD AJD WHERE AJD.NUNOTA = LIV.NUNOTA AND AJD.SEQUENCIA = LIV.SEQUENCIA AND AJD.CODOBSPADRAO <> 24 ) AS ICMS_AJUSTE,	
+	
+
+	NVL((SELECT SUM(DIN.BASEDIFAL) 
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 1
+
+				AND DIN.CODINC IN (1,3,5)),0) AS BASEDIFAL,
+				
+	NVL((SELECT SUM(DIN.VLRDIFALDEST) 
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 1
+
+				AND DIN.CODINC IN (1,3,5)),0) AS VLRDIFAL,
+				
+		NVL((SELECT SUM(DIN.VLRFCP) 
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 1
+
+				AND DIN.CODINC IN (1,3,5)),0) AS VLRFCP,
+				
+	NVL((SELECT SUM(DIN.BASERED) 
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 3
+
+				AND DIN.CODINC IN (1,3,5)),ITE.BASEIPI) AS BASEIPI,
+
+	NVL((SELECT SUM(DIN.VALOR) 
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 3
+
+				AND DIN.CODINC IN (1,3,5)),ITE.VLRIPI) AS VLRIPI,
+
+	NVL((SELECT SUM(DIN.BASERED)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 6),0) AS BASE_PIS,
+
+	NVL((SELECT MAX(DIN.CST)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 6),0) AS CST_PIS,
+
+	NVL((SELECT SUM(DIN.VALOR)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 6),0) AS VLR_PIS,
+
+	NVL((SELECT SUM(IDI.VLRPISIMP)
+			FROM TGFIDI IDI
+			WHERE IDI.NUNOTA = ITE.NUNOTA
+				AND IDI.SEQUENCIA = ITE.SEQUENCIA)
+		,0) AS VLR_PISIMP,				
+
+	NVL((SELECT SUM(DIN.BASERED)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 7),0) AS BASE_COFINS,
+
+	NVL((SELECT MAX(DIN.CST)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 7),0) AS CST_COFINS,
+
+	NVL((SELECT SUM(DIN.VALOR)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 7),0) AS VLR_COFINS,
+
+	NVL((SELECT SUM(IDI.VLRCOFINSIMP)
+			FROM TGFIDI IDI
+			WHERE IDI.NUNOTA = ITE.NUNOTA
+				AND IDI.SEQUENCIA = ITE.SEQUENCIA)
+		,0) AS VLR_COFINSIMP,
+				
+	NVL((SELECT SUM(DIN.BASE)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 2),0) AS BASE_ST,
+
+	NVL((SELECT MAX(DIN.ALIQUOTA)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 2),0) AS ALIQ_ST,
+
+	NVL((SELECT SUM(DIN.VALOR)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 2),0) AS VLR_ST,
+
+	NVL((SELECT SUM(DIN.VLRFCPINT)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 2),0) AS VLR_FEM_ICMS_ST,  
+
+	NVL((SELECT SUM(DIN.VLRFCPINT)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 1),0) AS VLR_FEM_ICMS_OP,
+				
+	NVL((SELECT SUM(DIN.BASE)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND (DIN.CODIMP = 6 AND DIN.CODINC = 3)),0) AS FRETE_ITEM,						
+
+	NVL((SELECT SUM(DIN.BASE)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND (DIN.CODIMP = 6 AND DIN.CODINC = 3)),0) 
+	 - (NVL(LIV.VLRCTB,0) - NVL(LIV.BASEIPI,0) - NVL(LIV.OUTRASIPI,0) - NVL(LIV.VLRIPI,0)) AS DIF_VAL_IPI,
+				
+	CID.NOMECID,
+
+	UF.UF,
+
+	CAB.CHAVENFE,
+
+	(SELECT MAX(C.NUMNOTA) 
+
+		FROM TGFCAB C,
+
+			TGFVAR VAR 
+
+		WHERE C.NUNOTA = VAR.NUNOTA 
+
+			AND VAR.NUNOTAORIG = CAB.NUNOTA 
+
+			AND C.TIPMOV = 'D') AS NUMNOTA_DEVOLUCAO,
+
+	(SELECT MAX(I.VLRTOT) 
+
+		FROM TGFCAB C,
+
+			TGFITE I,
+
+			TGFVAR VAR 
+
+		WHERE C.NUNOTA = I.NUNOTA 
+
+			AND C.NUNOTA = VAR.NUNOTA 
+
+			AND I.SEQUENCIA = VAR.SEQUENCIA 
+
+			AND VAR.NUNOTAORIG = CAB.NUNOTA 
+
+			AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA 
+
+			AND C.TIPMOV = 'D') AS VLRTOT_DEVOLUCAO,
+
+	(SELECT MAX(I.BASEICMS) 
+
+		FROM TGFCAB C,
+
+			TGFITE I,
+
+			TGFVAR VAR 
+
+		WHERE C.NUNOTA = I.NUNOTA
+
+			AND C.NUNOTA = VAR.NUNOTA 
+
+			AND I.SEQUENCIA = VAR.SEQUENCIA 
+
+			AND VAR.NUNOTAORIG = CAB.NUNOTA 
+
+			AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA 
+
+			AND C.TIPMOV = 'D') AS VLRBCICMS_DEVOLUCAO,
+
+	(SELECT MAX(I.VLRICMS) 
+
+		FROM TGFCAB C,
+
+			TGFITE I, 
+
+			TGFVAR VAR 
+
+		WHERE C.NUNOTA = I.NUNOTA 
+
+			AND C.NUNOTA = VAR.NUNOTA 
+
+			AND I.SEQUENCIA = VAR.SEQUENCIA 
+
+			AND VAR.NUNOTAORIG = CAB.NUNOTA 
+
+			AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA 
+
+			AND C.TIPMOV = 'D') AS VLRICMS_DEVOLUCAO,
+
+	(SELECT MAX(I.BASEIPI) 
+
+		FROM TGFCAB C,
+
+			TGFITE I, 
+
+			TGFVAR VAR 
+
+		WHERE C.NUNOTA = I.NUNOTA 
+
+			AND C.NUNOTA = VAR.NUNOTA
+
+			AND I.SEQUENCIA = VAR.SEQUENCIA
+
+			AND VAR.NUNOTAORIG = CAB.NUNOTA 
+
+			AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA
+
+			AND C.TIPMOV = 'D') AS VLRBCIPI_DEVOLUCAO,
+
+	(SELECT MAX(I.VLRIPI) 
+
+		FROM TGFCAB C,
+
+			TGFITE I,
+
+			TGFVAR VAR 
+
+		WHERE C.NUNOTA = I.NUNOTA 
+
+			AND C.NUNOTA = VAR.NUNOTA 
+
+			AND I.SEQUENCIA = VAR.SEQUENCIA 
+
+			AND VAR.NUNOTAORIG = CAB.NUNOTA 
+
+			AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA 
+
+			AND C.TIPMOV = 'D') AS VLRIPI_DEVOLUCAO
+
+FROM TGFCAB CAB,
+
+	TGFITE ITE,
+
+	TGFPRO PRO,
+
+	TGFPAR PAR,
+
+	TGFTOP TPO,
+
+	TSICID CID, 
+
+	TSIUFS UF, 
+
+	TGFLIV LIV
+
+WHERE LIV.NUNOTA = CAB.NUNOTA 
+
+	AND LIV.NUNOTA = ITE.NUNOTA
+
+	AND LIV.SEQUENCIA = ITE.SEQUENCIA 
+
+	AND CAB.NUNOTA = ITE.NUNOTA 
+
+	AND ITE.CODPROD = PRO.CODPROD
+
+	AND CAB.CODPARC = PAR.CODPARC
+
+	AND CAB.CODTIPOPER = TPO.CODTIPOPER
+
+	AND CAB.DHTIPOPER = TPO.DHALTER
+
+	AND PAR.CODCID = CID.CODCID
+
+	AND CID.UF = UF.CODUF
+
+	AND TPO.ATUALLIVFIS <> 'N'
+	
+	AND LIV.DHMOV >= :P_PERIODO.INI
+	AND LIV.DHMOV <= :P_PERIODO.FIN
+	
+	AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)
+
+	AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)
+
+	AND (CAB.NUMNOTA = :P_NUMNOTA OR :P_NUMNOTA IS NULL)
+	
+	AND (CAB.CODTIPOPER = :P_CODTIPOPER OR :P_CODTIPOPER IS NULL)
+
+	AND LIV.CODCFO >= :P_CODCFOPINI
+
+	AND LIV.CODCFO <= :P_CODCFOPFIN
+
+	AND (ITE.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)
+	
+	AND (CAB.CODPARC = :P_PARCEIRO OR :P_PARCEIRO IS NULL)
+UNION ALL
+SELECT
+     LIS.NUNOTA
+    ,LIS.NUMNOTA
+    ,CAB.DTNEG
+    ,CAB.DTENTSAI
+    ,'NF-e Terceiro' AS STATUSNFE
+    ,CAB.CODTIPOPER
+	,CAB.CODNAT || ' - ' || (SELECT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = CAB.CODNAT) AS CODNAT
+    ,TPO.DESCROPER
+    ,CAB.CODPARC 
+    ,PAR.NOMEPARC
+    ,PAR.IDENTINSCESTAD
+    ,CASE WHEN PAR.SIMPLES = 'S' THEN 'Optante Simples' ELSE 'Não optante' END AS SIMPLES
+    ,OPTION_LABEL('TGFPAR','CLASSIFICMS',PAR.CLASSIFICMS)  AS CLASSIFICMS
+	,LIS.SEQUENCIA
+    ,PRO.CODPROD 
+    ,PRO.DESCRPROD
+	,PRO.NCM	
+    ,PRO.CODCTACTBEFD
+    ,(SELECT PLA.DESCRCTA FROM TCBPLA PLA WHERE PLA.CODCTACTB = PRO.CODCTACTBEFD) AS CONTA_CTB
+    ,ITE.QTDNEG
+    ,ITE.VLRUNIT
+    ,ITE.VLRTOT
+	,ITE.VLRDESC
+    ,ITE.CODCFO
+    ,ITE.ORIGPROD
+    ,ITE.CODTRIB 
+    ,ITE.ALIQICMS
+    ,ITE.CSTIPI
+    ,ITE.ALIQIPI
+    ,LIS.VLRCTB
+    , 0 AS OUTRASICMS
+    , 0 AS ISENTASICMS
+    , 0 AS OUTRASIPI
+    , 0 AS VAL_IPI
+    , 0 AS ISENTASIPI
+   , CASE WHEN CAB.TIPMOV = 'C' THEN (NVL(ITE.VLRTOT,0) - NVL(ITE.VLRREPRED,0))
+                              ELSE (NVL(ITE.VLRTOT,0) - NVL(ITE.VLRREPRED,0) - NVL(ITE.VLRDESC,0)) END   AS VLREFD
+   , ITE.VLRTOT AS VLRITELIQ
+   , 0 AS BASEICMS
+   , 0 AS VLRICMS
+   , 0 AS ICMS_AJUSTE
+   , 0 AS BASEDIFAL
+   , 0 AS VLRDIFAL
+   , 0 AS VLRFCP
+   , 0 AS BASEIPI
+   , 0 AS VLRIPI
+   , NVL((SELECT SUM(DIN.BASERED)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 6),0) AS BASE_PIS
+
+   , NVL((SELECT MAX(DIN.CST)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 6),0) AS CST_PIS
+
+	, NVL((SELECT SUM(DIN.VALOR)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 6),0) AS VLR_PIS
+	,0 AS VLR_PISIMP
+
+	, NVL((SELECT SUM(DIN.BASERED)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 7),0) AS BASE_COFINS
+
+	, NVL((SELECT MAX(DIN.CST)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 7),0) AS CST_COFINS
+
+	, NVL((SELECT SUM(DIN.VALOR)
+
+			FROM TGFDIN DIN
+
+			WHERE DIN.NUNOTA = ITE.NUNOTA
+
+				AND DIN.SEQUENCIA = ITE.SEQUENCIA
+
+				AND DIN.CODIMP = 7),0) AS VLR_COFINS
+	,0 AS VLR_COFINSIMP
+    ,0 AS BASE_ST
+    ,0 AS ALIQ_ST
+    ,0 AS VLR_ST
+    ,0 AS VLR_FEM_ICMS_ST
+    ,0 AS VLR_FEM_ICMS_OP
+    ,0 AS FRETE_ITEM
+    ,0 AS DIF_VAL_IPI
+    ,CID.NOMECID
+    ,UF.UF
+    ,CAB.CHAVENFE
+    ,0 AS NUMNOTA_DEVOLUCAO
+    ,0 AS VLRTOT_DEVOLUCAO
+    ,0 AS VLRBCICMS_DEVOLUCAO
+    ,0 AS VLRICMS_DEVOLUCAO
+    ,0 AS VLRBCIPI_DEVOLUCAO
+    ,0 AS VLRIPI_DEVOLUCAO
+FROM TGFLIS LIS
+
+INNER JOIN TGFITE ITE
+    ON ITE.NUNOTA = LIS.NUNOTA 
+     AND ITE.SEQUENCIA = LIS.SEQUENCIA 
+
+INNER JOIN TGFCAB CAB 
+    ON CAB.NUNOTA = LIS.NUNOTA
+
+INNER JOIN TGFTOP TPO 
+    ON TPO.CODTIPOPER = CAB.CODTIPOPER
+      AND TPO.DHALTER = CAB.DHTIPOPER
+
+INNER JOIN TGFPAR PAR 
+    ON PAR.CODPARC = CAB.CODPARC
+
+INNER JOIN TSICID CID 
+    ON CID.CODCID = PAR.CODCID 
+
+
+INNER JOIN TGFPRO PRO 
+    ON PRO.CODPROD = ITE.CODPROD 
+
+INNER JOIN TSIUFS UF 
+    ON UF.CODUF = CID.UF
+
+WHERE EXISTS(
+	      (SELECT
+	        DISTINCT
+	        LIS1.NUNOTA
+	      FROM
+	        TGFLIS LIS1
+	      WHERE
+	            LIS.DTMOV  >= :P_PERIODO.INI
+	        AND LIS1.DTMOV <= :P_PERIODO.FIN
+	        AND LIS1.CODEMP IN (1,2)
+	        AND LIS1.ORIGEM <> 'F'
+	        AND ((LIS1.ORIGEM = 'E' AND LIS1.ENTSAI = 'E' AND
+	               EXISTS (SELECT 1 FROM TGFDIN D1 WHERE D1.NUNOTA = LIS1.NUNOTA AND D1.CODIMP IN (6,7)
+	                       AND (((D1.VALOR <> 0 OR NVL(D1.VLRCRED,0) <> 0) AND
+	                             D1.CST IN (49,50,51,52,53,54,55,56,60,61,62,63,64,65,66))
+	                            ))) OR
+	              (LIS1.ORIGEM = 'E' AND LIS1.ENTSAI = 'S' AND
+	               EXISTS (SELECT 1 FROM TGFDIN WHERE NUNOTA = LIS1.NUNOTA AND CODIMP IN (6,7)))
+	            )
+	        AND NOT EXISTS (SELECT LIV.NUNOTA FROM TGFLIV LIV WHERE LIV.NUNOTA = LIS1.NUNOTA AND LIV.ORIGEM = LIS1.ORIGEM)
+	        AND LIS1.NUNOTA = LIS.NUNOTA
+			AND LIS1.CODCFPS  >= :P_CODCFOPINI
+			AND LIS1.CODCFPS  <= :P_CODCFOPFIN
+			
+	      )
+	  )
+	  AND LIS.CODEMP IN (1,2)
+	  AND LIS.ORIGEM = 'E']]></expression><metadata><field name="NUNOTA" label="Nro Único" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt. Ent/Saida" type="D" visible="true" useFooter="false"></field><field name="STATUSNFE" label="Status NFe" type="S" visible="true" useFooter="false"></field><field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"></field><field name="CODNAT" label="Natureza" type="S" visible="true" useFooter="false"></field><field name="DESCROPER" label="Descrição TOP" type="S" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="IDENTINSCESTAD" label="I.E." type="S" visible="true" useFooter="false"></field><field name="SIMPLES" label="Optante SN" type="S" visible="true" useFooter="false"></field><field name="CLASSIFICMS" label="Class. ICMS" type="S" visible="true" useFooter="false"></field><field name="SEQUENCIA" label="Sequencia" type="I" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="NCM" label="NCM" type="S" visible="true" useFooter="false"></field><field name="CODCTACTBEFD" label="Cónta Contabil" type="I" visible="true" useFooter="false"></field><field name="CONTA_CTB" label="Desc. Contábil" type="S" visible="true" useFooter="false"></field><field name="QTDNEG" label="Qtd." type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRUNIT" label="Vlr. Unitário" type="F" visible="true" useFooter="false"></field><field name="VLRTOT" label="Vlr. Total " type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRDESC" label="Desconto" type="F" visible="true" useFooter="SUM"></field><field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"></field><field name="ORIGPROD" label="Origem Prod." type="S" visible="true" useFooter="false"></field><field name="CODTRIB" label="CST ICMS" type="I" visible="true" useFooter="false"></field><field name="ALIQICMS" label="Aliq. ICMS " type="F" visible="true" useFooter="false"></field><field name="CSTIPI" label="CST IPI" type="I" visible="true" useFooter="false"></field><field name="ALIQIPI" label="ALiq. IPI" type="F" visible="true" useFooter="false"></field><field name="VLRCTB" label="Vlr Contabil" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="OUTRASICMS" label="Outras ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="ISENTASICMS" label="Isentas ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="OUTRASIPI" label="Outras IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VAL_IPI" label="Validação (IPI)" type="F" visible="true" useFooter="SUM"></field><field name="ISENTASIPI" label="Isentas IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLREFD" label="Vlr. EFD Contribuição " type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRITELIQ" label="Vlr. Líq." type="I" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="BASEICMS" label="Base ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRICMS" label="Vlr. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="ICMS_AJUSTE" label="ICMS Ajuste C197" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="BASEDIFAL" label="Base DIFAL" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLRDIFAL" label="Vlr. DIFAL " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="VLRFCP" label="Vlr. FCP" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="BASEIPI" label="Base IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="BASE_PIS" label="Base PIS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="CST_PIS" label="CST_PIS" type="I" visible="true" useFooter="false"></field><field name="VLR_PIS" label="Vlr. PIS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLR_PISIMP" label="Vlr. PIS IMP" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="BASE_COFINS" label="Base COFINS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="CST_COFINS" label="CST_COFINS" type="I" visible="true" useFooter="false"></field><field name="VLR_COFINS" label="Vlr. COFINS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLR_COFINSIMP" label="Vlr. COFINS Imp." type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="BASE_ST" label="Base ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="ALIQ_ST" label="Aliq. ST" type="F" visible="true" useFooter="false"></field><field name="VLR_ST" label="Vlr. ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLR_FEM_ICMS_ST" label="Vlr. FEM ICMS ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLR_FEM_ICMS_OP" label="Vlr. FEM ICMS OP" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="FRETE_ITEM" label="Vlr. Frete" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="DIF_VAL_IPI" label="Dif. Validação (IPI)" type="F" visible="true" useFooter="SUM"></field><field name="NOMECID" label="Nome Cidade" type="S" visible="true" useFooter="false"></field><field name="UF" label="UF" type="S" visible="true" useFooter="false"></field><field name="CHAVENFE" label="Chave NFe" type="S" visible="true" useFooter="false"></field><field name="NUMNOTA_DEVOLUCAO" label="Nro Nota Devolução" type="I" visible="true" useFooter="false"></field><field name="VLRTOT_DEVOLUCAO" label="Vlr. Total Devolução" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRBCICMS_DEVOLUCAO" label="Vlr. BC ICMS Devolução" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRICMS_DEVOLUCAO" label="Vlr. ICMS Devolução" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRBCIPI_DEVOLUCAO" label="Vlr. BC IPI Devolução" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="VLRIPI_DEVOLUCAO" label="Vlr. IPI Devolução" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher></grid></container></level></gadget>

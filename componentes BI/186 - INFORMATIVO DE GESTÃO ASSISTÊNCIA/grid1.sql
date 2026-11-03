@@ -1,0 +1,43 @@
+SELECT
+    CASE 
+        WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
+            TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
+                      '1' || 
+                      SUBSTR(TO_CHAR(F.T_CODPROD), 3))
+        ELSE F.T_CODPROD
+    END AS CODPROD_TRATADO,
+    P.DESCRPROD,
+    COUNT(F.NUMOS) AS TOTAL_OS,
+    G.DESCRGRUPOPROD
+FROM
+    AD_TGFASS F
+LEFT JOIN
+    TGFPRO P ON P.CODPROD = CASE 
+                                WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
+                                    TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
+                                              '1' || 
+                                              SUBSTR(TO_CHAR(F.T_CODPROD), 3))
+                                ELSE F.T_CODPROD
+                            END
+    LEFT JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+WHERE
+    F.DTRECEB IS NOT NULL
+    AND EXTRACT(YEAR FROM F.DTRECEB) = :P_ANO
+    AND EXTRACT(MONTH FROM F.DTRECEB) = :A_MES
+	AND ( :P_DTFAB.INI IS NULL OR TRUNC(T_DTFABRICACAO) >= :P_DTFAB.INI )
+    AND ( :P_DTFAB.FIN IS NULL OR TRUNC(T_DTFABRICACAO) <= :P_DTFAB.FIN )
+	AND ( :P_CODPROD IS NULL OR T_CODPROD = :P_CODPROD )
+	AND ( :P_CODGRUPOPROD IS NULL OR P.CODGRUPOPROD = :P_CODGRUPOPROD )
+    AND ( :A_DEFEITO = 'NULL' OR F.DEFEITO = :A_DEFEITO)
+GROUP BY
+    CASE 
+        WHEN F.T_CODPROD IS NOT NULL AND SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) = '3' THEN 
+            TO_NUMBER(SUBSTR(TO_CHAR(F.T_CODPROD), 1, 1) || 
+                      '1' || 
+                      SUBSTR(TO_CHAR(F.T_CODPROD), 3))
+        ELSE F.T_CODPROD
+    END,
+    P.DESCRPROD,
+    G.DESCRGRUPOPROD
+ORDER BY
+    TOTAL_OS DESC

@@ -1,0 +1,79 @@
+<gadget refresh-time="3600000">
+  <prompt-parameters>
+    <parameter id="P_CODPROD" description="Código do Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_GrupoProduto" description="Grupo de Produto" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="true" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_a0bu120" description="Principal">
+    <args>
+      <arg id="A_CODPROD" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="167">
+          <grid id="grd_a0bu121" multiplaSelecao="S" useNewGrid="S">
+            <title><![CDATA[Posição do Estoque Atual]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,	PRO.DESCRPROD,	PRO.CODVOL,	SUM(EST.ESTOQUE) AS ESTOQUE,	NVL(PRO.LOCALIZACAO,'SEM LOC') AS LOCALIZACAO,	(CASE WHEN NVL(PRO.LOCALIZACAO,'SEM LOC') = 'SEM LOC' THEN '#fff2cc' ELSE '#cfe2f3' END) AS BKCOLORFROM TGFPRO PRO 	LEFT JOIN  TGFEST EST ON PRO.CODPROD = EST.CODPROD AND EST.CODLOCAL = 101WHERE (PRO.CODGRUPOPROD = :P_GRUPOPRODUTO OR :P_GRUPOPRODUTO IS NULL)	AND (PRO.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)	AND (EST.ESTOQUE IS NOT NULL AND PRO.ATIVO = 'S')GROUP BY PRO.CODPROD, PRO.DESCRPROD, PRO.CODVOL, PRO.LOCALIZACAO	--HAVING SUM(EST.ESTOQUE) > 0ORDER BY PRO.CODPROD]]></expression>
+            <metadata>
+              <field name="CODPROD" label="COD" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPROD" label="Descrição" type="S" visible="true" useFooter="false"/>
+              <field name="CODVOL" label="*" type="S" visible="true" useFooter="false"/>
+              <field name="ESTOQUE" label="Estoque" type="F" visible="true" useFooter="false" mask="#.##0,000000"/>
+              <field name="LOCALIZACAO" label="Localização" type="S" visible="true" useFooter="false"/>
+              <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.core.cad.produtos">
+              <CODPROD>$CODPROD</CODPROD>
+            </on-click-launcher>
+            <refresh-details ui-list="grd_a0bu14t,grd_aq5hzz1">
+              <param id="A_CODPROD">$CODPROD</param>
+            </refresh-details>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="130">
+          <grid id="grd_a0bu14t" multiplaSelecao="S" useNewGrid="S">
+            <args>
+              <arg id="A_CODPROD" type="integer"/>
+            </args>
+            <title><![CDATA[Reservas realizadas]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,	CAB.DTENTSAI, 	CAB.AD_NUMPS,	ITE.CODPROD, 	PRO.DESCRPROD,	PRO.CODVOL, 	(ITE.QTDNEG - ITE.QTDENTREGUE) AS RESERVADO,	TOP.DESCROPER,	CUS.DESCRCENCUSFROM TGFPRO PRO		LEFT JOIN TGFITE ITE ON PRO.CODPROD = ITE.CODPROD 	LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA 	LEFT JOIN TGFTOP TOP ON (CAB.CODTIPOPER = TOP.CODTIPOPER AND CAB.DHTIPOPER = TOP.DHALTER) 	LEFT JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE ITE.PENDENTE = 'S' 	AND ITE.STATUSNOTA = 'L' 	AND ITE.CODPROD = :A_CODPROD 	and CAB.TIPMOV = 'J'	and (ITE.CODLOCALORIG = 101)ORDER BY ITE.NUNOTA]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="Nr Unico" type="I" visible="true" useFooter="false"/>
+              <field name="DTENTSAI" label="Dt. Pedido" type="D" visible="true" useFooter="false"/>
+              <field name="AD_NUMPS" label="Nr. Plano" type="I" visible="true" useFooter="false"/>
+              <field name="CODPROD" label="COD" type="I" visible="false" useFooter="false"/>
+              <field name="DESCRPROD" label="Descrição" type="S" visible="false" useFooter="false"/>
+              <field name="CODVOL" label="*" type="S" visible="false" useFooter="false"/>
+              <field name="RESERVADO" label="Qtd. Reservada" type="I" visible="true" useFooter="false"/>
+              <field name="DESCROPER" label="Operação" type="S" visible="true" useFooter="false"/>
+              <field name="DESCRCENCUS" label="Centro de Resultado" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="103">
+          <grid id="grd_aq5hzz1" useNewGrid="S">
+            <args>
+              <arg id="A_CODPROD" type="integer"/>
+            </args>
+            <title><![CDATA[Compras Pendentes]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,	CAB.DTENTSAI,	ITE.CODPROD,	PRO.DESCRPROD,	PRO.CODVOL, 	(ITE.QTDNEG - ITE.QTDENTREGUE) AS PENDENTE, 	TOP.DESCROPERFROM TGFPRO PRO 	LEFT JOIN TGFITE ITE ON PRO.CODPROD = ITE.CODPROD 	LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA 	LEFT JOIN TGFTOP TOP ON (CAB.CODTIPOPER = TOP.CODTIPOPER AND CAB.DHTIPOPER = TOP.DHALTER) 	LEFT JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE ITE.PENDENTE = 'S'	AND ITE.STATUSNOTA = 'L' 	AND ITE.CODPROD = :A_CODPROD 	and CAB.TIPMOV = 'O' ORDER BY ITE.NUNOTA]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+              <field name="DTENTSAI" label="Dt. Pedido" type="D" visible="true" useFooter="false"/>
+              <field name="CODPROD" label="CODPROD" type="I" visible="false" useFooter="false"/>
+              <field name="DESCRPROD" label="DESCRPROD" type="S" visible="false" useFooter="false"/>
+              <field name="CODVOL" label="CODVOL" type="S" visible="false" useFooter="false"/>
+              <field name="PENDENTE" label="Qtd. Pendente" type="I" visible="true" useFooter="false"/>
+              <field name="DESCROPER" label="TOP" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

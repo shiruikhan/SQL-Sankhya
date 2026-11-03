@@ -1,0 +1,29 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DATA" description="Data Base" metadata="date" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_CONTA" description="Conta Bancária" metadata="entity:ContaBancaria@CODCTABCOINT" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_xfs6g8" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_xfs6g9" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT      FIN.CODEMP    ,FIN.NUFIN    ,FIN.NUMNOTA    ,FIN.DESDOBRAMENTO    ,FIN.CODPARC    ,PAR.NOMEPARC    ,F.VLRLIQUIDO    ,FIN.DTVENC    ,FIN.DTNEG    ,TIT.DESCRTIPTIT    ,CTA.DESCRICAOFROM TGFFIN FIN  INNER JOIN TGFPAR PAR     ON PAR.CODPARC = FIN.CODPARC INNER JOIN VGFFIN F    ON F.NUFIN = FIN.NUFIN INNER JOIN TGFTIT TIT     ON TIT.CODTIPTIT = FIN.CODTIPTIT INNER JOIN TSICTA CTA    ON CTA.CODCTABCOINT = FIN.CODCTABCOINTWHERE FIN.RECDESP = 1  AND FIN.PROVISAO = 'N'  AND FIN.NUCOMPENS IS NULL  AND FIN.CODTIPTIT = 4  AND FIN.CODCTABCOINT = :P_CONTA  AND FIN.DTNEG = :P_DATA]]></expression>
+        <metadata>
+          <field name="CODEMP" label="Cód. Empresa" type="I" visible="false" useFooter="false"/>
+          <field name="NUFIN" label="Nr. Unico " type="I" visible="false" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DESDOBRAMENTO" label="Desd." type="S" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parc." type="I" visible="false" useFooter="false"/>
+          <field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="VLRLIQUIDO" label="Vlr. Liquido " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DTVENC" label="Dt. Venc." type="D" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Neg." type="D" visible="false" useFooter="false"/>
+          <field name="DESCRTIPTIT" label="Desc. Titulo" type="S" visible="true" useFooter="false"/>
+          <field name="DESCRICAO" label="Desc. Conta" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,253 @@
+<gadget>
+  <level id="lvl_apekojv" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_apekojw" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[ SELECT * FROM IMP_TGFCTE]]></expression>
+          <metadata>
+            <field name="CODANDES" label="Cód. Andes" type="I" visible="true" useFooter="false"/>
+            <field name="CODEMP1" label="Qtde Empresa 1" type="F" visible="true" useFooter="false"/>
+            <field name="CODEMP501" label="Qtde Empresa 2" type="F" visible="true" useFooter="false"/>
+            <field name="CUSTOMED" label="Custo Medio" type="F" visible="true" useFooter="false"/>
+            <field name="CUSTOGER" label="Custo Gerencial" type="F" visible="true" useFooter="false"/>
+            <field name="CODPRODSK" label="Cod. Prod. SK" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_apekojx" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT         * FROM  IMP_TGFFIN]]></expression>
+          <metadata>
+            <field name="NUFIN" label="NUFIN" type="I" visible="true" useFooter="false"/>
+            <field name="CODEMP" label="CODEMP" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNOTA" label="NUMNOTA" type="I" visible="true" useFooter="false"/>
+            <field name="SERIENOTA" label="SERIENOTA" type="S" visible="true" useFooter="false"/>
+            <field name="DTNEG" label="DTNEG" type="D" visible="true" useFooter="false"/>
+            <field name="DESDOBRAMENTO" label="DESDOBRAMENTO" type="S" visible="true" useFooter="false"/>
+            <field name="DHMOV" label="DHMOV" type="D" visible="true" useFooter="false"/>
+            <field name="DTVENCINIC" label="DTVENCINIC" type="D" visible="true" useFooter="false"/>
+            <field name="DTVENC" label="DTVENC" type="D" visible="true" useFooter="false"/>
+            <field name="DHBAIXA" label="DHBAIXA" type="D" visible="true" useFooter="false"/>
+            <field name="DTCONTAB" label="DTCONTAB" type="D" visible="true" useFooter="false"/>
+            <field name="DTCONTABBAIXA" label="DTCONTABBAIXA" type="D" visible="true" useFooter="false"/>
+            <field name="CODPARC" label="CODPARC" type="S" visible="true" useFooter="false"/>
+            <field name="CODTIPOPER" label="CODTIPOPER" type="I" visible="true" useFooter="false"/>
+            <field name="DHTIPOPER" label="DHTIPOPER" type="D" visible="true" useFooter="false"/>
+            <field name="CODBCO" label="CODBCO" type="I" visible="true" useFooter="false"/>
+            <field name="CODCTABCOINT" label="CODCTABCOINT" type="I" visible="true" useFooter="false"/>
+            <field name="CODNAT" label="CODNAT" type="I" visible="true" useFooter="false"/>
+            <field name="CODCENCUS" label="CODCENCUS" type="I" visible="true" useFooter="false"/>
+            <field name="CODPROJ" label="CODPROJ" type="I" visible="true" useFooter="false"/>
+            <field name="CODVEND" label="CODVEND" type="I" visible="true" useFooter="false"/>
+            <field name="CODMOEDA" label="CODMOEDA" type="I" visible="true" useFooter="false"/>
+            <field name="CODTIPTIT" label="CODTIPTIT" type="I" visible="true" useFooter="false"/>
+            <field name="NUMDUPL" label="NUMDUPL" type="I" visible="true" useFooter="false"/>
+            <field name="DESDOBDUPL" label="DESDOBDUPL" type="S" visible="true" useFooter="false"/>
+            <field name="NOSSONUM" label="NOSSONUM" type="S" visible="true" useFooter="false"/>
+            <field name="HISTORICO" label="HISTORICO" type="S" visible="true" useFooter="false"/>
+            <field name="VLRDESDOB" label="VLRDESDOB" type="F" visible="true" useFooter="false"/>
+            <field name="VLRVENDOR" label="VLRVENDOR" type="F" visible="true" useFooter="false"/>
+            <field name="VLRIRF" label="VLRIRF" type="F" visible="true" useFooter="false"/>
+            <field name="VLRISS" label="VLRISS" type="F" visible="true" useFooter="false"/>
+            <field name="VLRCHEQUE" label="VLRCHEQUE" type="F" visible="true" useFooter="false"/>
+            <field name="DESPCART" label="DESPCART" type="F" visible="true" useFooter="false"/>
+            <field name="ISSRETIDO" label="ISSRETIDO" type="S" visible="true" useFooter="false"/>
+            <field name="VLRDESC" label="VLRDESC" type="F" visible="true" useFooter="false"/>
+            <field name="VLRMULTA" label="VLRMULTA" type="F" visible="true" useFooter="false"/>
+            <field name="VLRINSS" label="VLRINSS" type="F" visible="true" useFooter="false"/>
+            <field name="TIPMULTA" label="TIPMULTA" type="S" visible="true" useFooter="false"/>
+            <field name="VLRJURO" label="VLRJURO" type="F" visible="true" useFooter="false"/>
+            <field name="TIPJURO" label="TIPJURO" type="S" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="BASEICMS" type="F" visible="true" useFooter="false"/>
+            <field name="ALIQICMS" label="ALIQICMS" type="F" visible="true" useFooter="false"/>
+            <field name="CODEMPBAIXA" label="CODEMPBAIXA" type="I" visible="true" useFooter="false"/>
+            <field name="CODTIPOPERBAIXA" label="CODTIPOPERBAIXA" type="I" visible="true" useFooter="false"/>
+            <field name="DHTIPOPERBAIXA" label="DHTIPOPERBAIXA" type="D" visible="true" useFooter="false"/>
+            <field name="VLRBAIXA" label="VLRBAIXA" type="F" visible="true" useFooter="false"/>
+            <field name="NUMREMESSA" label="NUMREMESSA" type="I" visible="true" useFooter="false"/>
+            <field name="AUTORIZADO" label="AUTORIZADO" type="S" visible="true" useFooter="false"/>
+            <field name="RECDESP" label="RECDESP" type="I" visible="true" useFooter="false"/>
+            <field name="PROVISAO" label="PROVISAO" type="S" visible="true" useFooter="false"/>
+            <field name="ORIGEM" label="ORIGEM" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMARCCHEQ" label="TIPMARCCHEQ" type="S" visible="true" useFooter="false"/>
+            <field name="NUNOTA" label="NUNOTA" type="I" visible="true" useFooter="false"/>
+            <field name="NUBCO" label="NUBCO" type="I" visible="true" useFooter="false"/>
+            <field name="NUDEV" label="NUDEV" type="I" visible="true" useFooter="false"/>
+            <field name="NURENEG" label="NURENEG" type="I" visible="true" useFooter="false"/>
+            <field name="CARTA" label="CARTA" type="I" visible="true" useFooter="false"/>
+            <field name="RATEADO" label="RATEADO" type="S" visible="true" useFooter="false"/>
+            <field name="DTENTSAI" label="DTENTSAI" type="D" visible="true" useFooter="false"/>
+            <field name="CODUSUBAIXA" label="CODUSUBAIXA" type="I" visible="true" useFooter="false"/>
+            <field name="VLRPROV" label="VLRPROV" type="F" visible="true" useFooter="false"/>
+            <field name="IRFRETIDO" label="IRFRETIDO" type="S" visible="true" useFooter="false"/>
+            <field name="INSSRETIDO" label="INSSRETIDO" type="S" visible="true" useFooter="false"/>
+            <field name="CARTAODESC" label="CARTAODESC" type="F" visible="true" useFooter="false"/>
+            <field name="DTALTER" label="DTALTER" type="D" visible="true" useFooter="false"/>
+            <field name="NUMCONTRATO" label="NUMCONTRATO" type="I" visible="true" useFooter="false"/>
+            <field name="ORDEMCARGA" label="ORDEMCARGA" type="I" visible="true" useFooter="false"/>
+            <field name="CODVEICULO" label="CODVEICULO" type="I" visible="true" useFooter="false"/>
+            <field name="CODBARRA" label="CODBARRA" type="S" visible="true" useFooter="false"/>
+            <field name="CODUSU" label="CODUSU" type="I" visible="true" useFooter="false"/>
+            <field name="SEQUENCIA" label="SEQUENCIA" type="I" visible="true" useFooter="false"/>
+            <field name="VLRVARCAMBIAL" label="VLRVARCAMBIAL" type="F" visible="true" useFooter="false"/>
+            <field name="CODIGOBARRA" label="CODIGOBARRA" type="S" visible="true" useFooter="false"/>
+            <field name="LINHADIGITAVEL" label="LINHADIGITAVEL" type="S" visible="true" useFooter="false"/>
+            <field name="VLRDESCEMBUT" label="VLRDESCEMBUT" type="F" visible="true" useFooter="false"/>
+            <field name="VLRJUROEMBUT" label="VLRJUROEMBUT" type="F" visible="true" useFooter="false"/>
+            <field name="VLRMULTAEMBUT" label="VLRMULTAEMBUT" type="F" visible="true" useFooter="false"/>
+            <field name="VLRMOEDA" label="VLRMOEDA" type="F" visible="true" useFooter="false"/>
+            <field name="VLRMOEDABAIXA" label="VLRMOEDABAIXA" type="F" visible="true" useFooter="false"/>
+            <field name="NUCOMPENS" label="NUCOMPENS" type="I" visible="true" useFooter="false"/>
+            <field name="CODCFO" label="CODCFO" type="I" visible="true" useFooter="false"/>
+            <field name="VLRMULTANEGOC" label="VLRMULTANEGOC" type="F" visible="true" useFooter="false"/>
+            <field name="VLRJURONEGOC" label="VLRJURONEGOC" type="F" visible="true" useFooter="false"/>
+            <field name="VLRMULTALIB" label="VLRMULTALIB" type="F" visible="true" useFooter="false"/>
+            <field name="VLRJUROLIB" label="VLRJUROLIB" type="F" visible="true" useFooter="false"/>
+            <field name="DTBAIXAPREV" label="DTBAIXAPREV" type="D" visible="true" useFooter="false"/>
+            <field name="NUMOS" label="NUMOS" type="I" visible="true" useFooter="false"/>
+            <field name="NATUREZAOPERDES" label="NATUREZAOPERDES" type="S" visible="true" useFooter="false"/>
+            <field name="SERIENFDES" label="SERIENFDES" type="S" visible="true" useFooter="false"/>
+            <field name="MODELONFDES" label="MODELONFDES" type="S" visible="true" useFooter="false"/>
+            <field name="CODFUNC" label="CODFUNC" type="I" visible="true" useFooter="false"/>
+            <field name="CODCONTATO" label="CODCONTATO" type="I" visible="true" useFooter="false"/>
+            <field name="NUAPONTA" label="NUAPONTA" type="I" visible="true" useFooter="false"/>
+            <field name="NUMBOR" label="NUMBOR" type="I" visible="true" useFooter="false"/>
+            <field name="M2" label="M2" type="F" visible="true" useFooter="false"/>
+            <field name="DIGSAFRA" label="DIGSAFRA" type="S" visible="true" useFooter="false"/>
+            <field name="NFENTSEQFIX" label="NFENTSEQFIX" type="S" visible="true" useFooter="false"/>
+            <field name="NFCOMPLFIX" label="NFCOMPLFIX" type="I" visible="true" useFooter="false"/>
+            <field name="CODPARCRESP" label="CODPARCRESP" type="I" visible="true" useFooter="false"/>
+            <field name="PDD" label="PDD" type="S" visible="true" useFooter="false"/>
+            <field name="CODUSUCOBR" label="CODUSUCOBR" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNFSE" label="NUMNFSE" type="S" visible="true" useFooter="false"/>
+            <field name="NUIMP" label="NUIMP" type="I" visible="true" useFooter="false"/>
+            <field name="VLRALIBERAR" label="VLRALIBERAR" type="F" visible="true" useFooter="false"/>
+            <field name="CONVENIO" label="CONVENIO" type="F" visible="true" useFooter="false"/>
+            <field name="CHAVECTE" label="CHAVECTE" type="S" visible="true" useFooter="false"/>
+            <field name="CHAVECTEREF" label="CHAVECTEREF" type="S" visible="true" useFooter="false"/>
+            <field name="NOMEEMITENTE_CMC7" label="NOMEEMITENTE_CMC7" type="S" visible="true" useFooter="false"/>
+            <field name="CODRATEIO" label="CODRATEIO" type="I" visible="true" useFooter="false"/>
+            <field name="VLRCESSAO" label="VLRCESSAO" type="F" visible="true" useFooter="false"/>
+            <field name="IDLOTEFDIC" label="IDLOTEFDIC" type="I" visible="true" useFooter="false"/>
+            <field name="NRODOCTEF" label="NRODOCTEF" type="I" visible="true" useFooter="false"/>
+            <field name="NUPED" label="NUPED" type="I" visible="true" useFooter="false"/>
+            <field name="CODBCO_CMC7" label="CODBCO_CMC7" type="I" visible="true" useFooter="false"/>
+            <field name="AGENCIA_CMC7" label="AGENCIA_CMC7" type="S" visible="true" useFooter="false"/>
+            <field name="CONTA_CMC7" label="CONTA_CMC7" type="S" visible="true" useFooter="false"/>
+            <field name="CGC_CPF_CMC7" label="CGC_CPF_CMC7" type="S" visible="true" useFooter="false"/>
+            <field name="CODCC" label="CODCC" type="I" visible="true" useFooter="false"/>
+            <field name="SITESPECIALRESP" label="SITESPECIALRESP" type="S" visible="true" useFooter="false"/>
+            <field name="EXIGEISSQN" label="EXIGEISSQN" type="S" visible="true" useFooter="false"/>
+            <field name="REGESPTRIBUT" label="REGESPTRIBUT" type="S" visible="true" useFooter="false"/>
+            <field name="MOTNAORETERISSQN" label="MOTNAORETERISSQN" type="S" visible="true" useFooter="false"/>
+            <field name="VLRFATCARTAO" label="VLRFATCARTAO" type="F" visible="true" useFooter="false"/>
+            <field name="NUCCR" label="NUCCR" type="I" visible="true" useFooter="false"/>
+            <field name="CODCARTAO" label="CODCARTAO" type="S" visible="true" useFooter="false"/>
+            <field name="NROLOTEGNRE" label="NROLOTEGNRE" type="I" visible="true" useFooter="false"/>
+            <field name="STATUSGNRE" label="STATUSGNRE" type="S" visible="true" useFooter="false"/>
+            <field name="REJEICAOGNRE" label="REJEICAOGNRE" type="S" visible="true" useFooter="false"/>
+            <field name="NUFTC" label="NUFTC" type="I" visible="true" useFooter="false"/>
+            <field name="PARCRENEG" label="PARCRENEG" type="S" visible="true" useFooter="false"/>
+            <field name="TPAGNFCE" label="TPAGNFCE" type="S" visible="true" useFooter="false"/>
+            <field name="VALORPRESENTE" label="VALORPRESENTE" type="F" visible="true" useFooter="false"/>
+            <field name="JUROSAVP" label="JUROSAVP" type="F" visible="true" useFooter="false"/>
+            <field name="BLOQVAR" label="BLOQVAR" type="S" visible="true" useFooter="false"/>
+            <field name="VLRFRETENFS" label="VLRFRETENFS" type="F" visible="true" useFooter="false"/>
+            <field name="VLRDESCCALC" label="VLRDESCCALC" type="F" visible="true" useFooter="false"/>
+            <field name="VLRHONOR" label="VLRHONOR" type="F" visible="true" useFooter="false"/>
+            <field name="BASEIRF" label="BASEIRF" type="F" visible="true" useFooter="false"/>
+            <field name="BASEINSS" label="BASEINSS" type="F" visible="true" useFooter="false"/>
+            <field name="MONIOCOREM" label="MONIOCOREM" type="S" visible="true" useFooter="false"/>
+            <field name="NSUECONECT" label="NSUECONECT" type="S" visible="true" useFooter="false"/>
+            <field name="DTPRAZO" label="DTPRAZO" type="D" visible="true" useFooter="false"/>
+            <field name="VLRTROCOECONECT" label="VLRTROCOECONECT" type="F" visible="true" useFooter="false"/>
+            <field name="TIPOTROCOECONECT" label="TIPOTROCOECONECT" type="S" visible="true" useFooter="false"/>
+            <field name="RECEBCARTAO" label="RECEBCARTAO" type="S" visible="true" useFooter="false"/>
+            <field name="ABATIMENTO" label="ABATIMENTO" type="F" visible="true" useFooter="false"/>
+            <field name="ABATIMENTOCAN" label="ABATIMENTOCAN" type="F" visible="true" useFooter="false"/>
+            <field name="VLRDESCSSPMB" label="VLRDESCSSPMB" type="F" visible="true" useFooter="false"/>
+            <field name="TIPOABATSSPMB" label="TIPOABATSSPMB" type="S" visible="true" useFooter="false"/>
+            <field name="CODCBE" label="CODCBE" type="I" visible="true" useFooter="false"/>
+            <field name="DESPADVOGADO" label="DESPADVOGADO" type="S" visible="true" useFooter="false"/>
+            <field name="CUSTASPROCESSUAIS" label="CUSTASPROCESSUAIS" type="S" visible="true" useFooter="false"/>
+            <field name="DEPOSITOJUDICIAL" label="DEPOSITOJUDICIAL" type="S" visible="true" useFooter="false"/>
+            <field name="NUMPROCADMJUDIC" label="NUMPROCADMJUDIC" type="S" visible="true" useFooter="false"/>
+            <field name="OBRACONSTCIVIL" label="OBRACONSTCIVIL" type="I" visible="true" useFooter="false"/>
+            <field name="CLASSIFCESSAOOBRA" label="CLASSIFCESSAOOBRA" type="I" visible="true" useFooter="false"/>
+            <field name="CODLST" label="CODLST" type="I" visible="true" useFooter="false"/>
+            <field name="CODTRIB" label="CODTRIB" type="I" visible="true" useFooter="false"/>
+            <field name="CODCIDINICTE" label="CODCIDINICTE" type="I" visible="true" useFooter="false"/>
+            <field name="CODCIDFIMCTE" label="CODCIDFIMCTE" type="I" visible="true" useFooter="false"/>
+            <field name="CODOBRA" label="CODOBRA" type="S" visible="true" useFooter="false"/>
+            <field name="CHEQUERASTREADO_CMC7" label="CHEQUERASTREADO_CMC7" type="S" visible="true" useFooter="false"/>
+            <field name="NUCHQ" label="NUCHQ" type="I" visible="true" useFooter="false"/>
+            <field name="CODREGUA" label="CODREGUA" type="I" visible="true" useFooter="false"/>
+            <field name="SEQCAIXA" label="SEQCAIXA" type="I" visible="true" useFooter="false"/>
+            <field name="IDUNICO" label="IDUNICO" type="I" visible="true" useFooter="false"/>
+            <field name="TIMPARCELA" label="TIMPARCELA" type="I" visible="true" useFooter="false"/>
+            <field name="TIMCONTRATOLOC" label="TIMCONTRATOLOC" type="I" visible="true" useFooter="false"/>
+            <field name="TIMNEGOCIACAO" label="TIMNEGOCIACAO" type="I" visible="true" useFooter="false"/>
+            <field name="TIMDTIMPBOL" label="TIMDTIMPBOL" type="D" visible="true" useFooter="false"/>
+            <field name="TIMDTREPASSE" label="TIMDTREPASSE" type="D" visible="true" useFooter="false"/>
+            <field name="TIMDHBAIXA" label="TIMDHBAIXA" type="D" visible="true" useFooter="false"/>
+            <field name="TIMDATADEJUR" label="TIMDATADEJUR" type="D" visible="true" useFooter="false"/>
+            <field name="TIMNUMREG" label="TIMNUMREG" type="I" visible="true" useFooter="false"/>
+            <field name="TIMORIGEM" label="TIMORIGEM" type="S" visible="true" useFooter="false"/>
+            <field name="TIMNUFINORIG" label="TIMNUFINORIG" type="I" visible="true" useFooter="false"/>
+            <field name="TIMVENDAIMV" label="TIMVENDAIMV" type="I" visible="true" useFooter="false"/>
+            <field name="TIMRENEGIMV" label="TIMRENEGIMV" type="I" visible="true" useFooter="false"/>
+            <field name="TIMVENDALOTE" label="TIMVENDALOTE" type="I" visible="true" useFooter="false"/>
+            <field name="TIMRENEGLOTE" label="TIMRENEGLOTE" type="I" visible="true" useFooter="false"/>
+            <field name="TIMSAC" label="TIMSAC" type="I" visible="true" useFooter="false"/>
+            <field name="TIMNOMEADVOGADO" label="TIMNOMEADVOGADO" type="S" visible="true" useFooter="false"/>
+            <field name="TIMDHGERREPASSE" label="TIMDHGERREPASSE" type="D" visible="true" useFooter="false"/>
+            <field name="TIMCONTAREP" label="TIMCONTAREP" type="I" visible="true" useFooter="false"/>
+            <field name="TIMIMOVEL" label="TIMIMOVEL" type="I" visible="true" useFooter="false"/>
+            <field name="TIMCONTRATOADM" label="TIMCONTRATOADM" type="I" visible="true" useFooter="false"/>
+            <field name="TIMBLOQUEADA" label="TIMBLOQUEADA" type="S" visible="true" useFooter="false"/>
+            <field name="TIMFECHAMENTOALU" label="TIMFECHAMENTOALU" type="I" visible="true" useFooter="false"/>
+            <field name="TIMDTIMPBOLLOCAL" label="TIMDTIMPBOLLOCAL" type="D" visible="true" useFooter="false"/>
+            <field name="TIMFECHAMENTO" label="TIMFECHAMENTO" type="I" visible="true" useFooter="false"/>
+            <field name="TIMRENEGCANCLOTE" label="TIMRENEGCANCLOTE" type="I" visible="true" useFooter="false"/>
+            <field name="TIMCONTRATOLTV" label="TIMCONTRATOLTV" type="I" visible="true" useFooter="false"/>
+            <field name="TIMRESCISAOLTV" label="TIMRESCISAOLTV" type="I" visible="true" useFooter="false"/>
+            <field name="TIMNUNOTA" label="TIMNUNOTA" type="I" visible="true" useFooter="false"/>
+            <field name="TIMCONTALANC" label="TIMCONTALANC" type="I" visible="true" useFooter="false"/>
+            <field name="TIMTXADMGERALU" label="TIMTXADMGERALU" type="S" visible="true" useFooter="false"/>
+            <field name="TIMFINGARANTORIG" label="TIMFINGARANTORIG" type="I" visible="true" useFooter="false"/>
+            <field name="TIMREPINTELIGENTE" label="TIMREPINTELIGENTE" type="I" visible="true" useFooter="false"/>
+            <field name="TIMDHGERREPPARCIAL" label="TIMDHGERREPPARCIAL" type="D" visible="true" useFooter="false"/>
+            <field name="TIMDTREPPARCIAL" label="TIMDTREPPARCIAL" type="D" visible="true" useFooter="false"/>
+            <field name="TIMREPPARCIAL" label="TIMREPPARCIAL" type="S" visible="true" useFooter="false"/>
+            <field name="TIMVLRJUROCONTRATO" label="TIMVLRJUROCONTRATO" type="F" visible="true" useFooter="false"/>
+            <field name="TIMVLRAMORTCONTRATO" label="TIMVLRAMORTCONTRATO" type="F" visible="true" useFooter="false"/>
+            <field name="TIMVLRCORRMONET" label="TIMVLRCORRMONET" type="F" visible="true" useFooter="false"/>
+            <field name="CODIPTU" label="CODIPTU" type="I" visible="true" useFooter="false"/>
+            <field name="TIMORIGRENEG" label="TIMORIGRENEG" type="S" visible="true" useFooter="false"/>
+            <field name="TIMRESCISAOLOC" label="TIMRESCISAOLOC" type="I" visible="true" useFooter="false"/>
+            <field name="TIMTIPOINTERMED" label="TIMTIPOINTERMED" type="I" visible="true" useFooter="false"/>
+            <field name="CODOBSPADRAO" label="CODOBSPADRAO" type="I" visible="true" useFooter="false"/>
+            <field name="CODIMOVELRURAL" label="CODIMOVELRURAL" type="I" visible="true" useFooter="false"/>
+            <field name="RECADIANTAMENTORURAL" label="RECADIANTAMENTORURAL" type="S" visible="true" useFooter="false"/>
+            <field name="NUCKC" label="NUCKC" type="I" visible="true" useFooter="false"/>
+            <field name="CHAVENFEGNRE" label="CHAVENFEGNRE" type="S" visible="true" useFooter="false"/>
+            <field name="NUANTBANC" label="NUANTBANC" type="I" visible="true" useFooter="false"/>
+            <field name="NUMDOCARRECAD" label="NUMDOCARRECAD" type="S" visible="true" useFooter="false"/>
+            <field name="DTENTSAIINFO" label="DTENTSAIINFO" type="D" visible="true" useFooter="false"/>
+            <field name="REFATCON" label="REFATCON" type="D" visible="true" useFooter="false"/>
+            <field name="FINCONFIRMADO" label="FINCONFIRMADO" type="S" visible="true" useFooter="false"/>
+            <field name="TIPAPURACAO" label="TIPAPURACAO" type="S" visible="true" useFooter="false"/>
+            <field name="VLRGNREDOIS" label="VLRGNREDOIS" type="F" visible="true" useFooter="false"/>
+            <field name="DESCRTPAGNFCE" label="DESCRTPAGNFCE" type="S" visible="true" useFooter="false"/>
+            <field name="RECEBIDO" label="RECEBIDO" type="S" visible="true" useFooter="false"/>
+            <field name="EMVPIX" label="EMVPIX" type="S" visible="true" useFooter="false"/>
+            <field name="DTINITREFAPURACAO" label="DTINITREFAPURACAO" type="D" visible="true" useFooter="false"/>
+            <field name="DHINTEGRACAO" label="DHINTEGRACAO" type="D" visible="true" useFooter="false"/>
+            <field name="TROCOPDV" label="TROCOPDV" type="F" visible="true" useFooter="false"/>
+            <field name="AD_VLRCOMIMP" label="AD_VLRCOMIMP" type="F" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

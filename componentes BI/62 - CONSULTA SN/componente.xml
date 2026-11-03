@@ -1,0 +1,53 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_SN" description="SN" metadata="text" required="true" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_acf7fpo" description="Principal">
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="100">
+          <simple-value id="svl_acf7fq5">
+            <value-expression><![CDATA[<b><span style='font-size: 14px; font-family: Arial, Helvetica, sans-serif;'><div style='text-align: center;'>Movimentação do produto</div></span></b>]]></value-expression>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="2124">
+          <grid id="grd_acf7fp2" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,CAB.CODEMP,CAB.NUMNOTA AS NUMERONOTA,CAB.DTFATUR AS DATAFATURAMENTO,CAB.CODTIPOPER AS TOP,(SELECT DISTINCT T.DESCROPER FROM TGFTOP T WHERE T.CODTIPOPER = CAB.CODTIPOPER) AS DESCROPER,ITE.CODPROD AS CODPRODUTO,PRO.COMPLDESC AS NOMEPRODUTO,PAR.RAZAOSOCIAL AS NOMEPARCEIROFROM TGFITE ITEINNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTAINNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPRODINNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARCINNER JOIN TGFSER SER ON (ITE.NUNOTA = SER.NUNOTA AND ITE.CODPROD = SER.CODPROD)WHERE SER.SERIE = :P_SN AND CAB.TIPMOV <> 'P' AND PRO.USOPROD = 'V' AND CAB.CODTIPOPER NOT IN (800,802)]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="NUNOTA" type="I" visible="false" useFooter="false"/>
+              <field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"/>
+              <field name="NUMERONOTA" label="Nr da Nota" type="I" visible="true" useFooter="false"/>
+              <field name="DATAFATURAMENTO" label="Dt do Faturamento" type="D" visible="true" useFooter="false"/>
+              <field name="TOP" label="Top" type="I" visible="true" useFooter="false"/>
+              <field name="DESCROPER" label="DESCROPER" type="S" visible="true" useFooter="false"/>
+              <field name="CODPRODUTO" label="Cod do Produto" type="I" visible="true" useFooter="false"/>
+              <field name="NOMEPRODUTO" label="Referência" type="S" visible="true" useFooter="false"/>
+              <field name="NOMEPARCEIRO" label="Nome do Parceiro" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="107">
+          <simple-value id="svl_acf7frc">
+            <value-expression><![CDATA[<b><span style='font-size: 14px; font-family: Arial, Helvetica, sans-serif;'><div style='text-align: center;'>Produção</div></span></b>]]></value-expression>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="2196">
+          <grid id="grd_acf7frj" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT SER.DTALTER AS DATA,PROC.NUMPS AS NUMEROPLANO,IPA.IDIPROC AS NROP,SUBSTR(SER.SERIE,3,8) AS LOTEFROM TGFSER SERINNER JOIN TPRIPA IPA ON SUBSTR(SER.SERIE,3,8) = IPA.NROLOTE INNER JOIN TPRIATV ATV ON (IPA.IDIPROC = ATV.IDIPROC AND (ATV.CODUSU = 24 OR ATV.CODUSU = 0 OR ATV.CODUSU = 5 OR ATV.CODUSU = 9))INNER JOIN TPRIPROC PROC ON IPA.IDIPROC = PROC.IDIPROCWHERE SER.SERIE = :P_SN AND ATUALESTOQUE = 1]]></expression>
+            <metadata>
+              <field name="DATA" label="Data de Fabricação" type="D" visible="true" useFooter="false"/>
+              <field name="NUMEROPLANO" label="Nr do MPS" type="I" visible="true" useFooter="false"/>
+              <field name="NROP" label="Nr da OP" type="I" visible="true" useFooter="false"/>
+              <field name="LOTE" label="Lote" type="S" visible="true" useFooter="false"/>
+            </metadata>
+          </grid>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

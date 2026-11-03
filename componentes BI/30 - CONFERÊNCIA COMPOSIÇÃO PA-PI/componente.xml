@@ -1,0 +1,60 @@
+<gadget ><prompt-parameters><parameter  id="P_CODPRC" description="Processo Produtivo" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false" order="0" label="P_CODPRC : multiList:Text"><expression type="SQL"><![CDATA[SELECT DISTINCT PRC.CODPRC AS VALUE,
+PRC.DESCRABREV AS LABEL
+FROM TPRPRC PRC 
+ORDER BY 1 DESC]]></expression></parameter><parameter  id="P_PA" description="Detalhar PA?" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="1" label="P_PA : Verdadeiro/Falso"/><parameter  id="P_CODPRODMP" description="Cód. MP" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="2" label="P_CODPRODMP : Entidade/Tabela"/><parameter  id="P_DESCRMP" description="Descrição MP" metadata="text" required="false" keep-last="false" keep-date="false" order="3" label="P_DESCRMP : Texto"/><parameter  id="P_CODPRODPA" description="Cód. PA/PI" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="4" label="P_CODPRODPA : Entidade/Tabela"/></prompt-parameters><level id="lvl_adg3nhu" description="Principal"><args><arg  id="A_CODPRC" type="integer" label="A_CODPRC : Número Inteiro"/><arg  id="A_IDEFX" type="integer" label="A_IDEFX : Número Inteiro"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="41.391357180830866"><grid id="grd_adg3nhw" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[WITH ULTIMOPROC AS (
+    SELECT CODPRC, MAX(IDPROC) AS IDPROC
+    FROM TPRPRC
+    GROUP BY CODPRC
+)
+SELECT DISTINCT PRC.CODPRC,
+    PRC.DESCRABREV,
+    EFX.IDEFX,
+    EFX.DESCRICAO,
+    CASE WHEN :P_PA = 'Z' THEN MP.CODPRODPA END AS CODPRODPA,
+    CASE WHEN :P_PA = 'Z' THEN PROPA.DESCRPROD END AS DESCRPA,
+    (CASE WHEN MP.GERAREQUISICAO = 'S' THEN 'SIM' ELSE 'NÃO' END) AS GERAREQUISICAO
+FROM ULTIMOPROC UP
+INNER JOIN TPRPRC PRC ON (PRC.CODPRC = UP.CODPRC AND PRC.IDPROC = UP.IDPROC)
+INNER JOIN TPRATV ATV ON (ATV.IDPROC = PRC.IDPROC)
+INNER JOIN TPREFX EFX ON (EFX.IDEFX = ATV.IDEFX)
+INNER JOIN TPRLMP MP ON (MP.IDEFX = EFX.IDEFX)
+INNER JOIN TGFPRO PROMP ON (PROMP.CODPROD = MP.CODPRODMP)
+INNER JOIN TGFPRO PROPA ON (PROPA.CODPROD = MP.CODPRODPA)
+WHERE PRC.CODPRC IN :P_CODPRC
+  AND (MP.CODPRODPA = :P_CODPRODPA OR :P_CODPRODPA IS NULL)
+  AND (MP.CODPRODMP = :P_CODPRODMP OR :P_CODPRODMP IS NULL)
+  AND (PROMP.DESCRPROD LIKE '%'||:P_DESCRMP||'%' OR :P_DESCRMP IS NULL)
+ORDER BY EFX.IDEFX]]></expression><metadata><field name="CODPRC" label="Cód. Processo" type="I" visible="true" useFooter="false"></field><field name="DESCRABREV" label="Processo Prod." type="S" visible="true" useFooter="false"></field><field name="IDEFX" label="Cód. Atividade" type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Atividade" type="S" visible="true" useFooter="false"></field><field name="CODPRODPA" label="Cód.PA" type="I" visible="false" useFooter="false"></field><field name="DESCRPA" label="Descrição PA" type="S" visible="false" useFooter="false"></field><field name="GERAREQUISICAO" label="Gera Requisição" type="S" visible="true" useFooter="false"></field></metadata><refresh-details  ui-list="grd_adg3nhx">
+            <param id="A_CODPRC">$CODPRC</param>
+            <param id="A_IDEFX">$IDEFX</param>
+          </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="59.618743829270144"><grid id="grd_adg3nhx" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODPRC" type="integer"></arg><arg id="A_IDEFX" type="integer"></arg></args><title><![CDATA[Para identificar o PA/PI marque para Detalhar PA no painel de Filtros]]></title><expression type="sql" data-source="MGEDS"><![CDATA[WITH ULTIMOPROC AS (
+    SELECT CODPRC, MAX(IDPROC) AS IDPROC
+    FROM TPRPRC
+    GROUP BY CODPRC
+)
+SELECT DISTINCT PROMP.CODPROD,
+    PROMP.DESCRPROD,
+    PROMP.CODVOL,
+    CASE WHEN :P_PA = 'S' THEN MP.QTDMISTURA END AS QTDMISTURA,
+    EFX.IDEFX,
+    EFX.DESCRICAO,
+    CASE WHEN :P_PA = 'S' THEN MP.CODPRODPA END AS CODPRODPA,
+    CASE WHEN :P_PA = 'S' THEN PROPA.DESCRPROD END AS DESCRPA,
+    PRC.IDPROC,
+    (CASE WHEN MP.GERAREQUISICAO = 'S' THEN 'SIM' ELSE 'NÃO' END) AS GERAREQUISICAO
+FROM ULTIMOPROC UP
+INNER JOIN TPRPRC PRC ON (PRC.CODPRC = UP.CODPRC AND PRC.IDPROC = UP.IDPROC)
+INNER JOIN TPRATV ATV ON (ATV.IDPROC = PRC.IDPROC)
+INNER JOIN TPREFX EFX ON (EFX.IDEFX = ATV.IDEFX)
+INNER JOIN TPRLMP MP ON (MP.IDEFX = EFX.IDEFX)
+INNER JOIN TGFPRO PROMP ON (PROMP.CODPROD = MP.CODPRODMP)
+INNER JOIN TGFPRO PROPA ON (PROPA.CODPROD = MP.CODPRODPA)
+WHERE PRC.CODPRC IN :A_CODPRC
+  AND EFX.IDEFX = :A_IDEFX
+  AND (MP.CODPRODPA = :P_CODPRODPA OR :P_CODPRODPA IS NULL)
+  AND (MP.CODPRODMP = :P_CODPRODMP OR :P_CODPRODMP IS NULL)
+  AND (PROMP.DESCRPROD LIKE '%'||:P_DESCRMP||'%' OR :P_DESCRMP IS NULL)
+ORDER BY 1,7]]></expression><metadata><field name="CODPROD" label="Cód. MP" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Matéria Prima" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="Unidade" type="S" visible="true" useFooter="false"></field><field name="QTDMISTURA" label="Quantidade" type="F" visible="true" useFooter="false"></field><field name="IDEFX" label="Cód. Atividade" type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Atividade" type="S" visible="true" useFooter="false"></field><field name="CODPRODPA" label="Cód. PA" type="I" visible="true" useFooter="false"></field><field name="DESCRPA" label="Descrição PA" type="S" visible="true" useFooter="false"></field><field name="IDPROC" label="IDPROC" type="I" visible="false" useFooter="false"></field><field name="GERAREQUISICAO" label="Gera Requisição" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.mgeprod.cad.composicao.produto">
+            <CODPRODPA>$CODPRODPA</CODPRODPA>
+            <IDPROC>$IDPROC</IDPROC>
+          </on-click-launcher></grid></container></container></level></gadget>

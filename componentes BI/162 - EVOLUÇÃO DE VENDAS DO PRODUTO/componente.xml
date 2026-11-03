@@ -1,0 +1,146 @@
+<gadget ><prompt-parameters><parameter  id="DESC" description="3- Tirar Descontos" metadata="boolean" required="true" keep-last="true" label="DESC : Verdadeiro/Falso"/><parameter  id="IPI" description="4- Adicionar IPI" metadata="boolean" required="true" keep-last="true" label="IPI : Verdadeiro/Falso"/><parameter  id="PERIODO" description="2- Período" metadata="datePeriod" required="true" keep-last="true" label="PERIODO : Período"/><parameter  id="PRODUTO" description="1- Produto" metadata="entity:Produto@CODPROD" required="true" keep-last="true" label="PRODUTO : Entidade/Tabela"/><parameter  id="REP" description="6- Diminuir Valor Redução" metadata="boolean" required="true" keep-last="true" label="REP : Verdadeiro/Falso"/><parameter  id="ST" description="5- Adicionar ST" metadata="boolean" required="true" keep-last="true" label="ST : Verdadeiro/Falso"/><parameter  id="STATUSNOTA" description="7- Apenas notas confirmadas?" metadata="boolean" required="true" keep-last="true" label="STATUSNOTA : Verdadeiro/Falso"/><parameter  id="TOP" description="8- Grupo da TOP" required="false" keep-last="true" metadata="multiList:Text" label="TOP : multiList:Text"><expression type="SQL"><![CDATA[SELECT
+       DISTINCT TOP.GRUPO AS VALUE,
+       TOP.GRUPO
+AS LABEL
+   FROM TGFTOP TOP WHERE GOLSINAL= -1
+   ORDER BY 1]]></expression></parameter></prompt-parameters><level id="lvl_7wdtgr" description="Principal"><container orientacao="V" tamanhoRelativo="100"><chart id="cht_7wdtgs" type="column"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    CASE 
+        WHEN PRO.CODPROD IS NOT NULL 
+             AND SUBSTR(TO_CHAR(PRO.CODPROD), 1, 1) = '3' THEN 
+            TO_NUMBER(
+                SUBSTR(TO_CHAR(PRO.CODPROD), 1, 1) || 
+                '1' || 
+                SUBSTR(TO_CHAR(PRO.CODPROD), 3)
+            )
+        ELSE PRO.CODPROD
+    END AS CODPROD_TRATADO,
+
+    TO_CHAR(CAB.DTNEG, 'Mon/YYYY') AS PERIODO,
+    TO_CHAR(CAB.DTNEG, 'YYYYMM') AS ORDEM,
+
+    SUM(
+        (
+            (ITE.VLRTOT)
+            - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+            - (CASE WHEN :REP  = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+            + (CASE WHEN :ST   = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+            + (CASE WHEN :IPI  = 'S' THEN ITE.VLRIPI ELSE 0 END)
+        )
+        * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END
+        * VCAB.INDITENS
+    ) AS VALOR
+
+FROM TGFCAB CAB
+JOIN TGFPAR PAR   ON CAB.CODPARC     = PAR.CODPARC
+JOIN TGFITE ITE   ON CAB.NUNOTA      = ITE.NUNOTA
+JOIN TGFPRO PRO   ON ITE.CODPROD     = PRO.CODPROD
+JOIN TGFTOP TPO   ON CAB.CODTIPOPER  = TPO.CODTIPOPER
+                  AND CAB.DHTIPOPER  = TPO.DHALTER
+JOIN VGFCAB VCAB  ON VCAB.NUNOTA     = CAB.NUNOTA
+
+WHERE 
+    (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+    AND ITE.USOPROD <> 'D'
+    AND TPO.GOLSINAL = -1
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+    AND TPO.GRUPO IN :TOP
+    AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+    AND (:PRODUTO IS NULL OR PRO.CODPROD = :PRODUTO)
+
+GROUP BY 
+    CASE 
+        WHEN PRO.CODPROD IS NOT NULL 
+             AND SUBSTR(TO_CHAR(PRO.CODPROD), 1, 1) = '3' THEN 
+            TO_NUMBER(
+                SUBSTR(TO_CHAR(PRO.CODPROD), 1, 1) || 
+                '1' || 
+                SUBSTR(TO_CHAR(PRO.CODPROD), 3)
+            )
+        ELSE PRO.CODPROD
+    END,
+    TO_CHAR(CAB.DTNEG, 'Mon/YYYY'),
+    TO_CHAR(CAB.DTNEG, 'YYYYMM')
+
+ORDER BY ORDEM]]></expression><metadata><field name="CODPROD_TRATADO" label="CODPROD_TRATADO" type="F" visible="true" useFooter="false"></field><field name="PERIODO" label="PERIODO" type="S" visible="true" useFooter="false"></field><field name="ORDEM" label="ORDEM" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><horizontal-axis><category field="PER" rotation="-45" dropLabel="false"></category></horizontal-axis><series><serie type="column" show-tip="false"><xField>$PERIODO</xField><yField>$VALOR</yField><display><![CDATA[Vendas]]></display><on-click  navigate-to="lvl_afa3290">
+              <param id="PER">$PER</param>
+            </on-click></serie></series></chart></container></level><level id="lvl_afa3290" description="2"><args >
+      <arg id="PER" type="text"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_ahpcllc"><value-expression><![CDATA[<b> Período:</b> :PER]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_afa3291" type="pizza"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT VEN.APELIDO,
+SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             )   AS VALOR,
+
+TO_CHAR(CAB.DTNEG, 'Mon/YYYY') AS PER,
+ TO_CHAR(CAB.DTNEG, 'YYYYMM') AS ORDEM,  ven.codvend
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, TGFVEN VEN
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND VCAB.NUNOTA= CAB.NUNOTA
+
+AND ((TPO.GRUPO IN :TOP))  
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND VEN.CODVEND= CAB.CODVEND
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND CAB.CODPARC = PAR.CODPARC
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+and TO_CHAR(CAB.DTNEG, 'Mon/YYYY')=:PER
+GROUP BY TO_CHAR(CAB.DTNEG, 'Mon/YYYY'),
+ TO_CHAR(CAB.DTNEG, 'YYYYMM')
+, VEN.APELIDO, ven.codvend
+ORDER BY 2 DESC]]></expression><metadata><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="PER" label="PER" type="S" visible="true" useFooter="false"></field><field name="ORDEM" label="ORDEM" type="S" visible="true" useFooter="false"></field><field name="CODVEND" label="Código do Vendedor" type="I" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>VALOR</field><nameField>APELIDO</nameField><on-click  navigate-to="lvl_agifm3d">
+                <param id="CODVEND">$CODVEND</param>
+                <param id="VENDEDOR">$APELIDO</param>
+              </on-click></serie></series></chart></container></container></level><level id="lvl_agifm3d" description="Nota"><args >
+      <arg id="CODVEND" type="integer"/>
+      <arg id="VENDEDOR" type="text"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_ahpclle"><value-expression><![CDATA[<b>Período:</b>:PER
+<b>Vendedor:</b>:VENDEDOR]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_agifm3e"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA, PAR.NOMEPARC, CAB.DTNEG, 
+SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             ) AS VALOR
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, TGFVEN VEN
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND VCAB.NUNOTA= CAB.NUNOTA
+AND ((TPO.GRUPO IN :TOP))  
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND VEN.CODVEND= CAB.CODVEND
+AND APELIDO =:VENDEDOR
+AND CAB.CODPARC = PAR.CODPARC
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+and TO_CHAR(CAB.DTNEG, 'Mon/YYYY')=:PER
+and ven.codvend= :CODVEND
+GROUP BY CAB.NUNOTA, PAR.NOMEPARC, CAB.DTNEG]]></expression><metadata><field name="NUNOTA" label="Número da Nota" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="DTNEG" label="Data" type="D" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="true" mask="R$ #.##0,00"></field></metadata></grid></container></container></level></gadget>

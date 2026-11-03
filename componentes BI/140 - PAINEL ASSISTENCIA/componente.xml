@@ -1,0 +1,95 @@
+<gadget ><prompt-parameters><parameter  id="P_DTENTSAI" description="Período de Entrada" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="0" label="P_DTENTSAI : Período"/><parameter  id="P_DTFAB" description="Período de Fabricação" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="1" label="P_DTFAB : Período"/></prompt-parameters><level id="lvl_alalfky" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="38.61390000003861"><simple-value id="svl_alalfle"><value-expression ><![CDATA[<div style="width: 2500px; height: 300px; background: linear-gradient(135deg, #e6f0fa, #ffffff); border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: Segoe UI, sans-serif; padding: 20px;">
+  <div style="font-size: 50px; font-weight: 600; color: #2c3e50; margin-bottom: 10px;">
+    Painel de Informações da Assistência
+  </div>
+  <div style="font-size: 20px; color: #5d6d7e;">Selecione um painel abaixo para visualizar os dados detalhados</div>
+</div>]]></value-expression></simple-value></container><container orientacao="H" tamanhoRelativo="61.3961010000614"><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_alalfl1"><value-expression ><![CDATA[<div style="width: 1200px; height: 400px; background-color: #ffffff; border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; font-family: Segoe UI, sans-serif; transition: transform 0.2s;">
+  <div style="font-size: 38px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"> Assistência</div>
+  <div style="font-size: 18px; color: #7f8c8d; text-align: center;">Informativo gerencial da assistência técnica</div>
+</div>]]></value-expression><on-click  navigate-to="lvl_alalfk0"/></simple-value></container><container orientacao="V" tamanhoRelativo="50"><simple-value id="svl_alalfl2"><value-expression ><![CDATA[<div style="width: 1200px; height: 400px; background-color: #ffffff; border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; font-family: Segoe UI, sans-serif; transition: transform 0.2s;">
+  <div style="font-size: 38px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"> Produção</div>
+  <div style="font-size: 18px; color: #7f8c8d; text-align: center;">Informativo de problemas identificados no processo produtivo</div>
+</div>]]></value-expression><on-click  navigate-to="lvl_alalfkz"/></simple-value></container></container></container></level><level id="lvl_alalfkz" description="Produção"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="55.30417295123177"><grid id="grd_alalfnk" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+	F.NOMEFUNC,
+	SUM(CASE WHEN ASS.DISJUNTOR IS NOT NULL THEN 1 ELSE 0 END) AS DISJUNTOR,
+	SUM(CASE WHEN ASS.DISPLAY IS NOT NULL THEN 1 ELSE 0 END) AS DISPLAY,
+	SUM(CASE WHEN ASS.ADESIVO IS NOT NULL THEN 1 ELSE 0 END) AS ADESIVO,
+	SUM(CASE WHEN ASS.CHICOTE IS NOT NULL THEN 1 ELSE 0 END) AS CHICOTE,
+	SUM(CASE WHEN ASS.LED IS NOT NULL THEN 1 ELSE 0 END) AS LED,
+	SUM(CASE WHEN ASS.MICA IS NOT NULL THEN 1 ELSE 0 END) AS MICA,
+	SUM(CASE WHEN ASS.CORRENTEMIN IS NOT NULL THEN 1 ELSE 0 END) AS CORRENTEMIN,
+	SUM(CASE WHEN ASS.CORRENTEMAX IS NOT NULL THEN 1 ELSE 0 END) AS CORRENTEMAX,
+	SUM(CASE WHEN ASS.CURTO IS NOT NULL THEN 1 ELSE 0 END) AS CURTO,
+	SUM(CASE WHEN ASS.SOLDA IS NOT NULL THEN 1 ELSE 0 END) AS SOLDA,
+	SUM(CASE WHEN ASS.INDUTOR IS NOT NULL THEN 1 ELSE 0 END) AS INDUTOR,
+	SUM(CASE WHEN ASS.TRANSFORMADOR IS NOT NULL THEN 1 ELSE 0 END) AS TRANSFORMADOR,
+	SUM(CASE WHEN ASS.COMPINVERTIDO IS NOT NULL THEN 1 ELSE 0 END) AS COMPINVERTIDO
+FROM 
+	AD_TGFASS ASS
+	INNER JOIN TFPFUN F ON ASS.FUNCSOLDA = F.CODFUNC
+WHERE 
+	ASS.DTRECEB <= :P_DTENTSAI.FIN AND ASS.DTRECEB >= :P_DTENTSAI.INI
+	AND ASS.T_DTFABRICACAO <= :P_DTFAB.FIN AND ASS.T_DTFABRICACAO >= :P_DTFAB.INI
+	AND ASS.DTCONCLUSAO IS NOT NULL
+	AND ASS.FUNCSOLDA IS NOT NULL
+	AND ASS.DEFEITO = 'FAB'
+GROUP BY 
+	F.NOMEFUNC
+ORDER BY 
+	F.NOMEFUNC]]></expression><metadata><field name="NOMEFUNC" label="NOMEFUNC" type="S" visible="true" useFooter="false"></field><field name="DISJUNTOR" label="DISJUNTOR" type="I" visible="true" useFooter="false"></field><field name="DISPLAY" label="DISPLAY" type="I" visible="true" useFooter="false"></field><field name="ADESIVO" label="ADESIVO" type="I" visible="true" useFooter="false"></field><field name="CHICOTE" label="CHICOTE" type="I" visible="true" useFooter="false"></field><field name="LED" label="LED" type="I" visible="true" useFooter="false"></field><field name="MICA" label="MICA" type="I" visible="true" useFooter="false"></field><field name="CORRENTEMIN" label="CORRENTEMIN" type="I" visible="true" useFooter="false"></field><field name="CORRENTEMAX" label="CORRENTEMAX" type="I" visible="true" useFooter="false"></field><field name="CURTO" label="CURTO" type="I" visible="true" useFooter="false"></field><field name="SOLDA" label="SOLDA" type="I" visible="true" useFooter="false"></field><field name="INDUTOR" label="INDUTOR" type="I" visible="true" useFooter="false"></field><field name="TRANSFORMADOR" label="TRANSFORMADOR" type="I" visible="true" useFooter="false"></field><field name="COMPINVERTIDO" label="COMPINVERTIDO" type="I" visible="true" useFooter="false"></field><field name="Total" label="Total" type="I" visible="true" useFooter="SUM"><calculated><formula><![CDATA[$ADESIVO + $CHICOTE + $COMPINVERTIDO + $CORRENTEMAX + $CORRENTEMIN + $CURTO + $DISJUNTOR + $DISPLAY + $INDUTOR + $LED + $MICA + $SOLDA + $TRANSFORMADOR]]></formula></calculated></field></metadata></grid></container><container orientacao="V" tamanhoRelativo="45.70592805886924"><grid id="grd_alalfm8" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT *
+FROM (
+	SELECT 
+		F.NOMEFUNC,
+		COUNT(ASS.NUMOS) AS QTD,
+		CASE 
+			WHEN ASS.DEFEITO = 'ATT' THEN 'Necessidade de Atualização'
+			WHEN ASS.DEFEITO = 'MU'  THEN 'Mau Uso'
+			WHEN ASS.DEFEITO = 'DC'  THEN 'Desgaste (Cronológico)'
+			WHEN ASS.DEFEITO = 'FAB' THEN 'Montagem (Fábrica)'
+			WHEN ASS.DEFEITO = 'SD'  THEN 'Sem Defeito' 
+			ELSE 'Não identificado ainda'
+		END AS DEFEITO
+	FROM AD_TGFASS ASS
+	INNER JOIN TFPFUN F ON ASS.FUNCSOLDA = F.CODFUNC
+	WHERE 
+		ASS.DTRECEB BETWEEN :P_DTENTSAI.INI AND :P_DTENTSAI.FIN
+		AND ASS.T_DTFABRICACAO BETWEEN :P_DTFAB.INI AND :P_DTFAB.FIN
+	GROUP BY 
+		F.NOMEFUNC,
+		ASS.DEFEITO
+) V
+PIVOT (
+	SUM(QTD) FOR DEFEITO IN (
+		'Necessidade de Atualização' AS ATUALIZACAO,
+		'Mau Uso' AS MAUUSO,
+		'Desgaste (Cronológico)' AS CRONO,
+		'Montagem (Fábrica)' AS FABR,
+		'Sem Defeito' AS SEMDEF,
+		'Não identificado ainda' AS NDA
+	)
+)
+ORDER BY NOMEFUNC]]></expression><metadata><field name="NOMEFUNC" label="NOMEFUNC" type="S" visible="true" useFooter="false"></field><field name="ATUALIZACAO" label="Atualização" type="I" visible="true" useFooter="SUM"></field><field name="MAUUSO" label="Mau Uso" type="I" visible="true" useFooter="SUM"></field><field name="CRONO" label="Desgaste Cronológico" type="I" visible="true" useFooter="SUM"></field><field name="FABR" label="Defeito de Fábrica" type="I" visible="true" useFooter="SUM"></field><field name="SEMDEF" label="Sem Defeito" type="I" visible="true" useFooter="SUM"></field><field name="NDA" label="Em andamento" type="I" visible="true" useFooter="SUM"></field><field name="Total" label="Total" type="I" visible="true" useFooter="SUM"><calculated><formula><![CDATA[$ATUALIZACAO + $CRONO + $FABR + $MAUUSO + $NDA + $SEMDEF]]></formula></calculated></field></metadata></grid></container></container></level><level id="lvl_alalfk0" description="Assistência"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_alalfmu" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * 
+FROM (SELECT V.AD_AGRUPADOR AS RFINTERNA,
+			NVL(SUM(V.QTD),0) AS QTD,
+			(CASE WHEN DEFEITO = 'ATT' THEN 'Necessidade de Atualização'
+								WHEN V.DEFEITO = 'MU' THEN 'Mau Uso'
+								WHEN V.DEFEITO = 'DC' THEN 'Desgaste (Cronológico)'
+								WHEN V.DEFEITO = 'FAB' THEN 'Montagem (Fábrica)'
+								WHEN V.DEFEITO = 'SD' THEN 'Sem Defeito' 
+								ELSE 'Não identificado ainda' END) AS DEFEITO
+		FROM (SELECT (SELECT P.AD_AGRUPADOR FROM TGFPRO P WHERE P.CODPROD = ASS.T_CODPROD OR ASS.T_CODPROD = P.AD_CODANTERIOR) AS AD_AGRUPADOR,	
+							COUNT(ASS.T_CODPROD) AS QTD,
+							ASS.DEFEITO
+						FROM AD_TGFASS ASS
+						WHERE ASS.DTRECEB <= :P_DTENTSAI.FIN 
+							AND ASS.DTRECEB >= :P_DTENTSAI.INI
+						GROUP BY ASS.T_CODPROD, ASS.DEFEITO) V
+		GROUP BY V.AD_AGRUPADOR,
+			V.DEFEITO) T
+PIVOT (SUM(QTD) FOR DEFEITO IN (
+		'Necessidade de Atualização' AS ATUALIZACAO,
+		'Mau Uso' AS MAUUSO,
+		'Desgaste (Cronológico)' AS CRONO,
+		'Montagem (Fábrica)' AS FABR,
+		'Sem Defeito' AS SEMDEF,
+		'Não identificado ainda' AS NDA))]]></expression><metadata><field name="RFINTERNA" label="RF Interna" type="S" visible="true" useFooter="false"></field><field name="ATUALIZACAO" label="Atualização" type="I" visible="true" useFooter="SUM"></field><field name="MAUUSO" label="Mau Uso" type="I" visible="true" useFooter="SUM"></field><field name="CRONO" label="Desgaste Cronológico" type="I" visible="true" useFooter="SUM"></field><field name="FABR" label="Fabricação" type="I" visible="true" useFooter="SUM"></field><field name="SEMDEF" label="Sem Defeito" type="I" visible="true" useFooter="SUM"></field><field name="NDA" label="Ainda Ñ. Identificado" type="I" visible="true" useFooter="SUM"></field><field name="Total" label="Total" type="I" visible="true" useFooter="SUM"><calculated><formula><![CDATA[$ATUALIZACAO + $CRONO + $FABR + $MAUUSO + $NDA + $SEMDEF]]></formula></calculated></field></metadata></grid></container></level></gadget>

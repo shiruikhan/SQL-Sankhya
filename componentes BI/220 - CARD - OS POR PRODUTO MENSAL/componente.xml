@@ -1,0 +1,30 @@
+<gadget ><level id="03B" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_03D" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+     M.APELIDO                   AS GRUPO
+    ,NVL(OS.EM_ABERTO,  0)       AS EM_ABERTO
+    ,NVL(OS.FINALIZADA, 0)       AS FINALIZADA
+    ,NVL(OS.TOTAL_OS,   0)       AS TOTAL_OS
+FROM AD_TGSSGM M
+LEFT JOIN (
+    SELECT
+         COMP.CODSGRU
+        ,COUNT(CASE WHEN ASS.DTCONCLUSAO IS NULL     THEN 1 END) AS EM_ABERTO
+        ,COUNT(CASE WHEN ASS.DTCONCLUSAO IS NOT NULL THEN 1 END) AS FINALIZADA
+        ,COUNT(ASS.NUMOS)                                         AS TOTAL_OS
+    FROM AD_TGFASS ASS
+    INNER JOIN TGFPRO     P    ON ASS.T_CODPROD     = P.CODPROD
+    INNER JOIN TGFGRU     G    ON P.CODGRUPOPROD     = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD)
+        OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI   = COMP.CODGRUPOPROD)
+    )
+    WHERE TRUNC(ASS.DTRECEB, 'MM')   = TRUNC(SYSDATE, 'MM')
+      AND TRUNC(ASS.DTRECEB, 'YYYY') = TRUNC(SYSDATE, 'YYYY')
+      AND COMP.ANO = TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY'))
+      AND COMP.MES = TO_CHAR(SYSDATE, 'MM')
+    GROUP BY
+        COMP.CODSGRU
+) OS ON M.CODSGRU = OS.CODSGRU
+WHERE M.ANO = TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY'))
+  AND M.MES = TO_CHAR(SYSDATE, 'MM')
+ORDER BY M.APELIDO]]></expression><metadata><field name="GRUPO" label="Grupo" type="S" visible="true" useFooter="false"></field><field name="EM_ABERTO" label="Em Aberto" type="I" visible="true" useFooter="SUM"></field><field name="FINALIZADA" label="Finalizado" type="I" visible="true" useFooter="SUM"></field><field name="TOTAL_OS" label="Total" type="I" visible="true" useFooter="SUM"></field></metadata></grid></container></level></gadget>

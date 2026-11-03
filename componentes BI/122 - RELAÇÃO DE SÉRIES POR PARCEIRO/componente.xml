@@ -1,0 +1,14 @@
+<gadget ><prompt-parameters><parameter  id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="true" keep-last="true" keep-date="false" order="0" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="1" label="P_CODPROD : Entidade/Tabela"/></prompt-parameters><level id="lvl_azhsmfd" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_azhsmfe" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SER.CODPROD,
+	PRO.DESCRPROD,
+	SER.SERIE,
+	SER.NUNOTA,
+	SER.DTALTER,
+    CAB.NUMNOTA
+FROM TGFSER SER
+	INNER JOIN TGFCAB CAB ON (SER.NUNOTA = CAB.NUNOTA AND CAB.CODPARC = :P_CODPARC AND CAB.TIPMOV = 'V')
+	INNER JOIN TGFPRO PRO ON SER.CODPROD = PRO.CODPROD
+WHERE SER.ATUALESTOQUE = -1
+	AND (:P_CODPROD IS NULL OR SER.CODPROD = :P_CODPROD)
+ORDER BY SER.DTALTER, SER.NUNOTA, SER.CODPROD]]></expression><metadata><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="SERIE" label="Série" type="S" visible="true" useFooter="false"></field><field name="NUNOTA" label="Nr. Único da Nota" type="I" visible="true" useFooter="false"></field><field name="DTALTER" label="Dt. da Nota" type="D" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher></grid></container></level></gadget>

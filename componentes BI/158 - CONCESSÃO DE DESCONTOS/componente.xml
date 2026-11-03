@@ -1,0 +1,21 @@
+<gadget ><prompt-parameters><parameter  id="P_DESCONTO" description="Régua de Desconto" metadata="decimal" required="true" keep-last="true" keep-date="false" default="11,73" precision="2" order="0" label="P_DESCONTO : Número Decimal"/><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="1" label="P_PERIODO : Período"/><parameter  id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="true" keep-date="false" order="2" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="3" label="P_CODPROD : Entidade/Tabela"/></prompt-parameters><level id="lvl_afrh8hh" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_afrh8hi" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,
+	CAB.DTNEG,
+	ITE.CODPROD,
+	PRO.DESCRPROD,
+	PAR.CODPARC,
+	PAR.RAZAOSOCIAL,
+	ITE.PERCDESC
+FROM TGFITE ITE
+	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+WHERE CAB.TIPMOV = 'P'
+	AND CAB.STATUSNOTA = 'L'
+    --AND CAB.STATUSNFE <> 'D'
+	AND ITE.PERCDESC > :P_DESCONTO
+	AND CAB.DTNEG >= :P_PERIODO.INI
+	AND CAB.DTNEG <= :P_PERIODO.FIN
+	AND (:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC)
+	AND (:P_CODPROD IS NULL OR ITE.CODPROD = :P_CODPROD)]]></expression><metadata><field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="PERCDESC" label="Desconto" type="F" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.mgecom.mov.selecaodedocumento">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher></grid></container></level></gadget>

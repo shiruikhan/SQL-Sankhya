@@ -1,0 +1,76 @@
+<gadget ><prompt-parameters><parameter  id="P_CODLOCAL" description="Local" metadata="entity:LocalFinanceiro@CODLOCAL" required="false" keep-last="true" keep-date="false" order="0" label="P_CODLOCAL : Entidade/Tabela"/><parameter  id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="1" label="P_CODEMP : Entidade/Tabela"/><parameter  id="P_DTCORTE" description="Data de Corte" metadata="date" required="true" keep-last="true" keep-date="false" order="2" label="P_DTCORTE : Data"/><parameter  id="P_USOPROD" description="Usado como" metadata="multiList:Text" listType="sql" required="false" keep-last="true" keep-date="false" order="3" label="P_USOPROD : multiList:Text"><expression type="SQL"><![CDATA[SELECT VALOR AS VALUE, OPCAO AS LABEL FROM TDDOPC WHERE NUCAMPO = 613
+]]></expression></parameter><parameter  id="P_VALIDEST" description="Tem estoque?" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="4" label="P_VALIDEST : Verdadeiro/Falso"/></prompt-parameters><level id="lvl_es9pkl" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="6.0959626439409185"><simple-value id="svl_es9pkn"><value-expression><![CDATA[<span style='font-size: 16px; font-family: Arial, Helvetica, sans-serif;'><div style='text-align: center;'><b>ESTOQUE SEM MOVIMENTO</b></div></span>]]></value-expression></simple-value></container><container orientacao="H" tamanhoRelativo="94.9141383661601"><container orientacao="V" tamanhoRelativo="13.484358144552319"></container><container orientacao="V" tamanhoRelativo="73.36716681376876"><grid id="grd_es9pkr" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[WITH MovAgg AS (
+    SELECT I.CODPROD, I.CODLOCALORIG AS CODLOCAL, MAX(C.DTNEG) AS MOVIMENTACAO
+    FROM TGFITE I
+    INNER JOIN TGFCAB C ON I.NUNOTA = C.NUNOTA
+    GROUP BY I.CODPROD, I.CODLOCALORIG
+),
+MovAfter AS (
+    SELECT DISTINCT I.CODPROD, I.CODLOCALORIG AS CODLOCAL
+    FROM TGFITE I
+    INNER JOIN TGFCAB C ON I.NUNOTA = C.NUNOTA
+    WHERE TRUNC(C.DTNEG) > :P_DTCORTE
+)
+SELECT V.CODPROD,
+    V.DESCRPROD,
+    V.CODVOL,
+    V.CODLOCAL,
+    SUM(V.ESTOQUE) AS ESTOQUE,
+    SUM(V.RESERVADO) AS RESERVADO,
+    V.LOCALIZACAO,
+    MAX(V.MOVIMENTACAO) AS MOVIMENTACAO,
+    CASE 
+        WHEN MAX(V.MOVIMENTACAO) IS NULL OR MAX(V.MOVIMENTACAO) < ADD_MONTHS(TRUNC(SYSDATE), -36) THEN '#FF6666'
+        WHEN MAX(V.MOVIMENTACAO) < ADD_MONTHS(TRUNC(SYSDATE), -24) THEN '#FF9999'
+        WHEN MAX(V.MOVIMENTACAO) < ADD_MONTHS(TRUNC(SYSDATE), -12) THEN '#FFCCCC'
+        ELSE NULL
+    END AS bkcolor,
+    V.OPCAO
+FROM (
+    SELECT PRO.CODPROD,
+        PRO.DESCRPROD,
+        PRO.CODVOL,
+        EST.CODLOCAL,
+        EST.ESTOQUE,
+        EST.RESERVADO,
+        NVL(PRO.LOCALIZACAO,'SEM LOC') AS LOCALIZACAO,
+        MA.MOVIMENTACAO,
+        OPC.OPCAO
+    FROM TGFPRO PRO
+        INNER JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD
+        LEFT JOIN MovAgg MA ON MA.CODPROD = PRO.CODPROD AND MA.CODLOCAL = EST.CODLOCAL
+        LEFT JOIN TDDOPC OPC ON PRO.USOPROD = OPC.VALOR AND OPC.NUCAMPO = 613
+    WHERE NOT EXISTS (
+            SELECT 1 FROM MovAfter MX
+            WHERE MX.CODPROD = PRO.CODPROD
+              AND MX.CODLOCAL = EST.CODLOCAL
+        )
+        AND (:P_CODLOCAL IS NULL OR EST.CODLOCAL = :P_CODLOCAL)
+        AND EST.CODEMP = 1	
+        AND PRO.USOPROD IN :P_USOPROD
+    UNION ALL
+    SELECT PRO.CODPROD,
+        PRO.DESCRPROD,
+        PRO.CODVOL,
+        EST.CODLOCAL,
+        EST.ESTOQUE,
+        EST.RESERVADO,
+        NVL(PRO.LOCALIZACAO,'SEM LOC') AS LOCALIZACAO,
+        MA.MOVIMENTACAO,
+        OPC.OPCAO
+    FROM TGFPRO PRO
+        INNER JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD
+        LEFT JOIN MovAgg MA ON MA.CODPROD = PRO.CODPROD AND MA.CODLOCAL = EST.CODLOCAL
+        LEFT JOIN TDDOPC OPC ON PRO.USOPROD = OPC.VALOR AND OPC.NUCAMPO = 613
+    WHERE NOT EXISTS (
+            SELECT 1 FROM MovAfter MX
+            WHERE MX.CODPROD = PRO.CODPROD
+              AND MX.CODLOCAL = EST.CODLOCAL
+        )
+        AND (:P_CODLOCAL IS NULL OR EST.CODLOCAL = :P_CODLOCAL)
+        AND EST.CODEMP = 501
+        AND PRO.USOPROD IN :P_USOPROD
+) V
+GROUP BY V.CODPROD, V.DESCRPROD, V.CODVOL, V.CODLOCAL, V.LOCALIZACAO, V.OPCAO
+HAVING (:P_VALIDEST <> 'S' OR SUM(V.ESTOQUE) > 0)
+ORDER BY V.CODPROD, V.CODLOCAL]]></expression><metadata><field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Descrição Produto" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="Unidade" type="S" visible="true" useFooter="false"></field><field name="CODLOCAL" label="Cod Local" type="I" visible="true" useFooter="false"></field><field name="ESTOQUE" label="Qtd Estoque" type="F" visible="true" useFooter="false"></field><field name="RESERVADO" label="Qtd Reserva" type="F" visible="true" useFooter="false"></field><field name="LOCALIZACAO" label="Localização" type="S" visible="true" useFooter="false"></field><field name="MOVIMENTACAO" label="Dt. Última Mov." type="D" visible="true" useFooter="false"></field><field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"></field><field name="OPCAO" label="Usado como" type="S" visible="true" useFooter="false"></field></metadata></grid></container><container orientacao="V" tamanhoRelativo="14.158576051779935"></container></container></container></level></gadget>

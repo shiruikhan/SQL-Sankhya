@@ -1,0 +1,26 @@
+<gadget>
+  <level id="lvl_ah8n4td" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_ah8n4te" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT DADOS.*,	CASE WHEN MOD(ROWNUM,2) = 0  THEN '#DCDCDC' ELSE '#FFDAB9' END  AS BKCOLOR FROM (SELECT C.NUNOTA,			C.NUMNOTA,			C.VLRNOTA,			C.CODPARC,			CASE WHEN P.NOMEPARC = '<SEM PARCEIRO>' THEN 'PEDIDO' ELSE P.NOMEPARC END AS PARCEIRO,			C.DTENTSAI,			C.DTALTER,			trunc(sysdate) - C.DTENTSAI DIASSEMCONFIRMAR,			CASE WHEN C.TIPMOV = 'O' THEN 'PEDIDO COMPRA' WHEN C.TIPMOV = 'P' THEN 'PEDIDO VENDA' WHEN C.TIPMOV = 'J' THEN 'PEDIDO' WHEN C.TIPMOV = 'Q' THEN 'BAIXA' WHEN C.TIPMOV = 'V' THEN 'VENDA' WHEN C.TIPMOV = 'C' THEN 'COMPRA' WHEN C.TIPMOV = 'T' THEN 'TRANSF.' WHEN C.TIPMOV = 'F' THEN 'PRODUÇÃO' ELSE 'OUTROS' END AS TIPMOV,			U.NOMEUSU,			TPO.DESCROPER		FROM TGFCAB C INNER JOIN TGFPAR P ON (C.CODPARC = P.CODPARC)			INNER JOIN TSIUSU U ON (C.CODUSUINC = U.CODUSU)			INNER JOIN TGFTOP TPO ON (C.CODTIPOPER = TPO.CODTIPOPER AND C.DHTIPOPER = TPO.DHALTER)		WHERE C.STATUSNOTA <> 'L'  			AND C.TIPMOV <> 'Z'			AND C.TIPMOV <> 'O'			AND C.TIPMOV <> 'P'			AND C.TIPMOV <> 'J'			AND C.TIPMOV <> 'Q'			AND C.TIPMOV <> 'F'		ORDER BY  10,11 ASC, C.DTNEG ASC) DADOS]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+          <field name="VLRNOTA" label="Vlr. Nota" type="F" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cod. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="PARCEIRO" label="Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Ent/Sai" type="D" visible="true" useFooter="false"/>
+          <field name="DTALTER" label="Dt. Alteração" type="D" visible="true" useFooter="false"/>
+          <field name="DIASSEMCONFIRMAR" label="Dias sem Confirmação" type="I" visible="true" useFooter="false"/>
+          <field name="TIPMOV" label="Movimento" type="S" visible="true" useFooter="false"/>
+          <field name="NOMEUSU" label="Usuário" type="S" visible="true" useFooter="false"/>
+          <field name="DESCROPER" label="TOP" type="S" visible="true" useFooter="false"/>
+          <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

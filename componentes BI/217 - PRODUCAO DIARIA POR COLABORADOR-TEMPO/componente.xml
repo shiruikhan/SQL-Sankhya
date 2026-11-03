@@ -1,0 +1,192 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_PERIODO : Período" order="0"/></prompt-parameters><level id="02F" description="Principal"><container orientacao="H" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="50"><grid id="grd_02M" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : P1
+  Tipo           : Componente BI ? Tabela (detalhe diário)
+  Dashboard      : [SPARK] - PRODUÇÃO DIÁRIA POR COLABORADOR
+  Componente     : P1
+  Descrição      : Produção diária de cada colaborador em seu respectivo setor
+                   dentro do intervalo informado. Uma linha por
+                   colaborador x setor x dia (granularidade definida no
+                   mapeamento ? Bloco 6: há rodízio de setor no mesmo dia).
+
+                   Regras de negócio:
+                   - Somente apontamentos concluídos (APO.SITUACAO = 'C').
+                   - Setor vem do apontamento (TPREFX via TPRIATV), não do
+                     departamento cadastral do colaborador (Bloco 4).
+                   - Colaborador via TPRAPA.AD_CODFUNC (LEFT JOIN) ? nulos
+                     exibidos como 'NAO IDENTIFICADO' (concentrados em
+                     EXPEDIÇÃO/CONFERENCIA no período recente ? Bloco 8).
+                   - 'EXPEDICAO/CONF' é typo legado, somado a
+                     'EXPEDIÇÃO/CONFERENCIA' (decisão do mapeamento por setor).
+                   - Setores-ruído ('INSERÇÃO 2', 'MONTAGEM FINAL 3') excluídos.
+
+  Parâmetros     : :P_PERIODO.INI  ? data inicial do intervalo
+                   :P_PERIODO.FIN  ? data final do intervalo
+                   :P_SETOR        ? filtro opcional por setor (contém)
+                   :P_COLABORADOR  ? filtro opcional por colaborador (contém)
+
+  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TFPFUN
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: Junho/2026
+  Última Revisão : Junho/2026 ? Criação inicial
+
+  Observações    : Períodos anteriores a ~2026 retornam maioria
+                   'NAO IDENTIFICADO' (93% do histórico sem AD_CODFUNC ?
+                   adoção do campo é recente). Aliases sem aspas/acento
+                   (CORE_E05294); rótulos de exibição no construtor.
+==============================================================================*/
+
+WITH PRODUCAO AS (
+    -- Produção concluída por dia, setor normalizado e colaborador
+    SELECT  TRUNC(APO.DHAPO)                                AS DT_PRODUCAO
+           ,CASE
+                WHEN FX.DESCRICAO = 'EXPEDICAO/CONF'
+                     THEN 'EXPEDIÇÃO/CONFERENCIA'
+                ELSE FX.DESCRICAO
+            END                                             AS SETOR
+           ,NVL(FUN.NOMEFUNC, 'NAO IDENTIFICADO')           AS COLABORADOR
+           ,SUM(APA.QTDAPONTADA)                            AS QTD
+           ,COUNT(DISTINCT APA.NUAPO)                       AS APONTAMENTOS
+      FROM  TPRAPA APA
+            INNER JOIN TPRAPO  APO ON APA.NUAPO      = APO.NUAPO
+            INNER JOIN TPRIATV TV  ON APO.IDIATV     = TV.IDIATV
+            INNER JOIN TPREFX  FX  ON TV.IDEFX       = FX.IDEFX
+            LEFT  JOIN TFPFUN  FUN ON APA.AD_CODFUNC = FUN.CODFUNC
+     WHERE  APO.SITUACAO = 'C'
+       AND  TRUNC(APO.DHAPO) BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN
+       AND  FX.DESCRICAO NOT IN ('INSERÇÃO 2', 'MONTAGEM FINAL 3')
+     GROUP  BY
+            TRUNC(APO.DHAPO)
+           ,CASE
+                WHEN FX.DESCRICAO = 'EXPEDICAO/CONF'
+                     THEN 'EXPEDIÇÃO/CONFERENCIA'
+                ELSE FX.DESCRICAO
+            END
+           ,NVL(FUN.NOMEFUNC, 'NAO IDENTIFICADO')
+)
+SELECT  PRD.DT_PRODUCAO     AS DATAPROD
+       ,PRD.SETOR           AS SETOR
+       ,PRD.COLABORADOR     AS COLABORADOR
+       ,PRD.QTD             AS QTDPRODUZIDA
+       ,PRD.APONTAMENTOS    AS QTDAPONTAMENTOS
+  FROM  PRODUCAO PRD
+ WHERE  (PRD.SETOR LIKE '%' || UPPER(:P_SETOR) || '%'
+            OR :P_SETOR IS NULL)
+   AND  (PRD.COLABORADOR LIKE '%' || UPPER(:P_COLABORADOR) || '%'
+            OR :P_COLABORADOR IS NULL)
+ ORDER  BY
+        PRD.DT_PRODUCAO DESC
+       ,PRD.SETOR
+       ,PRD.QTD DESC]]></expression><metadata><field name="DATAPROD" label="Data" type="D" visible="true" useFooter="false"></field><field name="SETOR" label="Setor" type="S" visible="true" useFooter="false"></field><field name="COLABORADOR" label="Colaborador" type="S" visible="true" useFooter="false"></field><field name="QTDPRODUZIDA" label="Qtd. Produzida" type="I" visible="true" useFooter="false"></field><field name="QTDAPONTAMENTOS" label="Qtd. Apontamentos" type="I" visible="true" useFooter="false"></field></metadata></grid></container><container orientacao="H" tamanhoRelativo="50"><grid id="grd_02O" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : P2
+  Tipo           : Componente BI ? Tabela (resumo por colaborador)
+  Dashboard      : [SPARK] - PRODUÇÃO DIÁRIA POR COLABORADOR
+  Componente     : P2
+  Descrição      : Visão agregada por colaborador no intervalo informado:
+                   total produzido, dias com apontamento, média por dia ativo,
+                   quantidade de setores em que atuou e a lista dos setores
+                   (ordenada por volume). Complementa o P1 (detalhe diário).
+
+                   Regras de negócio:
+                   - Somente apontamentos concluídos (APO.SITUACAO = 'C').
+                   - Colaborador via TPRAPA.AD_CODFUNC (LEFT JOIN) ? nulos
+                     exibidos como 'NAO IDENTIFICADO'.
+                   - 'EXPEDICAO/CONF' somado a 'EXPEDIÇÃO/CONFERENCIA'.
+                   - Setores-ruído ('INSERÇÃO 2', 'MONTAGEM FINAL 3') excluídos.
+                   - Média diária = total produzido / dias com apontamento do
+                     colaborador (não dias corridos do intervalo).
+
+  Parâmetros     : :P_PERIODO.INI  ? data inicial do intervalo
+                   :P_PERIODO.FIN  ? data final do intervalo
+                   :P_SETOR        ? filtro opcional por setor (contém);
+                                     restringe a produção considerada ao setor
+
+  Tabelas        : TPRAPA, TPRAPO, TPRIATV, TPREFX, TFPFUN
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: Junho/2026
+  Última Revisão : Junho/2026 ? Criação inicial
+
+  Observações    : Períodos anteriores a ~2026 retornam maioria
+                   'NAO IDENTIFICADO' (93% do histórico sem AD_CODFUNC).
+                   Aliases sem aspas/acento (CORE_E05294); rótulos de
+                   exibição no construtor.
+==============================================================================*/
+
+WITH PRODUCAO AS (
+    -- Produção concluída por colaborador, setor normalizado e dia
+    SELECT  NVL(FUN.NOMEFUNC, 'NAO IDENTIFICADO')           AS COLABORADOR
+           ,CASE
+                WHEN FX.DESCRICAO = 'EXPEDICAO/CONF'
+                     THEN 'EXPEDIÇÃO/CONFERENCIA'
+                ELSE FX.DESCRICAO
+            END                                             AS SETOR
+           ,TRUNC(APO.DHAPO)                                AS DT_PRODUCAO
+           ,SUM(APA.QTDAPONTADA)                            AS QTD
+           ,COUNT(DISTINCT APA.NUAPO)                       AS APONTAMENTOS
+      FROM  TPRAPA APA
+            INNER JOIN TPRAPO  APO ON APA.NUAPO      = APO.NUAPO
+            INNER JOIN TPRIATV TV  ON APO.IDIATV     = TV.IDIATV
+            INNER JOIN TPREFX  FX  ON TV.IDEFX       = FX.IDEFX
+            LEFT  JOIN TFPFUN  FUN ON APA.AD_CODFUNC = FUN.CODFUNC
+     WHERE  APO.SITUACAO = 'C'
+       AND  TRUNC(APO.DHAPO) BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN
+       AND  FX.DESCRICAO NOT IN ('INSERÇÃO 2', 'MONTAGEM FINAL 3')
+     GROUP  BY
+            NVL(FUN.NOMEFUNC, 'NAO IDENTIFICADO')
+           ,CASE
+                WHEN FX.DESCRICAO = 'EXPEDICAO/CONF'
+                     THEN 'EXPEDIÇÃO/CONFERENCIA'
+                ELSE FX.DESCRICAO
+            END
+           ,TRUNC(APO.DHAPO)
+)
+,FILTRADA AS (
+    -- Aplica o filtro opcional de setor antes das agregações
+    SELECT  PRD.COLABORADOR
+           ,PRD.SETOR
+           ,PRD.DT_PRODUCAO
+           ,PRD.QTD
+           ,PRD.APONTAMENTOS
+      FROM  PRODUCAO PRD
+     WHERE  (PRD.SETOR LIKE '%' || UPPER(:P_SETOR) || '%'
+                OR :P_SETOR IS NULL)
+)
+,POR_SETOR AS (
+    -- Total por colaborador x setor ? base da lista de setores do resumo
+    SELECT  FIL.COLABORADOR
+           ,FIL.SETOR
+           ,SUM(FIL.QTD)    AS QTD_SETOR
+      FROM  FILTRADA FIL
+     GROUP  BY
+            FIL.COLABORADOR
+           ,FIL.SETOR
+)
+,SETORES AS (
+    -- Lista de setores do colaborador, do maior para o menor volume
+    SELECT  PSE.COLABORADOR
+           ,COUNT(*)                                        AS QTD_SETORES
+           ,LISTAGG(PSE.SETOR, ', ')
+                WITHIN GROUP (ORDER BY PSE.QTD_SETOR DESC)  AS LISTA_SETORES
+      FROM  POR_SETOR PSE
+     GROUP  BY
+            PSE.COLABORADOR
+)
+SELECT  FIL.COLABORADOR                                     AS COLABORADOR
+       ,SUM(FIL.QTD)                                        AS QTDPRODUZIDA
+       ,SUM(FIL.APONTAMENTOS)                               AS QTDAPONTAMENTOS
+       ,COUNT(DISTINCT FIL.DT_PRODUCAO)                     AS DIASATIVOS
+       ,ROUND(SUM(FIL.QTD)
+            / COUNT(DISTINCT FIL.DT_PRODUCAO), 1)           AS MEDIADIARIA
+       ,MAX(SET_.QTD_SETORES)                               AS QTDSETORES
+       ,MAX(SET_.LISTA_SETORES)                             AS SETORES
+  FROM  FILTRADA FIL
+        INNER JOIN SETORES SET_ ON FIL.COLABORADOR = SET_.COLABORADOR
+ GROUP  BY
+        FIL.COLABORADOR
+ ORDER  BY
+        QTDPRODUZIDA DESC]]></expression><metadata><field name="COLABORADOR" label="Colaborador" type="S" visible="true" useFooter="false"></field><field name="QTDPRODUZIDA" label="Qtd. Produzida" type="I" visible="true" useFooter="false"></field><field name="QTDAPONTAMENTOS" label="Qtd. Apontamentos" type="I" visible="true" useFooter="false"></field><field name="DIASATIVOS" label="Dias Ativos" type="I" visible="true" useFooter="false"></field><field name="MEDIADIARIA" label="Média diária" type="I" visible="true" useFooter="false"></field><field name="QTDSETORES" label="Qtd. Setores" type="I" visible="true" useFooter="false"></field><field name="SETORES" label="Setores" type="S" visible="true" useFooter="false"></field></metadata></grid></container></container></level></gadget>

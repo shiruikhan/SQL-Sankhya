@@ -1,0 +1,15 @@
+SELECT COUNT(B.CODEMP) EMPRESAS,
+       (( COUNT(B.CODEMP) * 100 ) / B.TOTAL ) AS PERCENTUAL
+  FROM ( SELECT A.CODEMP,
+                A.QTDEFINANCEIROS,
+                A.TOTAL
+           FROM ( SELECT TSIEMP.CODEMP, 
+                         TSIEMP.CGC,
+                         TSIEMP.RAZAOSOCIAL,
+                         TSIEMP.NOMEFANTASIA,
+                       ( SELECT COUNT(TSIEMP.CODEMP) FROM TSIEMP ) TOTAL,
+                       ( SELECT COUNT(*) FROM TGFFIN WHERE TGFFIN.CODEMP = TSIEMP.CODEMP AND TGFFIN.RECDESP <> 0 ) QtdeFinanceiros,
+                       ( SELECT COUNT(*) FROM TGFCAB WHERE TGFCAB.CODEMP = TSIEMP.CODEMP AND TGFCAB.TIPMOV <> 'Z') QtdeOperacoes
+  FROM TSIEMP ) A
+WHERE A.QTDEFINANCEIROS <> 0 ) B
+GROUP BY B.TOTAL

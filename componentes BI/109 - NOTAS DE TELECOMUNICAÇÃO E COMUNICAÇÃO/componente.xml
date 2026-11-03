@@ -1,0 +1,23 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_atlooxv" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_atlooxx" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT     CAB.NUNOTA AS NRUNICO,    CAB.NUMNOTA AS NRNOTA,    CAB.DTENTSAI AS DATA,    CAB.CODPARC,    (SELECT NOMEPARC FROM TGFPAR PAR WHERE PAR.CODPARC=CAB.CODPARC) AS NOME,    ITE.CODCFO AS CFOP,    ITE.CODPROD AS CODPROD,    (SELECT DESCRPROD FROM TGFPRO PRO WHERE PRO.CODPROD=ITE.CODPROD) AS DESCRICAOPRODUTO,    CAB.VLRNOTA AS VLR    FROM TGFCAB CABJOIN TGFITE ITE ON (CAB.NUNOTA=ITE.NUNOTA)WHERE CAB.DTENTSAI >= :P_PERIODO.INIAND CAB.DTENTSAI <= :P_PERIODO.FINAND CAB.CODTIPOPER IN (208,223)]]></expression>
+        <metadata>
+          <field name="NRUNICO" label="Nr. Unico" type="I" visible="true" useFooter="false"/>
+          <field name="NRNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DATA" label="Data" type="D" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="NOME" label="Nome parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="CFOP" label="CFOP" type="I" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cód. Serviço" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRICAOPRODUTO" label="Desc. Serviço" type="S" visible="true" useFooter="false"/>
+          <field name="VLR" label="Valor" type="F" visible="true" useFooter="SUM"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

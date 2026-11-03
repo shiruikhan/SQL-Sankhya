@@ -1,0 +1,25 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODPROD" description="Cód. Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_apxr566" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_apxr567" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT       CAB.NUNOTA    ,CAB.NUMNOTA    ,CAB.DTNEG    ,ITE.CODPROD     ,PRO.DESCRPROD    ,ITE.QTDNEG    ,ITE.QTDENTREGUE    ,ITE.QTDNEG - ITE.QTDENTREGUE AS DISPONIVELFROM TGFCAB CAB INNER JOIN TGFITE ITE     ON ITE.NUNOTA = CAB.NUNOTA INNER JOIN TGFPRO PRO     ON PRO.CODPROD = ITE.CODPRODWHERE CAB.CODPARC = 7540 AND (ITE.QTDNEG - ITE.QTDENTREGUE) > 0 AND ITE.CODPROD = :P_CODPROD  AND CAB.TIPMOV = 'O'ORDER BY CAB.DTNEG ASC]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Unico " type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Emissão " type="D" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cód. Prod" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Desc. Produ" type="S" visible="true" useFooter="false"/>
+          <field name="QTDNEG" label="Qtd. Pedido" type="F" visible="true" useFooter="false"/>
+          <field name="QTDENTREGUE" label="Qtd. Entregue" type="F" visible="true" useFooter="false"/>
+          <field name="DISPONIVEL" label="Disponivel" type="I" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.mgecom.mov.PortalCompras">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

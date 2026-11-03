@@ -1,0 +1,25 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_aof0kxt" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_aof0kxu" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT FIN.NUFIN,	FIN.CODEMP, 	FIN.NUMNOTA, 	FIN.DTNEG, 	FIN.DHBAIXA, 	FIN.CODPARC, 	PAR.NOMEPARC,	FIN.VLRDESDOBFROM TGFFIN FIN	INNER JOIN TGFPAR PAR ON FIN.CODPARC = PAR.CODPARCWHERE (FIN.DTNEG >= :P_PERIODO.INI AND FIN.DTNEG <= :P_PERIODO.FIN)	AND FIN.CODNAT = 0102002]]></expression>
+        <metadata>
+          <field name="NUFIN" label="Nr Financeiro" type="I" visible="true" useFooter="false"/>
+          <field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt Negociação" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="DHBAIXA" label="Dt Baixa" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="CODPARC" label="Cod Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,21 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DATA" description="Data de Corte" metadata="date" required="true" keep-last="false" keep-date="true" order="0"/>
+    <parameter id="P_CODPROD" description="Código do Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_atoy0k" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_atoy0l" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,	PRO.DESCRPROD,	PRO.CODVOL,	OBTEMCUSTO_SPARK (PRO.CODPROD,'S',1,'N',0,'N',' ',:P_DATA,4) AS CUSMEDICMS,	OBTEMCUSTO_SPARK (PRO.CODPROD,'S',1,'N',0,'N',' ',:P_DATA,3) AS CUSMEDSICM,	OBTEMCUSTO_SPARK (PRO.CODPROD,'S',1,'N',0,'N',' ',:P_DATA,1) AS CUSMEDFROM TGFPRO PROWHERE (PRO.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL AND PRO.USOPROD = 'M')ORDER BY PRO.CODPROD]]></expression>
+        <metadata>
+          <field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false" mask="###0"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Unidade" type="S" visible="true" useFooter="false"/>
+          <field name="CUSMEDICMS" label="Custo Médio C/ ICMS" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="CUSMEDSICM" label="Custo Médio S/ ICMS" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+          <field name="CUSMED" label="Custo Médio Gerencial" type="F" visible="true" useFooter="false" mask="R$ #.##0,0000"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

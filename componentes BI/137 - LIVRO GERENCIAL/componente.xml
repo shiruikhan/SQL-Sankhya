@@ -1,0 +1,24 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DTENTSAI" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_zm7vfj" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_zm7vfk" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,	CAB.NUMNOTA,	CAB.DTENTSAI,	CAB.CODPARC,	PAR.RAZAOSOCIAL,	CAB.VLRNOTA,	(CASE WHEN CAB.TIPMOV = 'V' THEN 'Venda' ELSE 'Compra' END) AS TIPMOVFROM TGFCAB CAB	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARCWHERE CAB.DTENTSAI <= :P_DTENTSAI.FIN	AND CAB.DTENTSAI >= :P_DTENTSAI.INI	AND CAB.TIPMOV IN (/*'V',*/'C')	AND CAB.CODEMP = 501UNION ALLSELECT C.NUNOTA,	C.NUMNOTA,	C.DTENTSAI,	C.CODPARC,	P.RAZAOSOCIAL,	C.VLROUTROS AS VLRNOTA,	(CASE WHEN C.TIPMOV = 'V' THEN 'Venda' ELSE 'Compra' END) AS TIPMOVFROM TGFCAB C 	INNER JOIN TGFPAR P ON C.CODPARC = P.CODPARCWHERE C.TIPMOV IN ('C'/*,'V'*/) 	AND C.VLROUTROS > 0 	AND C.CODEMP = 1 	AND C.DTENTSAI >= :P_DTENTSAI.INI 	AND C.DTENTSAI <= :P_DTENTSAI.FIN]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. da Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Entrada/Saída" type="D" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="VLRNOTA" label="Vlr. Total" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          <field name="TIPMOV" label="Tipo de Mov." type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

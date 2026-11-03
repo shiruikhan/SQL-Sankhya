@@ -1,0 +1,118 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DTCORTE" description="Data de Corte" metadata="datePeriod" required="true" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_CODEMP" description="Empresa" metadata="multiList:Text" listType="sql" required="false" keep-last="false" keep-date="false" order="1">
+      <expression type="SQL"><![CDATA[SELECT  CODEMP AS VALUE , CODEMP || ' - ' || RAZAOSOCIAL  AS LABEL FROM TSIEMP WHERE CODEMP < 100]]></expression>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_wwres1" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="44800">
+        <grid id="grd_wwres2" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT      FIN.CODPARC     ,PAR.NOMEPARC    ,(SELECT NVL(SUM(VLRNOTA),0)        FROM TGFCAB CAB       WHERE CAB.CODPARC = FIN.CODPARC        AND CAB.TIPMOV = 'C'         AND CAB.STATUSNOTA = 'L'        AND TRUNC(CAB.DTENTSAI) >= :P_DTCORTE.INI		 AND TRUNC(CAB.DTENTSAI) <= :P_DTCORTE.FIN        AND CAB.CODEMP IN :P_CODEMP      ) AS VLR_COMRPAS         ,(SELECT NVL(SUM(VLRDESDOB),0)        FROM TGFFIN F       WHERE F.CODPARC = FIN.CODPARC        AND TRUNC(F.DHBAIXA)  >= :P_DTCORTE.INI		AND TRUNC(F.DHBAIXA) <= :P_DTCORTE.FIN        AND F.RECDESP = -1		AND F.PROVISAO = 'N'        AND F.CODEMP  IN :P_CODEMP      ) AS VLR_FINANCEIRO_BAIXA          ,SUM(VG.VLRLIQUIDO) AS VLR_FINANCEIRO    FROM TGFFIN FININNER JOIN TGFPAR PAR     ON PAR.CODPARC = FIN.CODPARCINNER JOIN TSICID CID     ON CID.CODCID = PAR.CODCIDINNER JOIN TSIBAI BAI     ON BAI.CODBAI = PAR.CODBAIINNER JOIN TSIEND EDN    ON EDN.CODEND = PAR.CODENDINNER JOIN TSIUFS UFS     ON UFS.CODUF = CID.UF    INNER JOIN TGFNAT NAT     ON NAT.CODNAT = FIN.CODNATINNER JOIN TGFTOP TOP       ON TOP.CODTIPOPER = FIN.CODTIPOPER        AND TOP.DHALTER = FIN.DHTIPOPER    INNER JOIN VGFFIN VG    ON VG.NUFIN = FIN.NUFIN    WHERE ((FIN.DHBAIXA IS NULL OR TRUNC(FIN.DHBAIXA) > :P_DTCORTE.FIN)       AND NVL(FIN.DTENTSAI, FIN.DTNEG) <= :P_DTCORTE.FIN)    AND FIN.CODEMP IN :P_CODEMP    AND FIN.PROVISAO = 'N'    AND FIN.RECDESP = -1    AND FIN.CODNAT NOT IN (801003,101004,402001,801001,601001,601005)    AND FIN.CODTIPOPER NOT IN (1306,1200,1201)    AND FIN.CODPARC NOT IN (754,702,687,495,686,755,289,753,6501,899) -- LANÇAMENTOS MAL DIFERENCIADO PELA TOPGROUP BY     FIN.CODPARC     ,PAR.NOMEPARC]]></expression>
+          <metadata>
+            <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+            <field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"/>
+            <field name="VLR_COMRPAS" label="Vlr. Compras no Mes" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+            <field name="VLR_FINANCEIRO_BAIXA" label="Vlr. Baixa no Mes" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+            <field name="VLR_FINANCEIRO" label="Vlr. Financeiro em Aberto " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          </metadata>
+          <on-click navigate-to="lvl_ayt518c">
+            <param id="A_CODPARC">$CODPARC</param>
+          </on-click>
+        </grid>
+      </container>
+      <container orientacao="H" tamanhoRelativo="0"/>
+    </container>
+  </level>
+  <level id="lvl_ayt518c" description="Notas">
+    <args>
+      <arg id="A_CODPARC" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="3183">
+        <container orientacao="V" tamanhoRelativo="143">
+          <simple-value id="svl_pgxoct">
+            <value-expression><![CDATA[<!DOCTYPE html> <html> <head>   <title>Confêrencia das Baixas </title>   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">   <link href="'https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap'" rel="stylesheet"> </head> <body>   <div style="background-color: #2F4F4F; border-radius: 25px; box-shadow: 0 0 10px rgba(0,0,0,0.5); margin: 10px 0; display: flex; align-items: center; justify-content: center; padding: 10px;">     <span style="color: white; font-size: 30px; font-family: 'Oswald', sans-serif;">Notas de compras </span>   </div> </body> </html>]]></value-expression>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="843">
+          <grid id="grd_pgxoce" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	 CAB.NUNOTA	,CAB.NUMNOTA	,CAB.DTENTSAI	,CAB.CODPARC	,PAR.NOMEPARC	,CAB.VLRNOTA AS VLR_NOTA	FROM TGFCAB CAB INNER JOIN TGFPAR PAR 	ON PAR.CODPARC = CAB.CODPARC 	WHERE CAB.CODPARC = :A_CODPARC	AND CAB.TIPMOV = 'C' 	AND CAB.STATUSNOTA = 'L'	AND CAB.DTENTSAI  >= :P_DTCORTE.INI	AND CAB.DTENTSAI  <= :P_DTCORTE.FIN	AND CAB.CODEMP IN (1,2)ORDER BY CAB.DTENTSAI ASC]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="Nr. Unico " type="I" visible="true" useFooter="false"/>
+              <field name="NUMNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"/>
+              <field name="DTENTSAI" label="Dt. Entrada Saida" type="D" visible="true" useFooter="false"/>
+              <field name="CODPARC" label="Cód. Parceiro " type="I" visible="true" useFooter="false"/>
+              <field name="NOMEPARC" label="Nome Parceio " type="S" visible="true" useFooter="false"/>
+              <field name="VLR_NOTA" label="Vlr. Nota" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+      </container>
+      <container orientacao="H" tamanhoRelativo="500">
+        <container orientacao="V" tamanhoRelativo="50">
+          <simple-value id="svl_ayt518g">
+            <value-expression><![CDATA[<!DOCTYPE html> <html> <head>   <title>Confêrencia das Baixas </title>   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">   <link href="'https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap'" rel="stylesheet"> </head> <body>   <div style="background-color: #2F4F4F; border-radius: 25px; box-shadow: 0 0 10px rgba(0,0,0,0.5); margin: 10px 0; display: flex; align-items: center; justify-content: center; padding: 10px;">     <span style="color: white; font-size: 30px; font-family: 'Oswald', sans-serif;">Confêrencia das Baixas</span>   </div> </body> </html>]]></value-expression>
+            <on-click navigate-to="lvl_ayt518k"/>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <simple-value id="svl_pgxn8b">
+            <value-expression><![CDATA[<!DOCTYPE html> <html> <head>   <title>Confêrencia das Baixas </title>   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">   <link href="'https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap'" rel="stylesheet"> </head> <body>   <div style="background-color: #2F4F4F; border-radius: 25px; box-shadow: 0 0 10px rgba(0,0,0,0.5); margin: 10px 0; display: flex; align-items: center; justify-content: center; padding: 10px;">     <span style="color: white; font-size: 30px; font-family: 'Oswald', sans-serif;">Lançamentos em Aberto</span>   </div> </body> </html>]]></value-expression>
+            <on-click navigate-to="lvl_pgxn5d"/>
+          </simple-value>
+        </container>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_ayt518k" description="Pagamentos">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_ayt518l" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 			 FIN.NUNOTA 		,FIN.NUFIN	    ,FIN.CODPARC 		,PAR.NOMEPARC 		,FIN.DTENTSAI		,FIN.DHBAIXA		,FIN.VLRDESDOB		,FIN.VLRJURO		,FIN.VLRDESC		,FIN.VLRMULTA		,FIN.VLRBAIXA	        FROM TGFFIN FIN 		INNER JOIN TGFPAR PAR 			ON PAR.CODPARC = FIN.CODPARC       WHERE FIN.CODPARC = :A_CODPARC        AND TRUNC(FIN.DHBAIXA)  >= :P_DTCORTE.INI		AND TRUNC(FIN.DHBAIXA) <= :P_DTCORTE.FIN        AND FIN.RECDESP = -1		AND FIN.PROVISAO = 'N'        AND FIN.CODEMP  IN :P_CODEMP    AND FIN.CODTIPOPER NOT IN (1306,1200,1201)]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"/>
+          <field name="NUFIN" label="Nr. Unico " type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parc " type="I" visible="true" useFooter="false"/>
+          <field name="NOMEPARC" label="Nome Parc" type="S" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Ent/Sai " type="D" visible="true" useFooter="false"/>
+          <field name="DHBAIXA" label="Dh. Baixa " type="D" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRJURO" label="Vlr. Juros " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRDESC" label="Vlr. Desconto" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRMULTA" label="Vlr. Multa " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRBAIXA" label="Vlr. Baixa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+  <level id="lvl_pgxn5d" description="Lançamentos em Aberto ">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_pgxn5e" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT          FIN.NUNOTA 		,FIN.NUFIN	    ,FIN.CODPARC 		,PAR.NOMEPARC 		,FIN.DTENTSAI		,FIN.DHBAIXA		,FIN.VLRDESDOB		,FIN.VLRJURO		,FIN.VLRDESC		,FIN.VLRMULTA		,FIN.VLRBAIXA	FROM TGFFIN FIN INNER JOIN TGFPAR PAR     ON PAR.CODPARC = FIN.CODPARC WHERE (FIN.DHBAIXA IS NULL OR TRUNC(FIN.DHBAIXA) > :P_DTCORTE.FIN)AND NVL(FIN.DTENTSAI, FIN.DTNEG) <= :P_DTCORTE.FINAND FIN.CODEMP IN (1,2)AND FIN.CODPARC = :A_CODPARCAND FIN.PROVISAO = 'N' AND FIN.RECDESP = -1AND FIN.CODTIPOPER NOT IN (1306)]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"/>
+          <field name="NUFIN" label="Nr. Unico " type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parc " type="I" visible="true" useFooter="false"/>
+          <field name="NOMEPARC" label="Nome Parc" type="S" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Ent/Sai " type="D" visible="true" useFooter="false"/>
+          <field name="DHBAIXA" label="Dh. Baixa " type="D" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRJURO" label="Vlr. Juros " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRDESC" label="Vlr. Desconto" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRMULTA" label="Vlr. Multa " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRBAIXA" label="Vlr. Baixa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

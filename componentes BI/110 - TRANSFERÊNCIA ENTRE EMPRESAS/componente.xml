@@ -1,0 +1,23 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="DATE" description="Data" metadata="date" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_a7yd313" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_a7yd314" entityName="ContagemEstoque" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Lista de Materiais]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT  EST.CODPROD,  PRO.DESCRPROD,  EST.CODVOL,  EST.CODLOCAL,  LOC.DESCRLOCAL,  EST.CODEMP,  EST.CONTROLE,  CASE    WHEN -EST.QTDEST <= POS.SUM_QTDEST THEN -EST.QTDEST    ELSE POS.SUM_QTDEST  END AS QTDTRANSFFROM TGFCTE EST  INNER JOIN TGFPRO PRO ON EST.CODPROD = PRO.CODPROD  INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD  INNER JOIN TGFLOC LOC ON EST.CODLOCAL = LOC.CODLOCAL  INNER JOIN (    SELECT E.CODPROD, SUM(E.QTDEST) AS SUM_QTDEST    FROM TGFCTE E    WHERE E.CODEMP = 501      AND E.CODLOCAL = 101      AND E.DTCONTAGEM = :DATE      AND E.QTDEST > 0    GROUP BY E.CODPROD  ) POS ON POS.CODPROD = EST.CODPRODWHERE EST.DTCONTAGEM = :DATE  AND PRO.USOPROD IN ('V','T','M','R','E','P','O')  AND EST.QTDEST < 0  AND EST.CODEMP = 1  AND EST.CODLOCAL = 101  AND POS.SUM_QTDEST > 0ORDER BY PRO.CODPROD]]></expression>
+        <metadata>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Descrição Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Unidade de Medida" type="S" visible="true" useFooter="false"/>
+          <field name="CODLOCAL" label="Cód. Local" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRLOCAL" label="Local" type="S" visible="true" useFooter="false"/>
+          <field name="CODEMP" label="Empresa" type="I" visible="false" useFooter="false"/>
+          <field name="CONTROLE" label="CONTROLE" type="S" visible="true" useFooter="false"/>
+          <field name="QTDTRANSF" label="Qtd. Transferência" type="F" visible="true" useFooter="SUM"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

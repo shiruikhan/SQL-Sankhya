@@ -1,0 +1,41 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_BAIXA" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODNAT" description="Natureza" metadata="entity:Natureza@CODNAT" required="false" keep-last="true" keep-date="false" order="2"/>
+  </prompt-parameters>
+  <level id="lvl_atjmq3v" description="Principal">
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="237">
+        <grid id="grd_atjmq3w" multiplaSelecao="S" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT FIN.NUNOTA AS NUNICO,	FIN.NUFIN AS NFINANCEIRO,	FIN.NUMNOTA AS NRNOTA,	FIN.CODPARC,	PAR.RAZAOSOCIAL,	FIN.CODNAT,	(SELECT DISTINCT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = FIN.CODNAT) AS DESCRNAT,	FIN.DTNEG,	FIN.DTVENC,	FIN.DHBAIXA,	FIN.VLRBAIXAFROM TGFFIN FIN	INNER JOIN TGFPAR PAR ON FIN.CODPARC = PAR.CODPARCWHERE (TRUNC(FIN.DHBAIXA) >= :P_BAIXA.INI AND TRUNC(FIN.DHBAIXA) <= :P_BAIXA.FIN)	AND FIN.PROVISAO = 'N'	AND FIN.RECDESP = -1	AND FIN.DHBAIXA IS NOT NULL	AND (:P_CODNAT IS NULL OR FIN.CODNAT = :P_CODNAT)	AND NVL(FIN.NUFIN,0) NOT IN (SELECT R.NUFIN FROM TGFRAT R WHERE R.ORIGEM = 'F')	AND NVL(FIN.NUNOTA,0) NOT IN (SELECT R.NUFIN FROM TGFRAT R WHERE R.ORIGEM = 'E')UNION ALLSELECT (SELECT DISTINCT FN.NUNOTA FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN) AS NUNICO,	F.NUFIN AS NFINANCEIRO,	(SELECT DISTINCT FN.NUMNOTA FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN) AS NRNOTA,	(SELECT DISTINCT FN.CODPARC FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN) AS CODPARC,	(SELECT P.RAZAOSOCIAL FROM TGFPAR P WHERE P.CODPARC = (SELECT DISTINCT FN.CODPARC FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN)) AS RAZAOSOCIAL,	F.CODNAT,	(SELECT DISTINCT NA.DESCRNAT FROM TGFNAT NA WHERE NA.CODNAT = F.CODNAT) AS DESCRNAT,	(SELECT DISTINCT FN.DTNEG FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN) AS DTNEG,	(SELECT DISTINCT FN.DTVENC FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN) AS DTVENC,	(SELECT DISTINCT FN.DHBAIXA FROM TGFFIN FN WHERE FN.NUFIN = F.NUFIN) AS DHBAIXA,	F.VLRBAIXAFROM (SELECT RAT.NUFIN,			RAT.CODNAT,			ROUND(((RAT.PERCRATEIO/100) * FIN.VLRBAIXA),2) AS VLRBAIXA		FROM TGFRAT RAT 			INNER JOIN TGFFIN FIN ON (RAT.NUFIN = FIN.NUFIN AND RAT.ORIGEM = 'F')		WHERE FIN.PROVISAO = 'N'		AND FIN.RECDESP = -1		AND FIN.DHBAIXA IS NOT NULL		AND (:P_CODNAT IS NULL OR RAT.CODNAT = :P_CODNAT)		AND (TRUNC(FIN.DHBAIXA) >= :P_BAIXA.INI AND TRUNC(FIN.DHBAIXA) <= :P_BAIXA.FIN)) FUNION ALLSELECT C.NUFIN AS NUNICO,	(SELECT DISTINCT FN.NUNOTA FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN) AS NFINANCEIRO,	(SELECT DISTINCT FN.NUMNOTA FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN) AS NRNOTA,	(SELECT DISTINCT FN.CODPARC FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN) AS CODPARC,	(SELECT P.RAZAOSOCIAL FROM TGFPAR P WHERE P.CODPARC = (SELECT DISTINCT FN.CODPARC FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN)) AS RAZAOSOCIAL,	C.CODNAT,	(SELECT DISTINCT NA.DESCRNAT FROM TGFNAT NA WHERE NA.CODNAT = C.CODNAT) AS DESCRNAT,	(SELECT DISTINCT FN.DTNEG FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN) AS DTNEG,	(SELECT DISTINCT FN.DTVENC FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN) AS DTVENC,	(SELECT DISTINCT FN.DHBAIXA FROM TGFFIN FN WHERE FN.NUNOTA = C.NUFIN) AS DHBAIXA,	C.VLRBAIXAFROM (SELECT RAT.NUFIN,			RAT.CODNAT,			ROUND(((RAT.PERCRATEIO/100) * FIN.VLRBAIXA),2) AS VLRBAIXA		FROM TGFRAT RAT 			INNER JOIN TGFFIN FIN ON (RAT.NUFIN = FIN.NUNOTA AND RAT.ORIGEM = 'E')		WHERE FIN.PROVISAO = 'N'		AND FIN.RECDESP = -1		AND FIN.DHBAIXA IS NOT NULL		AND (:P_CODNAT IS NULL OR RAT.CODNAT = :P_CODNAT)		AND (TRUNC(FIN.DHBAIXA) >= :P_BAIXA.INI AND TRUNC(FIN.DHBAIXA) <= :P_BAIXA.FIN)) C]]></expression>
+          <metadata>
+            <field name="NUNICO" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+            <field name="NFINANCEIRO" label="Nr. Financeiro" type="I" visible="true" useFooter="false"/>
+            <field name="NRNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+            <field name="CODPARC" label="Cód. Parceiro" type="F" visible="true" useFooter="false"/>
+            <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+            <field name="CODNAT" label="Cód. Natureza" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"/>
+            <field name="DTNEG" label="Dt. de Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="DTVENC" label="Dt. de Vencimento" type="D" visible="true" useFooter="false"/>
+            <field name="DHBAIXA" label="Dt. de Baixa" type="D" visible="true" useFooter="false"/>
+            <field name="VLRBAIXA" label="Vlr. de Baixa" type="F" visible="true" useFooter="SUM"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NFINANCEIRO</NUFIN>
+          </on-click-launcher>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="113">
+        <grid id="grd_aumxro3" multiplaSelecao="S" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT DISTINCT R.CODNAT,	(SELECT DISTINCT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = R.CODNAT) AS DESCRNAT,	SUM(R.VLRBAIXA) AS VLRBAIXAFROM (SELECT FIN.CODNAT,        SUM(FIN.VLRBAIXA) AS VLRBAIXA    FROM TGFFIN FIN    WHERE FIN.PROVISAO = 'N'        AND FIN.RECDESP = -1        AND FIN.DHBAIXA IS NOT NULL        AND (:P_CODNAT IS NULL OR FIN.CODNAT = :P_CODNAT)        AND (TRUNC(FIN.DHBAIXA) >= :P_BAIXA.INI AND TRUNC(FIN.DHBAIXA) <= :P_BAIXA.FIN)        AND NVL(FIN.NUFIN,0) NOT IN (SELECT R.NUFIN FROM TGFRAT R WHERE R.ORIGEM = 'F')        AND NVL(FIN.NUNOTA,0) NOT IN (SELECT R.NUFIN FROM TGFRAT R WHERE R.ORIGEM = 'E')    GROUP BY FIN.CODNAT    UNION ALL    SELECT TB1.CODNAT,        SUM(TB1.VLRBAIXA) AS VLRBAIXA    FROM (SELECT RAT.ORIGEM,            RAT.NUFIN,            RAT.CODNAT,            ROUND(((RAT.PERCRATEIO/100) * FIN.VLRBAIXA),2) AS VLRBAIXA,            FIN.DHBAIXA        FROM TGFRAT RAT             INNER JOIN TGFFIN FIN ON (RAT.NUFIN = FIN.NUFIN AND RAT.ORIGEM = 'F')        WHERE FIN.PROVISAO = 'N'            AND FIN.RECDESP = -1            AND FIN.DHBAIXA IS NOT NULL            AND (:P_CODNAT IS NULL OR RAT.CODNAT = :P_CODNAT)            AND (TRUNC(FIN.DHBAIXA) >= :P_BAIXA.INI AND TRUNC(FIN.DHBAIXA) <= :P_BAIXA.FIN)        UNION ALL        SELECT RAT.ORIGEM,            RAT.NUFIN,            RAT.CODNAT,            ROUND(((RAT.PERCRATEIO/100) * FIN.VLRBAIXA),2) AS VLRBAIXA  ,            FIN.DHBAIXA          FROM TGFRAT RAT             INNER JOIN TGFFIN FIN ON (RAT.NUFIN = FIN.NUNOTA AND RAT.ORIGEM = 'E')        WHERE FIN.PROVISAO = 'N'            AND FIN.RECDESP = -1            AND FIN.DHBAIXA IS NOT NULL            AND (:P_CODNAT IS NULL OR RAT.CODNAT = :P_CODNAT)            AND (TRUNC(FIN.DHBAIXA) >= :P_BAIXA.INI AND TRUNC(FIN.DHBAIXA) <= :P_BAIXA.FIN)) TB1    GROUP BY TB1.CODNAT) RGROUP BY R.CODNATORDER BY R.CODNAT]]></expression>
+          <metadata>
+            <field name="CODNAT" label="Cód Natureza" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"/>
+            <field name="VLRBAIXA" label="Vlr. Baixa" type="I" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

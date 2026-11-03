@@ -1,0 +1,41 @@
+<gadget ><prompt-parameters><parameter  id="DATA" description="Período Negociação" metadata="datePeriod" required="true" keep-last="true" keep-date="false" show-inactives="false" label="DATA : Período" order="0"/><parameter  id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_CODPARC : Entidade/Tabela" order="3"/></prompt-parameters><level id="lvl_a6s45l8" description="Principal"><args><arg  id="A_NUCOMPENS" type="integer" label="A_NUCOMPENS : Número Inteiro"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="67.56304769549803"><grid id="grd_a6s45l9" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Adiantamentos sem Compensação]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT FIN.NUFIN, 	
+	FIN.NUCOMPENS,
+	FIN.CODPARC,
+	PAR.NOMEPARC,
+	FIN.NUMDUPL AS NROADTO,
+	NAT.DESCRNAT,
+	FIN.DTNEG,
+	FIN.CODEMP,
+	FIN.VLRDESDOB,
+	USU.NOMEUSU AS USUADTO,
+	FIN.HISTORICO,
+    (CASE WHEN FIN.RECDESP = 1 THEN 'ADIANTAMENTO' ELSE 'EMPRESTIMO' END) AS RECDESP
+FROM TGFFIN FIN
+	INNER JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	INNER JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+	INNER JOIN TSIUSU USU ON USU.CODUSU = FIN.CODUSU
+    INNER JOIN TGFFRE FRE ON FIN.NUFIN = FRE.NUFIN AND FRE.SEQUENCIA = 1
+WHERE (PAR.CODPARC = :P_CODPARC OR :P_CODPARC IS NULL)
+	AND FIN.DTNEG >= :DATA.INI
+    AND FIN.DTNEG <= :DATA.FIN
+    AND FIN.NUCOMPENS IS NOT NULL
+ORDER BY FIN.NUMDUPL,
+	FIN.DTNEG]]></expression><metadata><field name="NUFIN" label="Nro. Único Financeiro" type="I" visible="true" useFooter="false"></field><field name="NUCOMPENS" label="NUCOMPENS" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Nome" type="S" visible="true" useFooter="false"></field><field name="NROADTO" label="Nro. Adiantamento" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"></field><field name="DTNEG" label="Data Negociação" type="D" visible="true" useFooter="false"></field><field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"></field><field name="VLRDESDOB" label="Valor Adiantamento" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"></field><field name="USUADTO" label="Usuário" type="S" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="RECDESP" label="Tipo" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira"><NUFIN>$NUFIN</NUFIN></on-click-launcher><refresh-details  ui-list="grd_aovdq3"><param id="A_NUCOMPENS">$NUCOMPENS</param></refresh-details></grid></container><container orientacao="V" tamanhoRelativo="33.44705331460298"><grid id="grd_aovdq3" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_NUCOMPENS" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[SELECT FIN.NUFIN,
+	FIN.CODEMP,
+	FIN.CODPARC,
+	PAR.NOMEPARC,
+	FIN.NUMNOTA,
+	FIN.VLRDESDOB,
+	FIN.DTNEG,
+	FIN.HISTORICO,
+	NAT.DESCRNAT,
+	FIN.CODUSU||' - '|| USU.NOMEUSU AS USUARIO,
+    (CASE WHEN FIN.RECDESP = 1 THEN 'RECEITA' ELSE 'DESPESA' END) AS RECDESP
+FROM TGFFIN FIN	
+	INNER JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC
+	INNER JOIN TGFNAT NAT ON NAT.CODNAT = FIN.CODNAT
+    INNER JOIN TSIUSU USU ON USU.CODUSU = FIN.CODUSU
+    INNER JOIN TGFFRE FRE ON FIN.NUCOMPENS = FRE.NUACERTO
+WHERE FIN.NUCOMPENS = :A_NUCOMPENS]]></expression><metadata><field name="NUFIN" label="Nro. Único Financeiro" type="I" visible="true" useFooter="false"></field><field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nro. Nota" type="I" visible="true" useFooter="false"></field><field name="VLRDESDOB" label="Valor Desdobramento" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"></field><field name="DTNEG" label="Data Negociação" type="D" visible="true" useFooter="false"></field><field name="HISTORICO" label="Histórico" type="S" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"></field><field name="USUARIO" label="Usuário" type="S" visible="true" useFooter="false"></field><field name="RECDESP" label="Tipo" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NUFIN</NUFIN>
+          </on-click-launcher></grid></container></container></level></gadget>

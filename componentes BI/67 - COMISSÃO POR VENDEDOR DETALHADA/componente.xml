@@ -1,0 +1,104 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODVEND" description="Vendedor" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_PER" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="1"/>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="2"/>
+    <parameter id="P_TIPDATA" description="Tipo Data" metadata="singleList:Text" listType="text" required="true" keep-last="true" keep-date="false" order="3">
+      <item value="B" label="Baixa"/>
+      <item value="N" label="Negociação"/>
+    </parameter>
+    <parameter id="P_NUMNOTA" description="Nro Nota" metadata="integer" required="false" keep-last="true" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_avfvfkv" description="Principal">
+    <args>
+      <arg id="A_NUFECHAMENTO" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="224">
+        <container orientacao="H" tamanhoRelativo="121">
+          <container orientacao="V" tamanhoRelativo="50">
+            <simple-value id="svl_b4pd3c">
+              <value-expression><![CDATA[Legenda:<b><span style='color: #FFFF00;'>Financeiro Pendente sem Baixa </span></b><b><span style='color: #009933;'>Financeiro Liquidado apto a pagar comissão</span></b><b><span style='color: #0033CC;'>Financeiro Liquidado com comissão Paga</span></b>]]></value-expression>
+            </simple-value>
+          </container>
+          <container orientacao="V" tamanhoRelativo="50">
+            <simple-value id="svl_b4pd3d"/>
+          </container>
+        </container>
+        <container orientacao="V" tamanhoRelativo="500">
+          <grid id="grd_b4pd3b" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.VLRNOTA+CAB.VLROUTROS + NVL(CAB.AD_VLROUTROSFRETE,0)AS TOTALVENDA,CAB.VLRNOTA+CAB.VLROUTROS-(CAB.VLRIPI+CAB.VLRSUBST + (CASE WHEN CAB.TIPFRETE = 'S' THEN CAB.VLRFRETE ELSE 0 END)) AS VLRBASE,(SELECT SUM(C.VLRCOM) FROM TGFCOM C WHERE C.NUNOTAORIG = VCOM.NUNOTAORIG) AS VLRCOM,(SELECT SUM(C.VLRCOM) FROM TGFCOM C WHERE C.NUNOTAORIG = VCOM.NUNOTAORIG AND C.NUFECHAMENTO=0) AS SALDOVLRCOM,VCOM.COMLIQ,NVL(CAB.AD_VLROUTROSFRETE,0) AS FRETE_OUTROS,CAB.VLROUTROS as VLROUTROS,VCOM.VLRDESDOB,VCOM.VLRBAIXA,/*(VCOM.VLRDESDOB/(CAB.VLRNOTA+CAB.VLROUTROS + NVL(CAB.AD_VLROUTROSFRETE,0)))*100 AS PERCPARCELA/*/(VCOM.VLRDESDOB/(SELECT SUM(VLRDESDOB) FROM TGFFIN F WHERE F.NUNOTA =VCOM.NUNOTAORIG AND F.CODEMP = VCOM.CODEMP))*100 AS PERCPARCELA,/*(VCOM.VLRBAIXA/(CAB.VLRNOTA+CAB.VLROUTROS + NVL(CAB.AD_VLROUTROSFRETE,0)))*100 AS PERCRECEBIDO */(VCOM.VLRBAIXA/(SELECT SUM(VLRDESDOB) FROM TGFFIN F WHERE F.NUNOTA =VCOM.NUNOTAORIG AND F.CODEMP = VCOM.CODEMP))*100 AS PERCRECEBIDO ,VCOM.NUNOTAORIG,VCOM.FINNUFIN,(SELECT VEN.APELIDO  FROM TGFVEN VEN  WHERE VEN.CODVEND = VCOM.CODVEND) AS REPRESENTANTE,(SELECT RTRIM(LTRIM(CID.NOMECID))||'-'||RTRIM(LTRIM((UF.UF)))  FROM TSIUFS UF,TSICID CID, TGFPAR PAR2  WHERE UF.CODUF = CID.UF AND CID.CODCID = PAR2.CODCID AND PAR2.CODPARC = VCOM.CODPARC) AS ENDERECO,FIN.CODEMP,FIN.DESDOBRAMENTO,VCOM.CODVEND,VCOM.CODPARC,VCOM.NOMEPARC,VCOM.NUMNOTA,VCOM.DTVENC,VCOM.DHBAIXA,VCOM.DTFATUR,VCOM.PERCCOM AS PERCCOM,VCOM.NUFECHAMENTO,VCOM.NUNOTAORIG AS NUNOTA, CASE WHEN VCOM.NUFECHAMENTO=0 AND VCOM.VLRBAIXA=0 THEN 'YELLOW' WHEN VCOM.NUFECHAMENTO=0 AND VCOM.VLRBAIXA>0 THEN '#98FB98' WHEN VCOM.NUFECHAMENTO>0 THEN '#00CED1' END BKCOLORFROM VGFCOM_FECH VCOM , TGFCAB CAB , TGFFIN FINWHERE CASE WHEN :P_TIPDATA = 'B' THEN VCOM.DHBAIXA ELSE VCOM.DTNEG END BETWEEN :P_PER.INI AND :P_PER.FINAND (VCOM.CODVEND = :P_CODVEND OR :P_CODVEND IS NULL )AND VCOM.FINNUFIN = FIN.NUFINAND VCOM.NUNOTAORIG = CAB.NUNOTAAND (VCOM.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)AND (VCOM.NUMNOTA = :P_NUMNOTA OR :P_NUMNOTA IS NULL)/*AND VCOM.POSICAO_QUERY IN(3,4) --PELA BAIXA E RENEGOCIADA */UNIONSELECT CAB.VLRNOTA+CAB.VLROUTROS + NVL(CAB.AD_VLROUTROSFRETE,0)AS TOTALVENDA,CAB.VLRNOTA+CAB.VLROUTROS-(CAB.VLRIPI+CAB.VLRSUBST + CASE WHEN CAB.TIPFRETE = 'S' THEN CAB.VLRFRETE ELSE 0 END) AS VLRBASE,(SELECT SUM(C.VLRCOM) FROM TGFCOM C WHERE C.NUNOTAORIG = VCOM.NUNOTAORIG) AS VLRCOM,(SELECT SUM(C.VLRCOM) FROM TGFCOM C WHERE C.NUNOTAORIG = VCOM.NUNOTAORIG AND C.NUFECHAMENTO=0) AS SALDOVLRCOM,VCOM.VLRCOM AS COMLIQ,NVL(CAB.AD_VLROUTROSFRETE,0) AS FRETE_OUTROS,CAB.VLROUTROS as VLROUTROS,FIN.VLRDESDOB,FIN.VLRBAIXA/*,(FIN.VLRDESDOB/(CAB.VLRNOTA+CAB.VLROUTROS + NVL(CAB.AD_VLROUTROSFRETE,0)))*100 AS PERCPARCELA,(FIN.VLRBAIXA/(CAB.VLRNOTA+CAB.VLROUTROS + NVL(CAB.AD_VLROUTROSFRETE,0)))*100 AS PERCRECEBIDO*/,(FIN.VLRDESDOB/(SELECT SUM(VLRDESDOB) FROM TGFFIN F WHERE F.NUNOTA =FIN.NUNOTA AND F.CODEMP = FIN.CODEMP))*100 AS PERCPARCELA,(FIN.VLRBAIXA/(SELECT SUM(VLRDESDOB) FROM TGFFIN F WHERE F.NUNOTA =FIN.NUNOTA AND F.CODEMP = FIN.CODEMP))*100 AS PERCRECEBIDO ,VCOM.NUNOTAORIG,FIN.NUFIN AS FINNUFIN,(SELECT VEN.APELIDO  FROM TGFVEN VEN  WHERE VEN.CODVEND = VCOM.CODVEND) AS REPRESENTANTE,(SELECT RTRIM(LTRIM(CID.NOMECID))||'-'||RTRIM(LTRIM((UF.UF)))  FROM TSIUFS UF,TSICID CID, TGFPAR PAR2  WHERE UF.CODUF = CID.UF AND CID.CODCID = PAR2.CODCID AND PAR2.CODPARC = FIN.CODPARC) AS ENDERECO,FIN.CODEMP,FIN.DESDOBRAMENTO,VCOM.CODVEND,FIN.CODPARC,PAR.NOMEPARC,FIN.NUMNOTA,FIN.DTVENC,FIN.DHBAIXA,CAB.DTFATUR,0 AS PERCCOM,VCOM.NUFECHAMENTO,VCOM.NUNOTAORIG AS NUNOTA, CASE WHEN VCOM.NUFECHAMENTO=0 AND FIN.VLRBAIXA=0 THEN 'YELLOW' WHEN VCOM.NUFECHAMENTO=0 AND FIN.VLRBAIXA>0 THEN '98FB98' WHEN VCOM.NUFECHAMENTO>0 THEN '#00CED1' END BKCOLORFROM TGFCOM VCOM , TGFCAB CAB , TGFFIN FIN, TGFPAR PARWHERE CASE WHEN :P_TIPDATA = 'B' THEN FIN.DHBAIXA ELSE FIN.DTNEG END BETWEEN :P_PER.INI AND :P_PER.FINAND (VCOM.CODVEND = :P_CODVEND OR :P_CODVEND IS NULL )AND VCOM.NUFINORIG = FIN.NUFINAND VCOM.NUNOTAORIG = CAB.NUNOTAAND FIN.CODPARC = PAR.CODPARCAND (FIN.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)AND (CAB.NUMNOTA = :P_NUMNOTA OR :P_NUMNOTA IS NULL)/*AND VCOM.POSICAO_QUERY IN(3,4) --PELA BAIXA E RENEGOCIADA */ORDER BY 25 DESC, 15, 8 DESC]]></expression>
+            <metadata>
+              <field name="TOTALVENDA" label="Total Venda" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+              <field name="VLRBASE" label="Vlr. Base Comissão" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+              <field name="VLRCOM" label="Comissão Nota" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+              <field name="SALDOVLRCOM" label="Saldo Comissão A Pagar" type="F" visible="true" useFooter="null" mask="#.##0,00"/>
+              <field name="COMLIQ" label="Com. Líquida" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+              <field name="FRETE_OUTROS" label="Frete Outros" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+              <field name="VLROUTROS" label="Vlr Outros" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+              <field name="VLRDESDOB" label="Vlr. Título" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+              <field name="VLRBAIXA" label="Vlr. Baixa" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+              <field name="PERCPARCELA" label="% Com. Parcela" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"/>
+              <field name="PERCRECEBIDO" label="% Com. Recebido" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"/>
+              <field name="NUNOTAORIG" label="Nro Único Nota" type="I" visible="true" useFooter="false"/>
+              <field name="FINNUFIN" label="Nro Único Fin. Pag" type="I" visible="true" useFooter="false"/>
+              <field name="REPRESENTANTE" label="Representante" type="S" visible="true" useFooter="false"/>
+              <field name="ENDERECO" label="Endereço" type="S" visible="true" useFooter="false"/>
+              <field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"/>
+              <field name="DESDOBRAMENTO" label="Desdobramento" type="S" visible="true" useFooter="false"/>
+              <field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"/>
+              <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+              <field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"/>
+              <field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"/>
+              <field name="DTVENC" label="Dt. Vencimento" type="D" visible="true" useFooter="false"/>
+              <field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"/>
+              <field name="DTFATUR" label="Dt. Faturamento" type="D" visible="true" useFooter="false"/>
+              <field name="PERCCOM" label="% Comissão" type="F" visible="true" useFooter="false" mask="###0,00"/>
+              <field name="NUFECHAMENTO" label="Nro Fechamento Com." type="I" visible="true" useFooter="false"/>
+              <field name="NUNOTA" label="NUNOTA" type="F" visible="true" useFooter="false"/>
+              <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+              <field name="COMISSAOPAGA" label="Comissão Paga" type="F" visible="true" useFooter="false" mask="#.##0,00">
+                <formatter greaterThan="0"><![CDATA[<span style="">
+  <b>$VALUE</b>
+</span>]]></formatter>
+                <calculated>
+                  <formula><![CDATA[$VLRCOM - $SALDOVLRCOM]]></formula>
+                </calculated>
+              </field>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+            <refresh-details ui-list="grd_avfvflv">
+              <param id="A_NUFECHAMENTO">$NUFECHAMENTO</param>
+            </refresh-details>
+          </grid>
+        </container>
+      </container>
+      <container orientacao="V" tamanhoRelativo="100">
+        <grid id="grd_avfvflv" useNewGrid="S">
+          <args>
+            <arg id="A_NUFECHAMENTO" type="integer"/>
+          </args>
+          <title><![CDATA[Financeiro Comissão a Pagar Representante]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT :A_NUFECHAMENTO AS NUFECHAMENTO,F.NUFIN, F.CODPARC, P.NOMEPARC,F.DTVENC, F.VLRDESDOB, F.VLRBAIXA, F.DHBAIXA, F.DHBAIXA, F.DTNEG, F.HISTORICOFROM TGFFIN F INNER JOIN TGFPAR P ON (F.CODPARC = P.CODPARC)WHERE F.NUFIN IN (SELECT MAX(NUFIN) FROM TGFCOM WHERE NUFECHAMENTO = :A_NUFECHAMENTO)]]></expression>
+          <metadata>
+            <field name="NUFECHAMENTO" label="Nro Fechamento" type="S" visible="true" useFooter="false"/>
+            <field name="NUFIN" label="Nro Único Fin." type="I" visible="true" useFooter="false"/>
+            <field name="CODPARC" label="Cód. Parceiro Vend." type="I" visible="true" useFooter="false"/>
+            <field name="NOMEPARC" label="Parceiro Vendedor" type="S" visible="true" useFooter="false"/>
+            <field name="DTVENC" label="Dt. Vencimento" type="D" visible="true" useFooter="false"/>
+            <field name="VLRDESDOB" label="Vlr. Título" type="F" visible="true" useFooter="false"/>
+            <field name="VLRBAIXA" label="Vlr. Baixa" type="F" visible="true" useFooter="false"/>
+            <field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false"/>
+            <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="HISTORICO" label="Historico" type="S" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NUFIN</NUFIN>
+          </on-click-launcher>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

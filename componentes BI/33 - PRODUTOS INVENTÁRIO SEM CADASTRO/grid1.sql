@@ -1,0 +1,5 @@
+SELECT AD_CODANTERIOR, DESCRPROD, CODVOL, QTD, TRANSLATE(SUBSTR(DESCRPROD,1,20),'`}a~xÁÇÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕËÜÏÖÑÝåáçéíóúàèìòùâêîôûãõëüïöñýÿ"',
+                                                'SZszYACEIOUAEIOUAEIOUAOEUIONYaaceiouaeiouaeiouaoeuionyy') AS DESCR FROM 
+TEMP_INVENTARIO T 
+WHERE NOT EXISTS (SELECT 1 FROM TGFPRO P WHERE P.AD_CODANTERIOR = T.AD_CODANTERIOR)
+ORDER BY 2

@@ -1,0 +1,44 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DTENTSAI" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_ape0eoq" description="Principal">
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="33">
+        <grid id="grd_ape0eor" useNewGrid="S">
+          <title><![CDATA[Produção PA]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,	PRO.DESCRPROD,	SUM(ITE.QTDNEG) AS QTDNEGFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPRODWHERE PRO.USOPROD = 'V'	AND TRUNC(CAB.DTENTSAI) >= :P_DTENTSAI.INI	AND TRUNC(CAB.DTENTSAI) <= :P_DTENTSAI.FIN	AND CAB.CODTIPOPER IN (800,213)GROUP BY ITE.CODPROD, PRO.DESCRPROD																										 																																		   ]]></expression>
+          <metadata>
+            <field name="CODPROD" label="Cod. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+            <field name="QTDNEG" label="Qtd" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="33">
+        <grid id="grd_udc3uz" useNewGrid="S">
+          <title><![CDATA[Produção PI]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,	PRO.DESCRPROD,	SUM(ITE.QTDNEG) AS QTDNEGFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPRODWHERE TRUNC(CAB.DTENTSAI) >= :P_DTENTSAI.INI	AND TRUNC(CAB.DTENTSAI) <= :P_DTENTSAI.FIN	AND CAB.CODTIPOPER IN (801)	AND SUBSTR(ITE.CODPROD,0,1) = 2GROUP BY ITE.CODPROD, PRO.DESCRPRODORDER BY ITE.CODPROD]]></expression>
+          <metadata>
+            <field name="CODPROD" label="Cod. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+            <field name="QTDNEG" label="Qtd" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="33">
+        <grid id="grd_udc3u8" useNewGrid="S">
+          <title><![CDATA[Produção PI Manuel]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,	PRO.DESCRPROD,	SUM(ITE.QTDNEG) AS QTDNEG,	SUM(ITE.VLRUNIT*QTDNEG) / SUM(ITE.QTDNEG) AS VLRUNIT,	SUM(ITE.AD_VLRCHEIOCOM*QTDNEG) / SUM(ITE.QTDNEG) AS VLRCHEIOFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPRODWHERE TRUNC(CAB.DTENTSAI) >= :P_DTENTSAI.INI	AND TRUNC(CAB.DTENTSAI) <= :P_DTENTSAI.FIN	AND CAB.CODTIPOPER IN (1211)	--AND SUBSTR(ITE.CODPROD,0,1) = 2GROUP BY ITE.CODPROD, PRO.DESCRPRODORDER BY ITE.CODPROD]]></expression>
+          <metadata>
+            <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+            <field name="QTDNEG" label="Qtd" type="I" visible="true" useFooter="false"/>
+            <field name="VLRUNIT" label="Vlr. Unitário" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+            <field name="VLRCHEIO" label="Vlr. Gerencial" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

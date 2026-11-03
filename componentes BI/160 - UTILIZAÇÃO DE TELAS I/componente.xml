@@ -1,0 +1,192 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="TELA" description="Tela" metadata="text" required="false" keep-last="false" />
+    <parameter id="CODUSU" description="Usuário" metadata="entity:Usuario@CODUSU" required="false" keep-last="false" />
+    <parameter id="TIPO" description="Período" metadata="singleList:Text" required="true" keep-last="true">
+      <item value="T" label="Desde do Início" />
+      <item value="P" label="Período Recente" />
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_aslqpc6" description="Principal">
+    <simple-value id="svl_a0xb1xb">
+      <value-expression><![CDATA[<b>Ao escolher no filtro 'Período Recente', mostramos os acessos a partir de uma data específica de cada tela.]]></value-expression>
+    </simple-value>
+    <chart id="cht_atqzzv7" type="column">
+      <expression type="sql" data-source="MGEDS"><![CDATA[SELECT OPC_MENU, PERC, SUM(VALOR_TOTAL) AS VALOR_TOTAL, SUM(VALOR_PERIODO) AS VALOR_PERIODO
+FROM(
+SELECT  CON.DESCRCONTROLE AS OPC_MENU,
+(SUM(EAC.QTDPERIODO)/ 
+ (
+     SELECT SUM(EAC2.QTDPERIODO) FROM TRDEAC EAC2  
+ )
+) * 100 AS PERC,
+(CASE WHEN :TIPO = 'T' THEN SUM(EAC.QTDGERAL) END) AS VALOR_TOTAL,
+0 AS VALOR_PERIODO
+FROM TRDPCO PCO 
+INNER JOIN TRDEAC EAC ON(PCO.VALOR = EAC.RESOURCEID)
+INNER JOIN TRDCON CON ON(CON.NUCONTROLE = PCO.NUCONTROLE)
+WHERE ((CODUSU= :CODUSU) OR (:CODUSU IS NULL))
+
+AND (UPPER(CON.DESCRCONTROLE) LIKE UPPER('%' || :TELA  ||   '%') OR (:TELA IS NULL))
+AND :TIPO = 'T' 
+GROUP BY CON.DESCRCONTROLE
+
+UNION ALL
+
+SELECT  CON.DESCRCONTROLE AS OPC_MENU,
+
+(SUM(EAC.QTDPERIODO)/ 
+ (
+     SELECT SUM(EAC2.QTDPERIODO) FROM TRDEAC EAC2  
+ )
+) * 100 AS PERC,
+0 AS VALOR_TOTAL,
+(CASE WHEN :TIPO = 'P' THEN SUM(EAC.QTDPERIODO) END) AS VALOR_PERIODO
+FROM TRDPCO PCO 
+INNER JOIN TRDEAC EAC ON(PCO.VALOR = EAC.RESOURCEID)
+INNER JOIN TRDCON CON ON(CON.NUCONTROLE = PCO.NUCONTROLE)
+WHERE ((CODUSU= :CODUSU) OR (:CODUSU IS NULL))
+
+AND (UPPER(CON.DESCRCONTROLE) LIKE UPPER('%' || :TELA  ||   '%') OR (:TELA IS NULL))
+AND :TIPO = 'P'
+GROUP BY CON.DESCRCONTROLE
+)
+GROUP BY OPC_MENU, PERC
+ORDER BY VALOR_TOTAL DESC, VALOR_PERIODO DESC]]></expression>
+      <metadata>
+        <field name="OPC_MENU" label="Tela do Sistema" type="S" visible="true" useFooter="false" />
+        <field name="PERC" label="Perc" type="F" visible="true" useFooter="false" mask="#.##0,00 %" />
+        <field name="VALOR_TOTAL" label="Valor" type="I" visible="true" useFooter="false" />
+        <field name="VALOR_PERIODO" label="Valor" type="I" visible="true" useFooter="false" />
+      </metadata>
+      <horizontal-axis>
+        <category field="OPC_MENU" rotation="-45" dropLabel="false" />
+      </horizontal-axis>
+      <vertical-axis>
+        <linear>
+          <mask />
+        </linear>
+      </vertical-axis>
+      <series>
+        <set type="stacked">
+          <serie type="column">
+            <xField>$OPC_MENU</xField>
+            <yField>$VALOR_TOTAL</yField>
+            <display>Quantidade de Acessos Total</display>
+            <color>0x9688</color>
+            <on-click navigate-to="lvl_axyv6zn">
+              <param id="MENU">$OPC_MENU</param>
+            </on-click>
+          </serie>
+          <serie type="column">
+            <xField>$OPC_MENU</xField>
+            <yField>$VALOR_PERIODO</yField>
+            <display>Quantidade de Acessos no Período</display>
+            <color>0x9688</color>
+            <on-click navigate-to="lvl_axyv6zn">
+              <param id="MENU">$OPC_MENU</param>
+            </on-click>
+          </serie>
+        </set>
+      </series>
+    </chart>
+  </level>
+  <level id="lvl_axyv6zn" description="Usuario">
+    <args>
+      <arg id="MENU" type="text" />
+    </args>
+    <simple-value id="svl_ax75no0">
+      <expression type="sql" data-source="MGEDS"><![CDATA[SELECT  CON.DESCRCONTROLE
+FROM TRDPCO PCO 
+INNER JOIN TRDEAC EAC ON(PCO.VALOR = EAC.RESOURCEID)
+INNER JOIN TRDCON CON ON(CON.NUCONTROLE = PCO.NUCONTROLE)
+INNER JOIN TSIUSU USU ON(USU.CODUSU = EAC.CODUSU) 
+WHERE CON.DESCRCONTROLE = :MENU]]></expression>
+      <metadata>
+        <field name="DESCRCONTROLE" label="Tela do Sistema" type="S" visible="true" useFooter="false" />
+      </metadata>
+      <value-expression><![CDATA[<b> Tela:  </b>$DESCRCONTROLE]]></value-expression>
+    </simple-value>
+    <chart id="cht_axyv6zo" type="column">
+      <expression type="sql" data-source="MGEDS"><![CDATA[SELECT NOMEUSU, PERC, SUM(VALOR_TOTAL) AS VALOR_TOTAL, SUM(VALOR_PERIODO) AS VALOR_PERIODO
+FROM(
+SELECT NOMEUSU, PERC, SUM(VALOR_TOTAL) AS VALOR_TOTAL, SUM(VALOR_PERIODO) AS VALOR_PERIODO
+FROM(
+SELECT  USU.NOMEUSU,
+(SUM(EAC.QTDPERIODO)/ 
+ (
+     SELECT SUM(EAC2.QTDPERIODO) FROM TRDEAC EAC2  
+ )
+) * 100 AS PERC,
+(CASE WHEN :TIPO = 'T' THEN SUM(EAC.QTDGERAL) END) AS VALOR_TOTAL,
+0 AS VALOR_PERIODO
+FROM TRDPCO PCO 
+INNER JOIN TRDEAC EAC ON(PCO.VALOR = EAC.RESOURCEID)
+INNER JOIN TRDCON CON ON(CON.NUCONTROLE = PCO.NUCONTROLE)
+INNER JOIN TSIUSU USU ON(USU.CODUSU = EAC.CODUSU) 
+WHERE ((USU.CODUSU= :CODUSU) OR (:CODUSU IS NULL))
+
+AND (UPPER(CON.DESCRCONTROLE) LIKE UPPER('%' || :TELA  ||   '%') OR (:TELA IS NULL))
+AND :TIPO = 'T' 
+AND CON.DESCRCONTROLE = :MENU
+GROUP BY USU.NOMEUSU
+UNION ALL
+
+SELECT  USU.NOMEUSU,
+(SUM(EAC.QTDPERIODO)/ 
+ (
+     SELECT SUM(EAC2.QTDPERIODO) FROM TRDEAC EAC2  
+ )
+) * 100 AS PERC,
+0 AS VALOR_TOTAL,
+(CASE WHEN :TIPO = 'P' THEN SUM(EAC.QTDPERIODO) END) AS VALOR_PERIODO
+FROM TRDPCO PCO 
+INNER JOIN TRDEAC EAC ON(PCO.VALOR = EAC.RESOURCEID)
+INNER JOIN TRDCON CON ON(CON.NUCONTROLE = PCO.NUCONTROLE)
+INNER JOIN TSIUSU USU ON(USU.CODUSU = EAC.CODUSU) 
+WHERE ((USU.CODUSU= :CODUSU) OR (:CODUSU IS NULL))
+
+AND (UPPER(CON.DESCRCONTROLE) LIKE UPPER('%' || :TELA  ||   '%') OR (:TELA IS NULL))
+AND :TIPO = 'P'
+AND CON.DESCRCONTROLE = :MENU
+GROUP BY USU.NOMEUSU, CON.DESCRCONTROLE
+)
+GROUP BY NOMEUSU, PERC
+ORDER BY VALOR_TOTAL DESC, VALOR_PERIODO DESC
+)
+WHERE ROWNUM < 51
+GROUP BY NOMEUSU, PERC
+ORDER BY VALOR_TOTAL DESC, VALOR_PERIODO DESC]]></expression>
+      <metadata>
+        <field name="NOMEUSU" label="Nome" type="S" visible="true" useFooter="false" />
+        <field name="PERC" label="Perc" type="F" visible="true" useFooter="false" mask="#.##0,00 %" />
+        <field name="VALOR_TOTAL" label="Valor" type="I" visible="true" useFooter="false" />
+        <field name="VALOR_PERIODO" label="Valor" type="I" visible="true" useFooter="false" />
+      </metadata>
+      <horizontal-axis>
+        <category field="NOMEUSU" rotation="-47" dropLabel="false" />
+      </horizontal-axis>
+      <vertical-axis>
+        <linear>
+          <mask />
+        </linear>
+      </vertical-axis>
+      <series>
+        <set type="stacked">
+          <serie type="column">
+            <xField>$NOMEUSU</xField>
+            <yField>$VALOR_TOTAL</yField>
+            <display>Quantidade de Acessos Total</display>
+            <color>0x9688</color>
+          </serie>
+          <serie type="column">
+            <xField>$NOMEUSU</xField>
+            <yField>$VALOR_PERIODO</yField>
+            <display>Quantidade de Acessos no Período</display>
+            <color>0x9688</color>
+          </serie>
+        </set>
+      </series>
+    </chart>
+  </level>
+</gadget>

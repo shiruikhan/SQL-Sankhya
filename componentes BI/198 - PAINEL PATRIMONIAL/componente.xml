@@ -1,0 +1,197 @@
+<gadget ><prompt-parameters><parameter  id="DAT1" description="REFERÊNCIA" metadata="date" required="true" keep-last="false" keep-date="true" order="0" label="DAT1 : Data"/><parameter  id="EMPRESA" description="EMPRESA" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false" show-inactives="false" label="EMPRESA : multiList:Text" order="1"><expression type="SQL"><![CDATA[SELECT 
+CODEMP AS VALUE, 
+CODEMP||'-'||RAZAOABREV AS LABEL
+FROM
+TSIEMP WHERE CODEMP < 999
+ORDER BY
+CODEMP]]></expression></parameter><parameter  id="MESANO" description="Ano/Mês (AAAA/MM ou AAAA) - Opcional" metadata="text" required="false" keep-last="false" keep-date="false" limit-char="7" order="2" label="MESANO : Texto"/></prompt-parameters><level id="lvl_e3j1ud" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="42.789001122334454"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_e3j100" useNewGrid="S"><title><![CDATA[TOTAIS POR GRUPO DE IMOBILIZADO]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+CODGRUPO
+, (SELECT DESCRGRUPOPROD FROM TGFGRU WHERE CODGRUPOPROD = DADOS2.CODGRUPO) AS DESCR_GRUPO
+, VR_AQUIS
+, DEPREC_MES
+, DEPREC_ACUM
+, SD_DEPREC
+, AQUIS_MES
+FROM(
+
+        SELECT 
+        CODGRUPO
+        , SUM(VALOR_AQUISICAO) AS "VR_AQUIS"
+        , -SUM(DEPRECIACAO_ACUMULADA) AS "DEPREC_ACUM"
+        , SUM(SALDO_A_DEPRECIAR) AS "SD_DEPREC"
+        , SUM(DEPRECIACAO_MES) AS "DEPREC_MES"
+        , SUM(AQUIS_MES) AS "AQUIS_MES"
+        FROM(
+        
+                SELECT 
+                BEM.CODEMP AS "CODEMP"
+                , PRO.CODGRUPOPROD AS "CODGRUPO"
+                , GRU.DESCRGRUPOPROD AS "DESCR_GRUPO"
+                , TO_CHAR(BEM.DTCOMPRA, 'YYYY/MM') AS "REF_AQUISICAO"
+                , BEM.CODPROD AS "CODPROD"
+                , PRO.DESCRPROD AS "DESCR_PRODUTO"
+                , BEM.CODBEM AS "NRO_PATRIMONIO"
+                , BEM.DESCRABREV
+                , TO_CHAR(BEM.DTCOMPRA, 'DD/MM/YYYY') AS "DATA_AQUISICAO"
+                , BEM.VLRAQUISICAO AS "VALOR_AQUISICAO"
+                , CASE WHEN TO_CHAR(BEM.DTCOMPRA, 'MM/YYYY') = TO_CHAR(:DAT1, 'MM/YYYY') THEN BEM.VLRAQUISICAO ELSE 0 END AS "AQUIS_MES"
+                , NVL(CASE WHEN BEM.TEMDEPRECIACAO = 'S' THEN BEM.VLRDEP END,0) AS "BASE_DEPRECIACAO"
+                , TO_CHAR(BEM.DTINICIODEP, 'DD/MM/YYYY') AS "DATA_INICIO_DEP"
+                , BEM.NUNOTA AS "NUNOTA_COMPRA"
+                , BEM.NUMNOTA AS "NOTA_COMPRA"
+                /*, NVL(CASE WHEN sankhya.SNK_Getdtbaixabem (BEM.CODPROD,BEM.CODBEM, SNK_TRUNC_DATE(:DAT1, 'MM')) IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN BEM.VLRDEP ELSE SAL.TOTALDEP END END, 0) AS "DEPRECIACAO_ACUMULADA" */
+			, NVL(NVL(CASE WHEN BEM.DTBAIXA IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO THEN BEM.VLRDEP ELSE SAL.TOTALDEP END END, BEM.VLRSALDO), 0) AS "DEPRECIACAO_ACUMULADA"
+                /*, NVL(CASE WHEN sankhya.SNK_Getdtbaixabem (BEM.CODPROD,BEM.CODBEM, SNK_TRUNC_DATE(:DAT1, 'MM')) IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN 0 ELSE BEM.VLRDEP - NVL(SAL.TOTALDEP,0) END END, 0) AS "SALDO_A_DEPRECIAR" */
+			 , NVL(CASE WHEN BEM.DTBAIXA IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN 0 ELSE BEM.VLRDEP - NVL(SAL.TOTALDEP,BEM.VLRSALDO) END END, 0) AS "SALDO_A_DEPRECIAR"
+                , SPARKPRD.SNK_Getdtbaixabem (BEM.CODPROD, BEM.CODBEM, SNK_TRUNC_DATE(:DAT1, 'MM')) AS DATA_BAIXA
+                , NVL(CASE WHEN BEM.TEMDEPRECIACAO = 'S' THEN DEPMES.TOTDEPMES ELSE 0 END,0) AS "DEPRECIACAO_MES"
+                , (SELECT MAX (TAX.TAXA) FROM TCITAX TAX WHERE TAX.CODPROD = PRO.CODPROD AND (TAX.CODBEM = BEM.CODBEM OR TAX.CODBEM = '<TODOS>')) AS TAXA  
+                FROM 
+                TCIBEM BEM 
+			    JOIN TSIEMP EMP ON BEM.CODEMP = EMP.CODEMP
+                JOIN TGFPRO PRO ON BEM.CODPROD = PRO.CODPROD
+                JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+                LEFT JOIN (SELECT SAL.CODPROD,SAL.CODBEM, MAX (REFERENCIA) AS ULTREF FROM TCISAL SAL WHERE SAL.REFERENCIA <= SNK_TRUNC_DATE(:DAT1, 'MM') GROUP BY SAL.CODPROD, SAL.CODBEM) MAXSAL ON (MAXSAL.CODPROD = BEM.CODPROD AND MAXSAL.CODBEM = BEM.CODBEM)
+                LEFT JOIN TCISAL SAL ON (MAXSAL.CODPROD = SAL.CODPROD AND MAXSAL.CODBEM = SAL.CODBEM AND SAL.REFERENCIA = MAXSAL.ULTREF)
+                LEFT JOIN ( SELECT CODPROD, CODBEM, SUM (NVL(VLRDEP, 0)) AS TOTDEPMES FROM TCIMOV MOV WHERE MOV.TIPMOV = 'A' AND SNK_TRUNC_DATE(MOV.REFERENCIA, 'MM') = SNK_TRUNC_DATE(:DAT1, 'MM') GROUP BY CODPROD, CODBEM) DEPMES ON (DEPMES.CODPROD = BEM.CODPROD AND DEPMES.CODBEM = BEM.CODBEM) 
+                WHERE 
+                (TRUNC(BEM.DTBAIXA,'MM') > TRUNC(TO_DATE(:DAT1,'DD/MM/YY'), 'MM') OR 
+                 TRUNC(BEM.DTBAIXA, 'MM') IS NULL) AND 
+                 TRUNC(BEM.DTCOMPRA, 'MM') <= TO_DATE(:DAT1,'DD/MM/YY') AND  
+                 BEM.CODBEM <> '<TODOS>' AND 
+                 EMP.CODEMP IN :EMPRESA
+                
+                )DADOS
+			WHERE
+			(REF_AQUISICAO LIKE :MESANO OR SUBSTR(REF_AQUISICAO, 1,4) LIKE :MESANO OR :MESANO IS NULL)
+                GROUP BY CODGRUPO
+                
+)DADOS2
+
+UNION ALL
+
+SELECT 0 AS "CODGRUPO", ' .TODOS' AS "DESCR_GRUPO", NULL AS "VR_AQUIS", NULL AS "DEPREC_ACUM", NULL AS "SD_DEPREC", NULL AS "DEPREC_MES", NULL AS "AQUIS_MES" FROM DUAL
+
+ORDER BY "CODGRUPO"]]></expression><metadata><field name="CODGRUPO" label="GRUPO" type="I" visible="true" useFooter="false"></field><field name="DESCR_GRUPO" label="DESCRIÇÃO" type="S" visible="true" useFooter="false"></field><field name="VR_AQUIS" label="VR AQUISIÇÃO" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="DEPREC_MES" label="DEPREC. MÊS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="DEPREC_ACUM" label="DEPREC. ACUM." type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SD_DEPREC" label="SALDO RESIDUAL" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="AQUIS_MES" label="AQUIS. MÊS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field></metadata><refresh-details  ui-list="grd_e3j1wt">
+              <param id="GRUPO">$CODGRUPO</param>
+              <param id="PRODUTO">0</param>
+            </refresh-details></grid></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_e3j1wt" useNewGrid="S"><args><arg id="GRUPO" type="text"></arg><arg id="PRODUTO" type="text"></arg></args><title><![CDATA[TOTAIS POR PRODUTO (duplo clique na linha abre a tela de cadastro do produto)]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+CODPROD
+, DESCR_PRODUTO
+, :GRUPO AS GRUPO2
+, COUNT(NRO_PATRIMONIO) AS "QTDE"
+, SUM(VALOR_AQUISICAO) AS "VR_AQUIS"
+, -SUM(DEPRECIACAO_ACUMULADA) AS "DEPREC_ACUM"
+, SUM(SALDO_A_DEPRECIAR) AS "SD_DEPREC"
+, SUM(DEPRECIACAO_MES) AS "DEPREC_MES" 
+FROM (
+        SELECT 
+                BEM.CODEMP AS "CODEMP"
+                , PRO.CODGRUPOPROD AS "CODGRUPO"
+                , GRU.DESCRGRUPOPROD AS "DESCR_GRUPO"
+                , TO_CHAR(BEM.DTCOMPRA, 'YYYY/MM') AS "REF_AQUISICAO"
+                , BEM.CODPROD AS "CODPROD"
+                , PRO.DESCRPROD AS "DESCR_PRODUTO"
+                , BEM.CODBEM AS "NRO_PATRIMONIO"
+                , BEM.DESCRABREV
+                , TO_CHAR(BEM.DTCOMPRA, 'DD/MM/YYYY') AS "DATA_AQUISICAO"
+                , BEM.VLRAQUISICAO AS "VALOR_AQUISICAO"
+                , CASE WHEN TO_CHAR(BEM.DTCOMPRA, 'MM/YYYY') = TO_CHAR(:DAT1, 'MM/YYYY') THEN BEM.VLRAQUISICAO ELSE 0 END AS "AQUIS_MES"
+                , NVL(CASE WHEN BEM.TEMDEPRECIACAO = 'S' THEN BEM.VLRDEP END,0) AS "BASE_DEPRECIACAO"
+                , TO_CHAR(BEM.DTINICIODEP, 'DD/MM/YYYY') AS "DATA_INICIO_DEP"
+                , BEM.NUNOTA AS "NUNOTA_COMPRA"
+                , BEM.NUMNOTA AS "NOTA_COMPRA"
+                /*, NVL(CASE WHEN sankhya.SNK_Getdtbaixabem (BEM.CODPROD,BEM.CODBEM, SNK_TRUNC_DATE(:DAT1, 'MM')) IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN BEM.VLRDEP ELSE SAL.TOTALDEP END END, 0) AS "DEPRECIACAO_ACUMULADA" */
+			,NVL(NVL(CASE WHEN BEM.DTBAIXA IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO THEN BEM.VLRDEP ELSE SAL.TOTALDEP END END, BEM.VLRSALDO), 0) AS "DEPRECIACAO_ACUMULADA"
+                /*, NVL(CASE WHEN sankhya.SNK_Getdtbaixabem (BEM.CODPROD,BEM.CODBEM, SNK_TRUNC_DATE(:DAT1, 'MM')) IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN 0 ELSE BEM.VLRDEP - NVL(SAL.TOTALDEP,0) END END, 0) AS "SALDO_A_DEPRECIAR" */
+			 , NVL(CASE WHEN BEM.DTBAIXA IS NOT NULL OR BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN 0 ELSE BEM.VLRDEP - NVL(SAL.TOTALDEP,BEM.VLRSALDO) END END, 0) AS "SALDO_A_DEPRECIAR"
+                , SNK_Getdtbaixabem (BEM.CODPROD, BEM.CODBEM, SNK_TRUNC_DATE(:DAT1, 'MM')) AS DATA_BAIXA
+                , NVL(CASE WHEN BEM.TEMDEPRECIACAO = 'S' THEN DEPMES.TOTDEPMES ELSE 0 END,0) AS "DEPRECIACAO_MES"
+                , (SELECT MAX (TAX.TAXA) FROM TCITAX TAX WHERE TAX.CODPROD = PRO.CODPROD AND (TAX.CODBEM = BEM.CODBEM OR TAX.CODBEM = '<TODOS>')) AS TAXA  
+                FROM 
+                TCIBEM BEM 
+			JOIN TSIEMP EMP ON BEM.CODEMP = EMP.CODEMP
+                JOIN TGFPRO PRO ON BEM.CODPROD = PRO.CODPROD
+                JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+                LEFT JOIN (SELECT SAL.CODPROD,SAL.CODBEM, MAX (REFERENCIA) AS ULTREF FROM TCISAL SAL WHERE SAL.REFERENCIA <= SNK_TRUNC_DATE(:DAT1, 'MM') GROUP BY SAL.CODPROD, SAL.CODBEM) MAXSAL ON (MAXSAL.CODPROD = BEM.CODPROD AND MAXSAL.CODBEM = BEM.CODBEM)
+                LEFT JOIN TCISAL SAL ON (MAXSAL.CODPROD = SAL.CODPROD AND MAXSAL.CODBEM = SAL.CODBEM AND SAL.REFERENCIA = MAXSAL.ULTREF)
+                LEFT JOIN ( SELECT CODPROD, CODBEM, SUM (NVL(VLRDEP, 0)) AS TOTDEPMES FROM TCIMOV MOV WHERE MOV.TIPMOV = 'A' AND SNK_TRUNC_DATE(MOV.REFERENCIA, 'MM') = SNK_TRUNC_DATE(:DAT1, 'MM') GROUP BY CODPROD, CODBEM) DEPMES ON (DEPMES.CODPROD = BEM.CODPROD AND DEPMES.CODBEM = BEM.CODBEM) 
+                WHERE 
+                (SNK_TRUNC_DATE(BEM.DTBAIXA,'MM') > SNK_TRUNC_DATE(:DAT1, 'MM') OR 
+                 SNK_TRUNC_DATE(BEM.DTBAIXA, 'MM') IS NULL) AND 
+                 SNK_TRUNC_DATE(BEM.DTCOMPRA, 'MM') <= :DAT1 AND  
+                 BEM.CODBEM <> '<TODOS>' AND 
+                 EMP.CODEMP IN :EMPRESA AND
+			(PRO.CODGRUPOPROD = :GRUPO OR :GRUPO = 0)
+         
+)DADOS
+WHERE 
+(REF_AQUISICAO LIKE :MESANO OR SUBSTR(REF_AQUISICAO, 1,4) LIKE :MESANO OR :MESANO IS NULL)
+GROUP BY CODPROD, DESCR_PRODUTO
+
+UNION ALL
+SELECT 0 AS "CODPROD", ' .TODOS' AS "DESCR_PRODUTO", :GRUPO AS GRUPO2, NULL AS "QTDE", NULL AS "VR_AQUIS", NULL AS "DEPREC_ACUM", NULL AS "SD_DEPREC", NULL AS "DEPREC_MES" FROM DUAL
+
+ORDER BY "DESCR_PRODUTO"]]></expression><metadata><field name="CODPROD" label="PROD." type="I" visible="true" useFooter="false"></field><field name="DESCR_PRODUTO" label="DESCRIÇÃO " type="S" visible="true" useFooter="false"></field><field name="GRUPO2" label="GRUPO2" type="S" visible="false" useFooter="false"></field><field name="QTDE" label="QTDE" type="I" visible="true" useFooter="false"></field><field name="VR_AQUIS" label="VR AQUISIÇÃO" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="DEPREC_ACUM" label="DEPREC. ACUM." type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="SD_DEPREC" label="SALDO RESIDUAL" type="F" visible="true" useFooter="SUM" mask="#.##0,00;(n)"></field><field name="DEPREC_MES" label="DEPREC. MÊS" type="F" visible="false" useFooter="SUM" mask="#.##0,00;(n)"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.core.cad.produtos">
+              <CODPROD>$CODPROD</CODPROD>
+            </on-click-launcher><refresh-details  ui-list="grd_e3j1ue">
+              <param id="GRUPO">$GRUPO2</param>
+              <param id="PRODUTO">$CODPROD</param>
+            </refresh-details></grid></container></container><container orientacao="V" tamanhoRelativo="58.22109988776655"><grid id="grd_e3j1ue" entityName="Imobilizado" multiplaSelecao="N" useNewGrid="S"><args><arg id="GRUPO" type="text"></arg><arg id="PRODUTO" type="text"></arg></args><title><![CDATA[DETALHAMENTO DOS BENS PATRIMONIAIS (duplo clique na linha abre o lançamento da nota)]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+*
+FROM (
+        SELECT 
+                  BEM.CODEMP AS "CODEMP"
+                , PRO.CODGRUPOPROD AS "CODGRUPO"
+                , GRU.DESCRGRUPOPROD AS "DESCR_GRUPO"
+                , BEM.CODPROD AS "CODPROD"
+                , PRO.DESCRPROD AS "DESCR_PRODUTO"
+                , BEM.CODBEM AS "CODBEM"
+                , BEM.DESCRABREV
+                , BEM.DESCRBEM
+                , TO_CHAR(BEM.DTCOMPRA, 'DD/MM/YYYY') AS "DATA_AQUISICAO"
+                , TO_CHAR(BEM.DTCOMPRA, 'YYYY/MM') AS "REF_AQUISICAO"
+                , BEM.VLRAQUISICAO AS "VALOR_AQUISICAO"
+                , CASE WHEN TO_CHAR(BEM.DTCOMPRA, 'MM/YYYY') = TO_CHAR(:DAT1, 'MM/YYYY') THEN BEM.VLRAQUISICAO ELSE 0 END AS "AQUIS_MES"
+                , NVL(CASE WHEN BEM.TEMDEPRECIACAO = 'S' THEN BEM.VLRDEP END,0) AS "BASE_DEPRECIACAO"
+                , TO_CHAR(BEM.DTINICIODEP, 'DD/MM/YYYY') AS "DATA_INICIO_DEP"
+                , BEM.NUNOTA AS "NUNOTA_COMPRA"
+                , BEM.NUMNOTA AS "NOTA_COMPRA"
+                , NVL(LOC.CODDEPTO,0) AS "CODDEPTO"
+                , (SELECT DESCRDEP FROM TFPDEP WHERE CODDEP = NVL(LOC.CODDEPTO,0)) AS "DESCR_DEPTO"
+                , NVL(NVL(CASE WHEN /*BEM.DTBAIXA IS NOT NULL OR */ BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO THEN BEM.VLRDEP ELSE SAL.TOTALDEP END END, BEM.VLRSALDO), 0) AS "DEPRECIACAO_ACUMULADA" 
+                , NVL(CASE WHEN /* BEM.DTBAIXA IS NOT NULL OR */ BEM.TEMDEPRECIACAO = 'N' THEN 0 ELSE CASE WHEN BEM.VLRDEP = BEM.VLRSALDO  THEN 0 ELSE BEM.VLRDEP - NVL(SAL.TOTALDEP,BEM.VLRSALDO) END END, 0) AS "SALDO_A_DEPRECIAR"
+                , BEM.DTBAIXA AS DATA_BAIXA
+                , NVL(CASE WHEN BEM.TEMDEPRECIACAO = 'S' THEN DEPMES.TOTDEPMES ELSE 0 END,0) AS "DEPRECIACAO_MES"
+                , (SELECT MAX (TAX.TAXA) FROM TCITAX TAX WHERE TAX.CODPROD = PRO.CODPROD AND (TAX.CODBEM = BEM.CODBEM OR TAX.CODBEM = '<TODOS>')) AS TAXA 
+				, CTA.CODCTACTB AS CTACTBAQUIS
+				, CTA2.CODCTACTB AS CTACTBDEPR
+				, NVL(DECODE(BEM.TEMCREDPISCOFINSDEPR,'S','SIM-s/Deprec.',NULL),DECODE(BEM.TEMCREDPISCOFINSAQUI,'S','SIM-s/Aquis.',NULL)) AS CREDPC 
+				, CASE WHEN (BEM.TEMCREDPISCOFINSDEPR = 'N' AND BEM.TEMCREDPISCOFINSAQUI = 'N') THEN NULL ELSE BEM.CSTPIS ||' / '||BEM.CSTCOFINS END AS CSTPC	 
+				, CASE WHEN (BEM.TEMCREDPISCOFINSDEPR = 'N' AND BEM.TEMCREDPISCOFINSAQUI = 'N') THEN NULL ELSE BEM.ALIQPIS||' / '||BEM.ALIQCOFINS END AS ALIQPC
+                FROM 
+                TCIBEM BEM
+			    JOIN TSIEMP EMP ON BEM.CODEMP = EMP.CODEMP 
+                JOIN TGFPRO PRO ON BEM.CODPROD = PRO.CODPROD
+                JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+                LEFT JOIN (SELECT SAL.CODPROD,SAL.CODBEM, MAX (REFERENCIA) AS ULTREF FROM TCISAL SAL WHERE SAL.REFERENCIA <= SNK_TRUNC_DATE(:DAT1, 'MM') GROUP BY SAL.CODPROD, SAL.CODBEM) MAXSAL ON (MAXSAL.CODPROD = BEM.CODPROD AND MAXSAL.CODBEM = BEM.CODBEM)
+                LEFT JOIN TCISAL SAL ON (MAXSAL.CODPROD = SAL.CODPROD AND MAXSAL.CODBEM = SAL.CODBEM AND SAL.REFERENCIA = MAXSAL.ULTREF)
+                LEFT JOIN (SELECT LOC.CODBEM, LOC.CODPROD, MAX(LOC.DTENTRADA) AS ULTREF FROM TCILOC LOC WHERE LOC.DTENTRADA <= :DAT1 GROUP BY LOC.CODBEM, LOC.CODPROD) MAXDEP ON (MAXDEP.CODPROD = BEM.CODPROD AND MAXDEP.CODBEM = BEM.CODBEM)
+                LEFT JOIN TCILOC LOC ON (MAXDEP.CODPROD = LOC.CODPROD AND MAXDEP.CODBEM = LOC.CODBEM AND LOC.DTENTRADA = MAXDEP.ULTREF)
+                LEFT JOIN ( SELECT CODPROD, CODBEM, SUM (NVL(VLRDEP, 0)) AS TOTDEPMES FROM TCIMOV MOV WHERE MOV.TIPMOV = 'A' AND SNK_TRUNC_DATE(MOV.REFERENCIA, 'MM') = SNK_TRUNC_DATE(:DAT1, 'MM') GROUP BY CODPROD, CODBEM) DEPMES ON (DEPMES.CODPROD = BEM.CODPROD AND DEPMES.CODBEM = BEM.CODBEM) 
+			    LEFT JOIN TCICTA CTA ON BEM.CODPROD = CTA.CODPROD AND CTA.CODBEM = '<TODOS>' AND CTA.TIPO= '2'
+			    LEFT JOIN TCICTA CTA2 ON BEM.CODPROD = CTA2.CODPROD AND CTA2.CODBEM = '<TODOS>' AND CTA2.TIPO= 'E'
+                WHERE 
+                (SNK_TRUNC_DATE(BEM.DTBAIXA,'MM') > SNK_TRUNC_DATE(:DAT1, 'MM') OR 
+                 SNK_TRUNC_DATE(BEM.DTBAIXA, 'MM') IS NULL) AND 
+                 SNK_TRUNC_DATE(BEM.DTCOMPRA, 'MM') <= :DAT1 AND 
+                 BEM.CODBEM <> '<TODOS>' AND 
+                 EMP.CODEMP IN :EMPRESA AND
+                 (PRO.CODGRUPOPROD = :GRUPO OR :GRUPO = 0)        
+ )
+WHERE
+(CODPROD = :PRODUTO OR :PRODUTO = 0) AND 
+(REF_AQUISICAO LIKE :MESANO OR SUBSTR(REF_AQUISICAO, 1,4) LIKE :MESANO OR :MESANO IS NULL)
+ORDER BY 4 DESC, 9 DESC]]></expression><metadata><field name="CODEMP" label="EMPRESA" type="I" visible="true" useFooter="false"></field><field name="CODGRUPO" label="GRUPO" type="I" visible="true" useFooter="false"></field><field name="DESCR_GRUPO" label="DESCR. GRUPO" type="S" visible="true" useFooter="false"></field><field name="CODPROD" label="PROD." type="I" visible="true" useFooter="false"></field><field name="DESCR_PRODUTO" label="DESCR. PRODUTO" type="S" visible="true" useFooter="false"></field><field name="CODBEM" label="CÓD BEM SK" type="S" visible="true" useFooter="false"></field><field name="DESCRABREV" label="DESCR. BREVIADA" type="S" visible="true" useFooter="false"></field><field name="DESCRBEM" label="DESCR. COMPLETA" type="S" visible="true" useFooter="false"></field><field name="DATA_AQUISICAO" label="DT. AQUISIÇÃO" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"></field><field name="REF_AQUISICAO" label="ANO/MÊS" type="S" visible="true" useFooter="false"></field><field name="VALOR_AQUISICAO" label="VR AQUISIÇÃO" type="F" visible="true" useFooter="SUM" mask="#.##0,00"></field><field name="AQUIS_MES" label="AQUIS_MES" type="F" visible="false" useFooter="SUM" mask="#.##0,00"></field><field name="BASE_DEPRECIACAO" label="BASE DEPREC." type="F" visible="true" useFooter="SUM" mask="#.##0,00"></field><field name="DATA_INICIO_DEP" label="INÍCIO DEPREC." type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"></field><field name="NUNOTA_COMPRA" label="Nº UNICO" type="I" visible="true" useFooter="false"></field><field name="NOTA_COMPRA" label="Nº NOTA" type="I" visible="true" useFooter="false"></field><field name="CODDEPTO" label="DEPTO" type="I" visible="false" useFooter="false"></field><field name="DESCR_DEPTO" label="DESCR. DEPTO" type="S" visible="false" useFooter="false"></field><field name="DEPRECIACAO_ACUMULADA" label="VR DEPREC. ACUM." type="F" visible="true" useFooter="SUM" mask="#.##0,00"></field><field name="SALDO_A_DEPRECIAR" label="SALDO RESIDUAL" type="F" visible="true" useFooter="SUM" mask="#.##0,00"></field><field name="DATA_BAIXA" label="DATA BAIXA" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"></field><field name="DEPRECIACAO_MES" label="VR DEPREC. MES" type="F" visible="true" useFooter="SUM" mask="#.##0,00"></field><field name="TAXA" label="TAXA ANUAL" type="F" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="CTACTBAQUIS" label="CTB AQUIS." type="I" visible="true" useFooter="false"></field><field name="CTACTBDEPR" label="CTB DEPREC." type="I" visible="true" useFooter="false"></field><field name="CREDPC" label="CRED. PC" type="S" visible="true" useFooter="false"></field><field name="CSTPC" label="CST PC" type="S" visible="true" useFooter="false"></field><field name="ALIQPC" label="ALIQ. PC" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA_COMPRA</NUNOTA>
+          </on-click-launcher></grid></container></container></level></gadget>

@@ -1,0 +1,52 @@
+<gadget>
+  <level id="lvl_a6dty70" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="333">
+        <simple-value id="svl_a6dty71">
+          <title><![CDATA[<span style='font-size: 22px; font-family: Arial, Helvetica, sans-serif;'><div style='text-align: center;'><b>VENCIMENTO DE MANUTENÇÕES</b></div></span>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(TB2.CODIGO) AS QUINZEMAISFROM (SELECT TB.CODIGO,            (CASE WHEN B.TIPOTEMPO = 'D' THEN DTPREV+B.TEMPO WHEN B.TIPOTEMPO = 'M' THEN ADD_MONTHS(DTPREV,B.TEMPO) WHEN B.TIPOTEMPO = 'A' THEN ADD_MONTHS(DTPREV,B.TEMPO*12) END) AS DATA        FROM (SELECT BEM.CODBEM AS CODIGO, MAX(CTR.DTPREV) AS DTPREV FROM AD_ADCADBENS BEM INNER JOIN AD_PRVCTR CTR ON BEM.CODBEM = CTR.CODBEM GROUP BY BEM.CODBEM) TB            INNER JOIN AD_ADCADBENS B ON TB.CODIGO = B.CODBEM) TB2WHERE TB2.DATA - SYSDATE > 15]]></expression>
+          <metadata>
+            <field name="QUINZEMAIS" label="QUINZEMAIS" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <value-expression><![CDATA[Manutenções Vencendo em mais de  15 dias..: $QUINZEMAIS]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="V" tamanhoRelativo="113">
+        <simple-value id="svl_isq2ky">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(TB2.CODIGO) AS QUINZEFROM (SELECT TB.CODIGO,            (CASE WHEN B.TIPOTEMPO = 'D' THEN DTPREV+B.TEMPO WHEN B.TIPOTEMPO = 'M' THEN ADD_MONTHS(DTPREV,B.TEMPO) WHEN B.TIPOTEMPO = 'A' THEN ADD_MONTHS(DTPREV,B.TEMPO*12) END) AS DATA        FROM (SELECT BEM.CODBEM AS CODIGO, MAX(CTR.DTPREV) AS DTPREV FROM AD_ADCADBENS BEM INNER JOIN AD_PRVCTR CTR ON BEM.CODBEM = CTR.CODBEM GROUP BY BEM.CODBEM) TB            INNER JOIN AD_ADCADBENS B ON TB.CODIGO = B.CODBEM) TB2WHERE TB2.DATA - SYSDATE <= 15	AND TB2.DATA - SYSDATE > 10]]></expression>
+          <metadata>
+            <field name="QUINZE" label="QUINZE" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <value-expression><![CDATA[Manutenções Vencendo nos próximos 15 dias: $QUINZE]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="V" tamanhoRelativo="113">
+        <simple-value id="svl_isq2kz">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(TB2.CODIGO) AS DEZFROM (SELECT TB.CODIGO,            (CASE WHEN B.TIPOTEMPO = 'D' THEN DTPREV+B.TEMPO WHEN B.TIPOTEMPO = 'M' THEN ADD_MONTHS(DTPREV,B.TEMPO) WHEN B.TIPOTEMPO = 'A' THEN ADD_MONTHS(DTPREV,B.TEMPO*12) END) AS DATA        FROM (SELECT BEM.CODBEM AS CODIGO, MAX(CTR.DTPREV) AS DTPREV FROM AD_ADCADBENS BEM INNER JOIN AD_PRVCTR CTR ON BEM.CODBEM = CTR.CODBEM GROUP BY BEM.CODBEM) TB            INNER JOIN AD_ADCADBENS B ON TB.CODIGO = B.CODBEM) TB2WHERE TB2.DATA - SYSDATE <= 10	AND TB2.DATA - SYSDATE > 5]]></expression>
+          <metadata>
+            <field name="DEZ" label="DEZ" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <value-expression><![CDATA[Manutenções Vencendo nos próximos 10 dias: $DEZ]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="V" tamanhoRelativo="111">
+        <simple-value id="svl_isq2k0">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(TB2.CODIGO) AS CINCOFROM (SELECT TB.CODIGO,            (CASE WHEN B.TIPOTEMPO = 'D' THEN DTPREV+B.TEMPO WHEN B.TIPOTEMPO = 'M' THEN ADD_MONTHS(DTPREV,B.TEMPO) WHEN B.TIPOTEMPO = 'A' THEN ADD_MONTHS(DTPREV,B.TEMPO*12) END) AS DATA        FROM (SELECT BEM.CODBEM AS CODIGO, MAX(CTR.DTPREV) AS DTPREV FROM AD_ADCADBENS BEM INNER JOIN AD_PRVCTR CTR ON BEM.CODBEM = CTR.CODBEM GROUP BY BEM.CODBEM) TB            INNER JOIN AD_ADCADBENS B ON TB.CODIGO = B.CODBEM) TB2WHERE TB2.DATA - SYSDATE <= 5	AND TB2.DATA - SYSDATE > 0]]></expression>
+          <metadata>
+            <field name="CINCO" label="CINCO" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <value-expression><![CDATA[Manutenções Vencendo nos próximos 5 dias.: $CINCO]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="V" tamanhoRelativo="314">
+        <simple-value id="svl_isq2k1">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(TB2.CODIGO) AS VENCIDASFROM (SELECT TB.CODIGO,            (CASE WHEN B.TIPOTEMPO = 'D' THEN DTPREV+B.TEMPO WHEN B.TIPOTEMPO = 'M' THEN ADD_MONTHS(DTPREV,B.TEMPO) WHEN B.TIPOTEMPO = 'A' THEN ADD_MONTHS(DTPREV,B.TEMPO*12) END) AS DATA        FROM (SELECT BEM.CODBEM AS CODIGO, MAX(CTR.DTPREV) AS DTPREV FROM AD_ADCADBENS BEM INNER JOIN AD_PRVCTR CTR ON BEM.CODBEM = CTR.CODBEM GROUP BY BEM.CODBEM) TB            INNER JOIN AD_ADCADBENS B ON TB.CODIGO = B.CODBEM) TB2WHERE TB2.DATA - SYSDATE <= 0]]></expression>
+          <metadata>
+            <field name="VENCIDAS" label="VENCIDAS" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <value-expression><![CDATA[Manutenções Vencidas....................................: $VENCIDAS]]></value-expression>
+        </simple-value>
+      </container>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,109 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="0" label="P_CODEMP : Entidade/Tabela"/>
+    <parameter id="P_DTVENC" description="Período (Baixa - Vencimento)" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="1" label="P_DTVENC : Período"/>
+    <parameter id="P_RECDESP" description="Receitas e Despesas" metadata="singleList:Text" listType="text" required="true" keep-last="true" keep-date="false" order="2" label="P_RECDESP : singleList:Text">
+      <item value="1" label="Recebimentos"/>
+      <item value="-1" label="Pagamentos"/>
+    </parameter>
+    <parameter id="P_CODNAT" description="Natureza" metadata="multiList:Text" listType="sql" required="false" keep-last="true" keep-date="false" order="3">
+      <expression type="SQL"><![CDATA[SELECT N.CODNAT AS VALUE,	N.DESCRNAT AS LABELFROM TGFNAT NORDER BY N.DESCRNAT]]></expression>
+    </parameter>
+    <parameter id="P_DTCORTE" description="Data de Corte" metadata="date" required="false" keep-last="false" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_44smn2" description="Menu de Seleção">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="39">
+        <simple-value id="svl_44smn8">
+          <value-expression><![CDATA[<div class="titulo">Painel Financeiro</div><style>    .titulo {        width: 2500px;        height: 300px;        background-color: #f0f0f0; /* Cor de fundo suave */        color: #333333; /* Cor do texto mais discreta */        display: flex;        justify-content: center;        align-items: center;        font-size: 50px; /* Tamanho da fonte */        font-family: Verdana, Geneva, Tahoma, sans-serif; /* Fonte nativa e legível */        text-align: center;        border-bottom: 4px solid #4caf50; /* Linha sutil na parte inferior */        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra leve */    }</style>]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="H" tamanhoRelativo="61">
+        <container orientacao="V" tamanhoRelativo="50">
+          <simple-value id="svl_44smn7">
+            <value-expression><![CDATA[<div class="bloco"><h2>Operações Finalizadas</h2> <h3>(Contas Pagas e Contas Recebidas)</h3></div><style>    .bloco {        width: 1200px;        height: 450px;        background-color: #e5ffe3; /* Cor de fundo suave */        color: #333333; /* Cor do texto mais discreta */        display: flex;        flex-direction: column;        justify-content: center; /* Centraliza horizontalmente */        align-items: center; /* Centraliza verticalmente */        font-size: 40px; /* Tamanho da fonte ajustado */        font-family: Verdana, Geneva, Tahoma, sans-serif; /* Fonte nativa e legível */        text-align: center; /* Centraliza o texto */        border-bottom: 4px solid #4caf50; /* Linha sutil na parte inferior */        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra leve */    }    .bloco h2 {        margin: 0;        font-size: 50px; /* Ajuste no tamanho do título principal */    }    .bloco h3 {        margin: 10px 0 0 0;        font-size: 25px; /* Ajuste no subtítulo */        color: #555555; /* Subtítulo mais discreto */    }</style>]]></value-expression>
+            <on-click navigate-to="lvl_44smnw"/>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <simple-value id="svl_44smn9">
+            <value-expression><![CDATA[<div class="bloco2"><h2>Operações Não Finalizadas</h2> <h3>(Contas à Pagar e Contas à Receber)</h3></div><style>    .bloco2 {        width: 1200px;        height: 450px;        background-color: #f9d6d3; /* Cor de fundo mais suave */        color: #333333; /* Cor do texto mais discreta */        display: flex;        flex-direction: column;        justify-content: center; /* Centraliza horizontalmente */        align-items: center; /* Centraliza verticalmente */        font-size: 40px; /* Tamanho da fonte ajustado */        font-family: Verdana, Geneva, Tahoma, sans-serif; /* Fonte nativa e legível */        text-align: center; /* Centraliza o texto */        border-bottom: 4px solid #f38b83; /* Linha sutil na parte inferior */        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra leve */    }    .bloco2 h2 {        margin: 0;        font-size: 50px; /* Ajuste no tamanho do título principal */    }    .bloco2 h3 {        margin: 10px 0 0 0;        font-size: 25px; /* Ajuste no subtítulo */        color: #555555; /* Subtítulo mais discreto */    }</style>]]></value-expression>
+            <on-click navigate-to="lvl_44smin"/>
+          </simple-value>
+        </container>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_44smnw" description="Operações Concluídas">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_44smnx" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Operações Concluídas]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	FIN.NUFIN,	FIN.NUNOTA,	FIN.NUMNOTA,	FIN.DTNEG,	FIN.DESDOBRAMENTO,	FIN.CODTIPTIT,	TIT.DESCRTIPTIT,	FIN.DTVENC,	FIN.DHBAIXA,	FIN.CODPARC,	PAR.RAZAOSOCIAL,	FIN.VLRDESDOB,	FIN.VLRJURO,	FIN.VLRDESC,	V.DESPCART,	(SELECT C.CODCTABCO FROM TSICTA C WHERE C.CODCTABCOINT = FIN.CODCTABCOINT) AS CODCTABCOINT,	V.CARTAODESC,	V.VLRLIQUIDO,	FIN.CODNAT,	V.VLRMULTA,	(SELECT M.DHCONCILIACAO FROM TGFMBC M WHERE M.NUBCO = FIN.NUBCO) AS DHCONCIL,	FIN.VLRVARCAMBIAL,	(SELECT DISTINCT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = FIN.CODNAT) AS NATUREZA,    (SELECT MAX(T.DESCROPER) FROM TGFTOP T WHERE T.CODTIPOPER = FIN.CODTIPOPER) AS DESCROPER,    FIN.VLRMOEDABAIXA,	FIN.VLRBAIXAFROM TGFFIN FIN	INNER JOIN TGFPAR PAR 		ON FIN.CODPARC = PAR.CODPARC	INNER JOIN VGFFIN V 		ON FIN.NUFIN = V.NUFIN	INNER JOIN TGFTIT TIT 		ON FIN.CODTIPTIT = TIT.CODTIPTIT		INNER JOIN TGFMBC MBC 		ON MBC.NUBCO = FIN.NUBCOWHERE FIN.RECDESP = :P_RECDESP	AND FIN.DHBAIXA IS NOT NULL	AND FIN.PROVISAO = 'N'	AND MBC.DHCONCILIACAO >= :P_DTVENC.INI	AND MBC.DHCONCILIACAO <= :P_DTVENC.FIN	AND (:P_CODEMP IS NULL OR FIN.CODEMP = :P_CODEMP)	AND (FIN.CODNAT IS NULL OR FIN.CODNAT IN :P_CODNAT)ORDER BY FIN.DTVENC]]></expression>
+        <metadata>
+          <field name="NUFIN" label="Nr. Financeiro" type="I" visible="true" useFooter="false"/>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="DESDOBRAMENTO" label="Parcela" type="S" visible="true" useFooter="false"/>
+          <field name="CODTIPTIT" label="Cod. Tip. Título" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRTIPTIT" label="Tipo de Título" type="S" visible="true" useFooter="false"/>
+          <field name="DTVENC" label="Dt. Vencimento" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRJURO" label="Vlr. Juros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRDESC" label="Vlr. Desconto" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DESPCART" label="Vlr. Desp. Cartório" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="CODCTABCOINT" label="Conta da Baixa" type="I" visible="true" useFooter="false"/>
+          <field name="CARTAODESC" label="Vlr. Cartão" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRLIQUIDO" label="Vlr. Líquido" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="CODNAT" label="Cód. Nat." type="I" visible="true" useFooter="false"/>
+          <field name="VLRMULTA" label="Vlr. Multa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DHCONCIL" label="Dt. Conciliação" type="D" visible="true" useFooter="false"/>
+          <field name="VLRVARCAMBIAL" label="Variação Cambial" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="NATUREZA" label="Natureza" type="S" visible="true" useFooter="false"/>
+          <field name="DESCROPER" label="DESCROPER" type="S" visible="true" useFooter="false"/>
+          <field name="VLRMOEDABAIXA" label="VLRMOEDABAIXA" type="F" visible="true" useFooter="false"/>
+          <field name="VLRBAIXA" label="Vlr. Baixa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+  <level id="lvl_44smin" description="Operações Não Concluídas">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_44smio" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Relação de Operações]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT FIN.NUFIN,	FIN.NUNOTA,	FIN.NUMNOTA,	FIN.DTNEG,	FIN.DESDOBRAMENTO,	FIN.CODTIPTIT,	TIT.DESCRTIPTIT,	FIN.DTVENC,	FIN.DHBAIXA,	FIN.CODPARC,	PAR.RAZAOSOCIAL,	FIN.VLRDESDOB,	FIN.VLRJURO,    (SELECT M.DHCONCILIACAO FROM TGFMBC M WHERE M.NUBCO = FIN.NUBCO) AS DHCONCIL,	FIN.VLRDESC,	V.DESPCART,	V.CARTAODESC,	V.VLRLIQUIDO,	FIN.CODNAT,	FIN.VLRMULTA,	FIN.VLRVARCAMBIAL,	(SELECT DISTINCT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = FIN.CODNAT) AS NATUREZA,	FIN.VLRBAIXAFROM TGFFIN FIN	INNER JOIN TGFPAR PAR 		ON FIN.CODPARC = PAR.CODPARC	INNER JOIN VGFFIN V 		ON FIN.NUFIN = V.NUFIN	INNER JOIN TGFTIT TIT 		ON FIN.CODTIPTIT = TIT.CODTIPTIT		WHERE FIN.RECDESP = :P_RECDESP	AND FIN.PROVISAO = 'N'	AND NVL(FIN.DTENTSAI, FIN.DTNEG) <= :P_DTCORTE    AND (FIN.DHBAIXA IS NULL OR FIN.DHBAIXA > :P_DTCORTE) 	AND (:P_CODEMP IS NULL 			OR FIN.CODEMP = :P_CODEMP		)	AND FIN.CODNAT IN :P_CODNATORDER BY FIN.DTVENC]]></expression>
+        <metadata>
+          <field name="NUFIN" label="Nr. Financeiro" type="I" visible="true" useFooter="false"/>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="DESDOBRAMENTO" label="Parcela" type="S" visible="true" useFooter="false"/>
+          <field name="CODTIPTIT" label="Cód. Tip. Título" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRTIPTIT" label="Tipo de Título" type="S" visible="true" useFooter="false"/>
+          <field name="DTVENC" label="Dt. Vencimento" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="DHBAIXA" label="Dt. Baixa" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRJURO" label="Vlr. Juros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DHCONCIL" label="Dt. Conciliação" type="D" visible="true" useFooter="false"/>
+          <field name="VLRDESC" label="Vlr. Desconto" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DESPCART" label="Vlr. Desp. Cartório" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="CARTAODESC" label="Vlr. Cartão" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRLIQUIDO" label="Vlr. Líquido" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="CODNAT" label="Cód. Nat." type="I" visible="true" useFooter="false"/>
+          <field name="VLRMULTA" label="Vlr. Multa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="VLRVARCAMBIAL" label="Variação Cambial" type="F" visible="true" useFooter="false"/>
+          <field name="NATUREZA" label="Natureza" type="S" visible="true" useFooter="false"/>
+          <field name="VLRBAIXA" label="Vlr. Baixa" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

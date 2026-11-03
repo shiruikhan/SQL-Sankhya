@@ -1,0 +1,24 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_8ia3ij" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_8ia3ik" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT     F.NUNOTA,    C.TIPMOV,    P.RAZAOSOCIAL,    C.CODNAT AS CODNAT_CAB,    NC.DESCRNAT AS DESCRNAT_CAB,    F.CODNAT AS CODNAT_FIN,    NF.DESCRNAT AS DESCRNAT_FINFROM     TGFCAB C    INNER JOIN TGFPAR P ON C.CODPARC = P.CODPARC    INNER JOIN TGFFIN F ON F.NUNOTA = C.NUNOTA AND C.CODEMP = F.CODEMP    LEFT JOIN TGFNAT NC ON NC.CODNAT = C.CODNAT    LEFT JOIN TGFNAT NF ON NF.CODNAT = F.CODNATWHERE     F.CODTIPTIT NOT IN (34, 35, 36, 15)    AND F.CODTIPOPER NOT IN (1300)    AND F.CODNAT <> C.CODNAT    AND C.DTNEG >= :P_PERIODO.INI     AND C.DTNEG <= :P_PERIODO.FIN]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="TIPMOV" label="TipMov" type="S" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="CODNAT_CAB" label="Natureza CAB" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRNAT_CAB" label="Natureza CAB" type="S" visible="true" useFooter="false"/>
+          <field name="CODNAT_FIN" label="Natureza FIN" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRNAT_FIN" label="Natureza FIN" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

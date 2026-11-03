@@ -1,0 +1,144 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODTIPOPER" description="TOP" metadata="multiList:Text" listType="sql" required="false" keep-last="true" keep-date="false" order="0">
+      <expression type="SQL"><![CDATA[SELECT DISTINCT C.CODTIPOPER AS VALUE,	C.CODTIPOPER || '-' || T.DESCROPER AS LABEL FROM TGFCAB C 	INNER JOIN TGFTOP T ON (C.CODTIPOPER = T.CODTIPOPER AND C.DHTIPOPER = T.DHALTER) WHERE C.TIPMOV = 'J'ORDER BY C.CODTIPOPER]]></expression>
+    </parameter>
+    <parameter id="P_DETALHE" description="Detalhado" metadata="boolean" required="false" keep-last="true" keep-date="false" default="true" order="2"/>
+    <parameter id="P_MES" description="Mês" metadata="singleList:Text" listType="text" required="true" keep-last="true" keep-date="false" order="3">
+      <item value="01" label="JAN"/>
+      <item value="02" label="FEV"/>
+      <item value="03" label="MAR"/>
+      <item value="04" label="ABR"/>
+      <item value="05" label="MAI"/>
+      <item value="06" label="JUN"/>
+      <item value="07" label="JUL"/>
+      <item value="08" label="AGO"/>
+      <item value="09" label="SET"/>
+      <item value="10" label="OUT"/>
+      <item value="11" label="NOV"/>
+      <item value="12" label="DEZ"/>
+    </parameter>
+    <parameter id="P_ANO" description="Ano" metadata="integer" required="true" keep-last="true" keep-date="false" range-end="2030" range-ini="2021" limit-char="4" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_af1jad9" description="Principal">
+    <args>
+      <arg id="A_DIA" type="integer"/>
+      <arg id="A_CODUSU" type="integer"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="128">
+            <simple-value id="svl_af1jag1">
+              <value-expression><![CDATA[<div style='text-align: center;'><h1 style="  font-family: 'Segoe UI', Roboto, system-ui, -apple-system, 'Helvetica Neue', Arial;  font-size: 1.9rem;  letter-spacing: 0.6px;  background: linear-gradient(90deg,#4b6cb7,#182848);  -webkit-background-clip: text;  background-clip: text;  color: transparent;  text-shadow: 0 6px 18px rgba(24,40,72,0.12);  margin: 0.6rem 0;">  Totalizador de Requisições / Itens</h1></div>]]></value-expression>
+            </simple-value>
+          </container>
+          <container orientacao="V" tamanhoRelativo="583">
+            <chart id="cht_af1jafs" type="column" nroColuna="6">
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT (CASE WHEN :P_DETALHE = 'S' THEN SUM(V.QTDNEG) ELSE COUNT(V.NUNOTA) END) AS VALUE,    V.DIA AS LABELFROM (    SELECT C.NUNOTA,        SUM(I.QTDNEG) AS QTDNEG,        C.CODTIPOPER || ' - ' || T.DESCROPER AS DESCROPER,        EXTRACT(MONTH FROM C.DTNEG) AS MES,        EXTRACT(YEAR FROM C.DTNEG) AS ANO,        EXTRACT(DAY FROM C.DTNEG) AS DIA,        C.DTNEG AS DATA_NEGOCIACAO    FROM TGFCAB C        INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)        INNER JOIN TGFTOP T ON (C.CODTIPOPER = T.CODTIPOPER AND C.DHTIPOPER = T.DHALTER)    WHERE         EXTRACT(MONTH FROM C.DTNEG) = :P_MES        AND EXTRACT(YEAR FROM C.DTNEG) = :P_ANO        AND C.TIPMOV = 'J'        AND C.STATUSNOTA = 'L'        AND C.CODTIPOPER IN :P_CODTIPOPER    GROUP BY C.NUNOTA,        C.CODTIPOPER,        T.DESCROPER,        C.DTNEG) VWHERE (:P_MES IS NULL OR V.MES = :P_MES)    AND (:P_ANO IS NULL OR V.ANO = :P_ANO)GROUP BY V.DIAORDER BY V.DIA]]></expression>
+              <metadata>
+                <field name="VALUE" label="VALUE" type="F" visible="true" useFooter="false"/>
+                <field name="LABEL" label="LABEL" type="I" visible="true" useFooter="false"/>
+              </metadata>
+              <horizontal-axis>
+                <category field="LABEL" rotation="-90" dropLabel="false">
+                  <initView value="disabled"/>
+                </category>
+              </horizontal-axis>
+              <vertical-axis>
+                <linear resultRotation="0" vResizing="true">
+                  <mask>###0,00</mask>
+                </linear>
+              </vertical-axis>
+              <series>
+                <serie type="column">
+                  <xField>$LABEL</xField>
+                  <yField>$VALUE</yField>
+                  <color>0x999999</color>
+                  <refresh-details ui-list="grd_af1jah1">
+                    <param id="A_DIA">$LABEL</param>
+                  </refresh-details>
+                </serie>
+              </series>
+            </chart>
+          </container>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="100">
+            <simple-value id="svl_af1jahg">
+              <value-expression><![CDATA[<div style='text-align: center;'><h1 style="  font-family: 'Segoe UI', Roboto, system-ui, -apple-system, 'Helvetica Neue', Arial;  font-size: 1.9rem;  letter-spacing: 0.6px;  background: linear-gradient(90deg,#4b6cb7,#182848);  -webkit-background-clip: text;  background-clip: text;  color: transparent;  text-shadow: 0 6px 18px rgba(24,40,72,0.12);  margin: 0.6rem 0;">  Totalizador de Requisições por Usuário</h1></div>]]></value-expression>
+            </simple-value>
+          </container>
+          <container orientacao="V" tamanhoRelativo="562">
+            <chart id="cht_af1jahk" type="pizza">
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT (CASE WHEN :P_DETALHE = 'S' THEN SUM(V.QTDNEG) ELSE COUNT(V.NUNOTA) END) AS VALUE,    V.USUARIO AS LABEL,    V.CODUSUINC AS CODUSUINCFROM (    SELECT C.NUNOTA,        SUM(I.QTDNEG) AS QTDNEG,        C.CODTIPOPER || ' - ' || T.DESCROPER AS DESCROPER,        EXTRACT(MONTH FROM C.DTNEG) AS MES,        EXTRACT(YEAR FROM C.DTNEG) AS ANO,        EXTRACT(DAY FROM C.DTNEG) AS DIA,        C.DTNEG AS DATA_NEGOCIACAO,        U.NOMEUSU AS USUARIO,        C.CODUSUINC AS CODUSUINC    FROM TGFCAB C        INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)        INNER JOIN TGFTOP T ON (C.CODTIPOPER = T.CODTIPOPER AND C.DHTIPOPER = T.DHALTER)        INNER JOIN TSIUSU U ON (C.CODUSUINC = U.CODUSU)    WHERE         EXTRACT(MONTH FROM C.DTNEG) = :P_MES        AND EXTRACT(YEAR FROM C.DTNEG) = :P_ANO        AND C.TIPMOV = 'J'        AND C.STATUSNOTA = 'L'        AND C.CODTIPOPER IN :P_CODTIPOPER    GROUP BY C.NUNOTA,        C.CODTIPOPER,        T.DESCROPER,        C.DTNEG,        U.NOMEUSU,        C.CODUSUINC    ) VWHERE (:P_MES IS NULL OR V.MES = :P_MES)    AND (:P_ANO IS NULL OR V.ANO = :P_ANO)GROUP BY V.USUARIO,    V.CODUSUINCORDER BY V.USUARIO]]></expression>
+              <metadata>
+                <field name="VALUE" label="VALUE" type="F" visible="true" useFooter="false"/>
+                <field name="LABEL" label="LABEL" type="S" visible="true" useFooter="false"/>
+                <field name="CODUSUINC" label="CODUSUINC" type="I" visible="true" useFooter="false"/>
+              </metadata>
+              <series>
+                <serie type="pizza">
+                  <field>VALUE</field>
+                  <nameField>LABEL</nameField>
+                  <refresh-details ui-list="grd_af1jaiu">
+                    <param id="A_CODUSU">$CODUSUINC</param>
+                  </refresh-details>
+                </serie>
+              </series>
+            </chart>
+          </container>
+        </container>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="100">
+            <simple-value id="svl_af1jaht">
+              <value-expression><![CDATA[<div style='text-align: center;'><h1 style="  font-family: 'Segoe UI', Roboto, system-ui, -apple-system, 'Helvetica Neue', Arial;  font-size: 1.9rem;  letter-spacing: 0.6px;  background: linear-gradient(90deg,#4b6cb7,#182848);  -webkit-background-clip: text;  background-clip: text;  color: transparent;  text-shadow: 0 6px 18px rgba(24,40,72,0.12);  margin: 0.6rem 0;">  Resumo do dia</h1></div>]]></value-expression>
+            </simple-value>
+          </container>
+          <container orientacao="V" tamanhoRelativo="453">
+            <grid id="grd_af1jah1" multiplaSelecao="S" useNewGrid="S">
+              <args>
+                <arg id="A_DIA" type="integer"/>
+              </args>
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT C.NUNOTA,    SUM(I.QTDNEG) AS QTDNEG,    C.CODTIPOPER || ' - ' || T.DESCROPER AS DESCROPER,    C.DTNEG AS DATA_NEGOCIACAO,    U.NOMEUSU AS USUARIOFROM TGFCAB C    INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)    INNER JOIN TGFTOP T ON (C.CODTIPOPER = T.CODTIPOPER AND C.DHTIPOPER = T.DHALTER)    INNER JOIN TSIUSU U ON (C.CODUSUINC = U.CODUSU)WHERE     EXTRACT(MONTH FROM C.DTNEG) = :P_MES    AND EXTRACT(YEAR FROM C.DTNEG) = :P_ANO    AND EXTRACT(DAY FROM C.DTNEG) = :A_DIA    AND C.TIPMOV = 'J'    AND C.STATUSNOTA = 'L'    AND C.CODTIPOPER IN :P_CODTIPOPERGROUP BY C.NUNOTA,    C.CODTIPOPER,    T.DESCROPER,    C.DTNEG,    U.NOMEUSUORDER BY C.NUNOTA]]></expression>
+              <metadata>
+                <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+                <field name="QTDNEG" label="Qtd. Negociada" type="I" visible="true" useFooter="false"/>
+                <field name="DESCROPER" label="TOP" type="S" visible="true" useFooter="false"/>
+                <field name="DATA_NEGOCIACAO" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+                <field name="USUARIO" label="Solicitante" type="S" visible="true" useFooter="false"/>
+              </metadata>
+              <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+                <NUNOTA>$NUNOTA</NUNOTA>
+              </on-click-launcher>
+            </grid>
+          </container>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="100">
+            <simple-value id="svl_af1jahu"/>
+          </container>
+          <container orientacao="V" tamanhoRelativo="547">
+            <grid id="grd_af1jaiu" multiplaSelecao="S" useNewGrid="S">
+              <args>
+                <arg id="A_CODUSU" type="integer"/>
+              </args>
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT C.NUNOTA,    SUM(I.QTDNEG) AS QTDNEG,    C.CODTIPOPER || ' - ' || T.DESCROPER AS DESCROPER,    C.DTNEG AS DATA_NEGOCIACAOFROM TGFCAB C    INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)    INNER JOIN TGFTOP T ON (C.CODTIPOPER = T.CODTIPOPER AND C.DHTIPOPER = T.DHALTER)    INNER JOIN TSIUSU U ON (C.CODUSUINC = U.CODUSU)WHERE     EXTRACT(MONTH FROM C.DTNEG) = :P_MES    AND EXTRACT(YEAR FROM C.DTNEG) = :P_ANO    AND C.CODUSUINC = :A_CODUSU    AND C.TIPMOV = 'J'    AND C.STATUSNOTA = 'L'    AND C.CODTIPOPER IN :P_CODTIPOPERGROUP BY C.NUNOTA,    C.CODTIPOPER,    T.DESCROPER,    C.DTNEGORDER BY C.DTNEG]]></expression>
+              <metadata>
+                <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+                <field name="QTDNEG" label="Qtd. Negociada" type="I" visible="true" useFooter="false"/>
+                <field name="DESCROPER" label="TOP" type="S" visible="true" useFooter="false"/>
+                <field name="DATA_NEGOCIACAO" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+              </metadata>
+              <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+                <NUNOTA>$NUNOTA</NUNOTA>
+              </on-click-launcher>
+            </grid>
+          </container>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

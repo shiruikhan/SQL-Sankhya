@@ -1,0 +1,214 @@
+<gadget ><prompt-parameters><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="P_PERIODO : Período"/></prompt-parameters><local-vars><var  id="V_PERCPROP" label="V_PERCPROP"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT TRUNC(AD_TGFPIM.ICMS / 100,6)FROM AD_TGFPIM WHERE AD_TGFPIM.ANO = (EXTRACT (YEAR FROM :P_PERIODO.FIN)) AND AD_TGFPIM.MES = (EXTRACT (MONTH FROM :P_PERIODO.FIN))]]></expression></var><var  id="V_PERCPROPTEXT" label="V_PERCPROPTEXT"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT TRUNC(AD_TGFPIM.ICMS,4) || ' % 'FROM AD_TGFPIM WHERE AD_TGFPIM.ANO = (EXTRACT (YEAR FROM :P_PERIODO.FIN)) AND AD_TGFPIM.MES = (EXTRACT (MONTH FROM :P_PERIODO.FIN))]]></expression></var></local-vars><level id="lvl_unrm7u" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="56.51225915543097"><container orientacao="V" tamanhoRelativo="16.71794439527402"><grid id="grd_at7tm5v" entityName="AD_TGSESTRET" multiplaSelecao="N" useNewGrid="S"><title><![CDATA[Cálculo de Proporcionalidade de Estorno de ICMS]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT         * FROM DUAL]]></expression><metadata><field name="DUMMY" label="DUMMY" type="S" visible="false" useFooter="false"></field></metadata></grid></container><container orientacao="V" tamanhoRelativo="84.29215661482698"><simple-value id="svl_at7tm5f"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+
+	SUM(T.BASEICMS) AS BASEICMS,
+	SUM(T.VLRNOTA)  AS VLRNOTA
+
+FROM (
+/*** 1 - PEGO O ICMS DE TODAS AS SAIDAS ***/
+SELECT
+        0 AS VLRNOTA
+       ,SUM(CASE WHEN DIN.CODIMP = 1 THEN DIN.BASERED ELSE 0 END) AS BASEICMS
+	   
+    FROM TGFCAB CAB 
+		INNER JOIN TGFITE ITE 
+			ON ITE.NUNOTA = CAB.NUNOTA 
+			
+		INNER JOIN TGFDIN DIN 
+			ON DIN.NUNOTA = ITE.NUNOTA 
+			  AND DIN.SEQUENCIA = ITE.SEQUENCIA 
+			  
+		INNER JOIN TGFPRO PRO 
+			ON PRO.CODPROD = ITE.CODPROD 
+
+        INNER JOIN TGFLIV LIV 
+            ON LIV.NUNOTA = ITE.NUNOTA 
+             AND LIV.SEQUENCIA = ITE.SEQUENCIA
+			  
+    WHERE CAB.DTNEG >= :P_PERIODO.INI
+      AND CAB.DTNEG <= :P_PERIODO.FIN
+      AND CAB.CODEMP = 1
+      AND CAB.STATUSNOTA = 'L'
+      AND CAB.STATUSNFE = 'A'
+      AND PRO.NCM NOT IN (90303390,85371090,85312000) 
+      AND LIV.CODCFO IN (5101,5116,5151,5401,5910,6101,6107,6116,6118,6401,6910,5927)
+	 
+UNION ALL 
+/*** 2 - PEGO AS SAIDAS QUE TEM MANUTENCAO DE CREDITO DE ICMS ***/
+SELECT
+        CAB.VLRNOTA AS VLRNOTA
+       ,0 AS BASEICMS
+	   
+    FROM TGFCAB CAB 
+			  
+    WHERE CAB.DTNEG >=  :P_PERIODO.INI
+      AND CAB.DTNEG <=  :P_PERIODO.FIN
+      AND CAB.CODEMP = 1
+      AND CAB.STATUSNFE = 'A' 
+      AND CAB.STATUSNOTA = 'L'
+      AND CAB.TIPMOV = 'V'
+      AND EXISTS (SELECT 1 
+					FROM TGFITE ITE 
+				  WHERE ITE.CODCFO IN (7101,6109,7949)
+                   AND ITE.NUNOTA = CAB.NUNOTA
+                 ) 
+
+UNION ALL 
+/*** 3 - PEGO AS SAIDAS DE PRODUTOS NÃO BENEFICIADOS ***/					
+	SELECT
+        SUM(CASE WHEN DIN.CODIMP = 1 THEN DIN.BASERED ELSE 0 END) AS VLRNOTA
+       ,0 AS BASEICMS
+	   
+    FROM TGFCAB CAB 
+		INNER JOIN TGFITE ITE 
+			ON ITE.NUNOTA = CAB.NUNOTA 
+			
+		INNER JOIN TGFDIN DIN 
+			ON DIN.NUNOTA = ITE.NUNOTA 
+			  AND DIN.SEQUENCIA = ITE.SEQUENCIA 
+		
+		INNER JOIN TGFPRO PRO 
+			ON PRO.CODPROD = ITE.CODPROD
+			
+    WHERE CAB.DTNEG >= :P_PERIODO.INI
+      AND CAB.DTNEG <= :P_PERIODO.FIN
+      AND CAB.CODEMP = 1
+      AND CAB.STATUSNFE = 'A' 
+      AND CAB.STATUSNOTA = 'L'
+	  AND PRO.NCM IN (90303390,85371090,85312000) 
+      AND ITE.CODCFO IN (5101,5116,5151,5401,5910,6101,6107,6116,6118,6401,6910,6949,5927)  
+) T]]></expression><metadata><field name="BASEICMS" label="BASEICMS" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="VLRNOTA" label="VLRNOTA" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="TOTAL" label="Total" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"><calculated><formula><![CDATA[$BASEICMS +$VLRNOTA]]></formula></calculated></field><field name="PROPORCAO" label="Proporcionalidade" type="F" visible="true" useFooter="false" mask="#.##0,000000 %"><calculated><formula><![CDATA[($BASEICMS / ($BASEICMS + $VLRNOTA))]]></formula></calculated></field></metadata><value-expression ><![CDATA[<div style="width: 2500px; height: 450px; padding: 20px; border: 1px solid #ccc; border-radius: 15px; box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1); background-color: #fdfdfd; display: flex; justify-content: space-between; align-items: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">        <!-- Seção A -->    <div style="text-align: center; flex: 1; padding: 15px;">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">A - Saídas Benefeciadas</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$BASEICMS</p>        <p style="font-size: 18px; color: #888; margin-top: 5px;">(CFOPs: 5101, 5116, 5151, 5401, 5910, 6101, 6107, 6116, 6118, 6401, 6910,5927)</p>    </div>        <!-- Separador -->    <div style="border-left: 2px solid #ddd; height: 80%;"></div>        <!-- Seção B -->    <div style="text-align: center; flex: 1; padding: 15px;">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">B - Saidas não beneficiadas</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$VLRNOTA</p>        <p style="font-size: 18px; color: #888; margin-top: 5px;">(CFOPs: 7101, 6109, 7949 e Central conect) </p>    </div>        <!-- Separador -->    <div style="border-left: 2px solid #ddd; height: 80%;"></div>        <!-- Seção C -->    <div style="text-align: center; flex: 1; padding: 15px;">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">C - BC Total de saídas (A + B)</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$TOTAL</p>    </div>        <!-- Separador -->    <div style="border-left: 2px solid #ddd; height: 80%;"></div>        <!-- Seção Proporção -->    <div style="text-align: center; flex: 1; padding: 15px;">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">Proporcionalidade (A / C)</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$PROPORCAO</p>    </div></div>]]></value-expression></simple-value></container></container><container orientacao="V" tamanhoRelativo="44.49784185467004"><simple-value id="svl_4ybs4f"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(T.VLRICMS) AS VLRICMS,
+	      SUM(T.VLRICMS) * :V_PERCPROP AS ESTORNO
+	   
+FROM (
+/*** 1 - PEGO O ICMS DA ENTRADA DAS NOTAS FISCAIS NORMAL ***/
+
+	SELECT SUM(LIV.VLRICMS) AS VLRICMS
+	FROM TGFCAB CAB
+	
+	 INNER JOIN TGFITE ITE 
+		ON CAB.NUNOTA = ITE.NUNOTA
+		
+	 INNER JOIN TGFLIV LIV
+		ON LIV.NUNOTA = ITE.NUNOTA 
+		 AND LIV.SEQUENCIA = ITE.SEQUENCIA 
+	
+	WHERE   CAB.STATUSNOTA = 'L'
+		AND LIV.DHMOV >= :P_PERIODO.INI
+		AND LIV.DHMOV <= :P_PERIODO.FIN
+		AND CAB.CODEMP = 1
+		AND LIV.ENTSAI = 'E'
+		AND LIV.BASEICMS > 0
+		AND CAB.CODTIPOPER NOT IN (1221,1204)
+		
+UNION ALL 
+
+/*** 2 - PEGA O ICMS DO SIMPLES NACIONAL ***/
+
+	SELECT SUM(AJD.VLRICMS) AS VLRICMS
+	FROM TGFCAB CAB
+	
+	 INNER JOIN TGFITE ITE 
+		ON CAB.NUNOTA = ITE.NUNOTA
+		
+	 INNER JOIN TGFLIV LIV
+		ON LIV.NUNOTA = ITE.NUNOTA 
+		 AND LIV.SEQUENCIA = ITE.SEQUENCIA 
+		 
+	 INNER JOIN TGFAJD AJD 
+	    ON AJD.NUNOTA = ITE.NUNOTA 
+		  AND AJD.SEQUENCIA = ITE.SEQUENCIA
+
+	
+	WHERE   CAB.STATUSNOTA = 'L'
+		AND LIV.DHMOV >= :P_PERIODO.INI
+		AND LIV.DHMOV <= :P_PERIODO.FIN
+		AND CAB.CODEMP = 1
+		AND LIV.ENTSAI = 'E'
+		AND AJD.CODAJUSTE = 10990505
+UNION ALL 
+
+/*** 3 - PEGO A DEVOLUCAO DE VENDA EXCETO NCM FORA DO REGIME ***/
+
+	SELECT SUM(LIV.VLRICMS)*-1 AS VLRICMS
+	FROM TGFCAB CAB
+	
+	 INNER JOIN TGFITE ITE 
+		ON CAB.NUNOTA = ITE.NUNOTA
+		
+	 INNER JOIN TGFLIV LIV
+		ON LIV.NUNOTA = ITE.NUNOTA 
+		 AND LIV.SEQUENCIA = ITE.SEQUENCIA
+		 
+	 INNER JOIN TGFPRO PRO 
+		ON PRO.CODPROD = ITE.CODPROD
+	
+     INNER JOIN TGFTOP TOP	
+        ON TOP.CODTIPOPER = CAB.CODTIPOPER  
+          AND TOP.DHALTER = CAB.DHTIPOPER		
+	
+	WHERE   CAB.STATUSNOTA = 'L'
+		AND LIV.DHMOV >= :P_PERIODO.INI
+		AND LIV.DHMOV <= :P_PERIODO.FIN
+		AND CAB.CODEMP = 1
+		AND LIV.ENTSAI = 'E'
+		AND (LIV.CODCFO IN (1201,2201,2410,1410,1208)OR TOP.CODTIPOPER = 1206)
+		AND LIV.BASEICMS > 0
+		AND PRO.NCM NOT IN (90303390, 85371090,85312000)
+		
+UNION ALL 
+/*** 4 - PEGO A DEVOLUCAO DENTRO DO PERIODO ***/
+
+	SELECT SUM(CASE WHEN LIV.VLRICMS > 0 THEN LIV.VLRICMS ELSE ITE.AD_VLRICMSSP END )*-1 AS VLRICMS
+	FROM TGFCAB CAB
+	
+	 INNER JOIN TGFITE ITE 
+		ON CAB.NUNOTA = ITE.NUNOTA
+		
+	 INNER JOIN TGFLIV LIV
+		ON LIV.NUNOTA = ITE.NUNOTA 
+		 AND LIV.SEQUENCIA = ITE.SEQUENCIA
+		 
+	 INNER JOIN TGFPRO PRO 
+		ON PRO.CODPROD = ITE.CODPROD
+		
+	
+	WHERE   CAB.STATUSNOTA = 'L'
+		AND LIV.DHMOV >= :P_PERIODO.INI
+		AND LIV.DHMOV <= :P_PERIODO.FIN
+		AND CAB.CODEMP = 1
+		AND LIV.ENTSAI = 'S'
+		AND LIV.CODCFO IN (5201,6201,6410,6410)
+		AND EXISTS (SELECT 1
+		             FROM TGFCAB C 
+					  INNER JOIN TGFVAR VAR 
+						ON VAR.NUNOTA = CAB.NUNOTA
+						AND VAR.SEQUENCIA = ITE.SEQUENCIA
+					WHERE C.NUNOTA = VAR.NUNOTAORIG 
+					  AND TRUNC(CAB.DTENTSAI,'MM') = TRUNC(C.DTENTSAI,'MM')
+					)
+UNION ALL 
+/*** 5 - PEGA O ICMS NÃO  ***/
+
+	SELECT SUM(AJD.VLRICMS)*-1 AS VLRICMS
+	FROM TGFCAB CAB
+	
+	 INNER JOIN TGFITE ITE 
+		ON CAB.NUNOTA = ITE.NUNOTA
+		
+	 INNER JOIN TGFLIV LIV
+		ON LIV.NUNOTA = ITE.NUNOTA 
+		 AND LIV.SEQUENCIA = ITE.SEQUENCIA 
+		 
+	 INNER JOIN TGFAJD AJD 
+	    ON AJD.NUNOTA = ITE.NUNOTA 
+		  AND AJD.SEQUENCIA = ITE.SEQUENCIA
+
+	
+	WHERE   CAB.STATUSNOTA = 'L'
+		AND LIV.DHMOV >= :P_PERIODO.INI
+		AND LIV.DHMOV <= :P_PERIODO.FIN
+		AND CAB.CODEMP = 1
+		AND LIV.ENTSAI = 'E'
+		AND AJD.CODAJUSTE = 50000999
+		AND AJD.CODOBSPADRAO = 123
+)T]]></expression><metadata><field name="VLRICMS" label="VLRICMS" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="ESTORNO" label="ESTORNO" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression ><![CDATA[<div style="width: 2500px; height: 350px; padding: 20px; border: 1px solid #ccc; border-radius: 15px; box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1); background-color: #fdfdfd; display: flex; justify-content: space-between; align-items: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">        <!-- Seção Crédito Passível -->    <div style="text-align: center; flex: 1; padding: 15px;">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">Crédito Passível</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$VLRICMS</p>    </div>        <!-- Separador -->    <div style="border-left: 2px solid #ddd; height: 80%;"></div>        <!-- Seção Percentual Aplicado -->    <div style="text-align: center; flex: 1; padding: 15px; ">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">Percentual aplicado</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$V_PERCPROPTEXT</p>    </div>        <!-- Separador -->    <div style="border-left: 2px solid #ddd; height: 80%;"></div>        <!-- Seção Estorno -->    <div style="text-align: center; flex: 1; padding: 15px;">        <p style="font-size: 26px; color: #555; font-weight: 600; letter-spacing: 1px;">Estorno</p>        <p style="font-size: 32px; color: #008000; font-weight: bold; margin-top: 10px;">$ESTORNO</p>    </div></div>]]></value-expression></simple-value></container></container></level></gadget>

@@ -1,0 +1,66 @@
+SELECT 
+    M.APELIDO AS GRUPO,
+    NVL(V.VENDAS, 0) AS VENDAS,
+    NVL(D.DEVOLUCOES, 0) AS DEVOLUCOES,
+    M.VLRMET AS META,
+    (NVL(V.VENDAS, 0) - NVL(D.DEVOLUCOES, 0) - M.VLRMET) AS SALDO,
+    CASE
+        WHEN (NVL(V.VENDAS, 0) - NVL(D.DEVOLUCOES, 0) - M.VLRMET) >= 0 THEN '#b4f7b4ff'
+        ELSE '#f38484'
+    END AS BKCOLOR
+FROM AD_TGSSGM M
+LEFT JOIN (
+    -- Subquery VENDAS
+    SELECT 
+        COMP.CODSGRU,
+        SUM(I.QTDNEG) AS VENDAS
+    FROM TGFCAB C
+    INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+    INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+    INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+    )
+    WHERE C.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+        AND C.TIPMOV = 'V'
+        AND P.USOPROD = 'V'
+        -- Filtra a data da venda pelo parâmetro do Dashboard
+        AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+        AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+        -- Filtra a composição para o Ano e Mês do parâmetro
+        AND COMP.ANO = :P_ANO
+        AND COMP.MES = :P_MES
+    GROUP BY 
+        COMP.CODSGRU
+) V ON M.CODSGRU = V.CODSGRU
+LEFT JOIN (
+    -- Subquery DEVOLUÇÕES
+    SELECT 
+        COMP.CODSGRU,
+        SUM(I.QTDNEG) AS DEVOLUCOES
+    FROM TGFCAB C
+    INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+    INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+    INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+    )
+    WHERE C.CODTIPOPER IN (1200,1201,1206,1216,1217,1272)
+        AND C.TIPMOV = 'D'
+        AND P.USOPROD = 'V'
+        AND (C.CODEMP = 501 OR C.STATUSNFE <> 'D')
+        -- Filtra a data da devolução pelo parâmetro do Dashboard
+        AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+        AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+        -- Filtra a composição para o Ano e Mês do parâmetro
+        AND COMP.ANO = :P_ANO
+        AND COMP.MES = :P_MES
+    GROUP BY 
+        COMP.CODSGRU
+) D ON M.CODSGRU = D.CODSGRU
+-- Filtra a tabela de metas principal pelos parâmetros
+WHERE M.ANO = :P_ANO
+  AND M.MES = :P_MES
+ORDER BY M.APELIDO

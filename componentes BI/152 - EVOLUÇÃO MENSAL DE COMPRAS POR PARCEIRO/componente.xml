@@ -1,0 +1,31 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_ANO" description="Ano" metadata="integer" required="true" keep-last="true" keep-date="false" limit-char="4" order="0"/>
+    <parameter id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_67fu72" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_67fu73" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Evolução Mensal de Compras por Parceiro]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT T.*,    T.JANEIRO+T.FEVEREIRO+T.MAR+T.ABRIL+T.MAIO+T.JUNHO+T.JULHO+T.AGOSTO+T.SETEMBRO+T.OUTUBRO+T.NOVEMBRO+T.DEZEMBRO AS TOTALFROM (SELECT V.CODPARC,            V.RAZAOSOCIAL,            SUM(CASE WHEN V.MES = 1 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS JANEIRO,            SUM(CASE WHEN V.MES = 2 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS FEVEREIRO,            SUM(CASE WHEN V.MES = 3 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS MAR,            SUM(CASE WHEN V.MES = 4 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS ABRIL,            SUM(CASE WHEN V.MES = 5 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS MAIO,            SUM(CASE WHEN V.MES = 6 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS JUNHO,            SUM(CASE WHEN V.MES = 7 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS JULHO,            SUM(CASE WHEN V.MES = 8 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS AGOSTO,            SUM(CASE WHEN V.MES = 9 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS SETEMBRO,            SUM(CASE WHEN V.MES = 10 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS OUTUBRO,            SUM(CASE WHEN V.MES = 11 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS NOVEMBRO,            SUM(CASE WHEN V.MES = 12 THEN V.VLRNOTA + V.VLROUTROS + V.VLROUTROSFRETE ELSE 0 END) AS DEZEMBRO        FROM (SELECT PAR.CODPARC,                      PAR.RAZAOSOCIAL,                    EXTRACT(MONTH FROM CAB.DTNEG) AS MES,                    EXTRACT(YEAR FROM CAB.DTNEG) AS ANO,                    ROUND(SUM(CAB.VLRNOTA),2) AS VLRNOTA,                    ROUND(SUM(NVL(CAB.VLROUTROS,0)),2) AS VLROUTROS,                    ROUND(SUM(NVL(CAB.AD_VLROUTROSFRETE,0)),2) AS VLROUTROSFRETE                FROM TGFPAR PAR                    LEFT JOIN TGFCAB CAB ON (CAB.CODPARC = PAR.CODPARC AND CAB.TIPMOV = 'C' AND CAB.CODTIPOPER IN (214,299) AND EXTRACT(YEAR FROM CAB.DTNEG) = :P_ANO)                WHERE (:P_CODPARC IS NULL OR PAR.CODPARC = :P_CODPARC)					AND (:P_CODVEND IS NULL OR CAB.CODVEND = :P_CODVEND)                GROUP BY PAR.CODPARC, PAR.RAZAOSOCIAL, EXTRACT(MONTH FROM CAB.DTNEG), EXTRACT(YEAR FROM CAB.DTNEG), PAR.CODPARC				HAVING SUM(NVL(CAB.VLROUTROS,0)) > 0 OR SUM(CAB.VLRNOTA) > 0                ORDER BY PAR.CODPARC, EXTRACT(YEAR FROM CAB.DTNEG), EXTRACT(MONTH FROM CAB.DTNEG)) V        GROUP BY V.CODPARC, V.RAZAOSOCIAL        ORDER BY V.CODPARC) T]]></expression>
+        <metadata>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="JANEIRO" label="Jan" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="FEVEREIRO" label="Fev" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="MAR" label="Mar" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="ABRIL" label="Abr" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="MAIO" label="Mai" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="JUNHO" label="Jun" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="JULHO" label="Jul" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="AGOSTO" label="Ago" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="SETEMBRO" label="Set" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="OUTUBRO" label="Out" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="NOVEMBRO" label="Nov" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DEZEMBRO" label="Dez" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="TOTAL" label="Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

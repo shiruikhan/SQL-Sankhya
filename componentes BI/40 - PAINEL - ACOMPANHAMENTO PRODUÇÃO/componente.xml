@@ -1,0 +1,100 @@
+<gadget ><prompt-parameters><parameter  id="P_DETALHAR" description="Detalhar por:" metadata="singleList:Text" listType="text" required="true" keep-last="true" keep-date="false" order="0" label="P_DETALHAR : singleList:Text"><item value="P" label="Processo Produtivo"/><item value="A" label="Atividade"/></parameter><parameter  id="P_FINAL" description="Mostrar Finalizados?" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="1" label="P_FINAL : Verdadeiro/Falso"/><parameter  id="P_IDIPROC" description="Nro OP" metadata="integer" required="false" keep-last="true" keep-date="false" order="2" label="P_IDIPROC : Número Inteiro"/><parameter  id="P_CODPRC" description="Processo Produtivo" metadata="multiList:Text" listType="sql" required="false" keep-last="true" keep-date="false" order="3" label="P_CODPRC : multiList:Text"><expression type="SQL"><![CDATA[SELECT DISTINCT CODPRC AS VALUE,
+DESCRABREV AS LABEL
+FROM TPRPRC
+WHERE ATIVO='S'
+ORDER BY  2 DESC]]></expression></parameter><parameter  id="P_STATUSPROC" description="Status OP" metadata="multiList:Text" listType="sql" required="false" keep-last="true" keep-date="false" order="4" label="P_STATUSPROC : multiList:Text"><expression type="SQL"><![CDATA[SELECT VALOR AS VALUE, OPCAO AS LABEL 
+FROM TDDOPC WHERE NUCAMPO IN (SELECT NUCAMPO FROM TDDCAM WHERE NOMECAMPO='STATUSPROC' AND NOMETAB='TPRIPROC')
+ORDER BY 2 ]]></expression></parameter><parameter  id="P_DTAPONT" description="Dt. Apontamento" metadata="datePeriod" required="true" keep-last="true" keep-date="true" order="5" label="P_DTAPONT : Período"/></prompt-parameters><level id="lvl_a7r6cph" description="Principal"><args><arg  id="A_VALUE" type="text" label="A_VALUE : Texto"/></args><simple-value id="svl_a7r6cpm"><value-expression><![CDATA[<div style='text-align: center;'><pre><h3>ACOMPANHAMENTO PRODUÇÃO</h3></pre></div>]]></value-expression></simple-value><chart id="cht_a7r6cpi" type="donut"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * FROM (
+SELECT COUNT(*) AS TOT,
+PRC.DESCRABREV AS VALUE,
+PRC.DESCRABREV
+ FROM
+TPRIPROC PROC INNER JOIN TPRPRC PRC ON (PROC.IDPROC = PRC.IDPROC)
+INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC)
+WHERE 
+PRC.CODPRC IN :P_CODPRC
+AND PROC.STATUSPROC IN :P_STATUSPROC
+AND (PROC.IDIPROC = :P_IDIPROC OR :P_IDIPROC IS NULL)
+AND NVL(PROC.DHTERMINO,TO_DATE('01/01/2099')) = CASE WHEN :P_FINAL='S' THEN NVL(PROC.DHTERMINO,TO_DATE('01/01/2099')) ELSE TO_DATE('01/01/2099') END
+AND :P_DETALHAR = 'P' --PROCESSO PRODUTIVO
+GROUP BY PRC.DESCRABREV
+order by 2 desc) PROCESSO
+UNION
+SELECT * FROM (
+SELECT COUNT(ATV.IDIATV) AS TOT,
+EFX.DESCRICAO AS VALUE,
+EFX.DESCRICAO
+ FROM
+TPRIPROC PROC INNER JOIN TPRPRC PRC ON (PROC.IDPROC = PRC.IDPROC)
+INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC)
+INNER JOIN TPRIATV ATV ON (ATV.IDIPROC = PROC.IDIPROC)
+INNER JOIN TPREFX EFX ON (EFX.IDEFX = ATV.IDEFX AND EFX.IDPROC = PRC.IDPROC)
+WHERE 
+PRC.CODPRC IN :P_CODPRC
+AND PROC.STATUSPROC IN :P_STATUSPROC
+AND (PROC.IDIPROC = :P_IDIPROC OR :P_IDIPROC IS NULL)
+AND NVL(ATV.DHFINAL,TO_DATE('01/01/2099')) = CASE WHEN :P_FINAL='S' THEN NVL(ATV.DHFINAL,TO_DATE('01/01/2099')) ELSE TO_DATE('01/01/2099') END
+AND :P_DETALHAR = 'A' --ATIVIDADE OPERAÇÕES PRODUÇÃO
+GROUP BY EFX.DESCRICAO
+order by PRC.CODPRC, EFX.IDEFX)ATIVIDADE]]></expression><metadata><field name="TOT" label="Total OPs" type="I" visible="true" useFooter="false"></field><field name="VALUE" label="VALUE" type="I" visible="true" useFooter="false"></field><field name="DESCRABREV" label="Processo" type="S" visible="true" useFooter="false"></field></metadata><series><serie type="donut"><field>TOT</field><nameField>DESCRABREV</nameField><refresh-details  ui-list="grd_a7r6cwi">
+            <param id="A_VALUE">$VALUE</param>
+          </refresh-details><tipoDonut>semiCirculo</tipoDonut></serie></series><legend position="bottom" direction="h"></legend></chart><grid id="grd_a7r6cwi" entityName="CabecalhoInstanciaProcesso" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_VALUE" type="text"></arg></args><title><![CDATA[:A_VALUE]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT * 
+FROM (SELECT PRC.CODPRC AS CODIGO,
+			PRC.DESCRABREV AS DESCRICAO,
+			PROC.IDIPROC AS IDIPROC,
+			PROC.DHINST AS DTINICO,
+			PROC.DHTERMINO AS DHFINAL,
+			PROC.DTPREVENT,
+			PROC.NROLOTE,
+			IPA.QTDPRODUZIR AS TAMLOTE,
+			IPA.QTDPRODUZIR - NVL((SELECT SUM(APA.QTDAPONTADA+APA.QTDPERDA) FROM TPRAPO APO INNER JOIN TPRAPA APA ON (APO.NUAPO = APA.NUAPO) INNER JOIN TPRIATV TV ON (APO.IDIATV = TV.IDIATV) WHERE APO.SITUACAO='C' AND TV.IDIPROC = PROC.IDIPROC	AND TRUNC(APO.DHAPO) BETWEEN :P_DTAPONT.INI AND :P_DTAPONT.FIN),0) AS QTDPRODUZIR,
+			NVL((SELECT SUM(APA.QTDAPONTADA) FROM TPRAPO APO INNER JOIN TPRAPA APA ON (APO.NUAPO = APA.NUAPO) INNER JOIN TPRIATV TV ON (APO.IDIATV = TV.IDIATV) WHERE APO.SITUACAO='C' AND TV.IDIPROC = PROC.IDIPROC AND TRUNC(APO.DHAPO) BETWEEN :P_DTAPONT.INI AND :P_DTAPONT.FIN),0) AS QTDAPON,
+			NVL((SELECT SUM(APA.QTDPERDA) FROM TPRAPO APO INNER JOIN TPRAPA APA ON (APO.NUAPO = APA.NUAPO) INNER JOIN TPRIATV TV ON (APO.IDIATV = TV.IDIATV) WHERE APO.SITUACAO='C' AND TV.IDIPROC = PROC.IDIPROC AND TRUNC(APO.DHAPO) BETWEEN :P_DTAPONT.INI AND :P_DTAPONT.FIN),0) AS QTDPERDA,
+			PRO.CODPROD,
+			PRO.DESCRPROD,
+			(CASE WHEN PRO.AD_LINHA = 1 THEN 'Linha 1' WHEN PRO.AD_LINHA = 2 THEN 'Linha 2' ELSE 'Linha N/E' END) AS LINHA,
+			(SELECT DISTINCT G.DESCRGRUPOPROD FROM TGFGRU G WHERE G.CODGRUPOPROD = PRO.CODGRUPOPROD) AS DESCRGRUPOPROD,
+			OPTION_LABEL('TPRIPROC','STATUSPROC',PROC.STATUSPROC) AS STATUSPROD
+		FROM TPRIPROC PROC 
+			INNER JOIN TPRPRC PRC ON (PROC.IDPROC = PRC.IDPROC)
+			INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC)
+			INNER JOIN TGFPRO PRO ON (IPA.CODPRODPA = PRO.CODPROD)
+		WHERE PRC.DESCRABREV = :A_VALUE
+			AND PROC.STATUSPROC IN :P_STATUSPROC
+			AND (PROC.IDIPROC = :P_IDIPROC OR :P_IDIPROC IS NULL)
+			AND :P_DETALHAR = 'P'
+			AND NVL(PROC.DHTERMINO,TO_DATE('01/01/2099')) = CASE WHEN :P_FINAL='S' THEN NVL(PROC.DHTERMINO,TO_DATE('01/01/2099')) ELSE TO_DATE('01/01/2099') END
+		ORDER BY PROC.DTPREVENT, PROC.NROLOTE) PROCESSO
+UNION
+SELECT * 
+FROM (SELECT TV.IDIATV AS CODIGO,
+			EFX.DESCRICAO AS DESCRICAO,
+			PROC.IDIPROC AS IDIPROC,
+			TV.DHINCLUSAO AS DTINICO,
+			TV.DHFINAL AS DHFINAL,
+			PROC.DTPREVENT,
+			PROC.NROLOTE,
+			IPA.QTDPRODUZIR AS TAMLOTE,
+			IPA.QTDPRODUZIR - NVL((SELECT SUM(APA.QTDAPONTADA+APA.QTDPERDA) FROM TPRAPO APO INNER JOIN TPRAPA APA ON (APO.NUAPO = APA.NUAPO) WHERE APO.SITUACAO='C' AND APO.IDIATV = TV.IDIATV AND TRUNC(APO.DHAPO) BETWEEN :P_DTAPONT.INI AND :P_DTAPONT.FIN),0) AS QTDPRODUZIR,
+			NVL((SELECT SUM(APA.QTDAPONTADA) FROM TPRAPO APO INNER JOIN TPRAPA APA ON (APO.NUAPO = APA.NUAPO) WHERE APO.SITUACAO='C' AND APO.IDIATV = TV.IDIATV AND TRUNC(APO.DHAPO) BETWEEN :P_DTAPONT.INI AND :P_DTAPONT.FIN),0) AS QTDAPON,
+			NVL((SELECT SUM(APA.QTDPERDA) FROM TPRAPO APO INNER JOIN TPRAPA APA ON (APO.NUAPO = APA.NUAPO) WHERE APO.SITUACAO='C' AND APO.IDIATV = TV.IDIATV AND TRUNC(APO.DHAPO) BETWEEN :P_DTAPONT.INI AND :P_DTAPONT.FIN),0) AS QTDPERDA,
+			PRO.CODPROD,
+			PRO.DESCRPROD,
+			(CASE WHEN PRO.AD_LINHA = 1 THEN 'Linha 1' WHEN PRO.AD_LINHA = 2 THEN 'Linha 2' ELSE 'Linha N/E' END) AS LINHA,
+			(SELECT DISTINCT G.DESCRGRUPOPROD FROM TGFGRU G WHERE G.CODGRUPOPROD = PRO.CODGRUPOPROD) AS DESCRGRUPOPROD,
+			OPTION_LABEL('TPRIPROC','STATUSPROC',PROC.STATUSPROC) AS STATUSPROD
+		FROM TPRIPROC PROC 
+			INNER JOIN TPRPRC PRC ON (PROC.IDPROC = PRC.IDPROC)
+			INNER JOIN TPRIATV TV ON (TV.IDIPROC = PROC.IDIPROC)
+			INNER JOIN TPREFX EFX ON (EFX.IDEFX = TV.IDEFX)
+			INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC)
+			INNER JOIN TGFPRO PRO ON (IPA.CODPRODPA = PRO.CODPROD)
+		WHERE EFX.DESCRICAO = :A_VALUE
+			AND PROC.STATUSPROC IN :P_STATUSPROC
+			AND (PROC.IDIPROC = :P_IDIPROC OR :P_IDIPROC IS NULL)
+			AND NVL(TV.DHFINAL,TO_DATE('01/01/2099')) = CASE WHEN :P_FINAL='S' THEN NVL(TV.DHFINAL,TO_DATE('01/01/2099')) ELSE TO_DATE('01/01/2099') END
+			AND :P_DETALHAR = 'A'
+		ORDER BY PROC.DTPREVENT,
+		PROC.NROLOTE)]]></expression><metadata><field name="CODIGO" label="Código" type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="IDIPROC" label="Nro OP" type="I" visible="true" useFooter="false"></field><field name="DTINICO" label="Dt. Inicio" type="D" visible="true" useFooter="false"></field><field name="DHFINAL" label="Dt. Finalização" type="D" visible="true" useFooter="false"></field><field name="DTPREVENT" label="Dt. Previsão Entrega" type="D" visible="true" useFooter="false"></field><field name="NROLOTE" label="Nro Lote" type="S" visible="true" useFooter="false"></field><field name="TAMLOTE" label="Lote" type="F" visible="true" useFooter="SUM" mask="#.##0"></field><field name="QTDPRODUZIR" label="Qtde Produzir" type="F" visible="true" useFooter="SUM" mask="#.##0"></field><field name="QTDAPON" label="Qtde Apontada" type="F" visible="true" useFooter="SUM" mask="#.##0"></field><field name="QTDPERDA" label="Qtde Perda" type="F" visible="true" useFooter="SUM" mask="#.##0"></field><field name="CODPROD" label="Cód.Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="LINHA" label="Linha" type="S" visible="true" useFooter="false"></field><field name="DESCRGRUPOPROD" label="Grupo" type="S" visible="true" useFooter="false"></field><field name="STATUSPROD" label="Status Produção" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.producao.rotina.OrdemProducao">
+        <IDIPROC>$IDIPROC</IDIPROC>
+      </on-click-launcher></grid></level></gadget>

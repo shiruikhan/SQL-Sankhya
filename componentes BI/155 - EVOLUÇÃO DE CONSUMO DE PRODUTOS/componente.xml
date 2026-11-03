@@ -1,0 +1,41 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_ANO" description="Ano" metadata="integer" required="true" keep-last="true" keep-date="false" default="2024" order="0"/>
+    <parameter id="P_CODGRUPOPROD" description="Grupo" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="false" keep-date="false" order="1"/>
+    <parameter id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="2"/>
+    <parameter id="P_CODPARC" description="Fornecedor preferencial" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="3"/>
+  </prompt-parameters>
+  <level id="lvl_adqhbim" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_adqhbin" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Evolução de Consumo de Produtos (Requisições)]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT *FROM (SELECT ITE.CODPROD,		PRO.DESCRPROD,		PRO.CODVOL,		SUM(ITE.QTDNEG) AS QTDNEG,		EXTRACT(MONTH FROM CAB.DTENTSAI) AS MES,		GRU.CODGRUPOPROD || '-' || GRU.DESCRGRUPOPROD AS DESCRGRUPOPROD,		PAR.CODPARC || '-' || PAR.RAZAOSOCIAL AS PARCEIRO,		PRO.ESTMIN	FROM TGFITE ITE		INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD		INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA		INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD		LEFT JOIN TGFPAR PAR ON PRO.CODPARCFORN = PAR.CODPARC	WHERE CAB.STATUSNOTA = 'L'		AND CAB.TIPMOV = 'Q' --APENAS REQUISIÇÕES, PARA TRATAR AS TRANSFERENCIAS PRECISA INCLUIR O 'T'		AND ITE.ATUALESTOQUE = -1 --VALIDAÇÃO DE APENAS SAÍDAS DE ESTOQUE - IGNORAR AS ENTRADAS -		AND EXTRACT(YEAR FROM CAB.DTENTSAI) = :P_ANO --O ANO É NECESSÁRIO PARA FILTRAR OS MESES		AND (:P_CODGRUPOPROD IS NULL OR (PRO.CODGRUPOPROD = :P_CODGRUPOPROD)) 		AND (:P_CODPROD IS NULL OR (ITE.CODPROD = :P_CODPROD)) 		AND ITE.CODLOCALORIG = 101 --APENAS REQUISIÇÕES SAINDO DO ALMOXARIFADO		AND (:P_CODPARC IS NULL OR PRO.CODPARCFORN = :P_CODPARC)	GROUP BY ITE.CODPROD,		PRO.DESCRPROD,		PRO.CODVOL,		ITE.ATUALESTOQUE,		EXTRACT(MONTH FROM CAB.DTENTSAI),		GRU.CODGRUPOPROD || '-' || GRU.DESCRGRUPOPROD,		PAR.CODPARC || '-' || PAR.RAZAOSOCIAL,		PRO.ESTMIN	ORDER BY ITE.CODPROD) VPIVOT (SUM(NVL(QTDNEG,0)) FOR MES IN (        '01' AS Janeiro,        '02' AS Fevereiro,        '03' AS Marco,        '04' AS Abril,        '05' AS Maio,        '06' AS Junho,        '07' AS Julho,		'08' AS Agosto,		'09' AS Setembro,		'10' AS Outubro,		'11' AS Novembro,		'12' AS Dezembro))ORDER BY CODPROD	]]></expression>
+        <metadata>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Un. Med. Padrão" type="S" visible="true" useFooter="false"/>
+          <field name="DESCRGRUPOPROD" label="Grupo" type="S" visible="true" useFooter="false"/>
+          <field name="PARCEIRO" label="Fornecedor Preferencial" type="S" visible="true" useFooter="false"/>
+          <field name="ESTMIN" label="Estoque Mín." type="F" visible="true" useFooter="false"/>
+          <field name="JANEIRO" label="Janeiro" type="F" visible="true" useFooter="SUM"/>
+          <field name="FEVEREIRO" label="Fevereiro" type="F" visible="true" useFooter="SUM"/>
+          <field name="MARCO" label="Março" type="F" visible="true" useFooter="SUM"/>
+          <field name="ABRIL" label="Abril" type="F" visible="true" useFooter="SUM"/>
+          <field name="MAIO" label="Maio" type="F" visible="true" useFooter="SUM"/>
+          <field name="JUNHO" label="Junho" type="F" visible="true" useFooter="SUM"/>
+          <field name="JULHO" label="Julho" type="F" visible="true" useFooter="SUM"/>
+          <field name="AGOSTO" label="Agosto" type="F" visible="true" useFooter="SUM"/>
+          <field name="SETEMBRO" label="Setembro" type="F" visible="true" useFooter="SUM"/>
+          <field name="OUTUBRO" label="Outubro" type="F" visible="true" useFooter="SUM"/>
+          <field name="NOVEMBRO" label="Novembro" type="F" visible="true" useFooter="SUM"/>
+          <field name="DEZEMBRO" label="Dezembro" type="F" visible="true" useFooter="SUM"/>
+          <field name="TOTAL" label="Total" type="F" visible="true" useFooter="SUM">
+            <calculated>
+              <formula><![CDATA[$ABRIL + $AGOSTO + $DEZEMBRO + $FEVEREIRO + $JANEIRO + $JULHO + $JUNHO + $MAIO + $MARCO + $NOVEMBRO + $OUTUBRO + $SETEMBRO]]></formula>
+            </calculated>
+          </field>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

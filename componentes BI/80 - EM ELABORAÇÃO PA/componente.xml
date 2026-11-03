@@ -1,0 +1,49 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODPRC" description="Processo Produtivo" metadata="multiList:Text" listType="sql" required="true" keep-last="true" keep-date="false" order="1">
+      <expression type="SQL"><![CDATA[SELECT PRC.CODPRC AS VALUE,PRC.DESCRABREV AS LABELFROM TPRPRC PRC WHERE PRC.IDPROC IN (SELECT MAX(P.IDPROC) FROM TPRPRC P WHERE P.CODPRC = PRC.CODPRC)ORDER BY 1]]></expression>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_az72216" description="Principal">
+    <args>
+      <arg id="A_CODPRODPA" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="50">
+          <grid id="grd_az72217" multiplaSelecao="S" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CODPRODPA,	DESCRPA,	SUM(SALDOPRODPA) AS SALDOPRODPAFROM (SELECT LPA.CODPRODPA,			PROPA.DESCRPROD AS DESCRPA,			IPA.QTDPRODUZIR - NVL (PROD.QTDPA, 0) AS SALDOPRODPA		FROM TPRIPROC PROC			INNER JOIN TPRLPA LPA ON (PROC.IDPROC = LPA.IDPROC)			INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC AND IPA.CODPRODPA = LPA.CODPRODPA)			INNER JOIN TGFPRO PROPA ON (PROPA.CODPROD = LPA.CODPRODPA)			INNER JOIN TPRPRC PRC ON (PRC.IDPROC = PROC.IDPROC)			LEFT JOIN (SELECT NVL (SUM (I.QTDNEG), 0) AS QTDPA, C.IDIPROC						FROM TGFCAB C 							INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA)						WHERE C.TIPMOV = 'F'							AND I.USOPROD = 'V'							AND I.ATUALESTOQUE = 1							AND (TRUNC(C.DTNEG) >= :P_PERIODO.INI AND TRUNC(C.DTNEG) <= :P_PERIODO.FIN)                        GROUP BY C.IDIPROC) PROD ON (PROD.IDIPROC = PROC.IDIPROC)		WHERE (TRUNC(PROC.DHINST) >= :P_PERIODO.INI AND TRUNC(PROC.DHINST) <= :P_PERIODO.FIN)			AND PRC.CODPRC IN :P_CODPRC			AND PROC.STATUSPROC IN ('A','F'))WHERE SALDOPRODPA > 0GROUP BY CODPRODPA, DESCRPA]]></expression>
+            <metadata>
+              <field name="CODPRODPA" label="CODPRODPA" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPA" label="DESCRPA" type="S" visible="true" useFooter="false"/>
+              <field name="SALDOPRODPA" label="SALDOPRODPA" type="F" visible="true" useFooter="SUM"/>
+            </metadata>
+            <refresh-details ui-list="grd_az7222h">
+              <param id="A_CODPRODPA">$CODPRODPA</param>
+            </refresh-details>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <grid id="grd_az7222h" useNewGrid="S">
+            <args>
+              <arg id="A_CODPRODPA" type="integer"/>
+            </args>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT DISTINCT PROC.IDIPROC,	PROC.NROLOTE,	LPA.CODPRODPA,	PROPA.DESCRPROD AS DESCRPA,	IPA.QTDPRODUZIR,	NVL(PROD.QTDPA,0) AS QTDPA,	IPA.QTDPRODUZIR-NVL(PROD.QTDPA,0) AS SALDOPRODPA,	PRC.DESCRABREV AS PROCESSOPROD,	PRC.CODPRC AS CODIGOPRCFROM TPRIPROC PROC 	INNER JOIN TPRLPA LPA ON (PROC.IDPROC = LPA.IDPROC)	INNER JOIN TPRPRC PRC ON (PRC.IDPROC = PROC.IDPROC)	INNER JOIN TPREFX FX ON (FX.IDPROC = PROC.IDPROC)	INNER JOIN TPRIPA IPA ON (IPA.IDIPROC = PROC.IDIPROC AND IPA.CODPRODPA = LPA.CODPRODPA)	INNER JOIN TGFPRO PROPA ON (PROPA.CODPROD = LPA.CODPRODPA)	LEFT JOIN (SELECT NVL(SUM(I.QTDNEG),0) AS QTDPA, C.IDIPROC FROM TGFCAB C INNER JOIN TGFITE I ON (C.NUNOTA = I.NUNOTA) WHERE C.TIPMOV='F' AND I.USOPROD='V' AND I.ATUALESTOQUE=1 AND (TRUNC(C.DTNEG) >= :P_PERIODO.INI AND TRUNC(C.DTNEG) <= :P_PERIODO.FIN) GROUP BY C.IDIPROC) PROD ON (PROD.IDIPROC = PROC.IDIPROC)WHERE (TRUNC(PROC.DHINST) >= :P_PERIODO.INI AND TRUNC(PROC.DHINST) <= :P_PERIODO.FIN)	AND IPA.QTDPRODUZIR-NVL(PROD.QTDPA,0) > 0	AND IPA.CODPRODPA = :A_CODPRODPA	AND PRC.CODPRC IN :P_CODPRC	AND PROC.STATUSPROC IN ('A','F')ORDER BY PROC.IDIPROC]]></expression>
+            <metadata>
+              <field name="IDIPROC" label="IDIPROC" type="I" visible="true" useFooter="false"/>
+              <field name="NROLOTE" label="NROLOTE" type="S" visible="true" useFooter="false"/>
+              <field name="CODPRODPA" label="CODPRODPA" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPA" label="DESCRPA" type="S" visible="true" useFooter="false"/>
+              <field name="QTDPRODUZIR" label="QTDPRODUZIR" type="F" visible="true" useFooter="false"/>
+              <field name="QTDPA" label="QTDPA" type="F" visible="true" useFooter="false"/>
+              <field name="SALDOPRODPA" label="SALDOPRODPA" type="F" visible="true" useFooter="false"/>
+              <field name="PROCESSOPROD" label="PROCESSOPROD" type="S" visible="true" useFooter="false"/>
+              <field name="CODIGOPRC" label="CODIGOPRC" type="I" visible="true" useFooter="false"/>
+            </metadata>
+          </grid>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

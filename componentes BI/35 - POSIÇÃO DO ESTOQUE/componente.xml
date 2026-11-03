@@ -1,0 +1,94 @@
+<gadget refresh-time="3600000">
+  <prompt-parameters>
+    <parameter id="P_CODPROD" description="Código do Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_GrupoProduto" description="Grupo de Produto" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="true" keep-date="false" order="1"/>
+    <parameter id="P_LOCAL" description="Local" metadata="entity:LocalFinanceiro@CODLOCAL" required="false" keep-last="true" keep-date="false" order="2"/>
+    <parameter id="P_CODPARC" description="Fornecedor Preferencial" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="3"/>
+    <parameter id="LOCALIZACAO" description="Localização" metadata="text" required="false" keep-last="false" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_a0bu120" description="Principal">
+    <args>
+      <arg id="A_CODPROD" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="229">
+        <container orientacao="V" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="354">
+            <grid id="grd_a0bu121" multiplaSelecao="S" useNewGrid="S">
+              <title><![CDATA[Posição do Estoque Atual]]></title>
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,	PRO.AD_CODANTERIOR,	PRO.DESCRPROD,	PRO.CODVOL,	NVL(SUM(EST.ESTOQUE),0) AS ESTOQUE,	NVL(SUM(EST.RESERVADO),0) AS RESERVADO,	NVL(SUM(EST.ESTOQUE) - SUM(EST.RESERVADO),0) AS SALDO,	NVL(PRO.ESTMIN,0) AS ESTMIN,	NVL(PRO.ESTMAX,0) AS ESTMAX,	PAR.CODPARC || '-' || PAR.RAZAOSOCIAL AS FORN,	PRO.LOCALIZACAO,	--OBTEMCUSTO_SPARK (PRO.CODPROD,'S',1,'N',0,'N',' ',TRUNC(SYSDATE),1) AS CUSTOUNITMPGERENCIAL,	CASE WHEN EXISTS (SELECT LMP.CODPRODMP 						FROM TPRLMP LMP 							INNER JOIN TGFPRO PRO2 ON(PRO2.CODPROD = LMP.CODPRODMP) 							INNER JOIN TPREFX EFX ON(EFX.IDEFX = LMP.IDEFX) 							INNER JOIN TGFLOC LOC ON(LOC.CODLOCAL = LMP.CODLOCALORIG) 						WHERE LMP.CODPRODMP = PRO.CODPROD 							AND (NVL(LMP.CONTROLEPA, ' ') = ' ' OR LMP.CONTROLEPA = ' ') 							AND (LMP.TIPOUSOMP IN ('N'))) 		THEN 'SIM' ELSE 'NÃO' END AS FICHA,	CASE WHEN EXISTS (SELECT LMP.CODPRODMP 						FROM TPRLMP LMP 							INNER JOIN TGFPRO PRO2 ON(PRO2.CODPROD = LMP.CODPRODMP) 							INNER JOIN TPREFX EFX ON(EFX.IDEFX = LMP.IDEFX) 							INNER JOIN TGFLOC LOC ON(LOC.CODLOCAL = LMP.CODLOCALORIG) 						WHERE LMP.CODPRODMP = PRO.CODPROD 							AND (NVL(LMP.CONTROLEPA, ' ') = ' ' OR LMP.CONTROLEPA = ' ') 							AND (LMP.TIPOUSOMP IN ('N'))) 		THEN '#cfe2f3' ELSE '#fff2cc' END AS BKCOLOR,	(SELECT NVL(SUM(ITE2.QTDNEG - ITE2.QTDENTREGUE),0) AS PENDENTE 		FROM TGFPRO PRO2 			LEFT JOIN TGFITE ITE2 ON PRO2.CODPROD = ITE2.CODPROD 			LEFT JOIN TGFCAB CAB2 ON ITE2.NUNOTA = CAB2.NUNOTA 			LEFT JOIN TGFTOP TOP2 ON (CAB2.CODTIPOPER = TOP2.CODTIPOPER AND CAB2.DHTIPOPER = TOP2.DHALTER) 			LEFT JOIN TSICUS CUS2 ON CAB2.CODCENCUS = CUS2.CODCENCUS 		WHERE ITE2.PENDENTE = 'S' 			AND ITE2.STATUSNOTA = 'L' 			AND ITE2.CODPROD = PRO.CODPROD 			AND CAB2.TIPMOV = 'O') AS COMPRAFROM TGFPRO PRO 	LEFT JOIN TGFEST EST ON PRO.CODPROD = EST.CODPROD	LEFT JOIN TGFPAR PAR ON PRO.CODPARCFORN = PAR.CODPARCWHERE (PRO.CODGRUPOPROD = :P_GRUPOPRODUTO OR :P_GRUPOPRODUTO IS NULL)	AND (PRO.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)	AND (/*EST.ESTOQUE IS NOT NULL AND */PRO.ATIVO = 'S')	AND (EST.CODLOCAL = :P_LOCAL OR :P_LOCAL IS NULL)	AND (:P_CODPARC IS NULL OR PRO.CODPARCFORN = :P_CODPARC)	AND (:LOCALIZACAO IS NULL OR PRO.LOCALIZACAO LIKE TO_CHAR('%' || :LOCALIZACAO || '%'))GROUP BY PRO.CODPROD, PRO.AD_CODANTERIOR, PRO.DESCRPROD, PRO.CODVOL, PRO.ESTMIN, PRO.ESTMAX, PAR.CODPARC || '-' || PAR.RAZAOSOCIAL, PRO.LOCALIZACAOORDER BY PRO.CODPROD]]></expression>
+              <metadata>
+                <field name="CODPROD" label="COD" type="I" visible="true" useFooter="false"/>
+                <field name="AD_CODANTERIOR" label="COD Andes" type="I" visible="true" useFooter="false"/>
+                <field name="DESCRPROD" label="Descrição" type="S" visible="true" useFooter="false"/>
+                <field name="CODVOL" label="*" type="S" visible="true" useFooter="false"/>
+                <field name="ESTOQUE" label="Estoque" type="F" visible="true" useFooter="SUM" mask="###0,0000"/>
+                <field name="RESERVADO" label="Reservado" type="F" visible="true" useFooter="SUM" mask="###0,0000"/>
+                <field name="SALDO" label="Saldo" type="F" visible="true" useFooter="SUM" mask="###0,0000"/>
+                <field name="ESTMIN" label="Est. Min" type="F" visible="true" useFooter="false" mask="###0,0000"/>
+                <field name="ESTMAX" label="Est. Max" type="F" visible="true" useFooter="false" mask="###0,0000"/>
+                <field name="FORN" label="FORN" type="S" visible="true" useFooter="false"/>
+                <field name="LOCALIZACAO" label="LOCALIZACAO" type="S" visible="true" useFooter="false"/>
+                <field name="FICHA" label="Compõe Ficha" type="S" visible="true" useFooter="false"/>
+                <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+                <field name="COMPRA" label="Compra" type="I" visible="false" useFooter="false"/>
+              </metadata>
+              <on-click-launcher resource-id="br.com.sankhya.core.cad.produtos">
+                <CODPROD>$CODPROD</CODPROD>
+              </on-click-launcher>
+              <refresh-details ui-list="grd_a0bu14t,grd_aq5hzz1">
+                <param id="A_CODPROD">$CODPROD</param>
+              </refresh-details>
+            </grid>
+          </container>
+          <container orientacao="H" tamanhoRelativo="100">
+            <container orientacao="V" tamanhoRelativo="50">
+              <grid id="grd_a0bu14t" multiplaSelecao="S" useNewGrid="S">
+                <args>
+                  <arg id="A_CODPROD" type="integer"/>
+                </args>
+                <title><![CDATA[Reservas realizadas]]></title>
+                <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA, CAB.DTENTSAI, CAB.AD_NUMPS, ITE.CODPROD, PRO.DESCRPROD, PRO.CODVOL, (ITE.QTDNEG - ITE.QTDENTREGUE) AS RESERVADO, TOP.DESCROPER, CUS.DESCRCENCUSFROM TGFPRO PRO LEFT JOIN TGFITE ITE ON PRO.CODPROD = ITE.CODPROD LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA LEFT JOIN TGFTOP TOP ON (CAB.CODTIPOPER = TOP.CODTIPOPER AND CAB.DHTIPOPER = TOP.DHALTER) LEFT JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE ITE.PENDENTE = 'S' AND ITE.STATUSNOTA = 'L' AND ITE.CODPROD = :A_CODPROD and CAB.TIPMOV = 'J' and (ITE.CODLOCALORIG = :P_LOCAL OR :P_LOCAL IS NULL)ORDER BY ITE.NUNOTA]]></expression>
+                <metadata>
+                  <field name="NUNOTA" label="Nr Unico" type="I" visible="true" useFooter="false"/>
+                  <field name="DTENTSAI" label="DTENTSAI" type="D" visible="true" useFooter="false"/>
+                  <field name="AD_NUMPS" label="AD_NUMPS" type="I" visible="true" useFooter="false"/>
+                  <field name="CODPROD" label="COD" type="I" visible="true" useFooter="false"/>
+                  <field name="DESCRPROD" label="Descrição" type="S" visible="true" useFooter="false"/>
+                  <field name="CODVOL" label="*" type="S" visible="true" useFooter="false"/>
+                  <field name="RESERVADO" label="Qtd. Reservada" type="I" visible="true" useFooter="false"/>
+                  <field name="DESCROPER" label="Operação" type="S" visible="true" useFooter="false"/>
+                  <field name="DESCRCENCUS" label="Centro de Resultado" type="S" visible="true" useFooter="false"/>
+                </metadata>
+                <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+                  <NUNOTA>$NUNOTA</NUNOTA>
+                </on-click-launcher>
+              </grid>
+            </container>
+            <container orientacao="V" tamanhoRelativo="50">
+              <grid id="grd_aq5hzz1" useNewGrid="S">
+                <args>
+                  <arg id="A_CODPROD" type="integer"/>
+                </args>
+                <title><![CDATA[Compras Pendentes]]></title>
+                <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA, CAB.DTENTSAI, ITE.CODPROD, PRO.DESCRPROD, PRO.CODVOL, (ITE.QTDNEG - ITE.QTDENTREGUE) AS PENDENTE, TOP.DESCROPERFROM TGFPRO PRO LEFT JOIN TGFITE ITE ON PRO.CODPROD = ITE.CODPROD LEFT JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA LEFT JOIN TGFTOP TOP ON (CAB.CODTIPOPER = TOP.CODTIPOPER AND CAB.DHTIPOPER = TOP.DHALTER) LEFT JOIN TSICUS CUS ON CAB.CODCENCUS = CUS.CODCENCUSWHERE ITE.PENDENTE = 'S' AND ITE.STATUSNOTA = 'L' AND ITE.CODPROD = :A_CODPROD and CAB.TIPMOV = 'O' ORDER BY ITE.NUNOTA]]></expression>
+                <metadata>
+                  <field name="NUNOTA" label="NUNOTA" type="I" visible="true" useFooter="false"/>
+                  <field name="DTENTSAI" label="DTENTSAI" type="D" visible="true" useFooter="false"/>
+                  <field name="CODPROD" label="CODPROD" type="I" visible="true" useFooter="false"/>
+                  <field name="DESCRPROD" label="DESCRPROD" type="S" visible="true" useFooter="false"/>
+                  <field name="CODVOL" label="CODVOL" type="S" visible="true" useFooter="false"/>
+                  <field name="PENDENTE" label="PENDENTE" type="I" visible="true" useFooter="false"/>
+                  <field name="DESCROPER" label="DESCROPER" type="S" visible="true" useFooter="false"/>
+                </metadata>
+                <on-click-launcher resource-id="br.com.sankhya.mgecom.mov.PortalCompras">
+                  <NUNOTA>$NUNOTA</NUNOTA>
+                </on-click-launcher>
+              </grid>
+            </container>
+          </container>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

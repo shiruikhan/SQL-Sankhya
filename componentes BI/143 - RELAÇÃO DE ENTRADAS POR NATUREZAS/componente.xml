@@ -1,0 +1,32 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_w64f16" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_w64f17" multiplaSelecao="S" useNewGrid="S">
+        <title><![CDATA[Relação de Entradas por Naturezas]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,	CAB.NUMNOTA,	CAB.DTENTSAI,	CAB.CODEMP,	CAB.CODPARC,	PAR.RAZAOSOCIAL,	ITE.CODPROD,	PRO.DESCRPROD,	ITE.CODVOL,	ITE.QTDNEG,	CAB.CODTIPOPER,	PRO.USOPROD,	CAB.CODNAT,	NVL(NAT.DESCRNAT,'SEM NATUREZA') AS DESCRNATFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD	LEFT JOIN TGFNAT NAT ON CAB.CODNAT = NAT.CODNAT	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARCWHERE CAB.DTENTSAI >= :P_PERIODO.INI	AND CAB.DTENTSAI <= :P_PERIODO.FIN	AND CAB.TIPMOV = 'C'	AND CAB.STATUSNOTA = 'L'ORDER BY CAB.NUNOTA,	ITE.CODPROD]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. da Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Movimentação" type="D" visible="true" useFooter="false"/>
+          <field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Un. de Medida" type="S" visible="true" useFooter="false"/>
+          <field name="QTDNEG" label="Qtd. Negociada" type="F" visible="true" useFooter="SUM"/>
+          <field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"/>
+          <field name="USOPROD" label="Usado Como" type="S" visible="true" useFooter="false"/>
+          <field name="CODNAT" label="Cód Natureza" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,46 @@
+<gadget>
+  <level id="lvl_43n7af" description="Principal">
+    <args>
+      <arg id="A_DESCRPROD" type="text"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <container orientacao="H" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="50">
+            <grid id="grd_43n7ag" useNewGrid="N">
+              <title><![CDATA[Itens Planilha de Inventário sem cadastro Produto]]></title>
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT AD_CODANTERIOR, DESCRPROD, CODVOL, QTD, TRANSLATE(SUBSTR(DESCRPROD,1,20),'`}a~xÁÇÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕËÜÏÖÑÝåáçéíóúàèìòùâêîôûãõëüïöñýÿ"',                                                'SZszYACEIOUAEIOUAEIOUAOEUIONYaaceiouaeiouaeiouaoeuionyy') AS DESCR FROM TEMP_INVENTARIO T WHERE NOT EXISTS (SELECT 1 FROM TGFPRO P WHERE P.AD_CODANTERIOR = T.AD_CODANTERIOR)ORDER BY 2]]></expression>
+              <metadata>
+                <field name="AD_CODANTERIOR" label="Cód. Anterior" type="I" visible="true" useFooter="false"/>
+                <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+                <field name="CODVOL" label="Unidade" type="S" visible="true" useFooter="false"/>
+                <field name="QTD" label="Qtde Inventário" type="F" visible="true" useFooter="false"/>
+                <field name="DESCR" label="Descrição Resumida" type="S" visible="true" useFooter="false"/>
+              </metadata>
+              <refresh-details ui-list="grd_43n7bh">
+                <param id="A_DESCRPROD">$DESCR</param>
+              </refresh-details>
+            </grid>
+          </container>
+          <container orientacao="V" tamanhoRelativo="50">
+            <grid id="grd_43n7bh" useNewGrid="N">
+              <args>
+                <arg id="A_DESCRPROD" type="text"/>
+              </args>
+              <title><![CDATA[Itens com Descrição similar ao Inventário]]></title>
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT AD_CODANTERIOR, CODPROD, DESCRPROD, G.CODGRUPOPROD, DECODE(USOPROD,'M','Matéria Prima','C','Consumo','S','Serviço','V','Venda Fabricação',USOPROD) AS USADOCOMO, G.DESCRGRUPOPRODFROM TGFPRO  P INNER JOIN TGFGRU G ON (P.CODGRUPOPROD = G.CODGRUPOPROD) WHERE TRANSLATE(DESCRPROD,'`}a~xÁÇÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕËÜÏÖÑÝåáçéíóúàèìòùâêîôûãõëüïöñýÿ"',                                                'SZszYACEIOUAEIOUAEIOUAOEUIONYaaceiouaeiouaeiouaoeuionyy') LIKE '%'||:A_DESCRPROD||'%'ORDER BY 3]]></expression>
+              <metadata>
+                <field name="AD_CODANTERIOR" label="Cód. Anterior" type="I" visible="true" useFooter="false"/>
+                <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+                <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+                <field name="CODGRUPOPROD" label="Cód. Grupo" type="I" visible="true" useFooter="false"/>
+                <field name="USADOCOMO" label="Usado Como" type="S" visible="true" useFooter="false"/>
+                <field name="DESCRGRUPOPROD" label="Grupo Produto" type="S" visible="true" useFooter="false"/>
+              </metadata>
+            </grid>
+          </container>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

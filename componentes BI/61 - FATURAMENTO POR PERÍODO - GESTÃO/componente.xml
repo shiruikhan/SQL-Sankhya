@@ -1,0 +1,197 @@
+<gadget ><prompt-parameters><parameter  id="P_GRUPO" description="GRUPO" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="true" keep-date="false" order="1" label="P_GRUPO : Entidade/Tabela"/><parameter  id="P_CODVEND" description="VENDEDOR" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" order="2" label="P_CODVEND : Entidade/Tabela"/><parameter  id="P_CODEMP" description="EMPRESA" metadata="entity:EmpresaFinanceiro@CODEMP" required="false" keep-last="true" keep-date="false" order="3" label="P_CODEMP : Entidade/Tabela"/><parameter  id="P_PER" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="6" label="P_PER : Período"/><parameter  id="P_CODPROD" description="CODIGO DO PRODUTO" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="7" label="P_CODPROD : Entidade/Tabela"/><parameter  id="P_CODPARC" description="PARCEIRO" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="8" label="P_CODPARC : Entidade/Tabela"/><parameter  id="P_CODUF" description="UF" metadata="entity:UnidadeFederativa@CODUF" required="false" keep-last="false" keep-date="false" order="9" label="P_CODUF : Entidade/Tabela"/><parameter  id="P_CODPARCMATRIZ" description="Matriz" metadata="entity:Parceiro@CODPARC" required="false" keep-last="true" keep-date="false" order="10" label="P_CODPARCMATRIZ : Entidade/Tabela"/></prompt-parameters><level id="lvl_aa0zyh3" description="Principal"><args><arg  id="A_CODGRUPOPROD" type="integer" label="A_CODGRUPOPROD : Número Inteiro"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="H" tamanhoRelativo="50"><container orientacao="H" tamanhoRelativo="50"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_aa0zyh4" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Faturamento]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.AD_AGRUPADOR,
+	PRO.CODVOL,
+	SUM(ITE.QTDNEG) AS QTD,
+	PRO.CODGRUPOPROD,
+	GRU.DESCRGRUPOPROD,
+	VEN.CODVEND,
+	VEN.APELIDO,
+	(SUM(ITE.QTDNEG)/(SELECT SUM(ITE2.QTDNEG) AS TOTALF
+						FROM TGFITE ITE2
+						INNER JOIN TGFCAB CAB2 ON ITE2.NUNOTA = CAB2.NUNOTA
+						INNER JOIN TGFPRO PRO2 ON ITE2.CODPROD = PRO2.CODPROD
+						INNER JOIN TGFGRU GRU2 ON PRO2.CODGRUPOPROD = GRU2.CODGRUPOPROD
+						INNER JOIN TGFVEN VEN2 ON CAB2.CODVEND = VEN2.CODVEND
+						WHERE TRUNC(CAB2.DTNEG) >= :P_PER.INI AND TRUNC(CAB2.DTNEG) <= :P_PER.FIN AND CAB2.TIPMOV = 'V' AND PRO2.USOPROD = 'V' AND (CAB2.CODEMP = 501 OR CAB2.STATUSNFE <> 'D') AND ((GRU2.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB2.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN2.CODVEND = :P_CODVEND)) AND CAB2.CODTIPOPER IN (1100,2200,1111,1190,1124,2202))) * 100 AS PARTE,
+	SUM(ITE.VLRTOT - ITE.VLRDESC) AS TOTALLIQ,
+	SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTALOUTROS,
+	SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTAL,
+	((SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS,0)))/(SELECT SUM(ITE3.VLRTOT - ITE3.VLRDESC) + SUM(NVL(ITE3.AD_VLROUTROS,0)) AS TOTALFAT
+																					FROM TGFITE ITE3
+																					INNER JOIN TGFCAB CAB3 ON ITE3.NUNOTA = CAB3.NUNOTA
+																					INNER JOIN TGFPRO PRO3 ON ITE3.CODPROD = PRO3.CODPROD
+																					INNER JOIN TGFGRU GRU3 ON PRO3.CODGRUPOPROD = GRU3.CODGRUPOPROD
+																					INNER JOIN TGFVEN VEN3 ON CAB3.CODVEND = VEN3.CODVEND
+																					WHERE TRUNC(CAB3.DTNEG) >= :P_PER.INI AND TRUNC(CAB3.DTNEG) <= :P_PER.FIN AND CAB3.TIPMOV = 'V' AND PRO3.USOPROD = 'V' AND (CAB3.CODEMP = 501 OR CAB3.STATUSNFE <> 'D') AND ((GRU3.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB3.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN3.CODVEND = :P_CODVEND)) AND CAB3.CODTIPOPER IN (1100,2200,1111,1190,1124,2202))) * 100 AS PARTEFATURADO
+FROM TGFITE ITE
+	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+	INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+	INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+	INNER JOIN TSICID CID ON PAR.CODCID = CID.CODCID
+WHERE TRUNC(CAB.DTNEG) >= :P_PER.INI 
+	AND TRUNC(CAB.DTNEG) <= :P_PER.FIN 
+	AND CAB.TIPMOV = 'V' 
+	AND PRO.USOPROD = 'V' 
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+	AND ((GRU.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) 
+	AND ((:P_CODEMP IS NULL) OR (CAB.CODEMP = :P_CODEMP)) 
+	AND ((:P_CODVEND IS NULL) OR (VEN.CODVEND = :P_CODVEND)) 
+	AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202) 
+	AND ((:P_CODPROD IS NULL) OR (ITE.CODPROD = :P_CODPROD)) 
+	AND ((:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC) AND (:P_CODPARCMATRIZ IS NULL OR PAR.CODPARCMATRIZ = :P_CODPARCMATRIZ))
+	AND (:P_CODUF IS NULL OR CID.UF = :P_CODUF)
+GROUP BY PRO.AD_AGRUPADOR, PRO.CODVOL, PRO.CODGRUPOPROD, GRU.DESCRGRUPOPROD, VEN.CODVEND, VEN.APELIDO
+ORDER BY PRO.AD_AGRUPADOR]]></expression><metadata><field name="AD_AGRUPADOR" label="Agrupador" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="*" type="S" visible="true" useFooter="false"></field><field name="QTD" label="Qtd" type="I" visible="true" useFooter="SUM"></field><field name="CODGRUPOPROD" label="Código Grupo" type="I" visible="true" useFooter="false"></field><field name="DESCRGRUPOPROD" label="Desc. Grupo" type="S" visible="true" useFooter="false"></field><field name="CODVEND" label="Código Vendedor" type="I" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="PARTE" label="Contribuição % Qtd" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field><field name="TOTALLIQ" label="Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="TOTALOUTROS" label="Total Outros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="TOTAL" label="Total Geral" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="PARTEFATURADO" label="Contribuição % Fat" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field></metadata><on-click  navigate-to="lvl_ad9of3d">
+                <param id="A_AD_AGRUPADOR">$AD_AGRUPADOR</param>
+              </on-click></grid></container><container orientacao="V" tamanhoRelativo="50"><grid id="grd_a1911tp" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Devoluções]]></title><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+  Nome do Script : p2
+  Tipo           : Componente BI — Gráfico
+  Dashboard      : Faturamento por período Gestão
+  Componente     : p2
+  Descrição      : Faturamento de devoluções por agrupador de produto e vendedor
+                   com percentuais de participação em relação ao total.
+
+  Parâmetros     : :P_PER.INI e :P_PER.FIN — Período de devoluções
+                   :P_GRUPO — Filtro por grupo de produtos (opcional)
+                   :P_CODEMP — Filtro por empresa (opcional)
+                   :P_CODVEND — Filtro por vendedor (opcional)
+                   :P_CODPROD — Filtro por produto (opcional)
+                   :P_CODPARC — Filtro por parceiro (opcional)
+                   :P_CODPARCMATRIZ — Filtro por parceiro matriz (opcional)
+                   :P_CODUF — Filtro por UF (opcional)
+
+  Tabelas        : TGFITE, TGFCAB, TGFPRO, TGFGRU, TGFVEN, TGFPAR, TSICID
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: A DEFINIR
+  Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+==============================================================================*/
+
+SELECT PRO.AD_AGRUPADOR,
+	PRO.CODVOL,
+	SUM(ITE.QTDNEG) AS QTD,
+	PRO.CODGRUPOPROD,
+	GRU.DESCRGRUPOPROD,
+	VEN.CODVEND,
+	VEN.APELIDO,
+	(SUM(ITE.QTDNEG)/(SELECT SUM(ITE2.QTDNEG) AS TOTALF
+						FROM TGFITE ITE2
+						INNER JOIN TGFCAB CAB2 ON ITE2.NUNOTA = CAB2.NUNOTA
+						INNER JOIN TGFPRO PRO2 ON ITE2.CODPROD = PRO2.CODPROD
+						INNER JOIN TGFGRU GRU2 ON PRO2.CODGRUPOPROD = GRU2.CODGRUPOPROD
+						INNER JOIN TGFVEN VEN2 ON CAB2.CODVEND = VEN2.CODVEND
+						WHERE TRUNC(CAB2.DTNEG) >= :P_PER.INI AND TRUNC(CAB2.DTNEG) <= :P_PER.FIN AND CAB2.TIPMOV = 'D' AND PRO2.USOPROD = 'V' AND (CAB2.CODEMP = 501 OR NVL(CAB2.STATUSNFE, 'X') <> 'D') AND ((GRU2.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB2.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN2.CODVEND = :P_CODVEND)) AND CAB2.CODTIPOPER IN (1200,1201,/*1206,*/1216,1217,1272))) * 100 AS PARTE,
+	SUM(ITE.VLRTOT - ITE.VLRDESC) AS TOTALLIQ,
+	SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTALOUTROS,
+	SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTAL,
+	((SUM(ITE.VLRTOT - ITE.VLRDESC) + SUM(NVL(ITE.AD_VLROUTROS,0)))/(SELECT SUM(ITE3.VLRTOT - ITE3.VLRDESC) + SUM(NVL(ITE3.AD_VLROUTROS,0)) AS TOTALFAT
+																					FROM TGFITE ITE3
+																					INNER JOIN TGFCAB CAB3 ON ITE3.NUNOTA = CAB3.NUNOTA
+																					INNER JOIN TGFPRO PRO3 ON ITE3.CODPROD = PRO3.CODPROD
+																					INNER JOIN TGFGRU GRU3 ON PRO3.CODGRUPOPROD = GRU3.CODGRUPOPROD
+																					INNER JOIN TGFVEN VEN3 ON CAB3.CODVEND = VEN3.CODVEND
+																					WHERE TRUNC(CAB3.DTNEG) >= :P_PER.INI AND TRUNC(CAB3.DTNEG) <= :P_PER.FIN AND CAB3.TIPMOV = 'D' AND PRO3.USOPROD = 'V' AND (CAB3.CODEMP = 501 OR NVL(CAB3.STATUSNFE, 'X') <> 'D') AND ((GRU3.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) AND ((:P_CODEMP IS NULL) OR (CAB3.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN3.CODVEND = :P_CODVEND)) AND CAB3.CODTIPOPER IN (1200,1201,/*1206,*/1216,1217,1272))) * 100 AS PARTEFATURADO
+FROM TGFITE ITE
+	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+	INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+	INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+	INNER JOIN TSICID CID ON PAR.CODCID = CID.CODCID
+WHERE TRUNC(CAB.DTNEG) >= :P_PER.INI 
+	AND TRUNC(CAB.DTNEG) <= :P_PER.FIN 
+	AND CAB.TIPMOV = 'D' 
+	AND PRO.USOPROD = 'V' 
+    AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
+	AND ((GRU.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) 
+	AND ((:P_CODEMP IS NULL) OR (CAB.CODEMP = :P_CODEMP)) 
+	AND ((:P_CODVEND IS NULL) OR (VEN.CODVEND = :P_CODVEND)) 
+	AND CAB.CODTIPOPER IN (1200,1201,/*1206,*/1216,1217,1272) 
+	AND ((:P_CODPROD IS NULL) OR (ITE.CODPROD = :P_CODPROD)) 
+	AND ((:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC) AND (:P_CODPARCMATRIZ IS NULL OR PAR.CODPARCMATRIZ = :P_CODPARCMATRIZ))
+	AND (:P_CODUF IS NULL OR CID.UF = :P_CODUF)
+GROUP BY PRO.AD_AGRUPADOR, PRO.CODVOL, PRO.CODGRUPOPROD, GRU.DESCRGRUPOPROD, VEN.CODVEND, VEN.APELIDO
+ORDER BY PRO.AD_AGRUPADOR]]></expression><metadata><field name="AD_AGRUPADOR" label="Agrupador" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="*" type="S" visible="true" useFooter="false"></field><field name="QTD" label="Qtd" type="I" visible="true" useFooter="SUM"></field><field name="CODGRUPOPROD" label="Código Grupo" type="I" visible="true" useFooter="false"></field><field name="DESCRGRUPOPROD" label="Desc. Grupo" type="S" visible="true" useFooter="false"></field><field name="CODVEND" label="Código Vendedor" type="I" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="PARTE" label="Contribuição % Qtd" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field><field name="TOTALLIQ" label="Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="TOTALOUTROS" label="Total Outros" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="TOTAL" label="Total Geral" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="PARTEFATURADO" label="Contribuição % Fat" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field></metadata></grid></container></container></container><container orientacao="H" tamanhoRelativo="50"><container orientacao="V" tamanhoRelativo="50"><chart id="cht_aa0zymo" type="pizza"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT GRU.CODGRUPOPROD,
+    GRU.DESCRGRUPOPROD,
+    SUM(ITE.QTDNEG) AS TOTAL
+FROM TGFITE ITE
+    INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+    INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+    INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+    INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+	INNER JOIN TSICID CID ON PAR.CODCID = CID.CODCID
+WHERE TRUNC(CAB.DTNEG) >= :P_PER.INI 
+    AND TRUNC(CAB.DTNEG) <= :P_PER.FIN 
+    AND CAB.TIPMOV = 'V' 
+    AND PRO.USOPROD = 'V' 
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+    AND ((GRU.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) 
+    AND ((:P_CODEMP IS NULL) OR (CAB.CODEMP = :P_CODEMP)) 
+    AND ((:P_CODVEND IS NULL) OR (VEN.CODVEND = :P_CODVEND)) 
+    AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202) 
+    AND ((:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC) AND (:P_CODPARCMATRIZ IS NULL OR PAR.CODPARCMATRIZ = :P_CODPARCMATRIZ))
+    AND (:P_CODUF IS NULL OR CID.UF = :P_CODUF)
+GROUP BY GRU.CODGRUPOPROD, GRU.DESCRGRUPOPROD]]></expression><metadata><field name="CODGRUPOPROD" label="CODGRUPOPROD" type="I" visible="true" useFooter="false"></field><field name="DESCRGRUPOPROD" label="DESCRGRUPOPROD" type="S" visible="true" useFooter="false"></field><field name="TOTAL" label="TOTAL" type="I" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>TOTAL</field><nameField>DESCRGRUPOPROD</nameField></serie></series></chart></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_advavft" type="pizza"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.AD_AGRUPADOR,
+    SUM(ITE.VLRTOT - ITE.VLRDESC - ITE.VLRREPRED) + SUM(NVL(ITE.AD_VLROUTROS,0)) AS TOTAL
+FROM TGFITE ITE
+    INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+    INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+    INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+    INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+    INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+    INNER JOIN TSICID CID ON PAR.CODCID = CID.CODCID
+WHERE TRUNC(CAB.DTNEG) >= :P_PER.INI 
+    AND TRUNC(CAB.DTNEG) <= :P_PER.FIN 
+    AND CAB.TIPMOV = 'V' 
+    AND PRO.USOPROD = 'V' 
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+    AND ((GRU.CODGRUPOPROD = :P_GRUPO) OR :P_GRUPO IS NULL) 
+    AND ((:P_CODEMP IS NULL) OR (CAB.CODEMP = :P_CODEMP)) 
+    AND ((:P_CODVEND IS NULL) OR (VEN.CODVEND = :P_CODVEND)) 
+    AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202) 
+    AND ((:P_CODPROD IS NULL) OR (ITE.CODPROD = :P_CODPROD)) 
+    AND ((:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC) AND (:P_CODPARCMATRIZ IS NULL OR PAR.CODPARCMATRIZ = :P_CODPARCMATRIZ))
+    AND (:P_CODUF IS NULL OR CID.UF = :P_CODUF)
+GROUP BY PRO.AD_AGRUPADOR]]></expression><metadata><field name="AD_AGRUPADOR" label="AD_AGRUPADOR" type="S" visible="true" useFooter="false"></field><field name="TOTAL" label="TOTAL" type="I" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>TOTAL</field><nameField>AD_AGRUPADOR</nameField><on-click  navigate-to="lvl_ad9of3d">
+                  <param id="A_AD_AGRUPADOR">$AD_AGRUPADOR</param>
+                </on-click></serie></series></chart></container></container></container></level><level id="lvl_ad9of3d" description="Produtos"><args >
+      <arg id="A_AD_AGRUPADOR" type="text"/>
+    </args><container orientacao="V" tamanhoRelativo="100"><grid id="grd_ad9of3i" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,
+	CAB.NUMNOTA,
+	CAB.DTENTSAI,
+	CAB.CODEMP,
+	CAB.CODPARC,
+	PAR.RAZAOSOCIAL,
+	ITE.CODPROD,
+	PRO.DESCRPROD,
+	PRO.CODVOL,
+	ITE.QTDNEG,
+	(ITE.VLRTOT - ITE.VLRDESC - ITE.VLRREPRED) AS TOTALLIQ,
+	(NVL(ITE.AD_VLROUTROS,0)) AS TOTALOUTROS,
+	(ITE.VLRTOT - ITE.VLRDESC - ITE.VLRREPRED) + (NVL(ITE.AD_VLROUTROS,0)) AS TOTAL,
+	(ITE.QTDNEG/(SELECT SUM(ITE2.QTDNEG)
+						FROM TGFITE ITE2
+						INNER JOIN TGFCAB CAB2 ON ITE2.NUNOTA = CAB2.NUNOTA
+						INNER JOIN TGFPRO PRO2 ON ITE2.CODPROD = PRO2.CODPROD
+						INNER JOIN TGFGRU GRU2 ON PRO2.CODGRUPOPROD = GRU2.CODGRUPOPROD
+						INNER JOIN TGFVEN VEN2 ON CAB2.CODVEND = VEN2.CODVEND
+						WHERE TRUNC(CAB2.DTNEG) >= :P_PER.INI AND TRUNC(CAB2.DTNEG) <= :P_PER.FIN AND CAB2.TIPMOV = 'V' AND PRO2.USOPROD = 'V' AND ((:P_CODEMP IS NULL) OR (CAB2.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN2.CODVEND = :P_CODVEND)) AND CAB2.CODTIPOPER IN (1100,1124,2200))) * 100 AS PARTE,
+	(((ITE.VLRTOT - ITE.VLRDESC - ITE.VLRREPRED) + NVL(ITE.AD_VLROUTROS,0))/(SELECT SUM(ITE3.VLRTOT - ITE3.VLRDESC - ITE3.VLRREPRED) + SUM(NVL(ITE3.AD_VLROUTROS,0))
+																					FROM TGFITE ITE3
+																					INNER JOIN TGFCAB CAB3 ON ITE3.NUNOTA = CAB3.NUNOTA
+																					INNER JOIN TGFPRO PRO3 ON ITE3.CODPROD = PRO3.CODPROD
+																					INNER JOIN TGFGRU GRU3 ON PRO3.CODGRUPOPROD = GRU3.CODGRUPOPROD
+																					INNER JOIN TGFVEN VEN3 ON CAB3.CODVEND = VEN3.CODVEND
+																					WHERE TRUNC(CAB3.DTNEG) >= :P_PER.INI AND TRUNC(CAB3.DTNEG) <= :P_PER.FIN AND CAB3.TIPMOV = 'V' AND PRO3.USOPROD = 'V' AND ((:P_CODEMP IS NULL) OR (CAB3.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN3.CODVEND = :P_CODVEND)) AND CAB3.CODTIPOPER IN (1100,1124,2200))) * 100 AS PARTEFATURADO
+FROM TGFITE ITE
+INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA
+INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+WHERE TRUNC(CAB.DTNEG) >= :P_PER.INI AND TRUNC(CAB.DTNEG) <= :P_PER.FIN AND CAB.TIPMOV = 'V' AND PRO.USOPROD = 'V' AND ((:P_CODEMP IS NULL) OR (CAB.CODEMP = :P_CODEMP)) AND ((:P_CODVEND IS NULL) OR (VEN.CODVEND = :P_CODVEND)) AND CAB.CODTIPOPER IN (1100,1124,2200) AND (ITE.CODPROD IN (SELECT PRO4.CODPROD FROM TGFPRO PRO4 WHERE PRO4.AD_AGRUPADOR = :A_AD_AGRUPADOR)) AND (:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC)
+ORDER BY ITE.NUNOTA]]></expression><metadata><field name="NUNOTA" label="Nr Único" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr Nota" type="I" visible="true" useFooter="false"></field><field name="DTENTSAI" label="Dt Faturamento" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"></field><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cod Parceiro" type="I" visible="true" useFooter="false"></field><field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"></field><field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="CODVOL" label="*" type="S" visible="true" useFooter="false"></field><field name="QTDNEG" label="Qtd" type="F" visible="true" useFooter="SUM" mask="###0"></field><field name="TOTALLIQ" label="Total Nota" type="I" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="TOTALOUTROS" label="Total Outros" type="I" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="TOTAL" label="Total" type="I" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="PARTE" label="Contrib. Qtd" type="I" visible="true" useFooter="SUM" mask="#.##0,00000 %"></field><field name="PARTEFATURADO" label="Contrib. Fat" type="I" visible="true" useFooter="SUM" mask="#.##0,00000 %"></field></metadata></grid></container></level></gadget>

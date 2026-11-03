@@ -1,0 +1,63 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="EMPRESA" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" />
+    <parameter id="LOCAL" description="Local" metadata="entity:LocalFinanceiro@CODLOCAL" required="false" keep-last="true" />
+    <parameter id="PRODUTO" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" />
+  </prompt-parameters>
+  <level id="lvl_f251ip" description="Principal">
+    <simple-value id="svl_glplej" tamTexto="12">
+      <value-expression><![CDATA[<b>Estoque de Produtos por Local / Empresa]]></value-expression>
+    </simple-value>
+    <grid id="grd_f251iq">
+      <expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+
+EST.CODEMP,
+EST.CODLOCAL,
+LOC.DESCRLOCAL,
+PRO.CODPROD,
+PRO.DESCRPROD AS PRODUTO,
+EST.CONTROLE,
+PRO.CODVOL AS UNIDADE,
+EST.ESTOQUE,
+EST.ESTMIN,
+EST.ESTMAX,
+PRO.ATIVO,
+GRU.DESCRGRUPOPROD,
+CASE WHEN ESTOQUE < 0 THEN 'RED' END AS FGCOLOR
+
+  FROM 
+
+    TGFPRO PRO
+      INNER JOIN TGFEST EST ON (EST.CODPROD = PRO.CODPROD)
+      INNER JOIN TGFLOC LOC ON (EST.CODLOCAL = LOC.CODLOCAL)
+      INNER JOIN TGFGRU GRU ON (PRO.CODGRUPOPROD = GRU.CODGRUPOPROD)
+
+  WHERE (EST.CODEMP = :EMPRESA OR :EMPRESA IS NULL)
+          
+    AND (LOC.CODLOCAL = :LOCAL OR :LOCAL IS NULL)
+    AND (PRO.CODPROD = :PRODUTO OR :PRODUTO IS NULL)
+    AND PRO.USOPROD <> 'S'
+    AND EST.CODPARC = 0
+    
+  
+
+
+ORDER BY EST.CODEMP,EST.CODLOCAL, GRU.CODGRUPOPROD, PRO.CODPROD, PRO.ATIVO]]></expression>
+      <metadata>
+        <field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false" />
+        <field name="CODLOCAL" label="Cód. Local" type="I" visible="true" useFooter="false" />
+        <field name="DESCRLOCAL" label="Local" type="S" visible="true" useFooter="false" />
+        <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false" />
+        <field name="PRODUTO" label="Produto" type="S" visible="true" useFooter="false" />
+        <field name="CONTROLE" label="Controle" type="S" visible="true" useFooter="false" />
+        <field name="UNIDADE" label="UN" type="S" visible="true" useFooter="false" />
+        <field name="ESTOQUE" label="Estoque" type="F" visible="true" useFooter="true" mask="#.##0" />
+        <field name="ESTMIN" label="Est. Mínimo" type="I" visible="true" useFooter="false" />
+        <field name="ESTMAX" label="Est. Máximo" type="I" visible="true" useFooter="false" />
+        <field name="ATIVO" label="Ativo" type="S" visible="true" useFooter="false" />
+        <field name="DESCRGRUPOPROD" label="Grupo de Produtos" type="S" visible="true" useFooter="false" />
+        <field name="FGCOLOR" label="FGCOLOR" type="S" visible="true" useFooter="false" />
+      </metadata>
+    </grid>
+  </level>
+</gadget>

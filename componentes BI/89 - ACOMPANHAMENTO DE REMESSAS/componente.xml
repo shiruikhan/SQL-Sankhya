@@ -1,0 +1,77 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_aivv3cv" description="Principal">
+    <args>
+      <arg id="A_NUNOTA" type="integer"/>
+      <arg id="A_CHAVENFE" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="126">
+        <container orientacao="V" tamanhoRelativo="13900"/>
+        <container orientacao="V" tamanhoRelativo="139000">
+          <grid id="grd_aivv3cw" multiplaSelecao="S" useNewGrid="S">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,CAB.CHAVENFE,	CAB.CODTIPOPER,	(SELECT DISTINCT DESCROPER FROM TGFTOP T WHERE T.CODTIPOPER = CAB.CODTIPOPER) AS DESCROPER,	TRUNC(CAB.DTENTSAI) AS DTENTSAI,	CAB.CODPARC,	PAR.RAZAOSOCIAL,	(SELECT (SUM(NVL(QTDNEG,0))) FROM TGFITE I WHERE I.NUNOTA = CAB.NUNOTA) AS QTDSALDO,	(SELECT (SUM(NVL(QTDNEG,0))) FROM TGFITE IT WHERE IT.NUNOTA IN (SELECT DISTINCT C.NUNOTA FROM TGFCAB C WHERE C.CODTIPOPER = 1202 AND C.CHAVENFEREF = CAB.CHAVENFE)) AS DEBITO,	(CASE WHEN (SELECT (SUM(NVL(QTDNEG,0))) FROM TGFITE I WHERE I.NUNOTA = CAB.NUNOTA) > (SELECT (SUM(NVL(QTDNEG,0))) FROM TGFITE IT WHERE IT.NUNOTA IN (SELECT DISTINCT C.NUNOTA FROM TGFCAB C WHERE C.CODTIPOPER = 1202 AND C.CHAVENFEREF = CAB.CHAVENFE)) THEN 'PENDENTE' 		WHEN (SELECT (SUM(NVL(QTDNEG,0))) FROM TGFITE I WHERE I.NUNOTA = CAB.NUNOTA) = (SELECT (SUM(NVL(QTDNEG,0))) FROM TGFITE IT WHERE IT.NUNOTA IN (SELECT DISTINCT C.NUNOTA FROM TGFCAB C WHERE C.CODTIPOPER = 1202 AND C.CHAVENFEREF = CAB.CHAVENFE)) THEN 'COMPLETO' ELSE 'PENDENTE' END) TESTE	FROM TGFCAB CAB	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARCWHERE CAB.CODTIPOPER IN (1108,2208)	AND (:P_CODPARC IS NULL OR CAB.CODPARC = :P_CODPARC)	AND (:P_PERIODO IS NULL OR (TRUNC(CAB.DTENTSAI) >= :P_PERIODO.INI AND TRUNC(CAB.DTENTSAI) <= :P_PERIODO.FIN))ORDER BY CAB.DTENTSAI, CAB.NUNOTA]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+              <field name="CHAVENFE" label="Chave NFE" type="S" visible="true" useFooter="false"/>
+              <field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"/>
+              <field name="DESCROPER" label="Desc. TOP" type="S" visible="true" useFooter="false"/>
+              <field name="DTENTSAI" label="Dt. de Entrada/Saída" type="D" visible="true" useFooter="false"/>
+              <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+              <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+              <field name="QTDSALDO" label="Saldo" type="F" visible="true" useFooter="false"/>
+              <field name="DEBITO" label="Débito" type="F" visible="true" useFooter="false"/>
+              <field name="TESTE" label="Status" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <refresh-details ui-list="grd_ajveazb,grd_v02xn5">
+              <param id="A_NUNOTA">$NUNOTA</param>
+              <param id="A_CHAVENFE">$CHAVENFE</param>
+            </refresh-details>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="11900"/>
+      </container>
+      <container orientacao="H" tamanhoRelativo="100">
+        <container orientacao="V" tamanhoRelativo="50">
+          <grid id="grd_ajveazb" multiplaSelecao="S" useNewGrid="S">
+            <args>
+              <arg id="A_NUNOTA" type="integer"/>
+              <arg id="A_CHAVENFE" type="integer"/>
+            </args>
+            <title><![CDATA[Nota Original]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD,	PRO.DESCRPROD,	ITE.CODVOL,	(CASE WHEN VOA.CODPROD IS NULL THEN ITE.QTDNEG WHEN VOA.DIVIDEMULTIPLICA = 'D' THEN ITE.QTDNEG * VOA.QUANTIDADE	ELSE ITE.QTDNEG / VOA.QUANTIDADE END) AS QTDNEGFROM TGFITE ITE	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD	LEFT JOIN TGFVOA VOA ON (VOA.CODPROD = ITE.CODPROD AND VOA.CODVOL = ITE.CODVOL AND ((ITE.CONTROLE IS NULL AND VOA.CONTROLE = ' ') OR (ITE.CONTROLE IS NOT NULL AND ITE.CONTROLE = VOA.CONTROLE)))WHERE ITE.NUNOTA = :A_NUNOTAORDER BY ITE.CODPROD]]></expression>
+            <metadata>
+              <field name="CODPROD" label="Cód. do Produto" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+              <field name="CODVOL" label="Un. de Medida" type="S" visible="true" useFooter="false"/>
+              <field name="QTDNEG" label="Qtd. da Nota" type="F" visible="true" useFooter="SUM"/>
+            </metadata>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <grid id="grd_v02xn5" multiplaSelecao="S" useNewGrid="S">
+            <args>
+              <arg id="A_NUNOTA" type="integer"/>
+              <arg id="A_CHAVENFE" type="integer"/>
+            </args>
+            <title><![CDATA[Nota Retorno]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,	ITE.CODPROD,	PRO.DESCRPROD,	ITE.CODVOL,	(CASE WHEN VOA.CODPROD IS NULL THEN ITE.QTDNEG WHEN VOA.DIVIDEMULTIPLICA = 'D' THEN ITE.QTDNEG * VOA.QUANTIDADE	ELSE ITE.QTDNEG / VOA.QUANTIDADE END) AS QTDNEGFROM TGFITE ITE	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD	LEFT JOIN TGFVOA VOA ON (VOA.CODPROD = ITE.CODPROD AND VOA.CODVOL = ITE.CODVOL AND ((ITE.CONTROLE IS NULL AND VOA.CONTROLE = ' ') OR (ITE.CONTROLE IS NOT NULL AND ITE.CONTROLE = VOA.CONTROLE)))	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTAWHERE CAB.CODTIPOPER IN (1202)	AND ITE.NUNOTA IN (SELECT DISTINCT C.NUNOTA FROM TGFCAB C WHERE C.CODTIPOPER = 1202 AND C.CHAVENFEREF = (SELECT CHAVENFE FROM TGFCAB WHERE NUNOTA = :A_NUNOTA))ORDER BY ITE.CODPROD]]></expression>
+            <metadata>
+              <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+              <field name="CODPROD" label="Cód. do Produto" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+              <field name="CODVOL" label="Un. de Medida" type="S" visible="true" useFooter="false"/>
+              <field name="QTDNEG" label="Qtd. da Nota" type="F" visible="true" useFooter="SUM"/>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NUNOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

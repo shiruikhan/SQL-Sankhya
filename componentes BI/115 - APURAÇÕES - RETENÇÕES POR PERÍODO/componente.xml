@@ -1,0 +1,40 @@
+<gadget ><prompt-parameters><parameter  id="P_DTENTSAI" description="Período" metadata="datePeriod" required="true" keep-last="false" keep-date="false" order="0" label="P_DTENTSAI : Período"/></prompt-parameters><level id="lvl_xbu6jv" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_xbu6jw" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT TO_CHAR(REFERENCIA,'MM/YYYY') AS PERIODO,
+	CODREC,
+	LAST_DAY(REFERENCIA) AS AP_FINAL,
+	LAST_DAY(TRUNC(REFERENCIA)) + 20 AS VENCIMENTO,
+	NVL(ROUND(BASE,2),0) AS BASE,
+	NVL(ROUND(ALIQUOTA,2),0) AS ALIQUOTA,
+	NVL(ROUND(VALOR,2),0) AS VALOR,
+	' ' || NOME_IMP || ' NF ' || NUMNOTA || ' ' || PARCEIRO AS OBS,
+    NUMNOTA,
+	CODNAT,
+	DESCRNAT
+FROM (SELECT CAB.NUNOTA,
+			CAB.NUMNOTA,
+			CAB.DTENTSAI AS REFERENCIA,
+			CAB.CODPARC,
+			PAR.NOMEPARC AS PARCEIRO,
+			(CASE WHEN IMN.TIPOIMPOSTO = 4 THEN 'ISS' WHEN IMN.TIPOIMPOSTO = 5 THEN 'INSS' WHEN IMN.TIPOIMPOSTO = 6 THEN 'PIS' WHEN IMN.TIPOIMPOSTO = 7 THEN 'COFINS' WHEN IMN.TIPOIMPOSTO = 8 THEN 'IRF' WHEN IMN.TIPOIMPOSTO = 0 THEN 'CSRF' END) AS NOME_IMP,
+			SUM(ITE.VLRTOT - ITE.VLRDESC) AS VLRCTB,
+			CAB.VLRNOTA,
+			IMC.CODREC,
+			SUM(IMN.BASE) AS BASE,
+			SUM(IMN.ALIQUOTA) AS ALIQUOTA,
+			SUM(IMN.VALOR) AS VALOR,
+			CAB.CODNAT,
+			(SELECT DISTINCT N.DESCRNAT FROM TGFNAT N WHERE N.CODNAT = CAB.CODNAT) AS DESCRNAT
+		FROM TGFCAB CAB
+			INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+			INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA
+			INNER JOIN TGFTOP OPE ON (CAB.CODTIPOPER = OPE.CODTIPOPER AND CAB.DHTIPOPER = OPE.DHALTER)
+			INNER JOIN TGFIMN IMN ON (CAB.NUNOTA = IMN.NUNOTA AND ITE.NUNOTA = IMN.NUNOTA AND ITE.SEQUENCIA = IMN.SEQUENCIA)
+			INNER JOIN TGFIMC IMC ON IMN.CODIMP = IMC.CODIMP
+		WHERE OPE.ATUALLIVISS = 'E'
+			AND CAB.STATUSNOTA = 'L'
+			AND CAB.CODEMP <> 501
+			AND CAB.CODEMP = 1
+			AND CAB.DTENTSAI >= :P_DTENTSAI.INI
+			AND CAB.DTENTSAI <= :P_DTENTSAI.FIN
+			GROUP BY CAB.NUNOTA, CAB.NUMNOTA, CAB.DTENTSAI, CAB.CODPARC, PAR.NOMEPARC, CAB.VLRNOTA, IMN.TIPOIMPOSTO, IMC.CODREC, CAB.CODNAT
+			ORDER BY 2, 3) V
+ORDER BY 2]]></expression><metadata><field name="PERIODO" label="Período" type="S" visible="true" useFooter="false"></field><field name="CODREC" label="Cód. Receita" type="S" visible="true" useFooter="false"></field><field name="AP_FINAL" label="Dt. Final" type="D" visible="true" useFooter="false"></field><field name="VENCIMENTO" label="Vencimento" type="D" visible="true" useFooter="false"></field><field name="BASE" label="Base" type="F" visible="true" useFooter="SUM"></field><field name="ALIQUOTA" label="Alíquota" type="F" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="F" visible="true" useFooter="SUM"></field><field name="OBS" label="Obs." type="S" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. da Nota" type="I" visible="true" useFooter="false"></field><field name="CODNAT" label="Cód. Natureza" type="I" visible="true" useFooter="false"></field><field name="DESCRNAT" label="Natureza" type="S" visible="true" useFooter="false"></field></metadata></grid></container></level></gadget>

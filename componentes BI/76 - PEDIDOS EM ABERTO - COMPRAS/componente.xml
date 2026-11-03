@@ -1,0 +1,34 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período de Emissão" metadata="datePeriod" required="true" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1"/>
+    <parameter id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="2"/>
+    <parameter id="P_CODVEND" description="Comprador" metadata="entity:Vendedor@CODVEND" required="false" keep-last="false" keep-date="false" order="3"/>
+    <parameter id="P_DTCORTE" description="Data de Corte" metadata="date" required="false" keep-last="false" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_am8ir4u" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_am8ir4v" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,	CAB.NUMNOTA AS NUMPEDIDO,	CAB.CODPARC,	PAR.RAZAOSOCIAL,	CAB.DTNEG AS EMISSAO,	CAB.DTPREVENT AS PREVISAO,	ITE.CODPROD,	PRO.DESCRPROD,	ITE.CODVOL,	(CASE WHEN ITE.CODVOL = PRO.CODVOL THEN ITE.QTDNEG ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN ITE.QTDNEG / VOA.QUANTIDADE ELSE ITE.QTDNEG * VOA.QUANTIDADE END) END) AS QTDNEG,	(CASE WHEN ITE.CODVOL = PRO.CODVOL THEN ITE.QTDENTREGUE ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN ITE.QTDENTREGUE / VOA.QUANTIDADE ELSE ITE.QTDENTREGUE * VOA.QUANTIDADE END) END) AS ENTREGUE,	(CASE WHEN ITE.CODVOL = PRO.CODVOL THEN ITE.QTDNEG ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN ITE.QTDNEG / VOA.QUANTIDADE ELSE ITE.QTDNEG * VOA.QUANTIDADE END) END) - (CASE WHEN ITE.CODVOL = PRO.CODVOL THEN ITE.QTDENTREGUE ELSE (CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN ITE.QTDENTREGUE / VOA.QUANTIDADE ELSE ITE.QTDENTREGUE * VOA.QUANTIDADE END) END) AS PENDENTE,	CAB.OBSERVACAOFROM TGFITE ITE	INNER JOIN TGFCAB CAB ON (ITE.NUNOTA = CAB.NUNOTA AND CAB.STATUSNOTA = 'L' AND CAB.TIPMOV = 'O' AND CAB.PENDENTE = 'S')	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC	LEFT JOIN TGFVOA VOA ON (ITE.CODPROD = VOA.CODPROD AND ITE.CODVOL = VOA.CODVOL)WHERE (CAB.DTNEG >= :P_PERIODO.INI AND CAB.DTNEG <= :P_PERIODO.FIN)	AND (ITE.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)	AND (CAB.CODPARC = :P_CODPARC OR :P_CODPARC IS NULL)	AND ITE.QTDNEG - ITE.QTDENTREGUE <> 0	AND ITE.PENDENTE = 'S'	AND (CAB.CODVEND = :P_CODVEND OR :P_CODVEND IS NULL)	AND (CAB.DTPREVENT <= :P_DTCORTE OR :P_DTCORTE IS NULL)ORDER BY CAB.DTNEG, CAB.NUNOTA, CAB.CODPARC]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMPEDIDO" label="Nr Pedido" type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cod Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+          <field name="EMISSAO" label="Dt Emissão" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="PREVISAO" label="Dt Previsão" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+          <field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="*" type="S" visible="true" useFooter="false"/>
+          <field name="QTDNEG" label="Qtd Pedido" type="F" visible="true" useFooter="false"/>
+          <field name="ENTREGUE" label="Qtd Entregue" type="F" visible="true" useFooter="false"/>
+          <field name="PENDENTE" label="Qtd Pendente" type="F" visible="true" useFooter="false"/>
+          <field name="OBSERVACAO" label="Observação" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.mgecom.mov.PortalCompras">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

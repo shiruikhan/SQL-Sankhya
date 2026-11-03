@@ -1,0 +1,211 @@
+<gadget ><prompt-parameters><parameter  id="PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0" label="PERIODO : Período"/><parameter  id="ANALISE" description="Análise" metadata="singleList:Text" listType="text" required="false" keep-last="false" keep-date="false" order="1" label="ANALISE : singleList:Text"><item value="Produtos" label="Produtos"/><item value="Clientes" label="Clientes"/></parameter><parameter  id="A" description="%A" metadata="integer" required="false" keep-last="false" keep-date="false" default="20" order="5" label="A : Número Inteiro"/><parameter  id="B" description="%B" metadata="integer" required="false" keep-last="false" keep-date="false" default="30" order="6" label="B : Número Inteiro"/><parameter  id="STATUSNOTA" description="Apenas notas confirmadas?" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="7" label="STATUSNOTA : Verdadeiro/Falso"/><parameter  id="DESC" description="Tirar Desconto" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="8" label="DESC : Verdadeiro/Falso"/><parameter  id="ST" description="Adicionar ST" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="9" label="ST : Verdadeiro/Falso"/><parameter  id="IPI" description="Adicionar IPI" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="10" label="IPI : Verdadeiro/Falso"/><parameter  id="REP" description="Diminuir Valor Redução" metadata="boolean" required="false" keep-last="true" keep-date="false" default="false" order="11" label="REP : Verdadeiro/Falso"/><parameter  id="GRUPO" description="Grupo de Top" metadata="multiList:Text" listType="sql" required="false" keep-last="false" keep-date="false" order="12" label="GRUPO : multiList:Text"><expression type="SQL"><![CDATA[SELECT
+       DISTINCT TOP.GRUPO AS VALUE,
+       TOP.GRUPO
+AS LABEL
+   FROM TGFTOP TOP WHERE GOLSINAL= -1
+   ORDER BY 1]]></expression></parameter><parameter  id="PGRUPO" description="Grupo de Produtos" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="false" keep-date="false" order="13" label="PGRUPO : Entidade/Tabela"/><parameter  id="CODEMP" description="Empresas" metadata="multiList:Text" listType="sql" required="false" keep-last="false" keep-date="false" order="14" label="CODEMP : multiList:Text"><expression type="SQL"><![CDATA[SELECT
+       DISTINCT EMP.CODEMP AS VALUE,
+       EMP.CODEMP || '- '||EMP.RAZAOSOCIAL AS LABEL
+   FROM TSIEMP EMP 
+   ORDER BY 1]]></expression></parameter><parameter  id="CODPARC" description="Parceiro" metadata="entity:Parceiro@CODPARC" listType="sql" required="false" keep-last="false" keep-date="false" order="15" label="CODPARC : Entidade/Tabela"/><parameter  id="CODVEND" description="Vendedor" metadata="entity:Vendedor@CODVEND" listType="sql" required="false" keep-last="false" keep-date="false" order="16" label="CODVEND : Entidade/Tabela"/></prompt-parameters><level id="lvl_atbwcjx" description="Principal"><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="32.84478774674853"><simple-value id="svl_auhaibv"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(CASE WHEN CURVA = 'A' THEN SUM(VALOR) END) SOMAA,
+	SUM(CASE WHEN CURVA = 'B' THEN SUM(VALOR) END) SOMAB,
+	SUM(CASE WHEN CURVA = 'C' THEN SUM(VALOR) END) SOMAC,
+	SUM(CASE WHEN CURVA = 'A' THEN SUM(VALOR) END)/SUM(VALOR) AS PERCA,
+	SUM(CASE WHEN CURVA = 'B' THEN SUM(VALOR) END)/SUM(VALOR) AS PERCB,
+	SUM(CASE WHEN CURVA = 'C' THEN SUM(VALOR) END)/SUM(VALOR) AS PERCC,
+	SUM(CASE WHEN CURVA = 'A' THEN COUNT(RANKING) END) QTDEA,
+	SUM(CASE WHEN CURVA = 'B' THEN COUNT(RANKING) END) QTDEB,
+	SUM(CASE WHEN CURVA = 'C' THEN COUNT(RANKING) END) QTDEC,
+	SUM(CASE WHEN CURVA = 'A' THEN SUM(KG) END) QTDEITA,
+	SUM(CASE WHEN CURVA = 'B' THEN SUM(KG) END) QTDEITB,
+	SUM(CASE WHEN CURVA = 'C' THEN SUM(KG) END) QTDEITC,
+	SUM(CASE WHEN CURVA = 'A' THEN SUM(KG) END)/SUM(KG) PERCQTDEITA,
+	SUM(CASE WHEN CURVA = 'B' THEN SUM(KG) END)/SUM(KG) PERCQTDEITB,
+	SUM(CASE WHEN CURVA = 'C' THEN SUM(KG) END)/SUM(KG) PERCQTDEITC,
+	(100-(:A+:B)) AS VLRC,
+	SUM(CASE WHEN CURVA = 'A' OR CURVA = 'B' OR CURVA = 'C' THEN SUM(VALOR) END) SOMAABC,
+	SUM(CASE WHEN CURVA = 'A' OR CURVA = 'B' OR CURVA = 'C' THEN COUNT(RANKING) END) QTDEABC,
+	SUM(CASE WHEN CURVA = 'A' OR CURVA = 'B' OR CURVA = 'C' THEN SUM(KG) END) QTDEITABC
+FROM (
+	select CODIGO, 
+		/*DESCRICAO, */
+		SUM(VALORANT) AS VALOR,
+		SUM(SUM(VALORANT)) OVER  (ORDER BY 3 desc ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ACUMULADO, 
+		(sum(sum(VALORANT)) OVER ())*0.8 AS VALORTOT,
+		(sum(sum(VALORANT)) OVER ()) AS TOTAL,
+		(SUM(VALORANT) / (sum(sum(VALORANT)) OVER ()))*100 AS PERC,
+		(SUM(SUM(VALORANT)) OVER  (ORDER BY 3 desc ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)/(sum(sum(VALORANT)) OVER ()))*100 AS PERCACUM,
+		SUM(KGANT) AS KG,
+		ROWNUM AS RANKING,
+		CASE WHEN ROWNUM <= ROUND(((SUM(COUNT(ROWNUM)) OVER ()))*(:A/100)) THEN 'A' WHEN ROWNUM > ROUND(((SUM(COUNT(ROWNUM)) OVER ()))*(:A/100)) AND ROWNUM <= ROUND(((SUM(COUNT(ROWNUM)) OVER ()))*(:A/100))+ROUND(((SUM(COUNT(ROWNUM)) OVER ()))*(:B/100)) THEN 'B' ELSE 'C' END CURVA,
+		SUM(VALORANT)/SUM(KGANT) AS VALORMEDIO, ((SUM(SUM(KGANT)) OVER ())) AS TOTA,
+		((MAX(MAX(ROWNUM)) OVER ())) AS QTDPRODUTO
+	FROM (SELECT CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.AD_AGRUPADOR ELSE PAR.CODPARC || '-' || PAR.NOMEPARC END AS CODIGO,
+			/*CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.DESCRPROD ELSE PAR.NOMEPARC END AS DESCRICAO,*/
+			SUM ((((ITE.VLRTOT + NVL(ITE.AD_VLROUTROS,0)) - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END) - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END) + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END) + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)) * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS) AS VALORANT,
+			sum(ITE.QTDNEG) AS KGANT
+		FROM TGFCAB CAB,
+			TGFPAR PAR,
+			TGFITE ITE,
+			TGFPRO PRO,
+			TGFGRU GRU,
+			TGFTOP TPO,
+			VGFCAB VCAB,
+			TGFVEN VEN
+		WHERE (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+			AND ITE.USOPROD <> 'D'
+			AND TPO.GOLSINAL= -1
+			AND CAB.CODVEND= VEN.CODVEND
+			AND VCAB.NUNOTA= CAB.NUNOTA
+			AND PRO.CODGRUPOPROD= GRU.CODGRUPOPROD
+			AND TPO.GRUPO IN :GRUPO
+			AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+			AND CAB.CODEMP IN :CODEMP
+			AND ((CAB.CODPARC= :CODPARC) OR (:CODPARC IS NULL))
+			AND ((CAB.CODVEND= :CODVEND) OR (:CODVEND IS NULL))
+			AND ((GRU.CODGRUPOPROD = :PGRUPO) OR (:PGRUPO IS NULL))
+			AND CAB.CODPARC = PAR.CODPARC
+			AND CAB.NUNOTA = ITE.NUNOTA
+			AND ITE.CODPROD = PRO.CODPROD
+			AND CAB.CODTIPOPER = TPO.CODTIPOPER
+			AND CAB.DHTIPOPER = TPO.DHALTER
+		GROUP BY CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.AD_AGRUPADOR ELSE PAR.CODPARC || '-' || PAR.NOMEPARC END/*,
+			CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.DESCRPROD ELSE PAR.NOMEPARC END*/ 
+		order by 2 desc)
+	GROUP BY CODIGO,
+		/*DESCRICAO,*/
+		ROWNUM order by 2 desc)
+GROUP BY CURVA,
+	VALOR,
+	KG]]></expression><metadata><field name="SOMAA" label="SOMAA" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="SOMAB" label="SOMAB" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="SOMAC" label="SOMAC" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="PERCA" label="PERCA" type="I" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="PERCB" label="PERCB" type="I" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="PERCC" label="PERCC" type="I" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="QTDEA" label="QTDEA" type="I" visible="true" useFooter="false"></field><field name="QTDEB" label="QTDEB" type="I" visible="true" useFooter="false"></field><field name="QTDEC" label="QTDEC" type="I" visible="true" useFooter="false"></field><field name="QTDEITA" label="QTDEITA" type="I" visible="true" useFooter="false" mask="#.##0"></field><field name="QTDEITB" label="QTDEITB" type="I" visible="true" useFooter="false" mask="#.##0"></field><field name="QTDEITC" label="QTDEITC" type="I" visible="true" useFooter="false" mask="#.##0"></field><field name="PERCQTDEITA" label="PERCQTDEITA" type="I" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="PERCQTDEITB" label="PERCQTDEITB" type="I" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="PERCQTDEITC" label="PERCQTDEITC" type="I" visible="true" useFooter="false" mask="#.##0,00 %"></field><field name="VLRC" label="VLRC" type="I" visible="true" useFooter="false"></field><field name="SOMAABC" label="SOMAABC" type="C" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="QTDEABC" label="QTDEABC" type="I" visible="true" useFooter="false"></field><field name="QTDEITABC" label="QTDEITABC" type="I" visible="true" useFooter="false" mask="#.##0"></field></metadata><value-expression><![CDATA[<center>
+<table>
+   <tr>
+       <td height="20" bgcolor="#FFFFFF" colspan="5" align="center">
+           <font size="16"><b>Curva ABC de :ANALISE</b></font><br>
+           <font size="14">Período: :PERIODO.INI a :PERIODO.FIN</font>
+       </td>
+   </tr>
+   <tr bgcolor="#E8F5E9">
+       <td height="20" bgcolor="#FFFFFF"></td>
+       <td height="20" bgcolor="#4CAF50" width="180" align="center">
+           <font size="14"><b>A - :A%</b></font>
+       </td>
+       <td height="20" bgcolor="#FF9800" width="180" align="center">
+           <font size="14"><b>B - :B%</b></font>
+       </td>
+       <td height="20" bgcolor="#F44336" width="180" align="center">
+           <font size="14"><b>C - :VLRC%</b></font>
+       </td>
+       <td height="20" bgcolor="#9E9E9E" width="180" align="center">
+           <font size="14"><b>Total</b></font>
+       </td>
+   </tr>
+   <tr bgcolor="#E8F5E9">
+       <td height="20" bgcolor="#FFFFFF" align="left">
+           <font size="14"><b>Vendas</b></font>
+       </td>
+       <td height="20" bgcolor="#E8F5E9" align="center">
+           <font size="14"><b>$SOMAA ($PERCA)</b></font>
+       </td>
+       <td height="20" bgcolor="#FFF3E0" align="center">
+           <font size="14"><b>$SOMAB ($PERCB)</b></font>
+       </td>
+       <td height="20" bgcolor="#FFEBEE" align="center">
+           <font size="14"><b>$SOMAC ($PERCC)</b></font>
+       </td>
+       <td height="20" bgcolor="#F5F5F5" align="center">
+           <font size="14"><b>$SOMAABC (100%)</b></font>
+       </td>
+   </tr>
+   <tr bgcolor="#E8F5E9">
+       <td height="20" bgcolor="#FFFFFF" align="left">
+           <font size="14"><b>Qtde de Produtos</b></font>
+       </td>
+       <td height="20" bgcolor="#E8F5E9" align="center">
+           <font size="14"><b>$QTDEA</b></font>
+       </td>
+       <td height="20" bgcolor="#FFF3E0" align="center">
+           <font size="14"><b>$QTDEB</b></font>
+       </td>
+       <td height="20" bgcolor="#FFEBEE" align="center">
+           <font size="14"><b>$QTDEC</b></font>
+       </td>
+       <td height="20" bgcolor="#F5F5F5" align="center">
+           <font size="14"><b>$QTDEABC</b></font>
+       </td>
+   </tr>
+   <tr bgcolor="#E8F5E9">
+       <td height="20" bgcolor="#FFFFFF" align="left">
+           <font size="14"><b>Itens Vendidos</b></font>
+       </td>
+       <td height="20" bgcolor="#E8F5E9" align="center">
+           <font size="14"><b>$QTDEITA ($PERCQTDEITA)</b></font>
+       </td>
+       <td height="20" bgcolor="#FFF3E0" align="center">
+           <font size="14"><b>$QTDEITB ($PERCQTDEITB)</b></font>
+       </td>
+       <td height="20" bgcolor="#FFEBEE" align="center">
+           <font size="14"><b>$QTDEITC ($PERCQTDEITC)</b></font>
+       </td>
+       <td height="20" bgcolor="#F5F5F5" align="center">
+           <font size="14"><b>$QTDEITABC (100%)</b></font>
+       </td>
+   </tr>
+</table>
+</center>]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="68.16531326335249"><grid id="grd_atbwcjy" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[WITH BASE AS (
+  SELECT CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.AD_AGRUPADOR ELSE PAR.CODPARC || '-' || PAR.NOMEPARC END AS CODIGO,
+         SUM(((ITE.VLRTOT + NVL(ITE.AD_VLROUTROS,0))
+              - CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END
+              - CASE WHEN :REP  = 'S' THEN ITE.VLRREPRED ELSE 0 END
+              + CASE WHEN :ST   = 'S' THEN ITE.VLRSUBST ELSE 0 END
+              + CASE WHEN :IPI  = 'S' THEN ITE.VLRIPI  ELSE 0 END)
+             * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END
+             * VCAB.INDITENS) AS VALOR,
+         SUM(ITE.QTDNEG) AS KG
+  FROM TGFCAB CAB
+  INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
+  INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA
+  INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
+  INNER JOIN TGFGRU GRU ON GRU.CODGRUPOPROD = PRO.CODGRUPOPROD
+  INNER JOIN TGFTOP TPO ON TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER
+  INNER JOIN VGFCAB VCAB ON VCAB.NUNOTA = CAB.NUNOTA
+  INNER JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+  WHERE (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+    AND ITE.USOPROD <> 'D'
+    AND TPO.GOLSINAL = -1
+    AND TPO.GRUPO IN :GRUPO
+    AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+    AND CAB.CODEMP IN :CODEMP
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+    AND ((CAB.CODPARC = :CODPARC) OR (:CODPARC IS NULL))
+    AND ((CAB.CODVEND = :CODVEND) OR (:CODVEND IS NULL))
+    AND ((GRU.CODGRUPOPROD = :PGRUPO) OR (:PGRUPO IS NULL))
+  GROUP BY CASE WHEN ':@ANALISE' = 'Produtos' THEN PRO.AD_AGRUPADOR ELSE PAR.CODPARC || '-' || PAR.NOMEPARC END
+),
+FINAL AS (
+  SELECT CODIGO,
+         VALOR,
+         SUM(VALOR) OVER (ORDER BY VALOR DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ACUMULADO,
+         (SUM(VALOR) OVER ()) * 0.8 AS VALORTOT,
+         (VALOR / NULLIF(SUM(VALOR) OVER (), 0)) * 100 AS PERC,
+         (SUM(VALOR) OVER (ORDER BY VALOR DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / NULLIF(SUM(VALOR) OVER (), 0)) * 100 AS PERCACUM,
+         KG,
+         ROW_NUMBER() OVER (ORDER BY VALOR DESC) AS RANKING,
+         CASE 
+           WHEN ROW_NUMBER() OVER (ORDER BY VALOR DESC) <= ROUND(COUNT(*) OVER () * (:A/100)) THEN 'A'
+           WHEN ROW_NUMBER() OVER (ORDER BY VALOR DESC) <= ROUND(COUNT(*) OVER () * (:A/100)) + ROUND(COUNT(*) OVER () * (:B/100)) THEN 'B'
+           ELSE 'C'
+         END AS CURVA,
+         CASE 
+           WHEN ROW_NUMBER() OVER (ORDER BY VALOR DESC) <= ROUND(COUNT(*) OVER () * (:A/100)) THEN '#E8F5E9'
+           WHEN ROW_NUMBER() OVER (ORDER BY VALOR DESC) <= ROUND(COUNT(*) OVER () * (:A/100)) + ROUND(COUNT(*) OVER () * (:B/100)) THEN '#FFF3E0'
+           ELSE '#FFEBEE'
+         END AS BKCOLOR,
+         (VALOR / NULLIF(KG, 0)) AS VALORMEDIO,
+         SUM(KG) OVER () AS QTDTOTAL,
+         COUNT(*) OVER () AS QTDPRODUTO
+  FROM BASE
+)
+SELECT *
+FROM FINAL
+ORDER BY VALOR DESC]]></expression><metadata><field name="CODIGO" label="Código" type="S" visible="true" useFooter="false"></field><field name="VALOR" label="Total Vendido" type="C" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="ACUMULADO" label="ACUMULADO" type="F" visible="false" useFooter="false"></field><field name="VALORTOT" label="VALORTOT" type="F" visible="false" useFooter="false"></field><field name="PERC" label="" type="F" visible="true" useFooter="SUM" mask="#.##0,00 %"></field><field name="PERCACUM" label="PERCACUM" type="F" visible="false" useFooter="false"></field><field name="KG" label="Qtde" type="I" visible="true" useFooter="SUM" mask="#.##0"></field><field name="RANKING" label="Ranking" type="I" visible="true" useFooter="false"></field><field name="CURVA" label="" type="S" visible="true" useFooter="false"></field><field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"></field><field name="VALORMEDIO" label="R$ Unit (Médio)" type="C" visible="true" useFooter="AVG" mask="R$ #.##0,00"></field><field name="QTDTOTAL" label="QTDTOTAL" type="F" visible="false" useFooter="false"></field><field name="QTDPRODUTO" label="QTDPRODUTO" type="F" visible="false" useFooter="false"></field></metadata></grid></container></container></level></gadget>

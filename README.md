@@ -116,7 +116,7 @@ SQL Sankhya/
 | **Integração E-commerce / Site** | `STP_INTEGRAPEDIDO_SITESPARK`, `STP_INTEGRAPEDIDO_AGENDADA`, `TRG_INC_UPD_INTEGRA` |
 | **CT-e / NF-e** | `EVP_CLASSIFICACTE_SPARK`, `TRG_CMP_TGFCAB_NFE_SPARK`, `VW_CTE_AUTORIZADOS`, `VGFNFE` |
 | **Integração Contábil** | `STP_CRIA_CTACTBCLI_AUDICON`, `STP_CRIA_CTACTBFOR_AUDICON` |
-| **BI / Gerencial** | 112 queries analíticas em `componentes BI/` |
+| **BI / Gerencial** | 184 componentes BI de produção em `componentes BI/` (pastas `NUGDG - TÍTULO`) |
 
 ---
 
@@ -250,7 +250,7 @@ Agrupadas por domínio:
 ---
 
 ### 7.6 Componentes BI (pasta `componentes BI/`)
-> 112 queries de componente (115 `.sql`, dos quais 3 não são componentes) em 32 pastas + arquivos soltos. Ver [`componentes BI/README.md`](componentes%20BI/README.md).
+> 184 componentes BI capturados de produção (`TSIGDG`, 03/11/2026), uma pasta `NUGDG - TÍTULO` por componente, como em `reports/`. Ver [`componentes BI/README.md`](componentes%20BI/README.md).
 
 | Tema | Dashboard / Componente |
 |---|---|

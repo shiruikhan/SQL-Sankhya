@@ -1,0 +1,43 @@
+<gadget ><prompt-parameters><parameter  id="DESC" description="3- Tirar Descontos" metadata="boolean" required="true" keep-last="true" label="DESC : Verdadeiro/Falso"/><parameter  id="IPI" description="4- Adicionar IPI" metadata="boolean" required="true" keep-last="true" label="IPI : Verdadeiro/Falso"/><parameter  id="PERIODO" description="2- Período" metadata="datePeriod" required="true" keep-last="true" label="PERIODO : Período"/><parameter  id="PRODUTO" description="1- Produto" metadata="entity:Produto@CODPROD" required="true" keep-last="true" label="PRODUTO : Entidade/Tabela"/><parameter  id="REP" description="6- Diminuir Valor Redução" metadata="boolean" required="true" keep-last="true" label="REP : Verdadeiro/Falso"/><parameter  id="ST" description="5- Adicionar ST" metadata="boolean" required="true" keep-last="true" label="ST : Verdadeiro/Falso"/><parameter  id="STATUSNOTA" description="7- Apenas notas confirmadas?" metadata="boolean" required="true" keep-last="true" label="STATUSNOTA : Verdadeiro/Falso"/><parameter  id="TOP" description="8- Grupo da TOP" required="false" keep-last="true" metadata="multiList:Text" label="TOP : multiList:Text"><expression type="SQL"><![CDATA[SELECT
+       DISTINCT TOP.GRUPO AS VALUE,
+       TOP.GRUPO
+AS LABEL
+   FROM TGFTOP TOP WHERE GOLSINAL= -1
+   ORDER BY 1]]></expression></parameter></prompt-parameters><level id="lvl_7wdtgr" description="Principal"><grid id="grd_7wdth1" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT SUM(VALORC) AS VALORC, SUM(QTDC) AS QTDC, NOMEPARC, CONCAT(ROWNUM ,'º') AS RANK, rownum
+FROM
+(
+SELECT
+SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             )  AS VALORC, 
+
+COUNT(DISTINCT CAB.NUNOTA) AS QTDC, PAR.NOMEPARC
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+AND CAB.NUNOTA= VCAB.NUNOTA
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND ((TPO.GRUPO IN :TOP))  
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND CAB.CODPARC = PAR.CODPARC
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+
+GROUP BY PAR.NOMEPARC
+ORDER BY 1 DESC )
+GROUP BY ROWNUM, NOMEPARC order by 5]]></expression><metadata><field name="VALORC" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="QTDC" label="Quantidade" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="RANK" label="Ranking" type="S" visible="true" useFooter="false"></field><field name="ROWNUM" label="ROWNUM" type="I" visible="false" useFooter="false"></field></metadata></grid></level></gadget>

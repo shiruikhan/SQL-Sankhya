@@ -1,0 +1,27 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_NUNOTA" description="Nr. Único" metadata="integer" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_DATACORTE" description="Data de Fechamento" metadata="date" required="true" keep-last="true" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_uae15s" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_uae15t" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,	CAB.DTNEG,	CAB.CODTIPOPER,	(SELECT DISTINCT DESCROPER FROM TGFTOP WHERE CODTIPOPER = CAB.CODTIPOPER) AS DESCRTOP,	ITE.CODPROD,	PRO.DESCRPROD,	ITE.CODVOL,	CASE WHEN EXISTS (SELECT I.CODPROD 						FROM TGFITE I 							INNER JOIN TGFCAB C ON I.NUNOTA = C.NUNOTA 						WHERE I.CODPROD = ITE.CODPROD 							AND I.CODEMP = 1							AND C.CODTIPOPER IN (200,201,203,209,213,214,215,221,232,240,241)							AND I.ATUALESTOQUE = 1							AND C.DTNEG <= :P_DATACORTE)		THEN '#65e10f' ELSE '#f26c63' END AS BKCOLOR,	CASE WHEN EXISTS (SELECT IT.CODPROD 						FROM TGFITE IT 							INNER JOIN TGFCAB CA ON IT.NUNOTA = CA.NUNOTA 						WHERE IT.CODPROD = ITE.CODPROD 							AND IT.CODEMP = 1							AND CA.CODTIPOPER IN (200,201,203,209,213,214,215,221,232,240,241)							AND IT.ATUALESTOQUE = 1							AND CA.DTNEG <= :P_DATACORTE)		THEN 'OK' ELSE 'Verificar' END AS STATUS	FROM TGFITE ITE	INNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPRODWHERE ITE.NUNOTA = :P_NUNOTA]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Único" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+          <field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRTOP" label="Descrição Top" type="S" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Und." type="S" visible="true" useFooter="false"/>
+          <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"/>
+          <field name="STATUS" label="Status" type="S" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,17 @@
+<gadget ><prompt-parameters><parameter  id="P_CODPROD" description="Cód. Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="0" label="P_CODPROD : Entidade/Tabela"/><parameter  id="P_CODLOCALORIG" description="Local" metadata="entity:LocalFinanceiro@CODLOCAL" required="false" keep-last="true" keep-date="false" order="1" label="P_CODLOCALORIG : Entidade/Tabela"/><parameter  id="P_SERIE" description="Série" metadata="text" required="false" keep-last="true" keep-date="false" show-inactives="false" label="P_SERIE : Texto" order="2"/><parameter  id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_CODEMP : Entidade/Tabela" order="3"/></prompt-parameters><level id="lvl_vxdlwo" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_vxdlwp" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Exportação de SN do Estoque]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODEMP AS CODEMP,
+	ITE.CODLOCALORIG,
+	SER.CODPROD,
+	PRO.DESCRPROD,
+	SER.SERIE AS SERIE,
+	SUM(SER.ATUALESTOQUE) AS ATUALESTOQUE
+FROM TGFSER SER
+	INNER JOIN TGFITE ITE ON SER.NUNOTA = ITE.NUNOTA
+		AND SER.SEQUENCIA = ITE.SEQUENCIA
+		AND SER.CODPROD = ITE.CODPROD
+	INNER JOIN TGFPRO PRO ON SER.CODPROD = PRO.CODPROD
+WHERE (SER.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)
+	AND (ITE.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)
+	AND (ITE.CODLOCALORIG = :P_CODLOCALORIG OR :P_CODLOCALORIG IS NULL)
+	AND (SER.SERIE = :P_SERIE OR :P_SERIE IS NULL)
+GROUP BY ITE.CODEMP, ITE.CODLOCALORIG, SER.CODPROD, PRO.DESCRPROD, SER.SERIE
+HAVING SUM(SER.ATUALESTOQUE) >= 1]]></expression><metadata><field name="CODEMP" label="Empresa" type="I" visible="true" useFooter="false"></field><field name="CODLOCALORIG" label="CODLOCALORIG" type="I" visible="true" useFooter="false"></field><field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"></field><field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"></field><field name="SERIE" label="Série" type="S" visible="true" useFooter="false"></field><field name="ATUALESTOQUE" label="Saldo do SN" type="I" visible="true" useFooter="false"></field></metadata></grid></container></level></gadget>

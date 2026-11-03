@@ -1,0 +1,54 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_PERIODO" description="Dt. Negociação" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="1"/>
+    <parameter id="P_DTENTSAI" description="Dt. Entrada e Saída" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="2"/>
+    <parameter id="P_CODCFOPINI" description="CFOP Inicial" metadata="integer" required="true" keep-last="true" keep-date="false" order="3"/>
+    <parameter id="P_CODCFOPFIN" description="CFOP Final" metadata="integer" required="true" keep-last="true" keep-date="false" order="4"/>
+    <parameter id="P_NUNOTA" description="Nro Único Nota" metadata="integer" required="false" keep-last="true" keep-date="false" order="5"/>
+    <parameter id="P_NUMNOTA" description="Nro Nota" metadata="integer" required="false" keep-last="false" keep-date="false" order="6"/>
+  </prompt-parameters>
+  <level id="lvl_x6mpzo" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_x6mpzp" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT NUNOTA, NUMNOTA, DTNEG, DTENTSAI, STATUSNFE, CODTIPOPER, CODPARC, NOMEPARC, CODTIPPARC, UF_DEST AS UF_DEST, UF_ORIG AS UF_ORIG,CHAVENFE, IDENTINSCESTAD,--DESCRGRUPOPROD,SUM(VLRCTB) AS VLRTOT, MAX(CODCFO) AS CODCFO,  MAX(CODTRIB) AS CODTRIB, SUM(BASEICMS) AS BASEICMS, MAX(ALIQICMS) AS ALIQICMS, SUM(VLRICMS) AS VLRICMS, MAX(CSTIPI) AS CSTIPI, SUM(BASEIPI) AS BASEIPI, MAX(ALIQIPI) AS ALIQIPI , SUM(VLRIPI) AS VLRIPI,SUM(BASE_PIS) AS BASE_PIS,SUM(VLR_PIS) AS VLR_PIS,SUM(BASE_COFINS) AS BASE_COFINS,SUM(VLR_COFINS) AS VLR_COFINS,SUM(BASE_ST) AS BASE_ST,SUM(VLR_ST) AS VLR_ST,SUM(VLR_FEM_ICMS_ST) AS VLR_FEM_ICMS_ST,SUM(VLR_FEM_ICMS_OP) AS VLR_FEM_ICMS_OPFROM(   SELECT CAB.NUNOTA, CAB.NUMNOTA, CAB.DTNEG, CAB.DTENTSAI,	CASE 		WHEN CAB.STATUSNFE IS NULL AND CAB.TIPMOV = 'P' THEN '-----' 		WHEN CAB.STATUSNFE = 'A' THEN 'Aprovada'		WHEN CAB.STATUSNFE = 'D' THEN 'Denegada'		WHEN CAB.STATUSNFE = 'E' THEN 'Aguardando Autorização'		WHEN CAB.STATUSNFE = 'I' THEN 'Enviada'		WHEN CAB.STATUSNFE = 'M' THEN 'Não é NF-e'		WHEN CAB.STATUSNFE = 'P' THEN 'Pendente de Retorno'		WHEN CAB.STATUSNFE = 'R' THEN 'Aguardando Correção'		WHEN CAB.STATUSNFE = 'S' THEN 'Enviada EPEC'		WHEN CAB.STATUSNFE = 'T' THEN 'NF-e Terceiro'		WHEN CAB.STATUSNFE = 'V' THEN 'Com erro de Validação' 		ELSE 'Não Enviada' END AS STATUSNFE, CAB.CODTIPOPER, PAR.CODPARC, PAR.NOMEPARC, PAR.CODTIPPARC, ITE.SEQUENCIA, ITE.CODPROD, PRO.DESCRPROD, ITE.QTDNEG, ITE.VLRUNIT, LIV.VLRCTB, ITE.CODCFO,  ITE.CODTRIB, ITE.BASEICMS, ITE.ALIQICMS, ITE.VLRICMS, ITE.CSTIPI, ITE.BASEIPI, ITE.ALIQIPI , ITE.VLRIPI,  LIV.UFDESTINO AS "UF_DEST", LIV.UFORIGEM AS "UF_ORIG",(SELECT SUM(DIN.BASERED)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 6) AS BASE_PIS,(SELECT SUM(DIN.VALOR)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 6) AS VLR_PIS,(SELECT SUM(DIN.BASERED)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 7) AS BASE_COFINS,(SELECT SUM(DIN.VALOR)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 7) AS VLR_COFINS,(SELECT SUM(DIN.BASE)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 2) AS BASE_ST,(SELECT SUM(DIN.VALOR)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 2) AS VLR_ST,   (SELECT SUM(DIN.VLRFCPINT)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 2) AS VLR_FEM_ICMS_ST,      (SELECT SUM(DIN.VLRFCPINT)   FROM TGFDIN DIN  WHERE DIN.NUNOTA = ITE.NUNOTA   AND DIN.SEQUENCIA = ITE.SEQUENCIA   AND DIN.CODIMP = 1) AS VLR_FEM_ICMS_OP,   GRU.DESCRGRUPOPROD,    PAR.IDENTINSCESTAD,   CAB.CHAVENFE,    (SELECT MAX(C.NUMNOTA) FROM TGFCAB C, TGFVAR VAR WHERE C.NUNOTA = VAR.NUNOTA AND VAR.NUNOTAORIG = CAB.NUNOTA AND C.TIPMOV = 'D') AS NUMNOTA_DEVOLUCAO,   (SELECT MAX(I.VLRTOT) FROM TGFCAB C, TGFITE I, TGFVAR VAR WHERE C.NUNOTA = I.NUNOTA AND C.NUNOTA = VAR.NUNOTA AND I.SEQUENCIA = VAR.SEQUENCIA AND VAR.NUNOTAORIG = CAB.NUNOTA AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA AND C.TIPMOV = 'D') AS VLRTOT_DEVOLUCAO,   (SELECT MAX(I.VLRIPI) FROM TGFCAB C, TGFITE I, TGFVAR VAR WHERE C.NUNOTA = I.NUNOTA AND C.NUNOTA = VAR.NUNOTA AND I.SEQUENCIA = VAR.SEQUENCIA AND VAR.NUNOTAORIG = CAB.NUNOTA AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA AND C.TIPMOV = 'D') AS VLRIPI_DEVOLUCAO,   (SELECT MAX(I.VLRICMS) FROM TGFCAB C, TGFITE I, TGFVAR VAR WHERE C.NUNOTA = I.NUNOTA AND C.NUNOTA = VAR.NUNOTA AND I.SEQUENCIA = VAR.SEQUENCIA AND VAR.NUNOTAORIG = CAB.NUNOTA AND VAR.SEQUENCIAORIG = ITE.SEQUENCIA AND C.TIPMOV = 'D') AS VLRICMS_DEVOLUCAO      FROM TGFCAB CAB, TGFITE ITE, TGFPRO PRO, TGFPAR PAR, TGFTOP TPO, TGFGRU GRU, TSICID CID, TSIUFS UF, TGFLIV LIV   WHERE LIV.NUNOTA = CAB.NUNOTA    AND LIV.NUNOTA = ITE.NUNOTA    AND LIV.SEQUENCIA = ITE.SEQUENCIA    AND CAB.NUNOTA = ITE.NUNOTA    AND ITE.CODPROD = PRO.CODPROD   AND CAB.CODPARC = PAR.CODPARC   AND PRO.CODGRUPOPROD = GRU.CODGRUPOPROD   AND CAB.CODCIDDESTINO = CID.CODCID   AND CID.UF = UF.CODUF   AND CAB.CODTIPOPER = TPO.CODTIPOPER   AND CAB.DHTIPOPER = TPO.DHALTER   AND TPO.ATUALLIVFIS <> 'N'   AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)   AND (CAB.DTNEG >= :P_PERIODO.INI or :P_PERIODO.INI is null)   AND (CAB.DTNEG <= :P_PERIODO.FIN or :P_PERIODO.FIN is null)   AND (CAB.DTENTSAI >= :P_DTENTSAI.INI or :P_DTENTSAI.INI is null)   AND (CAB.DTENTSAI <= :P_DTENTSAI.FIN or :P_DTENTSAI.FIN is null)   AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)   AND (CAB.NUMNOTA = :P_NUMNOTA OR :P_NUMNOTA IS NULL)      AND ITE.CODCFO >= :P_CODCFOPINI   AND ITE.CODCFO <= :P_CODCFOPFIN   --AND CAB.TIPMOV = 'V') V GROUP BY NUNOTA, NUMNOTA, DTNEG, DTENTSAI, STATUSNFE, CODTIPOPER, CODPARC, NOMEPARC, CODTIPPARC, UF_DEST, UF_ORIG, CHAVENFE, IDENTINSCESTAD, CODCFO, CODTRIBORDER BY DTNEG, DTENTSAI, NUMNOTA, UF_ORIG, UF_DEST]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nro Único" type="I" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+          <field name="DTENTSAI" label="Dt. Ent/Saida" type="D" visible="true" useFooter="false"/>
+          <field name="STATUSNFE" label="Status NFe" type="S" visible="true" useFooter="false"/>
+          <field name="CODTIPOPER" label="TOP" type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="CODTIPPARC" label="Tipo Parceiro" type="I" visible="true" useFooter="false"/>
+          <field name="UF_DEST" label="UF Destino" type="S" visible="true" useFooter="false"/>
+          <field name="UF_ORIG" label="UF Origem" type="S" visible="true" useFooter="false"/>
+          <field name="CHAVENFE" label="Chave NFE" type="S" visible="true" useFooter="false"/>
+          <field name="IDENTINSCESTAD" label="Inscrição estadual" type="S" visible="true" useFooter="false"/>
+          <field name="VLRTOT" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"/>
+          <field name="CODTRIB" label="CST ICMS" type="I" visible="true" useFooter="false"/>
+          <field name="BASEICMS" label="Base ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="ALIQICMS" label="Aliq. ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"/>
+          <field name="VLRICMS" label="Vlr. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="CSTIPI" label="CST IPI" type="I" visible="true" useFooter="false"/>
+          <field name="BASEIPI" label="Base IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="ALIQIPI" label="Aliq. IPI" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"/>
+          <field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="BASE_PIS" label="Base PIS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="VLR_PIS" label="Vlr. PIS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="BASE_COFINS" label="Base COFINS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="VLR_COFINS" label="Vlr. COFINS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="BASE_ST" label="Base ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="VLR_ST" label="Vlr. ST + FEM" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="VLR_FEM_ICMS_ST" label="Vlr. FEM s/ ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          <field name="VLR_FEM_ICMS_OP" label="Vlr. FEM s/ ICMS OP" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+          <NUNOTA>$NUNOTA</NUNOTA>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

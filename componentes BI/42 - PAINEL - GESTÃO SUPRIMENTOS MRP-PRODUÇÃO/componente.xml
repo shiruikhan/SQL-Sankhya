@@ -1,0 +1,110 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODPARC" description="Fornecedor" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_CODPRODPA" description="PA/PI" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_a7r6cph" description="Principal">
+    <args>
+      <arg id="A_NUMPS" type="integer"/>
+      <arg id="A_CODPROMP" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="187">
+        <simple-value id="svl_a7r6cpm">
+          <value-expression><![CDATA[<div style='text-align: center;'><pre><h3>GESTÃO SUPRIMENTOS MRP</h3></pre></div>]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="V" tamanhoRelativo="458">
+        <grid id="grd_lpmm8u" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT  MPS.NUMPS,CM.DESCRICAO, MPS.DTINICMPS, DTFINMPS, MPS.CODCMPS  FROM TPRMPS MPS INNER JOIN TPRCMPS CM ON (MPS.CODCMPS = CM.CODCMPS)    WHERE MPS.CODCMPS = 1 /*LISTA DE MPS DE COMPRA MENSAL */]]></expression>
+          <metadata>
+            <field name="NUMPS" label="Nro MPs" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="DTINICMPS" label="Dt. Inicio MPS" type="D" visible="true" useFooter="false"/>
+            <field name="DTFINMPS" label="Dt. Fim MPS" type="D" visible="true" useFooter="false"/>
+            <field name="CODCMPS" label="Código Config." type="I" visible="false" useFooter="false"/>
+          </metadata>
+          <refresh-details ui-list="grd_a7r6cwi">
+            <param id="A_NUMPS">$NUMPS</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="1204">
+        <container orientacao="H" tamanhoRelativo="50">
+          <container orientacao="V" tamanhoRelativo="167">
+            <grid id="grd_a7r6cwi" entityName="CabecalhoInstanciaProcesso" multiplaSelecao="N" useNewGrid="S">
+              <args>
+                <arg id="A_NUMPS" type="integer"/>
+              </args>
+              <title><![CDATA[:A_VALUE]]></title>
+              <expression type="sql" data-source="MGEDS"><![CDATA[/*OBTEM_TOTAIS_MRP(NRO MPS, CODPRODPA, CODPRODMP,TIPO)P_TIPO:  M-META PA ;P - PRODUCAO PA;S - SALDO PRODUZIR PAN - NECESSIDADE MP NO MRP FILTRADONA - NECESSIDADE C - NECESSIDADE COMPRA MP NO MRP FILTRADOE - ESTOQUE DISPONÍVEL MPO - Ordem/Pedido de Compra*/SELECT LMP.CODPRODMP, SUM(LMP.QTDMISTURA*NVL(I.QTDPRODUZIRLIQ,0)) AS QTDMPS,OBTEM_TOTAIS_MRP(I.NUMPS,NVL(:P_CODPRODPA,0),LMP.CODPRODMP,'O') AS TOTPEDCPA, OBTEM_TOTAIS_MRP(I.NUMPS,NVL(:P_CODPRODPA,0),LMP.CODPRODMP,'NA') AS SALDOMPSANT, OBTEM_TOTAIS_MRP(I.NUMPS,0,LMP.CODPRODMP,'E') AS ESTOQUEMP,PRO.DESCRPROD AS DESCRMP,PRO.CODVOL, NVL(PRO.AGRUPCOMPMINIMO,PRO.AGRUPMIN) AS AGRUPMIN,PRO.CODPARCFORN,PAR.NOMEPARC                          FROM TPRIMPS I, TPRPRC PRC, TPRLPA LPA, TPRLMP LMP, TPRATV ATV , TPROEST EST, TGFPRO PRO                          LEFT JOIN TGFPAR PAR ON (PAR.CODPARC = PRO.CODPARCFORN)                          WHERE PRC.IDPROC = I.IDPROC                              AND I.CODPROD = LPA.CODPRODPA                              AND LPA.CODPRODPA = LMP.CODPRODPA                              AND LMP.CODPRODMP = PRO.CODPROD                              AND I.IDPROC = ATV.IDPROC                              AND EST.IDEFX = ATV.IDEFX                              AND LMP.IDEFX = ATV.IDEFX                              AND LPA.IDPROC = I.IDPROC                              AND EST.TIPOITENS='PA' --- APENAS ATIVIDADE APONTAMENTO                              AND I.NUMPS = :A_NUMPS                              AND (PRO.CODPARCFORN = :P_CODPARC OR :P_CODPARC IS NULL)                              AND (LMP.CODPRODPA = :P_CODPRODPA OR :P_CODPRODPA IS NULL)                              GROUP BY LMP.CODPRODMP, PRO.DESCRPROD, PRO.CODVOL, NVL(PRO.AGRUPCOMPMINIMO,PRO.AGRUPMIN), PRO.CODPARCFORN,PAR.NOMEPARC, I.NUMPS                              HAVING SUM(LMP.QTDMISTURA*I.QTDPRODUZIRLIQ) > 0                              ORDER BY PAR.NOMEPARC, 2 DESC,3]]></expression>
+              <metadata>
+                <field name="CODPRODMP" label="Cód. MP" type="I" visible="true" useFooter="false"/>
+                <field name="QTDMPS" label="Qtd. MPS" type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="TOTPEDCPA" label="Ped. Compra" type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="SALDOMPSANT" label="Saldo MPS Anter." type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="ESTOQUEMP" label="Est. Disp." type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="DESCRMP" label="Produto" type="S" visible="true" useFooter="false"/>
+                <field name="CODVOL" label="Unidade" type="S" visible="true" useFooter="false"/>
+                <field name="AGRUPMIN" label="Lote Mínimo Forn." type="I" visible="true" useFooter="false"/>
+                <field name="CODPARCFORN" label="Cód. Fornecedor" type="I" visible="true" useFooter="false"/>
+                <field name="NOMEPARC" label="Fornecedor Pref." type="S" visible="true" useFooter="false"/>
+                <field name="QTD_MRP_CPA" label="Necessidade Compra" type="F" visible="true" useFooter="SUM" mask="#.##0">
+                  <formatter greaterThan="0"><![CDATA[<span style="color:#000000; background-color:#FFFF66">
+  <b>$VALUE</b>
+</span>]]></formatter>
+                  <calculated>
+                    <formula><![CDATA[$QTDMPS + $SALDOMPSANT - $TOTPEDCPA - $ESTOQUEMP]]></formula>
+                  </calculated>
+                </field>
+              </metadata>
+              <on-click-launcher resource-id="br.com.sankhya.producao.rotina.OrdemProducao">
+                <IDIPROC>$IDIPROC</IDIPROC>
+              </on-click-launcher>
+              <refresh-details ui-list="grd_lpmm9r">
+                <param id="A_CODPRODMP">$CODPRODMP</param>
+                <param id="A_NUMPS">:A_NUMPS</param>
+              </refresh-details>
+            </grid>
+          </container>
+          <container orientacao="V" tamanhoRelativo="100">
+            <grid id="grd_lpmm9r" useNewGrid="S">
+              <args>
+                <arg id="A_CODPRODMP" type="integer"/>
+                <arg id="A_NUMPS" type="integer"/>
+              </args>
+              <title><![CDATA[PAs / PIS dependentes da Matéria Prima selecionada]]></title>
+              <expression type="sql" data-source="MGEDS"><![CDATA[/* Formatted on 28/02/2022 19:34:56 (QP5 v5.115.810.9015) */ SELECT DADOS.*, OBTEM_TOTAIS_MRP(NUMPS,CODPROD,0,'S') AS SALDOPA_PROD_ANT,(SELECT MP.QTDMISTURA FROM TPRPRC PRC INNER JOIN TPRLPA LPA ON (PRC.IDPROC = LPA.IDPROC)INNER JOIN TPREFX EF ON (EF.IDPROC = LPA.IDPROC)INNER JOIN TPRLMP MP ON (MP.IDEFX = EF.IDEFX AND MP.CODPRODPA = LPA.CODPRODPA) WHERE PRC.CODPRC = DADOS.CODPRCAND PRC.VERSAO = DADOS.VERSAOAND MP.CODPRODPA = DADOS.CODPRODAND MP.CODPRODMP = :A_CODPRODMP) AS QTDFORMULAFROM ( SELECT   TPRIMPS.CODPROD,          TPRIMPS.NUMPS,           TPRIMPS.QTDPRODUZIRLIQ AS QTDPRODUZIRLIQ,           (SELECT   NVL (QTDPREV, 0)              FROM   (SELECT   NVL (QTDPREV, 0) AS QTDPREV                        FROM   TGFMET MET, TPRMPS MPS                       WHERE       MET.CODMETA = 3                               AND MET.CODPROD = TPRIMPS.CODPROD                               AND MPS.NUMPS = TPRIMPS.NUMPS                               AND MET.DTREF = TRUNC (MPS.DTFINMPS, 'MM')) D)              AS AD_QTDPREV,           (SELECT   NVL (QTDPRODUZIR, 0)              FROM   (SELECT   SUM (PA.QTDPRODUZIR) AS QTDPRODUZIR                        FROM         TPRIPROC PROC                                  INNER JOIN                                     TPRIPA PA                                  ON (PROC.IDIPROC = PA.IDIPROC)                               INNER JOIN                                  TPRMPS MPS                               ON (PROC.NUMPS = MPS.NUMPS)                       WHERE   STATUSPROC IN ('A', 'F', 'R', 'P2')                               AND PA.CODPRODPA = TPRIMPS.CODPROD                               AND PROC.NUMPS IN                                        (SELECT   MP.NUMPS                                           FROM   TPRMPS MP                                          WHERE   MP.CODCMPS = MPS.CODCMPS                                                  AND TRUNC (MP.DTINICMPS, 'MM') =                                                        TRUNC (MPS.DTINICMPS,                                                               'MM'))) D)              AS AD_QTDREAL,           (SELECT   SUM (QTDPREV - QTDPRODUZIR)              FROM   (SELECT   0 AS QTDPREV, SUM (QTDPRODUZIR) AS QTDPRODUZIR                        FROM         TPRIPROC PROC                                  INNER JOIN                                     TPRIPA PA                                  ON (PROC.IDIPROC = PA.IDIPROC)                               INNER JOIN                                  TPRMPS MPS                               ON (PROC.NUMPS = MPS.NUMPS)                       WHERE   STATUSPROC IN ('A', 'F', 'R', 'P2')                               AND PA.CODPRODPA = TPRIMPS.CODPROD                               AND TRUNC (PROC.DHINST, 'MM') =                                     TRUNC (MPS.DTFINMPS, 'MM')                      UNION ALL                      SELECT   NVL (QTDPREV, 0) AS QTDPREV, 0 AS QTDPRODUZIR                        FROM   TGFMET MET, TPRMPS MPS                       WHERE       MET.CODMETA = 3                               AND MET.CODPROD = TPRIMPS.CODPROD                               AND MPS.NUMPS = TPRIMPS.NUMPS                               AND MET.DTREF = TRUNC (MPS.DTINICMPS, 'MM')) D)              AS AD_QTDSALDO,           (SELECT   P.CODPRC              FROM   TPRPRC P             WHERE   P.IDPROC = TPRIMPS.IDPROC)              AS CODPRC,           (SELECT   NVL (SUM (IPA.QTDPRODUZIR), 0) AS TOTAL              FROM         TPRIPA IPA                        INNER JOIN                           TPRIPROC IPROC                        ON (IPA.IDIPROC = IPROC.IDIPROC)                     INNER JOIN                        TGFPRO PRO                     ON (IPA.CODPRODPA = PRO.CODPROD)             WHERE   IPROC.NUMPS = TPRIMPS.NUMPS                     AND IPA.CODPRODPA = TPRIMPS.CODPROD                     AND (PRO.TIPCONTEST IN ('L', 'N')                          OR (IPA.CONTROLEPA = TPRIMPS.CONTROLE))                     AND IPROC.STATUSPROC NOT IN ('C', 'F')                     AND TPRIMPS.SEQIMPSPAI IS NULL                     AND (TPRIMPS.DTPREVENT IS NULL OR IPROC.DTPREVENT IS NULL                          OR TRUNC (IPROC.DTPREVENT) =                               TRUNC (TPRIMPS.DTPREVENT)))              AS QTDEMOP,           (SELECT   NVL (SUM (IPA.QTDPRODUZIR), 0) AS QTDPRODUZIR              FROM         TPRIPA IPA                        INNER JOIN                           TPRIPROC IPROC                        ON (IPA.IDIPROC = IPROC.IDIPROC)                     INNER JOIN                        TGFPRO PRO                     ON (IPA.CODPRODPA = PRO.CODPROD)             WHERE       IPROC.STATUSPROC IN ('AP', 'P')                     AND IPROC.NUMPS = TPRIMPS.NUMPS                     AND IPA.CODPRODPA = TPRIMPS.CODPROD                     AND (PRO.TIPCONTEST IN ('L', 'N')                          OR (IPA.CONTROLEPA = TPRIMPS.CONTROLE))                     AND EXISTS (SELECT   1                                   FROM   TPRPIPROC PIPROC                                  WHERE   PIPROC.IDIPROC = IPROC.IDIPROC)                     AND (TPRIMPS.DTPREVENT IS NULL OR IPROC.DTPREVENT IS NULL                          OR TRUNC (IPROC.DTPREVENT) =                               TRUNC (TPRIMPS.DTPREVENT)))              AS QTDEMPROGRAMACAO,           (NVL (               (QTDPRODUZIRLIQ                - (SELECT   NVL (SUM (IPA.QTDPRODUZIR), 0) AS TOTAL                     FROM         TPRIPA IPA                               INNER JOIN                                  TPRIPROC IPROC                               ON (IPA.IDIPROC = IPROC.IDIPROC)                            INNER JOIN                               TGFPRO PRO                            ON (IPA.CODPRODPA = PRO.CODPROD)                    WHERE   IPROC.NUMPS = TPRIMPS.NUMPS                            AND IPA.CODPRODPA = TPRIMPS.CODPROD                            AND (PRO.TIPCONTEST IN ('L', 'N')                                 OR (IPA.CONTROLEPA = TPRIMPS.CONTROLE))                            AND IPROC.STATUSPROC NOT IN ('C', 'F')                            AND TPRIMPS.SEQIMPSPAI IS NULL                            AND (TPRIMPS.DTPREVENT IS NULL                                 OR IPROC.DTPREVENT IS NULL                                 OR TRUNC (IPROC.DTPREVENT) =                                      TRUNC (TPRIMPS.DTPREVENT)))),               0            ))              AS QTDSALDOPRODUZIR,           (SELECT   P.VERSAO              FROM   TPRPRC P             WHERE   P.IDPROC = TPRIMPS.IDPROC)              AS VERSAO,           ProcessoProdutivo.DESCRABREV AS l0_DESCRABREV,           Produto.DECQTD AS l1_DECQTD,           Produto.DESCRPROD AS l1_DESCRPROD    FROM         TPRIMPS              LEFT JOIN                 (  SELECT   IDPROC, DESCRABREV FROM TPRPRC) ProcessoProdutivo              ON (TPRIMPS.IDPROC = ProcessoProdutivo.IDPROC)           LEFT JOIN              (  SELECT   DESCRPROD, DECQTD, CODPROD FROM TGFPRO) Produto           ON (TPRIMPS.CODPROD = Produto.CODPROD)   WHERE   ( (TPRIMPS.NUMPS = :A_NUMPS              AND EXISTS                    (SELECT   1                       FROM   TPRBOM BOM                      WHERE       CODPRODMP = :A_CODPRODMP                              AND BOM.NUMPS = TPRIMPS.NUMPS                              AND BOM.SEQIMPS = TPRIMPS.SEQIMPS)))           AND (TPRIMPS.CODPROD = :P_CODPRODPA OR :P_CODPRODPA IS NULL)ORDER BY   DESCRABREV, l1_DESCRPROD) DADOS]]></expression>
+              <metadata>
+                <field name="CODPROD" label="Cód. PA/PI" type="I" visible="true" useFooter="false"/>
+                <field name="NUMPS" label="NUMPS" type="I" visible="false" useFooter="false"/>
+                <field name="QTDPRODUZIRLIQ" label="Qtde Prod." type="F" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="AD_QTDPREV" label="Qtd Meta" type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="AD_QTDREAL" label="Qtde Realizado" type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="AD_QTDSALDO" label="Saldo" type="I" visible="true" useFooter="false"/>
+                <field name="CODPRC" label="CODPRC" type="I" visible="true" useFooter="false"/>
+                <field name="QTDEMOP" label="Qtd em OP" type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="QTDEMPROGRAMACAO" label="Qtde em Progr" type="I" visible="false" useFooter="SUM" mask="#.##0"/>
+                <field name="QTDSALDOPRODUZIR" label="Qtde a Produzir" type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="VERSAO" label="Versão" type="I" visible="true" useFooter="false"/>
+                <field name="L0_DESCRABREV" label="Descrição Processo" type="S" visible="true" useFooter="false"/>
+                <field name="L1_DECQTD" label="L1_DECQTD" type="I" visible="false" useFooter="false"/>
+                <field name="L1_DESCRPROD" label="Descrição PA/PI" type="S" visible="true" useFooter="false"/>
+                <field name="SALDOPA_PROD_ANT" label="Saldo PA Anterior " type="I" visible="true" useFooter="SUM" mask="#.##0"/>
+                <field name="QTDFORMULA" label="Qtde Fórmula" type="I" visible="true" useFooter="false" mask="#.##0"/>
+                <field name="NEC_MP_FORMULA" label="Necessidade PA" type="F" visible="true" useFooter="SUM" mask="#.##0">
+                  <calculated>
+                    <formula><![CDATA[($SALDOPA_PROD_ANT + $AD_QTDSALDO)*$QTDFORMULA]]></formula>
+                  </calculated>
+                </field>
+              </metadata>
+              <on-click-launcher resource-id="br.com.sankhya.mgeprod.cad.composicao.produto">
+                <CODPRODPA>$CODPROD</CODPRODPA>
+              </on-click-launcher>
+            </grid>
+          </container>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

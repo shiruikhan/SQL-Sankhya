@@ -1,0 +1,183 @@
+<gadget ><prompt-parameters><parameter  id="DESC" description="3- Tirar Descontos" metadata="boolean" required="true" keep-last="true" label="DESC : Verdadeiro/Falso"/><parameter  id="IPI" description="4- Adicionar IPI" metadata="boolean" required="true" keep-last="true" label="IPI : Verdadeiro/Falso"/><parameter  id="PERIODO" description="2- Período" metadata="datePeriod" required="true" keep-last="true" label="PERIODO : Período"/><parameter  id="PRODUTO" description="1- Produto" metadata="entity:Produto@CODPROD" required="true" keep-last="true" label="PRODUTO : Entidade/Tabela"/><parameter  id="REP" description="6- Diminuir Valor Redução" metadata="boolean" required="true" keep-last="true" label="REP : Verdadeiro/Falso"/><parameter  id="ST" description="5- Adicionar ST" metadata="boolean" required="true" keep-last="true" label="ST : Verdadeiro/Falso"/><parameter  id="STATUSNOTA" description="7- Apenas notas confirmadas?" metadata="boolean" required="true" keep-last="true" label="STATUSNOTA : Verdadeiro/Falso"/><parameter  id="TOP" description="8- Grupo da TOP" required="false" keep-last="true" metadata="multiList:Text" label="TOP : multiList:Text"><expression type="SQL"><![CDATA[SELECT
+       DISTINCT TOP.GRUPO AS VALUE,
+       TOP.GRUPO
+AS LABEL
+   FROM TGFTOP TOP WHERE GOLSINAL= -1
+   ORDER BY 1]]></expression></parameter></prompt-parameters><level id="lvl_amgu3wo" description="Principal"><chart id="cht_amgu3w8" type="pizza"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+ SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             )  AS VALOR
+, UFS.DESCRICAO, UFS.CODUF
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, TSICID CID
+, TSIUFS UFS
+
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND VCAB.NUNOTA= CAB.NUNOTA
+AND ((TPO.GRUPO IN :TOP))  
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND PAR.CODCID= CID.CODCID
+AND CID.UF= UFS.CODUF
+AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+AND CAB.CODPARC = PAR.CODPARC
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+GROUP BY 
+ UFS.DESCRICAO, UFS.CODUF
+ORDER BY 1 DESC]]></expression><metadata><field name="VALOR" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="DESCRICAO" label="UF" type="S" visible="true" useFooter="false"></field><field name="CODUF" label="Código UF" type="I" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>VALOR</field><nameField>DESCRICAO</nameField><on-click  navigate-to="lvl_amgu3yq">
+            <param id="CODUF">$CODUF</param>
+          </on-click></serie></series></chart></level><level id="lvl_amgu3yq" description="2"><args >
+      <arg id="CODUF" type="integer"/>
+    </args><simple-value id="svl_amgu3y9"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT DESCRICAO FROM TSIUFS
+WHERE CODUF= :CODUF]]></expression><metadata><field name="DESCRICAO" label="DESCRICAO" type="S" visible="true" useFooter="false"></field></metadata><value-expression><![CDATA[<b>Estado: </b>$DESCRICAO]]></value-expression></simple-value><chart id="cht_amgu3yr" type="column"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             )  AS VALOR,
+
+CID.NOMECID, CID.CODCID, UFS.DESCRICAO, UFS.CODUF
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, TSICID CID
+, TSIUFS UFS
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND VCAB.NUNOTA= CAB.NUNOTA
+AND ((TPO.GRUPO IN :TOP))  
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND PAR.CODCID= CID.CODCID
+AND CID.UF= UFS.CODUF
+AND CAB.CODPARC = PAR.CODPARC
+AND UFS.CODUF= :CODUF
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+GROUP BY 
+ UFS.DESCRICAO, UFS.CODUF, CID.NOMECID, CID.CODCID
+ORDER BY 1 DESC]]></expression><metadata><field name="VALOR" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="NOMECID" label="Cidade" type="S" visible="true" useFooter="false"></field><field name="CODCID" label="Código da Cidade" type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="CODUF" label="Código UF" type="I" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="NOMECID" rotation="-45" dropLabel="false"></category></horizontal-axis><series><serie type="column"><xField>$NOMECID</xField><yField>$VALOR</yField><display><![CDATA[Vendas]]></display><on-click  navigate-to="lvl_amgu3y8">
+            <param id="CODCID">$CODCID</param>
+          </on-click></serie></series></chart></level><level id="lvl_amgu3y8" description="3"><args >
+      <arg id="CODCID" type="integer"/>
+    </args><simple-value id="svl_amgu3zf"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+(SELECT NOMECID FROM TSICID WHERE CODCID= :CODCID) AS NOMECID,
+DESCRICAO FROM TSIUFS
+WHERE CODUF= :CODUF]]></expression><metadata><field name="NOMECID" label="NOMECID" type="S" visible="true" useFooter="false"></field><field name="DESCRICAO" label="DESCRICAO" type="S" visible="true" useFooter="false"></field></metadata><value-expression><![CDATA[<b>Estado:</b> $DESCRICAO
+<b>Cidade: </b>$NOMECID]]></value-expression></simple-value><chart id="cht_amgu3za" type="column"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             )  AS VALOR,
+CID.NOMECID, CID.CODCID
+, UFS.DESCRICAO, UFS.CODUF, PAR.NOMEPARC, PAR.CODPARC
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, TSICID CID
+, TSIUFS UFS
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND VCAB.NUNOTA= CAB.NUNOTA
+AND ((TPO.GRUPO IN :TOP))  
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND PAR.CODCID= CID.CODCID
+AND CID.UF= UFS.CODUF
+AND CAB.CODPARC = PAR.CODPARC
+AND UFS.CODUF= :CODUF
+AND CID.CODCID= :CODCID
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+GROUP BY 
+ UFS.DESCRICAO, UFS.CODUF, CID.NOMECID, CID.CODCID, PAR.NOMEPARC, PAR.CODPARC
+ORDER BY 1 DESC]]></expression><metadata><field name="VALOR" label="Valor" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="NOMECID" label="Cidade" type="S" visible="true" useFooter="false"></field><field name="CODCID" label="Código da Cidade" type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="CODUF" label="Código UF" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="CODPARC" label="Código do Parceiro" type="I" visible="true" useFooter="false"></field></metadata><horizontal-axis><category field="NOMEPARC" rotation="-45" dropLabel="false"></category></horizontal-axis><vertical-axis><linear><mask>R$ #.##0,00</mask></linear></vertical-axis><series><serie type="column"><xField>$NOMEPARC</xField><yField>$VALOR</yField><display><![CDATA[Vendas]]></display><on-click  navigate-to="lvl_amgu30a">
+            <param id="CODPARC">$CODPARC</param>
+          </on-click></serie></series></chart></level><level id="lvl_amgu30a" description="GRID"><args >
+      <arg id="CODPARC" type="integer"/>
+    </args><simple-value id="svl_amgu30b"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+(SELECT NOMECID FROM TSICID WHERE CODCID= :CODCID) AS NOMECID,
+(SELECT NOMEPARC FROM TGFPAR WHERE CODPARC= :CODPARC) AS NOMEPARC,
+DESCRICAO FROM TSIUFS
+WHERE CODUF= :CODUF]]></expression><metadata><field name="NOMECID" label="NOMECID" type="S" visible="true" useFooter="false"></field><field name="NOMEPARC" label="NOMEPARC" type="S" visible="true" useFooter="false"></field><field name="DESCRICAO" label="DESCRICAO" type="S" visible="true" useFooter="false"></field></metadata><value-expression><![CDATA[<b>Estado:</b> $DESCRICAO
+<b>Cidade:</b> $NOMECID
+<b>Parceiro: </b>$NOMEPARC]]></value-expression></simple-value><grid id="grd_amgu30c"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+CAB.NUNOTA, CAB.DTNEG, 
+SUM (   ((  (ITE.VLRTOT)
+                    - (CASE WHEN :DESC = 'S' THEN ITE.VLRDESC ELSE 0 END)
+                    - (CASE WHEN :REP = 'S' THEN ITE.VLRREPRED ELSE 0 END)
+                    + (CASE WHEN :ST = 'S' THEN ITE.VLRSUBST ELSE 0 END)
+                    + (CASE WHEN :IPI = 'S' THEN ITE.VLRIPI ELSE 0 END)
+                   )
+              * CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END) * VCAB.INDITENS
+             ) as VALOR,
+ VEN.APELIDO
+
+FROM TGFCAB CAB
+, TGFPAR PAR
+, TGFITE ITE
+, TGFPRO PRO
+, TGFTOP TPO
+, TSICID CID
+, TSIUFS UFS
+, TGFVEN VEN
+, VGFCAB VCAB
+WHERE   (CAB.STATUSNOTA = 'L' OR :STATUSNOTA = 'N')
+AND ITE.USOPROD <> 'D'
+AND TPO.GOLSINAL = -1
+AND VCAB.NUNOTA= CAB.NUNOTA
+AND ((TPO.GRUPO IN :TOP))  
+AND CAB.DTNEG BETWEEN :PERIODO.INI AND :PERIODO.FIN
+AND ((PRO.CODPROD= :PRODUTO) OR (:PRODUTO IS NULL))
+AND PAR.CODCID= CID.CODCID
+AND CID.UF= UFS.CODUF
+AND CAB.CODPARC = PAR.CODPARC
+AND UFS.CODUF= :CODUF
+AND CID.CODCID= :CODCID
+AND CAB.NUNOTA = ITE.NUNOTA
+AND ITE.CODPROD = PRO.CODPROD
+AND CAB.CODTIPOPER = TPO.CODTIPOPER
+AND CAB.DHTIPOPER = TPO.DHALTER
+AND CAB.CODVEND= VEN.CODVEND
+AND PAR.CODPARC= :CODPARC
+
+GROUP BY CAB.NUNOTA, CAB.DTNEG, VEN.APELIDO]]></expression><metadata><field name="NUNOTA" label="Número da Nota" type="I" visible="true" useFooter="false"></field><field name="DTNEG" label="Data" type="D" visible="true" useFooter="false"></field><field name="VALOR" label="Valor" type="I" visible="true" useFooter="true" mask="R$ #.##0,00"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+        <NUNOTA>$NUNOTA</NUNOTA>
+      </on-click-launcher></grid></level></gadget>

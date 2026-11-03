@@ -1,0 +1,25 @@
+<gadget ><prompt-parameters><parameter  id="P_CODVEND" description="Vendedor" metadata="entity:Vendedor@CODVEND" required="false" keep-last="true" keep-date="false" order="0" label="P_CODVEND : Entidade/Tabela"/><parameter  id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="1" label="P_PERIODO : Período"/></prompt-parameters><level id="lvl_a6vni0d" description="Principal"><container orientacao="H" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="50"><grid id="grd_a6vni0e" multiplaSelecao="S" useNewGrid="S"><title><![CDATA[Resumo de Vendas por Vendedor]]></title><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUMNOTA,
+	CAB.NUNOTA,
+	CAB.DTNEG,
+	CAB.CODPARC || ' - ' || PAR.RAZAOSOCIAL AS PARCEIRO,
+	CAB.VLRNOTA + NVL(CAB.VLROUTROS,0) + NVL(AD_VLROUTROSFRETE,0) AS VALORTOTAL,
+	(CASE WHEN CAB.CODEMP = 1 THEN '#B2FFFF' ELSE '#DFD2C4' END) AS BKCOLOR
+FROM TGFCAB CAB
+	INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+WHERE CAB.DTNEG >= :P_PERIODO.INI
+	AND CAB.DTNEG <= :P_PERIODO.FIN
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+	AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124)
+	AND (:P_CODVEND IS NULL OR CAB.CODVEND = :P_CODVEND)
+ORDER BY CAB.NUMNOTA]]></expression><metadata><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field><field name="NUNOTA" label="NUNOTA" type="I" visible="false" useFooter="false"></field><field name="DTNEG" label="Dt. de Negociação" type="D" visible="true" useFooter="false"></field><field name="PARCEIRO" label="Parceiro" type="S" visible="true" useFooter="false"></field><field name="VALORTOTAL" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher></grid></container><container orientacao="V" tamanhoRelativo="50"><chart id="cht_a6x2m7s" type="pizza"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.CODVEND || ' - ' || VEN.APELIDO AS VENDEDOR,
+	sum(CAB.VLRNOTA + NVL(CAB.VLROUTROS,0) + NVL(AD_VLROUTROSFRETE,0)) AS VALORTOTAL
+FROM TGFCAB CAB
+	INNER JOIN TGFVEN VEN ON CAB.CODVEND = VEN.CODVEND
+WHERE CAB.DTNEG >= :P_PERIODO.INI
+	AND CAB.DTNEG <= :P_PERIODO.FIN
+    AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+	AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124)
+	AND (:P_CODVEND IS NULL OR CAB.CODVEND = :P_CODVEND)
+GROUP BY CAB.CODVEND || ' - ' || VEN.APELIDO]]></expression><metadata><field name="VENDEDOR" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="VALORTOTAL" label="Vlr. Total" type="F" visible="true" useFooter="false"></field></metadata><series><serie type="pizza"><field>VALORTOTAL</field><nameField>VENDEDOR</nameField></serie></series></chart></container></container></level></gadget>

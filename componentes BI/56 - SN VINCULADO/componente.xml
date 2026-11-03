@@ -1,0 +1,35 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_NUNOTA" description="NUNOTA" metadata="integer" required="true" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_36upqw" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="100">
+        <grid id="grd_36upq5" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.CODPROD AS CODPRODUTO,PRO.COMPLDESC AS NOMEPRODUTO,COUNT(SER.SERIE) AS SERIALFROM TGFITE ITEINNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTAINNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPRODINNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARCINNER JOIN TGFSER SER ON (ITE.NUNOTA = SER.NUNOTA AND ITE.CODPROD = SER.CODPROD)WHERE ITE.NUNOTA = :P_NUNOTAGROUP BY ITE.CODPROD, PRO.COMPLDESC]]></expression>
+          <metadata>
+            <field name="CODPRODUTO" label="COD do Produto" type="I" visible="true" useFooter="false"/>
+            <field name="NOMEPRODUTO" label="Referencia" type="S" visible="true" useFooter="false"/>
+            <field name="SERIAL" label="Total" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="272">
+        <grid id="grd_36upqx" multiplaSelecao="S" useNewGrid="S">
+          <title><![CDATA[SERIAIS VINCULADOS NO PEDIDO]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ITE.NUNOTA,ITE.CODPROD AS CODPRODUTO,PRO.COMPLDESC AS NOMEPRODUTO,SER.SERIE AS SERIAL,CAB.CODPARC AS CODPARCEIRO,PAR.RAZAOSOCIAL AS NOMEPARCEIRO,CAB.DTFATUR AS DATAFATURAMENTO,CAB.NUMNOTA AS NUMERONOTAFROM TGFITE ITEINNER JOIN TGFCAB CAB ON ITE.NUNOTA = CAB.NUNOTAINNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPRODINNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARCINNER JOIN TGFSER SER ON (ITE.NUNOTA = SER.NUNOTA AND ITE.CODPROD = SER.CODPROD)WHERE ITE.NUNOTA = :P_NUNOTA]]></expression>
+          <metadata>
+            <field name="NUNOTA" label="NUNOTA" type="I" visible="false" useFooter="false"/>
+            <field name="CODPRODUTO" label="COD do Produto" type="I" visible="true" useFooter="false"/>
+            <field name="NOMEPRODUTO" label="Referência" type="S" visible="true" useFooter="false"/>
+            <field name="SERIAL" label="Serial" type="S" visible="true" useFooter="false"/>
+            <field name="CODPARCEIRO" label="COD Parceiro" type="I" visible="true" useFooter="false"/>
+            <field name="NOMEPARCEIRO" label="Nome do Parceiro" type="S" visible="true" useFooter="false"/>
+            <field name="DATAFATURAMENTO" label="Data de Faturamento" type="D" visible="true" useFooter="false"/>
+            <field name="NUMERONOTA" label="Nr da Nota" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

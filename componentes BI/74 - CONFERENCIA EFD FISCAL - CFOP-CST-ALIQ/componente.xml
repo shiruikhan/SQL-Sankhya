@@ -1,0 +1,79 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_PERIODO" description="Dt. Referência" metadata="datePeriod" required="false" keep-last="true" keep-date="false" order="1"/>
+    <parameter id="P_CODCFOPINI" description="CFOP Inicial" metadata="integer" required="true" keep-last="true" keep-date="false" order="3"/>
+    <parameter id="P_CODCFOPFIN" description="CFOP Final" metadata="integer" required="true" keep-last="true" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_x6mpzo" description="Principal">
+    <args>
+      <arg id="A_CODTRIB" type="integer"/>
+      <arg id="A_CODCFOP" type="integer"/>
+      <arg id="A_ALIQICMS" type="decimal"/>
+      <arg id="A_ORIGEM" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_x6mpzp" useNewGrid="S">
+          <title><![CDATA[RESUMO - TOTAIS]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT  REFERENCIA,SUM(VLRCTB) AS VLRTOT, CODCFO, ORIGEM,CODTRIB, SUM(BASEICMS) AS BASEICMS, ALIQICMS,SUM(VLRICMS) AS VLRICMS,SUM(BASEST) AS BASEST, SUM(VLRST) AS VLRST, SUM(VLRIPI) AS VLRIPIFROM(   SELECT CAB.NUNOTA, CAB.NUMNOTA, ITE.ORIGPROD AS ORIGEM,		LIV.CODCFO, LIV.VLRCTB, LIV.CODTRIB, 		LIV.BASEICMS, LIV.ALIQICMS, LIV.VLRICMS, 		LIV.BASERETENCAO AS BASEST, LIV.ICMSRETENCAO AS VLRST, LIV.VLRIPI,  		TRUNC(TO_DATE(LIV.DHMOV), 'MON') AS REFERENCIA   FROM TGFCAB CAB, TGFITE ITE,		TSICID CID, TSIUFS UF, 		TGFLIV LIV   WHERE LIV.NUNOTA = CAB.NUNOTA    AND LIV.NUNOTA = ITE.NUNOTA    AND LIV.SEQUENCIA = ITE.SEQUENCIA    AND CAB.NUNOTA = ITE.NUNOTA    AND CAB.CODCIDDESTINO = CID.CODCID   AND CID.UF = UF.CODUF   AND (LIV.DHMOV >= :P_PERIODO.INI or :P_PERIODO.INI is null)   AND (LIV.DHMOV <= :P_PERIODO.FIN or :P_PERIODO.FIN is null)    AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)   AND LIV.CODCFO >= :P_CODCFOPINI   AND LIV.CODCFO <= :P_CODCFOPFIN   ) V GROUP BY REFERENCIA, CODCFO, ORIGEM, CODTRIB, ALIQICMSORDER BY REFERENCIA, CODCFO, ORIGEM, CODTRIB, ALIQICMS]]></expression>
+          <metadata>
+            <field name="REFERENCIA" label="Referência" type="D" visible="true" useFooter="false"/>
+            <field name="VLRTOT" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"/>
+            <field name="ORIGEM" label="Origem" type="S" visible="true" useFooter="false"/>
+            <field name="CODTRIB" label="CST ICMS" type="I" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="Base Calc. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="ALIQICMS" label="Aliq. ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"/>
+            <field name="VLRICMS" label="Vlr. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="BASEST" label="Base Calc. ICMS ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="VLRST" label="Vlr. ICMS ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+          </metadata>
+          <on-click navigate-to="lvl_x6mpzo">
+            <param id="A_CODTRIB"/>
+            <param id="A_CODCFOP"/>
+            <param id="A_ALIQICMS"/>
+            <param id="A_ORIGEM"/>
+          </on-click>
+          <refresh-details ui-list="grd_ac3o9vn">
+            <param id="A_CODTRIB">$CODTRIB</param>
+            <param id="A_CODCFOP">$CODCFO</param>
+            <param id="A_ALIQICMS">$ALIQICMS</param>
+            <param id="A_ORIGEM">$ORIGEM</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_ac3o9vn" useNewGrid="S">
+          <args>
+            <arg id="A_CODTRIB" type="integer"/>
+            <arg id="A_CODCFOP" type="integer"/>
+            <arg id="A_ALIQICMS" type="decimal"/>
+            <arg id="A_ORIGEM" type="integer"/>
+          </args>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT LIV.CODEMP,	CAB.NUNOTA,	CAB.NUMNOTA,	ITE.ORIGPROD AS ORIGEM,	LIV.CODCFO,	LIV.VLRCTB,	LIV.CODTRIB,	LIV.BASEICMS,	LIV.ALIQICMS,	LIV.VLRICMS, 	LIV.BASERETENCAO AS BASEST,	LIV.ICMSRETENCAO AS VLRST,	LIV.VLRIPI,  	LIV.DHMOV AS REFERENCIAFROM TGFCAB CAB	INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA	INNER JOIN TGFLIV LIV ON CAB.NUNOTA = LIV.NUNOTAWHERE LIV.SEQUENCIA = ITE.SEQUENCIA 	AND (LIV.DHMOV >= :P_PERIODO.INI or :P_PERIODO.INI is null)	AND (LIV.DHMOV <= :P_PERIODO.FIN or :P_PERIODO.FIN is null) 	AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)	AND LIV.CODCFO >= :P_CODCFOPINI	AND LIV.CODCFO <= :P_CODCFOPFIN	AND LIV.CODCFO = :A_CODCFOP	AND LIV.CODTRIB = :A_CODTRIB	AND LIV.ALIQICMS = :A_ALIQICMS	AND ITE.ORIGPROD = :A_ORIGEM]]></expression>
+          <metadata>
+            <field name="CODEMP" label="Emp" type="I" visible="true" useFooter="false"/>
+            <field name="NUNOTA" label="Nro Único" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"/>
+            <field name="ORIGEM" label="Origem" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"/>
+            <field name="VLRCTB" label="Vlr. Total" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="CODTRIB" label="CST ICMS" type="I" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="Base Calc. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="ALIQICMS" label="Aliq. ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00;-n"/>
+            <field name="VLRICMS" label="Vlr ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="BASEST" label="Base Calc. ICMS ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="VLRST" label="Vlr ICMS ST" type="F" visible="true" useFooter="SUM" mask="#.##0,00;-n"/>
+            <field name="VLRIPI" label="Vlr IPI" type="F" visible="true" useFooter="SUM" mask=" #.##0,00;-n"/>
+            <field name="REFERENCIA" label="Referência" type="D" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

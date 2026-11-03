@@ -1,0 +1,23 @@
+<gadget>
+  <level id="lvl_43n695" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_43n696" useNewGrid="S">
+        <title><![CDATA[Produtos com Código Anterior Repetido]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT AD_CODANTERIOR, CODPROD, DESCRPROD, G.CODGRUPOPROD, DECODE(USOPROD,'M','Matéria Prima','C','Consumo','S','Serviço','V','Venda Fabricação',USOPROD) AS USADOCOMO, G.DESCRGRUPOPROD, P.ATIVO,(SELECT COUNT(DISTINCT CODPRODPA) FROM TPRLMP MP WHERE MP.CODPRODMP = P.CODPROD) AS TOTFROM TGFPRO P INNER JOIN TGFGRU G ON (P.CODGRUPOPROD = G.CODGRUPOPROD) WHERE AD_CODANTERIOR IN (SELECT AD_CODANTERIOR FROM (SELECT AD_CODANTERIOR, COUNT(*) FROM TGFPRO WHERE USOPROD <> 'S'GROUP BY AD_CODANTERIORHAVING COUNT(*) > 1) D)ORDER BY 1,2]]></expression>
+        <metadata>
+          <field name="AD_CODANTERIOR" label="Cód. Anterior" type="I" visible="true" useFooter="false"/>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODGRUPOPROD" label="Cód. Grupo" type="I" visible="true" useFooter="false"/>
+          <field name="USADOCOMO" label="Usado Como" type="S" visible="true" useFooter="false"/>
+          <field name="DESCRGRUPOPROD" label="Grupo Produto" type="S" visible="true" useFooter="false"/>
+          <field name="ATIVO" label="Ativo" type="S" visible="true" useFooter="false"/>
+          <field name="TOT" label="Total em Fórmulas" type="I" visible="true" useFooter="false"/>
+        </metadata>
+        <on-click-launcher resource-id="br.com.sankhya.core.cad.produtos">
+          <CODPROD>$CODPROD</CODPROD>
+        </on-click-launcher>
+      </grid>
+    </container>
+  </level>
+</gadget>

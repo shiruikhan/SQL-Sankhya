@@ -1,0 +1,32 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODPROD" description="Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODEMP" description="Empresa" metadata="entity:EmpresaFinanceiro@CODEMP" required="true" keep-last="true" keep-date="false" order="1"/>
+    <parameter id="P_CODLOCALORIG" description="Local" metadata="entity:LocalFinanceiro@CODLOCAL" required="true" keep-last="true" keep-date="false" order="3"/>
+    <parameter id="P_DTREFERENCIA" description="Data Final" metadata="date" required="true" keep-last="true" keep-date="false" order="4"/>
+  </prompt-parameters>
+  <level id="lvl_ape0eoc" description="Principal">
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_ape0eod" useNewGrid="S">
+          <title><![CDATA[Cópia de Estoque]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CODPROD,	SUM(CASE WHEN ATUALESTOQUE = 1 THEN QTDNEG ELSE 0 END) - SUM(CASE WHEN ATUALESTOQUE = -1 THEN QTDNEG ELSE 0 END) AS SALDOFROM TGFESEWHERE (CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)	AND CODLOCALORIG = :P_CODLOCALORIG	AND CODEMP = :P_CODEMP	AND TRUNC(DTREFERENCIA) >= '01/01/2022'	AND TRUNC(DTREFERENCIA) <= :P_DTREFERENCIAGROUP BY CODPROD	HAVING SUM(CASE WHEN ATUALESTOQUE = 1 THEN QTDNEG ELSE 0 END)- SUM(CASE WHEN ATUALESTOQUE = -1 THEN QTDNEG ELSE 0 END) > 0ORDER BY CODPROD]]></expression>
+          <metadata>
+            <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="SALDO" label="Qtd. Saldo" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <grid id="grd_atlkjsx" useNewGrid="S">
+          <title><![CDATA[Consumos/Manuais]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT ESE.CODPROD,	SUM(CASE WHEN ESE.ATUALESTOQUE = 1 THEN ESE.QTDNEG ELSE 0 END) - SUM(CASE WHEN ESE.ATUALESTOQUE = -1 THEN ESE.QTDNEG ELSE 0 END) AS SALDOFROM TGFESE ESE	INNER JOIN TGFPRO PRO ON (ESE.CODPROD = PRO.CODPROD)WHERE (ESE.CODPROD = :P_CODPROD OR :P_CODPROD IS NULL)	AND ESE.CODLOCALORIG = :P_CODLOCALORIG	AND ESE.CODEMP = :P_CODEMP	AND TRUNC(ESE.DTREFERENCIA) <= :P_DTREFERENCIA	AND PRO.USOPROD IN('B','C','1','2','I')GROUP BY ESE.CODPROD--HAVING SUM(CASE WHEN ESE.ATUALESTOQUE = 1 THEN ESE.QTDNEG ELSE 0 END)- SUM(CASE WHEN ESE.ATUALESTOQUE = -1 THEN ESE.QTDNEG ELSE 0 END) <> 0ORDER BY ESE.CODPROD]]></expression>
+          <metadata>
+            <field name="CODPROD" label="CODPROD" type="I" visible="true" useFooter="false"/>
+            <field name="SALDO" label="SALDO" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

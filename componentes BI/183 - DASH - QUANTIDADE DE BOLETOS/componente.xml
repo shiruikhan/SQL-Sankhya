@@ -1,0 +1,295 @@
+<gadget ><level id="lvl_xfs6bu" description="Principal"><args ><arg id="A_CONTA" type="integer" label="A_CONTA : Número Inteiro"/><arg id="A_TIPO" type="text" label="A_TIPO : Texto"/></args><container orientacao="V" tamanhoRelativo="100"><container orientacao="V" tamanhoRelativo="35.87107827390513"><simple-value id="svl_xfs6by"><expression type="sql" data-source="MGEDS"><![CDATA[WITH DT_REF AS (
+    /*-- Ultima data util (seg-sex) anterior a hoje ------------------------*/
+    SELECT  MAX(D.DIA) AS DTREF
+      FROM  (SELECT  TRUNC(SYSDATE) - LEVEL AS DIA
+               FROM  DUAL
+            CONNECT BY LEVEL <= 10) D
+     WHERE  TO_CHAR(D.DIA, 'DY', 'NLS_DATE_LANGUAGE = AMERICAN') NOT IN ('SAT', 'SUN')
+),
+BOLETOS AS (
+    /*-- Boletos a vencer (em aberto na DTREF, vencimento >= DTREF) --------*/
+    SELECT  'A VENCER'          AS STATUS
+           ,COUNT(0)            AS CONTAGEM
+           ,SUM(F.VLRLIQUIDO)   AS TOTAL
+      FROM  TGFFIN FIN
+            CROSS JOIN DT_REF R
+            INNER JOIN TSICTA CTA
+                ON  CTA.CODCTABCOINT = FIN.CODCTABCOINT
+            INNER JOIN VGFFIN F
+                ON  F.NUFIN = FIN.NUFIN
+     WHERE  FIN.RECDESP    = 1
+       AND  FIN.PROVISAO   = 'N'
+       AND  FIN.CODTIPTIT  = 4
+       AND  FIN.NOSSONUM  IS NOT NULL
+       AND (FIN.DHBAIXA   IS NULL OR FIN.DHBAIXA >= R.DTREF + 1)
+       AND  FIN.DTNEG     <= R.DTREF
+       AND  FIN.DTVENC    >= R.DTREF
+
+    UNION ALL
+    /*-- Boletos vencidos (em aberto na DTREF, vencimento < DTREF) --------*/
+    SELECT  'VENCIDO'           AS STATUS
+           ,COUNT(0)            AS CONTAGEM
+           ,SUM(F.VLRLIQUIDO)   AS TOTAL
+      FROM  TGFFIN FIN
+            CROSS JOIN DT_REF R
+            INNER JOIN TSICTA CTA
+                ON  CTA.CODCTABCOINT = FIN.CODCTABCOINT
+            INNER JOIN VGFFIN F
+                ON  F.NUFIN = FIN.NUFIN
+     WHERE  FIN.RECDESP    = 1
+       AND  FIN.PROVISAO   = 'N'
+       AND  FIN.CODTIPTIT  = 4
+       AND  FIN.NOSSONUM  IS NOT NULL
+       AND (FIN.DHBAIXA   IS NULL OR FIN.DHBAIXA >= R.DTREF + 1)
+       AND  FIN.DTNEG     <= R.DTREF
+       AND  FIN.DTVENC     < R.DTREF
+
+    UNION ALL
+    /*-- Boletos em cartorio (titulo protestado, vencimento < DTREF) ------*/
+    SELECT  'BOLETO EM CARTORIO' AS STATUS
+           ,COUNT(0)             AS CONTAGEM
+           ,SUM(F.VLRLIQUIDO)    AS TOTAL
+      FROM  TGFFIN FIN
+            CROSS JOIN DT_REF R
+            INNER JOIN TSICTA CTA
+                ON  CTA.CODCTABCOINT = FIN.CODCTABCOINT
+            INNER JOIN VGFFIN F
+                ON  F.NUFIN = FIN.NUFIN
+     WHERE  FIN.RECDESP    = 1
+       AND  FIN.PROVISAO   = 'N'
+       AND  FIN.CODTIPTIT  = 48
+       AND  FIN.NOSSONUM  IS NOT NULL
+       AND (FIN.DHBAIXA   IS NULL OR FIN.DHBAIXA >= R.DTREF + 1)
+       AND  FIN.DTNEG     <= R.DTREF
+       AND  FIN.DTVENC     < R.DTREF
+)
+SELECT  NVL(SUM(CASE WHEN STATUS = 'A VENCER'           THEN CONTAGEM END), 0) AS VENCER_QTD
+       ,NVL(SUM(CASE WHEN STATUS = 'A VENCER'           THEN TOTAL    END), 0) AS VENCER_TOT
+       ,NVL(SUM(CASE WHEN STATUS = 'VENCIDO'            THEN CONTAGEM END), 0) AS VENCIDO_QTD
+       ,NVL(SUM(CASE WHEN STATUS = 'VENCIDO'            THEN TOTAL    END), 0) AS VENCIDO_TOT
+       ,NVL(SUM(CASE WHEN STATUS = 'BOLETO EM CARTORIO' THEN CONTAGEM END), 0) AS CARTORIO_QTD
+       ,NVL(SUM(CASE WHEN STATUS = 'BOLETO EM CARTORIO' THEN TOTAL    END), 0) AS CARTORIO_TOT
+  FROM  BOLETOS]]></expression><metadata><field name="VENCER_QTD" label="VENCER_QTD" type="I" visible="true" useFooter="false"></field><field name="VENCER_TOT" label="VENCER_TOT" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="VENCIDO_QTD" label="VENCIDO_QTD" type="I" visible="true" useFooter="false"></field><field name="VENCIDO_TOT" label="VENCIDO_TOT" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field><field name="CARTORIO_QTD" label="CARTORIO_QTD" type="I" visible="true" useFooter="false"></field><field name="CARTORIO_TOT" label="CARTORIO_TOT" type="I" visible="true" useFooter="false" mask="R$ #.##0,00"></field></metadata><value-expression ><![CDATA[<span style='color: #0000FF; font-size: 14px;'><div style='text-align: center;'>Posição de Cobrança 
+
+<div style='text-align: center;'><span style='font-size: 12px; color: #00CC33;'>Quantidade de Boletos em Aberto:$VENCER_QTD
+Valor de Boletos em Aberto:$VENCER_TOT</span>
+
+<span style='font-size: 12px; color: #FF0000;'>Quantidade de Boletos em Vencido:$VENCIDO_QTD
+Valor de Boletos Vencidos:$VENCIDO_TOT</span>
+
+<span style='color: #FFFF00;'>
+<span style='font-size: 12px; color: #CC6633;'>Quantidade de Boletos em Cartório:$CARTORIO_QTD
+Valor de Boletos em Cartório:$CARTORIO_TOT</span></div></span>]]></value-expression></simple-value></container><container orientacao="V" tamanhoRelativo="65.13902273619588"><grid id="grd_xfs6bv" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[WITH DT_REF AS (
+    /*-- Ultima data util (seg-sex) anterior a hoje ----------------------*/
+    SELECT  MAX(D.DIA) AS DTREF
+      FROM  (SELECT  TRUNC(SYSDATE) - LEVEL AS DIA
+               FROM  DUAL
+            CONNECT BY LEVEL <= 10) D
+     WHERE  TO_CHAR(D.DIA, 'DY', 'NLS_DATE_LANGUAGE = AMERICAN') NOT IN ('SAT', 'SUN')
+)
+------------------------------------------------------------------------------
+-- Boletos a vencer (em aberto na DTREF, vencimento >= DTREF)
+------------------------------------------------------------------------------
+SELECT  FIN.CODCTABCOINT
+       ,CTA.DESCRICAO
+       ,'A VENCER'          AS STATUS
+       ,COUNT(0)            AS CONTAGEM
+       ,SUM(F.VLRLIQUIDO)   AS TOTAL
+  FROM  TGFFIN FIN
+        CROSS JOIN DT_REF R
+        INNER JOIN TSICTA CTA
+            ON  CTA.CODCTABCOINT = FIN.CODCTABCOINT
+        INNER JOIN VGFFIN F
+            ON  F.NUFIN = FIN.NUFIN
+ WHERE  FIN.RECDESP    = 1
+   AND  FIN.PROVISAO   = 'N'
+   AND  FIN.CODTIPTIT  = 4
+   AND  FIN.NOSSONUM  IS NOT NULL
+   AND (FIN.DHBAIXA   IS NULL OR FIN.DHBAIXA >= R.DTREF + 1)
+   AND  FIN.DTNEG     <= R.DTREF
+   AND  FIN.DTVENC    >= R.DTREF
+ GROUP BY FIN.CODCTABCOINT
+         ,CTA.DESCRICAO
+
+UNION ALL
+------------------------------------------------------------------------------
+-- Boletos vencidos (em aberto na DTREF, vencimento < DTREF)
+------------------------------------------------------------------------------
+SELECT  FIN.CODCTABCOINT
+       ,CTA.DESCRICAO
+       ,'VENCIDO'           AS STATUS
+       ,COUNT(0)            AS CONTAGEM
+       ,SUM(F.VLRLIQUIDO)   AS TOTAL
+  FROM  TGFFIN FIN
+        CROSS JOIN DT_REF R
+        INNER JOIN TSICTA CTA
+            ON  CTA.CODCTABCOINT = FIN.CODCTABCOINT
+        INNER JOIN VGFFIN F
+            ON  F.NUFIN = FIN.NUFIN
+ WHERE  FIN.RECDESP    = 1
+   AND  FIN.PROVISAO   = 'N'
+   AND  FIN.CODTIPTIT  = 4
+   AND  FIN.NOSSONUM  IS NOT NULL
+   AND (FIN.DHBAIXA   IS NULL OR FIN.DHBAIXA >= R.DTREF + 1)
+   AND  FIN.DTNEG     <= R.DTREF
+   AND  FIN.DTVENC     < R.DTREF
+ GROUP BY FIN.CODCTABCOINT
+         ,CTA.DESCRICAO
+
+UNION ALL
+------------------------------------------------------------------------------
+-- Boletos em cartorio (titulo protestado, vencimento < DTREF)
+------------------------------------------------------------------------------
+SELECT  FIN.CODCTABCOINT
+       ,CTA.DESCRICAO
+       ,'BOLETO EM CARTORIO' AS STATUS
+       ,COUNT(0)             AS CONTAGEM
+       ,SUM(F.VLRLIQUIDO)    AS TOTAL
+  FROM  TGFFIN FIN
+        CROSS JOIN DT_REF R
+        INNER JOIN TSICTA CTA
+            ON  CTA.CODCTABCOINT = FIN.CODCTABCOINT
+        INNER JOIN VGFFIN F
+            ON  F.NUFIN = FIN.NUFIN
+ WHERE  FIN.RECDESP    = 1
+   AND  FIN.PROVISAO   = 'N'
+   AND  FIN.CODTIPTIT  = 48
+   AND  FIN.NOSSONUM  IS NOT NULL
+   AND (FIN.DHBAIXA   IS NULL OR FIN.DHBAIXA >= R.DTREF + 1)
+   AND  FIN.DTNEG     <= R.DTREF
+   AND  FIN.DTVENC     < R.DTREF
+ GROUP BY FIN.CODCTABCOINT
+         ,CTA.DESCRICAO
+
+ORDER BY 1, 3]]></expression><metadata><field name="CODCTABCOINT" label="Conta Bancária" type="I" visible="true" useFooter="false"></field><field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false"></field><field name="STATUS" label="Status" type="S" visible="true" useFooter="false"></field><field name="CONTAGEM" label="Qtd. Boletos" type="F" visible="true" useFooter="false"></field><field name="TOTAL" label="Valor dos Titulos" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><on-click  navigate-to="lvl_xfs6dc">
+            <param id="A_CONTA">$CODCTABCOINT</param>
+            <param id="A_TIPO">$STATUS</param>
+          </on-click></grid></container></container></level><level id="lvl_xfs6dc" description="Detalhes"><args><arg  id="A_CONTA" type="integer" label="A_CONTA : Número Inteiro"/><arg  id="A_TIPO" type="text" label="A_TIPO : Texto"/></args><container orientacao="V" tamanhoRelativo="100"><grid id="grd_xfs6dd" multiplaSelecao="S" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[/*********BOLETO EM ABERTO****/
+SELECT 
+     FIN.NUFIN
+	,FIN.NUNOTA
+    ,FIN.NUMNOTA
+	,FIN.CODPARC
+	,PAR.NOMEPARC
+	,FIN.DTNEG 
+	,FIN.DTVENC
+    ,SUM(F.VLRLIQUIDO) AS TOTAL
+
+FROM TGFFIN FIN 
+
+ INNER JOIN TSICTA CTA 
+    ON CTA.CODCTABCOINT = FIN.CODCTABCOINT
+
+ INNER JOIN VGFFIN F
+    ON F.NUFIN = FIN.NUFIN
+ 
+ INNER JOIN TGFPAR PAR 
+	ON PAR.CODPARC = FIN.CODPARC
+
+WHERE FIN.DHBAIXA IS NULL 
+ AND  FIN.RECDESP = 1
+ AND  FIN.PROVISAO = 'N'
+ AND  FIN.CODTIPTIT = 4
+ AND  FIN.CODCTABCOINT = :A_CONTA
+ AND  :A_TIPO = 'A VENCER'
+ AND  FIN.DTVENC >= TRUNC(SYSDATE)
+ AND  FIN.NOSSONUM IS NOT NULL
+ AND  FIN.DTNEG <= TRUNC(SYSDATE) - 1
+
+
+GROUP BY 
+     FIN.NUFIN
+	,FIN.NUNOTA
+    ,FIN.NUMNOTA
+	,FIN.CODPARC
+	,PAR.NOMEPARC
+	,FIN.DTNEG 
+	,FIN.DTVENC
+/*********BOLETO VENCIDO****/
+UNION ALL 
+
+SELECT 
+     FIN.NUFIN
+	,FIN.NUNOTA
+    ,FIN.NUMNOTA
+	,FIN.CODPARC
+	,PAR.NOMEPARC
+	,FIN.DTNEG 
+	,FIN.DTVENC
+    ,SUM(F.VLRLIQUIDO) AS TOTAL
+	
+FROM TGFFIN FIN 
+
+ INNER JOIN TSICTA CTA 
+    ON CTA.CODCTABCOINT = FIN.CODCTABCOINT
+
+ INNER JOIN VGFFIN F
+    ON F.NUFIN = FIN.NUFIN
+	
+ INNER JOIN TGFPAR PAR 
+	ON PAR.CODPARC = FIN.CODPARC
+	
+WHERE FIN.DHBAIXA IS NULL 
+ AND  FIN.RECDESP = 1
+ AND  FIN.PROVISAO = 'N'
+ AND  FIN.CODTIPTIT = 4
+ AND  FIN.CODCTABCOINT = :A_CONTA
+ AND  :A_TIPO = 'VENCIDO'
+ AND  FIN.DTVENC < TRUNC(SYSDATE)
+ AND  FIN.NOSSONUM IS NOT NULL
+ AND  FIN.DTNEG <= TRUNC(SYSDATE) - 2
+
+GROUP BY 
+     FIN.NUFIN
+	,FIN.NUNOTA
+    ,FIN.NUMNOTA
+	,FIN.CODPARC
+	,PAR.NOMEPARC
+	,FIN.DTNEG 
+	,FIN.DTVENC
+UNION ALL 
+/*********BOLETO EM CARTORIO****/
+SELECT 
+     FIN.NUFIN
+	,FIN.NUNOTA
+    ,FIN.NUMNOTA
+	,FIN.CODPARC
+	,PAR.NOMEPARC
+	,FIN.DTNEG 
+	,FIN.DTVENC
+    ,SUM(F.VLRLIQUIDO) AS TOTAL
+	
+FROM TGFFIN FIN 
+
+ INNER JOIN TSICTA CTA 
+    ON CTA.CODCTABCOINT = FIN.CODCTABCOINT
+
+ INNER JOIN VGFFIN F
+    ON F.NUFIN = FIN.NUFIN
+
+ INNER JOIN TGFPAR PAR 
+	ON PAR.CODPARC = FIN.CODPARC
+	
+WHERE FIN.DHBAIXA IS NULL 
+ AND  FIN.RECDESP = 1
+ AND  FIN.PROVISAO = 'N'
+ AND  FIN.CODTIPTIT = 48
+ AND  FIN.CODCTABCOINT = :A_CONTA
+ AND  :A_TIPO = 'BOLETO EM CARTORIO'
+ AND  FIN.DTVENC < TRUNC(SYSDATE)
+ AND  FIN.NOSSONUM IS NOT NULL
+ AND  FIN.DTNEG <= TRUNC(SYSDATE) - 2
+
+
+GROUP BY 
+     FIN.NUFIN
+	,FIN.NUNOTA
+    ,FIN.NUMNOTA
+	,FIN.CODPARC
+	,PAR.NOMEPARC
+	,FIN.DTNEG 
+	,FIN.DTVENC
+	
+ORDER BY 1]]></expression><metadata><field name="NUFIN" label="Nr. Único Financeiro" type="I" visible="true" useFooter="false"></field><field name="NUNOTA" label="Nr. Único Pedido" type="I" visible="true" useFooter="false"></field><field name="NUMNOTA" label="Nr. Nota" type="I" visible="true" useFooter="false"></field><field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"></field><field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"></field><field name="DTNEG" label="Dt. Negociação " type="D" visible="true" useFooter="false"></field><field name="DTVENC" label="Dt. Vencimento " type="D" visible="true" useFooter="false"></field><field name="TOTAL" label="Valor total " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><on-click-launcher  resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+          <NUFIN>$NUFIN</NUFIN>
+        </on-click-launcher></grid></container></level></gadget>

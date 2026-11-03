@@ -1,0 +1,41 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODTIPOPER" description="Top" metadata="entity:TipoOperacao@CODTIPOPER,DHALTER" required="true" keep-last="true" keep-date="false" order="1"/>
+  </prompt-parameters>
+  <level id="lvl_ash9ksm" description="Principal">
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="185">
+        <grid id="grd_ash9ksn" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA,	CAB.DTENTSAI,	CAB.NUMNOTA,	CAB.CODTIPOPER,	(SELECT MAX(DESCROPER) FROM TGFTOP TOP WHERE TOP.CODTIPOPER=CAB.CODTIPOPER) AS TOP,	ITE.CODPROD,	(CASE WHEN ITE.CODLOCALORIG = 101 THEN CAB.AD_CODLOCALDEST ELSE ITE.CODLOCALORIG END) CODLOCAL,	(SELECT LOC.DESCRLOCAL FROM TGFLOC LOC WHERE LOC.CODLOCAL= (CASE WHEN ITE.CODLOCALORIG = 101 THEN    	CAB.AD_CODLOCALDEST ELSE ITE.CODLOCALORIG END)) AS LOCAL,	(SELECT DESCRPROD FROM TGFPRO PRO WHERE ITE.CODPROD=PRO.CODPROD) AS DESCRICAO,	(SELECT P.RAZAOSOCIAL FROM TGFPAR P WHERE P.CODPARC = (SELECT CODPARCFORN FROM TGFPRO PRO WHERE ITE.CODPROD = PRO.CODPROD)) AS FORNECEDORPREF,	ITE.QTDNEGFROM TGFCAB CAB	INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTAWHERE TRUNC(CAB.DTENTSAI) >= :P_PERIODO.INI AND  TRUNC(CAB.DTENTSAI) <= :P_PERIODO.FIN	AND CAB.CODTIPOPER = :P_CODTIPOPERORDER BY CAB.DTENTSAI, CAB.NUNOTA, ITE.CODPROD]]></expression>
+          <metadata>
+            <field name="NUNOTA" label="Nr Único" type="I" visible="true" useFooter="false"/>
+            <field name="DTENTSAI" label="Data" type="D" visible="true" useFooter="false" mask="DD/MM/YYYY"/>
+            <field name="NUMNOTA" label="Nr Nota" type="I" visible="true" useFooter="false"/>
+            <field name="CODTIPOPER" label="Top" type="I" visible="true" useFooter="false"/>
+            <field name="TOP" label="Descrição Top" type="S" visible="true" useFooter="false"/>
+            <field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false"/>
+            <field name="CODLOCAL" label="Cód. local" type="I" visible="true" useFooter="false"/>
+            <field name="LOCAL" label="Descrição Local" type="S" visible="true" useFooter="false"/>
+            <field name="DESCRICAO" label="Descrição Produto" type="S" visible="true" useFooter="false"/>
+            <field name="FORNECEDORPREF" label="Fornecedor Preferencial" type="S" visible="true" useFooter="false"/>
+            <field name="QTDNEG" label="Qtd Negociada" type="F" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="100">
+        <grid id="grd_ash9ksq" useNewGrid="S">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT DISTINCT ITE.CODPROD,    (SELECT DESCRPROD FROM TGFPRO PRO WHERE ITE.CODPROD = PRO.CODPROD) AS DESCRICAO,    SUM(ITE.QTDNEG) AS QTDFROM TGFCAB CAB	INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTAWHERE TRUNC(CAB.DTENTSAI) >= :P_PERIODO.INI AND  TRUNC(CAB.DTENTSAI) <= :P_PERIODO.FIN	AND CAB.CODTIPOPER = :P_CODTIPOPERGROUP BY ITE.CODPROD]]></expression>
+          <metadata>
+            <field name="CODPROD" label="Cod Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRICAO" label="Descrição Produto" type="S" visible="true" useFooter="false"/>
+            <field name="QTD" label="Total Quantidade" type="I" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

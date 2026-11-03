@@ -1,0 +1,917 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_DTNEG" description="Dt. Negociação:" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_CODEMPMATRIZ" description="Empresa Matriz:" metadata="singleList:Text" listType="sql" required="false" keep-last="true" keep-date="false" order="1">
+      <expression type="SQL"><![CDATA[SELECT
+	R.*
+FROM
+(SELECT 
+9999 VALUE,
+'Todas' LABEL
+FROM TSIEMP EMP
+UNION
+SELECT 
+EMP.CODEMP VALUE,
+EMP.RAZAOSOCIAL LABEL
+FROM TSIEMP EMP
+WHERE 
+EMP.CODEMP IN(
+SELECT 
+	EMP.CODEMPMATRIZ 
+FROM TSIEMP EMP
+WHERE EMP.CODEMPMATRIZ IS NOT NULL) 
+)R
+ORDER BY R.VALUE DESC]]></expression>
+    </parameter>
+    <parameter id="P_CODEMP" description="Empresa:" metadata="entity:EmpresaFinanceiro@CODEMP" required="false" keep-last="true" keep-date="false" order="2"/>
+    <parameter id="P_NUNOTA" description="Nro. Único:" metadata="text" required="false" keep-last="false" keep-date="false" order="3"/>
+    <parameter id="P_MOSTRAEXCLIV" description="Registro Excluído do Livro Fiscal:" metadata="singleList:Text" listType="text" required="false" keep-last="true" keep-date="false" order="4">
+      <item value="T" label="Todos"/>
+      <item value="S" label="Sim"/>
+      <item value="N" label="Não"/>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_3f240f" description="Resumo">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="102">
+        <container orientacao="V" tamanhoRelativo="560">
+          <simple-value id="svl_3f25ez">
+            <value-expression><![CDATA[<p></p>
+<div style='text-align: center;'><h3 style="color: #084d6e;"><strong>Registros com Diverg&ecirc;ncias na Escritura&ccedil;&atilde;o do Livro de ICMS/IPI</strong></h3></div> 
+<p style="text-align: center;">Período: :P_DTNEG.INI à :P_DTNEG.FIN</p>]]></value-expression>
+          </simple-value>
+        </container>
+      </container>
+      <container orientacao="H" tamanhoRelativo="326">
+        <container orientacao="V" tamanhoRelativo="108">
+          <simple-value id="svl_3f240u">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	COALESCE((SELECT 				  COUNT(DISTINCT(LIV.NUNOTA))			  FROM TGFLIV LIV 			  INNER JOIN TGFCAB CAB ON(CAB.NUNOTA = LIV.NUNOTA)			  INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)			   WHERE (LIV.SEQUENCIA = 9999 OR LIV.SEQUENCIA = 9998) 			     AND LIV.NUNOTA = CAB.NUNOTA 			     AND LIV.ESPDOC = 'NF' 			     AND (LIV.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)			     AND (TRUNC(LIV.DHMOV) >= :P_DTNEG.INI AND TRUNC(LIV.DHMOV) <= :P_DTNEG.FIN)			     AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)			     AND (LIV.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)),0) QTDNF,		COALESCE((SELECT 				  COUNT(DISTINCT(LIV.NUNOTA))			  FROM TGFLIV LIV 			  INNER JOIN TGFCAB CAB ON(CAB.NUNOTA = LIV.NUNOTA)			  INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)			  WHERE (LIV.SEQUENCIA = 9999 OR LIV.SEQUENCIA = 9998) 			     AND LIV.NUNOTA = CAB.NUNOTA 			     AND LIV.ESPDOC = 'CT' 			     AND (LIV.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)			     AND (TRUNC(LIV.DHMOV) >= :P_DTNEG.INI AND TRUNC(LIV.DHMOV) <= :P_DTNEG.FIN)			     AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)			     AND (LIV.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)),0) QTDCT,		COALESCE((SELECT 				  COUNT(DISTINCT(LIV.NUNOTA))			  FROM TGFLIV LIV 			  INNER JOIN TGFFIN FIN ON(FIN.NUNOTA = LIV.NUNOTA)			  INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = FIN.CODTIPOPER AND TPO.DHALTER = FIN.DHTIPOPER)			  INNER JOIN TSIEMP EMP ON(EMP.CODEMP = FIN.CODEMP)			   WHERE (LIV.SEQUENCIA = 9999 OR LIV.SEQUENCIA = 9998) 			     AND LIV.NUNOTA = FIN.NUFIN			     AND LIV.ESPDOC = 'F' 			     AND (LIV.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)			     AND (TRUNC(LIV.DHMOV) >= :P_DTNEG.INI AND TRUNC(LIV.DHMOV) <= :P_DTNEG.FIN)			     AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)			     AND (LIV.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)),0) QTDFINFROM DUAL]]></expression>
+            <metadata>
+              <field name="QTDNF" label="QTDNF" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              <field name="QTDCT" label="QTDCT" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              <field name="QTDFIN" label="QTDFIN" type="I" visible="true" useFooter="false" mask="#.##0"/>
+            </metadata>
+            <value-expression><![CDATA[<table style="border-collapse: collapse; width: 100%;" border="1">
+<tbody>
+<tr>
+<td style="width: 100%;">
+<h3 style="text-align: center;"><span style="color: #084d6e;"><strong>Escriturados com Erro</strong></span></h3>
+<p style="text-align: center;">(Registros com sequ&ecirc;ncia 9999 e 9998 no Livro Fiscal)</p>
+<blockquote>
+<h4 style="text-align: center;"><strong>Notas:</strong> $QTDNF</h4>
+<h4 style="text-align: center;"><strong>Conhecimentos de Transporte:</strong> $QTDCT</h4>
+<h4 style="text-align: center;"><strong>Financeiros:</strong> $QTDFIN</h4>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>]]></value-expression>
+            <on-click navigate-to="lvl_qm46q2"/>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="120">
+          <simple-value id="svl_3f240v">
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	(SELECT		COUNT(1) QTD	FROM TGFITE ITE	INNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)	INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)	INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)	WHERE TPO.ATUALLIVFIS <> 'N'              	  AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'	  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')		   OR	       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')		   OR 		   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')		   OR 		   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))	  AND (TRUNC(CAB.DTENTSAI) >= :P_DTNEG.INI AND TRUNC(CAB.DTENTSAI) <= :P_DTNEG.FIN)	  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)	  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)	  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)	  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))	  AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = ITE.NUNOTA AND E.SEQUENCIA = ITE.SEQUENCIA) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')	  AND CAB.TIPMOV = 'V') QTVENDAS,	(SELECT		COUNT(1) QTD	FROM TGFITE ITE	INNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)	INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)	INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)	WHERE TPO.ATUALLIVFIS <> 'N'              	  AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'	  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')		   OR	       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')		   OR 		   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')		   OR 		   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))	  AND (TRUNC(CAB.DTENTSAI) >= :P_DTNEG.INI AND TRUNC(CAB.DTENTSAI) <= :P_DTNEG.FIN)	  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)	  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)	  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)	  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))	  AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = ITE.NUNOTA AND E.SEQUENCIA = ITE.SEQUENCIA) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')	  AND CAB.TIPMOV = 'D') QTDEVVENDA,	(SELECT		COUNT(1) QTDNOTAPENDESCRIT	 FROM TGFITE ITE	 INNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)	 INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)	 INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)	 WHERE TPO.ATUALLIVFIS <> 'N'              	   AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'	   AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')		    OR	       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')		    OR 		   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')		    OR 		    (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')) 	   AND (TRUNC(CAB.DTENTSAI) >= :P_DTNEG.INI AND TRUNC(CAB.DTENTSAI) <= :P_DTNEG.FIN) 	   AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)	   AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)	   AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)	   AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))	   AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = ITE.NUNOTA AND E.SEQUENCIA = ITE.SEQUENCIA) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')	   AND CAB.TIPMOV = 'C') QTCOMPRAS,	(SELECT		COUNT(1) QTD	FROM TGFITE ITE	INNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)	INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)	INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)	WHERE TPO.ATUALLIVFIS <> 'N'              	  AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'	  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')		   OR	       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')		   OR 		   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')		   OR 		   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))	  AND (TRUNC(CAB.DTENTSAI) >= :P_DTNEG.INI AND TRUNC(CAB.DTENTSAI) <= :P_DTNEG.FIN)	  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)	  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)	  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)	  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))	  AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = ITE.NUNOTA AND E.SEQUENCIA = ITE.SEQUENCIA) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')	  AND CAB.TIPMOV = 'E') QTDEVCOMPRA,	(SELECT		COUNT(1) QTD	FROM TGFITE ITE	INNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)	INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)	INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)	WHERE TPO.ATUALLIVFIS <> 'N'              	  AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'	  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')		   OR	       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')		   OR 		   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')		   OR 		   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))	  AND (TRUNC(CAB.DTENTSAI) >= :P_DTNEG.INI AND TRUNC(CAB.DTENTSAI) <= :P_DTNEG.FIN)	  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)	  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)	  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)	  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))	  AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = ITE.NUNOTA AND E.SEQUENCIA = ITE.SEQUENCIA) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')	  AND CAB.TIPMOV NOT IN ('V','D','C','E')) QTOUTROSFROM DUAL]]></expression>
+            <metadata>
+              <field name="QTVENDAS" label="QTVENDAS" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              <field name="QTDEVVENDA" label="QTDEVVENDA" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              <field name="QTCOMPRAS" label="QTCOMPRAS" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              <field name="QTDEVCOMPRA" label="QTDEVCOMPRA" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              <field name="QTOUTROS" label="QTOUTROS" type="I" visible="true" useFooter="false" mask="#.##0"/>
+            </metadata>
+            <value-expression><![CDATA[<table style="border-collapse: collapse; width: 100%;" border="1">
+<tbody>
+<tr style="height: 275px;">
+<td style="width: 100%; text-align: center; height: 275px;">
+<h3 style="text-align: center;"><strong><span style="color: #084d6e;">Itens de Notas n&atilde;o Escriturados</span></strong></h3>
+(Itens marcados para atualizar livro fiscal, mas n&atilde;o foram encontrados no livro)
+<p> </p>
+<blockquote>
+<p><strong>Vendas:</strong> $QTVENDAS   |   <strong>Devolu&ccedil;&atilde;o de Vendas:</strong> $QTDEVVENDA </p>
+<p><strong>Compras: </strong>$QTCOMPRAS   |   <strong>Devolu&ccedil;&atilde;o de Compras:</strong> $QTDEVCOMPRA</p>
+<p><strong>Outros Tipos de Movimento:</strong> $QTOUTROS</p>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>]]></value-expression>
+            <on-click navigate-to="lvl_3f24wa"/>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="100">
+          <container orientacao="V" tamanhoRelativo="100">
+            <simple-value id="svl_3f240w">
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT	COUNT(1) QTDFINFROM TGFFIN FININNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = FIN.CODTIPOPER AND TPO.DHALTER = FIN.DHTIPOPER)INNER JOIN TSIEMP EMP ON(EMP.CODEMP = FIN.CODEMP)INNER JOIN TGFEMP GEMP ON(GEMP.CODEMP = FIN.CODEMP)WHERE FIN.ORIGEM = 'F'  AND TPO.ATUALLIVFIS NOT IN ('N','A')  AND FIN.PROVISAO = 'N'  AND GEMP.GERARLIVROS = 'S'  AND (FIN.DTNEG BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN)  AND (FIN.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)  AND (FIN.NUFIN = :P_NUNOTA OR :P_NUNOTA IS NULL)  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)  AND FIN.NUNOTA IS NULL  AND FIN.RECDESP <> 0  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = FIN.NUFIN AND FIN.CODEMP = LIV.CODEMP AND LIV.CODPARC = FIN.CODPARC)  AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = FIN.NUFIN AND E.ORIGEM = 'F' AND FIN.CODEMP = E.CODEMP AND E.CODPARC = FIN.CODPARC) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')  AND (/* TÍTULOS DE ORIGEM NO FINANCEIRO */	/* BUSCA TÍTULO NÃO RENEGOCIADO OU TÍTULO ORIGEM DA RENEGOCIAÇÃO */	((FIN.ORIGEM = 'F') AND (FIN.NURENEG IS NULL OR EXISTS(SELECT 1 FROM TGFREN REN WHERE REN.NUFIN = FIN.NUFIN AND REN.NURENEGORIG = 0 AND FIN.RECDESP = 0)))	  OR                /* TÍTULOS DE ORIGEM NO ESTOQUE (FINANCEIRO DE FRETE) */	/* SE FRETERENEG LIGADO, BUSCA TÍTULO NÃO RENEGOCIADO OU TÍTULO DESTINO DA RENEGOCIAÇÃO */	(((FIN.DESDOBDUPL = 'F') OR EXISTS(SELECT 1	FROM TGFFNF WHERE NUFIN = FIN.NUFIN) OR (TPO.CODMODDOC = 57	AND TPO.TIPMOV = 'I'))	AND (FIN.RECDESP <> 0) AND ((SELECT	LOGICO FROM	TSIPAR WHERE CHAVE = 'LIVFRETERENEG') = 'S'))		  OR                /* TÍTULOS DE ORIGEM NO ESTOQUE (FINANCEIRO DE FRETE) */	/* SE FRETERENEG DESLIGADO, BUSCA TÍTULO ORIGEM NA RENEGOCIAÇÃO OU TÍTULO NÃO RENEGOCIADO */	(((FIN.DESDOBDUPL = 'F') OR 	             EXISTS (SELECT 1 FROM TGFFNF WHERE NUFIN = FIN.NUFIN)) 	             AND ((SELECT LOGICO FROM TSIPAR WHERE CHAVE = 'LIVFRETERENEG') = 'N') 	             AND ((FIN.RECDESP = 0 AND FIN.NURENEG IS NOT NULL AND NOT EXISTS(SELECT 1 FROM TGFREN REN WHERE REN.NUFIN = FIN.NUFIN AND NURENEGORIG <> 0)) OR (FIN.RECDESP <> 0 AND FIN.NURENEG IS NULL))))]]></expression>
+              <metadata>
+                <field name="QTDFIN" label="QTDFIN" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              </metadata>
+              <value-expression><![CDATA[<table style="border-collapse: collapse; width: 100%;" border="1">
+<tbody>
+<tr style="height: 275px;">
+<td style="width: 100%; text-align: center; height: 275px;">
+<h3 style="text-align: center;"><strong><span style="color: #084d6e;">Financeiros n&atilde;o Escriturados</span></strong></h3>
+(Registros com origem no financeiro que n&atilde;o est&atilde;o no Livro Fiscal)
+<p> </p>
+<blockquote>
+<h4><strong>Financeiros:</strong> $QTDFIN</h4>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>]]></value-expression>
+              <on-click navigate-to="lvl_3f25sr"/>
+            </simple-value>
+          </container>
+          <container orientacao="V" tamanhoRelativo="109">
+            <simple-value id="svl_zqh6ci">
+              <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	COUNT(*) QTDEITENSFROM(SELECT	ITE.CODPROD,	ITE.SEQUENCIA,	(SELECT 		E.DTEXCLUSAO     FROM TGFLIV_EXC E     WHERE E.NUNOTA = CAB.NUNOTA       AND E.SEQUENCIA = ITE.SEQUENCIA       AND E.DTEXCLUSAO =                       (SELECT MAX(EE.DTEXCLUSAO)                          FROM TGFLIV_EXC EE                         WHERE EE.NUNOTA = E.NUNOTA                           AND EE.SEQUENCIA = E.SEQUENCIA                           AND EE.ORIGEM = E.ORIGEM)) AS DTEXCLIVFROM TGFITE ITEINNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)WHERE TPO.ATUALLIVFIS = 'N'              AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')	   OR       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')	   OR 	   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')	   OR 	   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))  AND (CAB.DTENTSAI BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN)  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))  AND CAB.TIPMOV IN ('C','E','V','D','T')  AND ITE.SEQUENCIA > 0)RWHERE ((CASE WHEN R.DTEXCLIV IS NULL THEN 'N' ELSE 'S' END) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')]]></expression>
+              <metadata>
+                <field name="QTDEITENS" label="QTDEITENS" type="I" visible="true" useFooter="false" mask="#.##0"/>
+              </metadata>
+              <value-expression><![CDATA[<table style="border-collapse: collapse; width: 100%;" border="1">
+<tbody>
+<tr style="height: 275px;">
+<td style="width: 100%; text-align: center; height: 275px;">
+<h3 style="text-align: center;"><span style="color: #ff6600;"><strong>Itens de Notas p/ Revisão</strong></span></h3>
+(Itens de notas de transfer&ecirc;ncia, compra, venda e suas devolu&ccedil;&otilde;es que <strong>n&atilde;o</strong> est&atilde;o configuradas para gerar Livro Fiscal)
+<p> </p>
+<blockquote>
+<p><strong>Qtde. Itens:</strong> $QTDEITENS</p>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>]]></value-expression>
+              <on-click navigate-to="lvl_egfhsk">
+                <param id="A_NUNOTA"/>
+              </on-click>
+            </simple-value>
+          </container>
+        </container>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_qm46q2" description="Divergências">
+    <args>
+      <arg id="A_NUNOTA" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="178">
+        <grid id="grd_qm46q3" useNewGrid="S">
+          <title><![CDATA[<b>Relação de Itens Escriturados com Erro</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	CASE X.TIPDOC WHEN 'I' THEN 'Financeiro' WHEN 'N' THEN 'Nota' WHEN 'CT' THEN 'Conhecimento Transporte' END TIPDOC,		(SELECT OPC.OPCAO LABEL FROM TDDOPC OPC WHERE OPC.NUCAMPO = (SELECT A.NUCAMPO FROM TDDCAM A WHERE A.NOMETAB = 'TGFTOP' AND A.NOMECAMPO = 'TIPMOV') AND UPPER(OPC.VALOR) = UPPER(X.TIPMOV)) TIPMOV,      (SELECT OPC.OPCAO LABEL FROM TDDOPC OPC WHERE OPC.NUCAMPO = (SELECT A.NUCAMPO FROM TDDCAM A WHERE A.NOMETAB = 'TGFTOP' AND A.NOMECAMPO = 'ATUALLIVFIS') AND OPC.VALOR = X.ATUALLIVFIS) ATUALLIVFIS,	X.CODEMP,	(SELECT EMP.RAZAOSOCIAL FROM TSIEMP EMP WHERE EMP.CODEMP = X.CODEMP) NOMEEMP,	X.NUNOTA,	X.NUMNOTA,	X.VLRNOTA,	X.DTNEG,	X.DHMOV,	X.DTENTSAI,	CASE WHEN X.TIPDOC <> 'F' THEN (SELECT OPC.OPCAO LABEL FROM TDDOPC OPC WHERE OPC.NUCAMPO = (SELECT A.NUCAMPO FROM TDDCAM A WHERE A.NOMETAB = 'TGFCAB' AND (UPPER(A.NOMECAMPO) = 'STATUSNOTA')) AND OPC.VALOR = X.STATUS) ELSE X.STATUS END STATUS,	CASE WHEN X.TIPDOC <> 'F' THEN COALESCE((SELECT OPC.OPCAO LABEL FROM TDDOPC OPC WHERE OPC.NUCAMPO = (SELECT A.NUCAMPO FROM TDDCAM A WHERE A.NOMETAB = 'TGFCAB' AND (UPPER(A.NOMECAMPO) = 'STATUSNFE')) AND OPC.VALOR = X.STATUSNFE),'Não definido') ELSE 'Não é Documento Fiscal' END STATUSNFE,	(SELECT OPC.OPCAO LABEL FROM TDDOPC OPC WHERE OPC.NUCAMPO = (SELECT A.NUCAMPO FROM TDDCAM A WHERE A.NOMETAB = 'TGFTOP' AND (UPPER(A.NOMECAMPO) = 'CODMODDOC')) AND OPC.VALOR = X.CODMODDOCNOTA) MODELODOC,          CASE WHEN X.TIPDOC <> 'F' THEN X.NUNOTA ELSE NULL END A_NUNOTA,    X.CODTIPOPER,    X.DHTIPOPERFROM(SELECT 	 'N' TIPDOC,	 CAB.TIPMOV,	 CAB.CODEMP,	 CAB.NUNOTA,	 CAB.NUMNOTA,	 CAB.VLRNOTA,	 CASE WHEN CAB.TIPMOV = 'C' THEN COALESCE(CAB.DTENTSAI, CAB.DTFATUR, CAB.DTMOV, CAB.DTNEG) ELSE CAB.DTNEG END DTNEG,	  	 CAB.DTMOV DHMOV,	 CAB.DTENTSAI,	 CAB.STATUSNOTA STATUS,	 CAB.STATUSNFE STATUSNFE,	 (SELECT TGFTOP.ATUALLIVFIS FROM TGFTOP WHERE TGFTOP.CODTIPOPER = CAB.CODTIPOPER AND TGFTOP.DHALTER = CAB.DHTIPOPER) ATUALLIVFIS,      (SELECT TGFTOP.CODMODDOC FROM TGFTOP WHERE TGFTOP.CODTIPOPER = CAB.CODTIPOPER AND TGFTOP.DHALTER = CAB.DHTIPOPER) CODMODDOCNOTA,      CAB.CODTIPOPER,      CAB.DHTIPOPER FROM TGFCAB CABINNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)WHERE CAB.DTENTSAI BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)  AND EXISTS (SELECT 1 FROM TGFLIV LIV WHERE (LIV.SEQUENCIA = 9999 OR LIV.SEQUENCIA = 9998) AND LIV.NUNOTA = CAB.NUNOTA AND LIV.ESPDOC = 'NF')UNION ALLSELECT 	 'CT' TIPDOC,	 CAB.TIPMOV,	 CAB.CODEMP,	 CAB.NUNOTA,	 CAB.NUMNOTA,	 CAB.VLRNOTA,	 CASE WHEN CAB.TIPMOV = 'C' THEN COALESCE(CAB.DTENTSAI,CAB.DTFATUR,CAB.DTMOV, CAB.DTNEG) ELSE CAB.DTNEG END DTNEG,	  	 CAB.DTMOV DHMOV,	 CAB.DTENTSAI,	 CAB.STATUSNOTA STATUS,	 CAB.STATUSNFE STATUSNFE,	 (SELECT TGFTOP.ATUALLIVFIS FROM TGFTOP WHERE TGFTOP.CODTIPOPER = CAB.CODTIPOPER AND TGFTOP.DHALTER = CAB.DHTIPOPER) ATUALLIVFIS,      (SELECT TGFTOP.CODMODDOC FROM TGFTOP WHERE TGFTOP.CODTIPOPER = CAB.CODTIPOPER AND TGFTOP.DHALTER = CAB.DHTIPOPER) CODMODDOCNOTA,      CAB.CODTIPOPER,      CAB.DHTIPOPER FROM TGFCAB CABINNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)WHERE CAB.DTENTSAI BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)  AND EXISTS (SELECT 1 FROM TGFLIV LIV WHERE (LIV.SEQUENCIA = 9999 OR LIV.SEQUENCIA = 9998) AND LIV.NUNOTA = CAB.NUNOTA AND LIV.ESPDOC = 'CT')UNION ALLSELECT 	 'I' TIPDOC,	 'I-Financeiro' TIPMOV,	 FIN.CODEMP,	 FIN.NUFIN,	 FIN.NUMNOTA,	 FIN.VLRDESDOB,	 FIN.DTNEG,	 FIN.DHMOV,	 FIN.DTENTSAI,	 CASE WHEN FIN.DHBAIXA IS NOT NULL THEN 'Baixado' ELSE 'Pendente' end STATUS,	 'M' STATUSNFE,	 (SELECT TGFTOP.ATUALLIVFIS FROM TGFTOP WHERE TGFTOP.CODTIPOPER = FIN.CODTIPOPER AND TGFTOP.DHALTER = FIN.DHTIPOPER) ATUALLIVFIS,     (SELECT TGFTOP.CODMODDOC FROM TGFTOP WHERE TGFTOP.CODTIPOPER = FIN.CODTIPOPER AND TGFTOP.DHALTER = FIN.DHTIPOPER) CODMODDOCNOTA,      FIN.CODTIPOPER,      FIN.DHTIPOPERFROM TGFFIN FININNER JOIN TSIEMP EMP ON(EMP.CODEMP = FIN.CODEMP)WHERE FIN.DTNEG BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)  AND EXISTS (SELECT 1 FROM TGFLIV LIV WHERE (LIV.SEQUENCIA = 9999 OR LIV.SEQUENCIA = 9998) AND LIV.ORIGEM = 'F' AND LIV.NUNOTA = FIN.NUFIN))XWHERE (X.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)  AND (X.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)ORDER BY 	X.TIPDOC, 	X.DHMOV DESC]]></expression>
+          <metadata>
+            <field name="TIPDOC" label="Tipo de Documento" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMOV" label="Tipo Movimento" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"/>
+            <field name="NOMEEMP" label="Empresa" type="S" visible="true" useFooter="false"/>
+            <field name="NUNOTA" label="Nro. Único" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNOTA" label="Nro. Nota" type="I" visible="true" useFooter="false"/>
+            <field name="VLRNOTA" label="Vlr. Nota" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="DTNEG" label="Dt. Neg." type="D" visible="true" useFooter="false"/>
+            <field name="DHMOV" label="Data do movimento" type="D" visible="true" useFooter="false"/>
+            <field name="DTENTSAI" label="Dt. Entrada/Saída" type="D" visible="true" useFooter="false"/>
+            <field name="STATUS" label="Status" type="S" visible="true" useFooter="false"/>
+            <field name="STATUSNFE" label="Status NF-e" type="S" visible="true" useFooter="false"/>
+            <field name="MODELODOC" label="Modelo Documento" type="S" visible="true" useFooter="false"/>
+            <field name="A_NUNOTA" label="A_NUNOTA" type="I" visible="false" useFooter="false"/>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DHTIPOPER" label="Dt./Hr. Operação" type="D" visible="true" useFooter="false"/>
+          </metadata>
+          <refresh-details ui-list="grd_qm46ri,grd_rvffqj">
+            <param id="A_NUNOTA">$A_NUNOTA</param>
+            <param id="A_TIPDOC">$TIPDOC</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="131">
+        <grid id="grd_qm46ri" useNewGrid="S">
+          <args>
+            <arg id="A_NUNOTA" type="integer"/>
+            <arg id="A_TIPDOC" type="text"/>
+          </args>
+          <title><![CDATA[<b>Comparativo dos cálculos do documento selecionado: :A_NUNOTA</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 
+	'Cabeçalho da nota' AS TABELA, 
+	CAB.BASEICMS, 
+	CAB.VLRICMS , 
+	CAB.BASESUBSTIT, 
+	CAB.VLRSUBST, 
+	CAB.BASEIPI, 
+	CAB.VLRIPI
+FROM TGFCAB CAB
+WHERE CAB.NUNOTA = :A_NUNOTA
+
+UNION ALL
+
+SELECT 
+	'Itens da Nota' AS TABELA, 
+	COALESCE(SUM(ITE.BASEICMS),0) BASEICMS, 
+	COALESCE(SUM(ITE.VLRICMS),0) VLRICMS, 
+	COALESCE(SUM(ITE.BASESUBSTIT),0) BASESUBSTIT, 
+	COALESCE(SUM(ITE.VLRSUBST),0) VLRSUBST, 
+	COALESCE(SUM(ITE.BASEIPI),0) BASEIPI, 
+	COALESCE(SUM(ITE.VLRIPI),0) VLRIPI
+FROM TGFITE ITE
+WHERE NUNOTA = :A_NUNOTA
+
+UNION ALL
+
+SELECT 
+	'Impostos da Nota' AS TABELA, 
+    COALESCE((SELECT SUM(DIN.BASERED) FROM TGFDIN DIN WHERE DIN.CODIMP = 1 AND DIN.NUNOTA = :A_NUNOTA),0) BASEICMS, 
+    COALESCE((SELECT SUM(DIN.VALOR) FROM TGFDIN DIN WHERE DIN.CODIMP = 1 AND DIN.NUNOTA = :A_NUNOTA),0) VLRICMS,
+    COALESCE((SELECT SUM(DIN.BASERED) FROM TGFDIN DIN WHERE DIN.CODIMP = 2 AND DIN.NUNOTA = :A_NUNOTA),0) BASESUBSTIT, 
+    COALESCE((SELECT SUM(DIN.VALOR) FROM TGFDIN DIN WHERE DIN.CODIMP = 2 AND DIN.NUNOTA = :A_NUNOTA),0) VLRSUBST,
+    COALESCE((SELECT SUM(DIN.BASERED) FROM TGFDIN DIN WHERE DIN.CODIMP = 3 AND DIN.NUNOTA = :A_NUNOTA),0) BASEIPI, 
+    COALESCE((SELECT SUM(DIN.VALOR) FROM TGFDIN DIN WHERE DIN.CODIMP = 3 AND DIN.NUNOTA = :A_NUNOTA),0) VLRIPI
+FROM DUAL
+
+UNION ALL
+
+SELECT 
+	'Livro Fiscal' AS TABELA,
+	 COALESCE(SUM(LIV.BASEICMS),0) BASEICMS, 
+	 COALESCE(SUM(LIV.VLRICMS),0) VLRICMS,
+	 COALESCE(SUM(LIV.BASERETENCAO),0) BASESUBSTIT,
+	 COALESCE(SUM(LIV.ICMSRETENCAO),0) VLRSUBST,
+	 COALESCE(SUM(LIV.BASEIPI),0) BASEIPI,
+	 COALESCE(SUM(LIV.VLRIPI),0) VLRIPI
+FROM TGFLIV LIV
+WHERE LIV.NUNOTA = :A_NUNOTA
+  AND LIV.SEQUENCIA <> 9999]]></expression>
+          <metadata>
+            <field name="TABELA" label="Tabela do Sistema" type="S" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="Base do ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="VLRICMS" label="Vlr. do ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="BASESUBSTIT" label="Base ICMS ST" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="VLRSUBST" label="Vlr. do ICMS ST" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="BASEIPI" label="Base do IPI" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="VLRIPI" label="Vlr. do IPI" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+          </metadata>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="118">
+        <grid id="grd_rvffqj" useNewGrid="S">
+          <args>
+            <arg id="A_NUNOTA" type="integer"/>
+            <arg id="A_TIPDOC" type="text"/>
+          </args>
+          <title><![CDATA[<b>Detalhes sobre o tipo de operação histórico do documento selecionado: :A_NUNOTA</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFTOP'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO
+))	
+SELECT
+	 TPO.CODTIPOPER,
+	 TPO.DESCROPER,
+	 TPO.DHALTER,
+	 TPO.GRUPO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CLASSIFICMS' AND V.VALOR = TPO.CLASSIFICMS) CLASSIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMICMS' AND V.VALOR = TPO.TEMICMS) TEMICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMASUBST' AND V.VALOR = TPO.SOMASUBST) SOMASUBST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCDIFICMS' AND V.VALOR = TPO.CALCDIFICMS) CALCDIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCFCPINT' AND V.VALOR = TPO.CALCFCPINT) CALCFCPINT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALFIN' AND V.VALOR = TPO.ATUALFIN) ATUALFIN,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALEST' AND V.VALOR = TPO.ATUALEST) ATUALEST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPIPI' AND V.VALOR = TPO.TIPIPI) TIPIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMIPI' AND V.VALOR = TPO.TEMIPI) TEMIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMARIPI' AND V.VALOR = TPO.SOMARIPI) SOMARIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIEMBUT' AND V.VALOR = TPO.IPIEMBUT) IPIEMBUT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPICMS' AND V.VALOR = TPO.TIPICMS) TIPICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIINCICMS' AND V.VALOR = TPO.IPIINCICMS) IPIINCICMS,
+	 TPO.CODCFPS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'GERAR1400SPED' AND V.VALOR = TPO.GERAR1400SPED) GERAR1400SPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'VALTOTNOTAGERLIV' AND V.VALOR = TPO.VALTOTNOTAGERLIV) VALTOTNOTAGERLIV,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CAT1799SPCCO' AND V.VALOR = TPO.CAT1799SPCCO) CAT1799SPCCO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SEMCREDIPIST' AND V.VALOR = TPO.SEMCREDIPIST) SEMCREDIPIST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'DESCONSLCDPR' AND V.VALOR = TPO.DESCONSLCDPR) DESCONSLCDPR,
+ 	 TPO.CODCTACTBEFD,  
+	 TPO.NATOPERSPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPMOVBEMSPED' AND V.VALOR = TPO.TIPMOVBEMSPED) TIPMOVBEMSPED
+FROM TGFTOP TPO
+WHERE TPO.CODTIPOPER = 
+                     (CASE :A_TIPDOC WHEN 'Financeiro' THEN (SELECT FIN.CODTIPOPER FROM TGFFIN FIN WHERE FIN.NUFIN = :A_NUNOTA)
+                                     WHEN 'Nota' THEN (SELECT CAB.CODTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)
+                                     WHEN 'Conhecimento Transporte' THEN (SELECT CAB.CODTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)
+                      END)
+  AND TPO.DHALTER =
+                     (CASE :A_TIPDOC WHEN 'Financeiro' THEN (SELECT FIN.DHTIPOPER FROM TGFFIN FIN WHERE FIN.NUFIN = :A_NUNOTA)
+                                     WHEN 'Nota' THEN (SELECT CAB.DHTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)
+                                     WHEN 'Conhecimento Transporte' THEN (SELECT CAB.DHTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)
+                      END)]]></expression>
+          <metadata>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="DHALTER" label="Data e hora alteração" type="T" visible="true" useFooter="false"/>
+            <field name="GRUPO" label="Grupo" type="S" visible="true" useFooter="false"/>
+            <field name="CLASSIFICMS" label="Classificação ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="TEMICMS" label="Tem ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="SOMASUBST" label="Soma ST no total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="CALCDIFICMS" label="Calcular diferença de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CALCFCPINT" label="Calcular FCP (ICMS/ST) Interno?" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALFIN" label="Financeiro" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALEST" label="Estoque" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="TIPIPI" label="Tipo de IPI" type="S" visible="true" useFooter="false"/>
+            <field name="TEMIPI" label="Tem IPI" type="S" visible="true" useFooter="false"/>
+            <field name="SOMARIPI" label="Somar IPI ao total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="IPIEMBUT" label="IPI Embutido" type="S" visible="true" useFooter="false"/>
+            <field name="TIPICMS" label="Tipo de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="IPIINCICMS" label="IPI Incide na base de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFPS" label="Código. CFPS" type="I" visible="true" useFooter="false"/>
+            <field name="GERAR1400SPED" label="Gerar Registro 1400 no SPED Fiscal ?" type="S" visible="true" useFooter="false"/>
+            <field name="VALTOTNOTAGERLIV" label="Validar Totais da Nota na Geração do Livro?" type="S" visible="true" useFooter="false"/>
+            <field name="CAT1799SPCCO" label="Cód.Complem.Oper. (CAT-17/99)" type="S" visible="true" useFooter="false"/>
+            <field name="SEMCREDIPIST" label="Operação sem direito a crédito IPI/ST" type="S" visible="true" useFooter="false"/>
+            <field name="DESCONSLCDPR" label="Desconsiderar Top na Geração do Livro Caixa Digital do Produtor Rural" type="S" visible="true" useFooter="false"/>
+            <field name="CODCTACTBEFD" label="Conta Contábil para EFD" type="I" visible="true" useFooter="false"/>
+            <field name="NATOPERSPED" label="Natureza da Operação (SPED)" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMOVBEMSPED" label="Tipo de Mov. do  Bem (SPED)" type="S" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_3f24wa" description="Escrituração Pendente | Notas">
+    <args>
+      <arg id="A_NUNOTA" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="385">
+        <grid id="grd_3f24yu" useNewGrid="S">
+          <title><![CDATA[<b>Relação de Itens Não Escriturados</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFCAB (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (		SELECT 		CAM.NUCAMPO,		CAM.NOMECAMPO,		OPC.VALOR,		OPC.OPCAO 	FROM TDDCAM CAM	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)	WHERE CAM.NOMETAB = 'TGFCAB'	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO)),VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (		SELECT 		CAM.NUCAMPO,		CAM.NOMECAMPO,		OPC.VALOR,		OPC.OPCAO 	FROM TDDCAM CAM	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)	WHERE CAM.NOMETAB = 'TGFTOP'	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO))SELECT 	R.*FROM(SELECT	ITE.NUNOTA,	ITE.SEQUENCIA,	CAB.NUMNOTA,	CAB.DTNEG,	CAB.DTENTSAI,	ITE.VLRTOT,	ITE.CODPROD,	(SELECT PRO.DESCRPROD FROM TGFPRO PRO WHERE PRO.CODPROD = ITE.CODPROD) DESCRPROD,	(SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'TIPMOV' AND V.VALOR = TPO.TIPMOV) TIPMOV,	ITE.CODCFO,	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,	CAB.CODTIPOPER,	TPO.DESCROPER,	CAB.CODEMP,	(SELECT EMP.RAZAOSOCIAL FROM TSIEMP EMP WHERE EMP.CODEMP =  CAB.CODEMP) RAZAOSOCIAL,	CAB.CODPARC,    (SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = (SELECT NUCAMPO FROM TDDCAM WHERE NOMETAB = 'TGFITE' AND NOMECAMPO = 'CODTRIB') AND VALOR = ITE.CODTRIB) CODTRIB,		ITE.BASEICMS,	ITE.ALIQICMS,	ITE.VLRICMS,	ITE.BASEIPI,    (SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = (SELECT NUCAMPO FROM TDDCAM WHERE NOMETAB = 'TGFITE' AND NOMECAMPO = 'CSTIPI') AND VALOR = COALESCE(ITE.CSTIPI,-1)) CSTIPI,	     ITE.VLRIPI,	ITE.ALIQIPI, 	(SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'STATUSNFE' AND V.VALOR = COALESCE(CAB.STATUSNFE,'M')) STATUSNFE, 	 COALESCE((SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'STATUSNFSE' AND V.VALOR = CAB.STATUSNFSE),'Não é NFS-e') STATUSNFSE, 	(SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'STATUSCTE' AND V.VALOR = COALESCE(CAB.STATUSCTE,'M')) STATUSCTE,		(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'NFE' AND V.VALOR = COALESCE(TPO.NFE,'M')) TPONFE,	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CTE' AND V.VALOR = COALESCE(TPO.CTE,'M')) TPOCTE,	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'NFSE' AND V.VALOR = COALESCE(TPO.NFSE,'M')) TPONFSE,	(SELECT 		E.DTEXCLUSAO     FROM TGFLIV_EXC E     WHERE E.NUNOTA = CAB.NUNOTA       AND E.SEQUENCIA = ITE.SEQUENCIA       AND E.DTEXCLUSAO =                       (SELECT MAX(EE.DTEXCLUSAO)                          FROM TGFLIV_EXC EE                         WHERE EE.NUNOTA = E.NUNOTA                           AND EE.SEQUENCIA = E.SEQUENCIA                           AND EE.ORIGEM = E.ORIGEM)) AS DTEXCLIVFROM TGFITE ITEINNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)WHERE TPO.ATUALLIVFIS <> 'N'  AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')	   OR       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')	   OR 	   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')	   OR 	   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))  AND (TRUNC(CAB.DTENTSAI) >= :P_DTNEG.INI AND TRUNC(CAB.DTENTSAI) <= :P_DTNEG.FIN)  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A')))RWHERE ((CASE WHEN R.DTEXCLIV IS NULL THEN 'N' ELSE 'S' END) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')ORDER BY        R.CODCFO,       R.TIPMOV]]></expression>
+          <metadata>
+            <field name="NUNOTA" label="Nro. Único" type="I" visible="true" useFooter="false"/>
+            <field name="SEQUENCIA" label="Sequência" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNOTA" label="Nro. Nota" type="I" visible="true" useFooter="false"/>
+            <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="DTENTSAI" label="Dt. Entrada/Saída" type="D" visible="true" useFooter="false"/>
+            <field name="VLRTOT" label="Vlr. total" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Descrição Produto" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMOV" label="Tipo de Movimento" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false" mask="#.##0"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Tipo Operação" type="S" visible="true" useFooter="false"/>
+            <field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"/>
+            <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+            <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+            <field name="CODTRIB" label="CST ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="Base ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="ALIQICMS" label="Alíq. ICMS" type="F" visible="true" useFooter="false"/>
+            <field name="VLRICMS" label="Vlr. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="BASEIPI" label="Base do IPI" type="F" visible="true" useFooter="false"/>
+            <field name="CSTIPI" label="CST IPI" type="S" visible="true" useFooter="false"/>
+            <field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="ALIQIPI" label="Alíq. IPI" type="F" visible="true" useFooter="false"/>
+            <field name="STATUSNFE" label="Status NF-e" type="S" visible="true" useFooter="false"/>
+            <field name="STATUSNFSE" label="Status NFS-e" type="S" visible="true" useFooter="false"/>
+            <field name="STATUSCTE" label="Status CT-e" type="S" visible="true" useFooter="false"/>
+            <field name="TPONFE" label="NF-e" type="S" visible="true" useFooter="false"/>
+            <field name="TPOCTE" label="CT-e" type="S" visible="true" useFooter="false"/>
+            <field name="TPONFSE" label="NFS-e" type="S" visible="true" useFooter="false"/>
+            <field name="DTEXCLIV" label="Dt. Exclusão do Livro" type="T" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher>
+          <refresh-details ui-list="grd_3f25jj">
+            <param id="A_NUNOTA">$NUNOTA</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="173">
+        <grid id="grd_3f25jj" useNewGrid="S">
+          <args>
+            <arg id="A_NUNOTA" type="integer"/>
+          </args>
+          <title><![CDATA[<b>Detalhes sobre o tipo de operação histórico do documento selecionado: :A_NUNOTA</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFTOP'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO
+))	
+SELECT
+	 TPO.CODTIPOPER,
+	 TPO.DESCROPER,
+	 TPO.DHALTER,
+	 TPO.GRUPO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CLASSIFICMS' AND V.VALOR = TPO.CLASSIFICMS) CLASSIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMICMS' AND V.VALOR = TPO.TEMICMS) TEMICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMASUBST' AND V.VALOR = TPO.SOMASUBST) SOMASUBST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCDIFICMS' AND V.VALOR = TPO.CALCDIFICMS) CALCDIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCFCPINT' AND V.VALOR = TPO.CALCFCPINT) CALCFCPINT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALFIN' AND V.VALOR = TPO.ATUALFIN) ATUALFIN,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALEST' AND V.VALOR = TPO.ATUALEST) ATUALEST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVISS) ATUALLIVISS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPIPI' AND V.VALOR = TPO.TIPIPI) TIPIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMIPI' AND V.VALOR = TPO.TEMIPI) TEMIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMARIPI' AND V.VALOR = TPO.SOMARIPI) SOMARIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIEMBUT' AND V.VALOR = TPO.IPIEMBUT) IPIEMBUT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPICMS' AND V.VALOR = TPO.TIPICMS) TIPICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIINCICMS' AND V.VALOR = TPO.IPIINCICMS) IPIINCICMS,
+	 TPO.CODCFPS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'GERAR1400SPED' AND V.VALOR = TPO.GERAR1400SPED) GERAR1400SPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'VALTOTNOTAGERLIV' AND V.VALOR = TPO.VALTOTNOTAGERLIV) VALTOTNOTAGERLIV,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CAT1799SPCCO' AND V.VALOR = TPO.CAT1799SPCCO) CAT1799SPCCO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SEMCREDIPIST' AND V.VALOR = TPO.SEMCREDIPIST) SEMCREDIPIST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'DESCONSLCDPR' AND V.VALOR = TPO.DESCONSLCDPR) DESCONSLCDPR,
+ 	 TPO.CODCTACTBEFD,  
+	 TPO.NATOPERSPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPMOVBEMSPED' AND V.VALOR = TPO.TIPMOVBEMSPED) TIPMOVBEMSPED
+FROM TGFTOP TPO
+WHERE TPO.CODTIPOPER = (SELECT CAB.CODTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)
+  AND TPO.DHALTER = (SELECT CAB.DHTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)]]></expression>
+          <metadata>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="DHALTER" label="Data e hora alteração" type="T" visible="true" useFooter="false"/>
+            <field name="GRUPO" label="Grupo" type="S" visible="true" useFooter="false"/>
+            <field name="CLASSIFICMS" label="Classificação ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="TEMICMS" label="Tem ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="SOMASUBST" label="Soma ST no total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="CALCDIFICMS" label="Calcular diferença de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CALCFCPINT" label="Calcular FCP (ICMS/ST) Interno?" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALFIN" label="Financeiro" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALEST" label="Estoque" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVISS" label="Atualização de Livro ISS" type="S" visible="true" useFooter="false"/>
+            <field name="TIPIPI" label="Tipo de IPI" type="S" visible="true" useFooter="false"/>
+            <field name="TEMIPI" label="Tem IPI" type="S" visible="true" useFooter="false"/>
+            <field name="SOMARIPI" label="Somar IPI ao total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="IPIEMBUT" label="IPI Embutido" type="S" visible="true" useFooter="false"/>
+            <field name="TIPICMS" label="Tipo de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="IPIINCICMS" label="IPI Incide na base de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFPS" label="Código. CFPS" type="I" visible="true" useFooter="false"/>
+            <field name="GERAR1400SPED" label="Gerar Registro 1400 no SPED Fiscal ?" type="S" visible="true" useFooter="false"/>
+            <field name="VALTOTNOTAGERLIV" label="Validar Totais da Nota na Geração do Livro?" type="S" visible="true" useFooter="false"/>
+            <field name="CAT1799SPCCO" label="Cód.Complem.Oper. (CAT-17/99)" type="S" visible="true" useFooter="false"/>
+            <field name="SEMCREDIPIST" label="Operação sem direito a crédito IPI/ST" type="S" visible="true" useFooter="false"/>
+            <field name="DESCONSLCDPR" label="Desconsiderar Top na Geração do Livro Caixa Digital do Produtor Rural" type="S" visible="true" useFooter="false"/>
+            <field name="CODCTACTBEFD" label="Conta Contábil para EFD" type="I" visible="true" useFooter="false"/>
+            <field name="NATOPERSPED" label="Natureza da Operação (SPED)" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMOVBEMSPED" label="Tipo de Mov. do  Bem (SPED)" type="S" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_3f25sr" description="Escrituração Pendente | Financeiro">
+    <args>
+      <arg id="A_NUFIN" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="341">
+        <grid id="grd_3f25ss" useNewGrid="S">
+          <title><![CDATA[<b>Relação de Financeiros Não Escriturados</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFTOP'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO
+))
+SELECT
+	CASE WHEN FIN.RECDESP = 1 THEN 'Receita' ELSE 'Despesa' END RECDESP, 
+	FIN.NUFIN,
+	FIN.SEQUENCIA,
+	FIN.NUMNOTA,
+	FIN.SERIENOTA,
+	FIN.CODCFO,
+	FIN.VLRDESDOB,
+	FIN.DTNEG,
+	FIN.DTENTSAI,
+	FIN.CODEMP,
+	EMP.RAZAOSOCIAL,
+	FIN.CODPARC,
+	(SELECT PAR.NOMEPARC FROM TGFPAR PAR WHERE PAR.CODPARC = FIN.CODPARC) NOMEPARC,
+	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,
+	(SELECT 
+		 V.OPCAO 
+	 FROM VALOROPCTGFTOP V 
+	 WHERE V.NOMECAMPO = 'TIPICMS' 
+	   AND V.VALOR = (CASE
+		              WHEN (EMP.SIMPLES = 'S' AND EMP.CODREGTRIB = 1) THEN
+										                          (CASE
+										                             WHEN (TPO.ATUALLIVFIS = 'S' OR
+										                                 (TPO.ATUALLIVFIS = 'E' AND GEMP.TIPICMSTOPENTSIMNAC = 'N')) THEN '3'                             
+										                             ELSE TPO.TIPICMS
+										                           END)
+		        ELSE TPO.TIPICMS
+		     END)) TIPICMS,
+    FIN.BASEICMS,
+    FIN.ALIQICMS,
+	FIN.DTNEG,
+	FIN.DHBAIXA,
+	FIN.VLRBAIXA,
+    FIN.CODTIPOPER,
+    TPO.DESCROPER,
+    (SELECT 
+	 	E.DTEXCLUSAO
+     FROM TGFLIV_EXC E
+     WHERE E.NUNOTA = FIN.NUFIN 
+       AND E.ORIGEM = 'F'
+       AND E.CODEMP = FIN.CODEMP 
+       AND E.CODPARC = FIN.CODPARC 
+       AND E.DTEXCLUSAO =
+                       (SELECT MAX(EE.DTEXCLUSAO)
+                          FROM TGFLIV_EXC EE
+                         WHERE EE.NUNOTA = E.NUNOTA
+                           AND EE.SEQUENCIA = E.SEQUENCIA
+                           AND EE.ORIGEM = E.ORIGEM)) AS DTEXCLIV
+FROM TGFFIN FIN
+INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = FIN.CODTIPOPER AND TPO.DHALTER = FIN.DHTIPOPER)
+INNER JOIN TSIEMP EMP ON(EMP.CODEMP = FIN.CODEMP)
+INNER JOIN TGFEMP GEMP ON(GEMP.CODEMP = FIN.CODEMP)
+WHERE FIN.ORIGEM = 'F'
+  AND TPO.ATUALLIVFIS NOT IN ('N','A')
+  AND FIN.PROVISAO = 'N'
+  AND GEMP.GERARLIVROS = 'S'
+  AND (FIN.DTNEG BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN)
+  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)
+  AND (FIN.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)
+  AND (FIN.NUFIN = :P_NUNOTA OR :P_NUNOTA IS NULL)
+  AND FIN.NUNOTA IS NULL
+  AND FIN.RECDESP <> 0
+  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = FIN.NUFIN AND FIN.CODEMP = LIV.CODEMP AND LIV.CODPARC = FIN.CODPARC)
+  AND ((SELECT COALESCE(MAX('S'),'N') FROM TGFLIV_EXC E WHERE E.NUNOTA = FIN.NUFIN AND E.ORIGEM = 'F' AND FIN.CODEMP = E.CODEMP AND E.CODPARC = FIN.CODPARC) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')
+  AND (/* TÍTULOS DE ORIGEM NO FINANCEIRO */
+	/* BUSCA TÍTULO NÃO RENEGOCIADO OU TÍTULO ORIGEM DA RENEGOCIAÇÃO */
+	((FIN.ORIGEM = 'F') AND (FIN.NURENEG IS NULL OR EXISTS(SELECT 1 FROM TGFREN REN WHERE REN.NUFIN = FIN.NUFIN AND REN.NURENEGORIG = 0 AND FIN.RECDESP = 0)))
+	  OR
+                /* TÍTULOS DE ORIGEM NO ESTOQUE (FINANCEIRO DE FRETE) */
+	/* SE FRETERENEG LIGADO, BUSCA TÍTULO NÃO RENEGOCIADO OU TÍTULO DESTINO DA RENEGOCIAÇÃO */
+	(((FIN.DESDOBDUPL = 'F') OR EXISTS(SELECT 1	FROM TGFFNF WHERE NUFIN = FIN.NUFIN) OR (TPO.CODMODDOC = 57	AND TPO.TIPMOV = 'I'))	AND (FIN.RECDESP <> 0) AND ((SELECT	LOGICO FROM	TSIPAR WHERE CHAVE = 'LIVFRETERENEG') = 'S'))	
+	  OR
+                /* TÍTULOS DE ORIGEM NO ESTOQUE (FINANCEIRO DE FRETE) */
+	/* SE FRETERENEG DESLIGADO, BUSCA TÍTULO ORIGEM NA RENEGOCIAÇÃO OU TÍTULO NÃO RENEGOCIADO */
+	(((FIN.DESDOBDUPL = 'F') OR 
+	             EXISTS (SELECT 1 FROM TGFFNF WHERE NUFIN = FIN.NUFIN)) 
+	             AND ((SELECT LOGICO FROM TSIPAR WHERE CHAVE = 'LIVFRETERENEG') = 'N') 
+	             AND ((FIN.RECDESP = 0 AND FIN.NURENEG IS NOT NULL AND NOT EXISTS(SELECT 1 FROM TGFREN REN WHERE REN.NUFIN = FIN.NUFIN AND NURENEGORIG <> 0)) OR (FIN.RECDESP <> 0 AND FIN.NURENEG IS NULL))))
+ORDER BY 
+	FIN.RECDESP, 
+	FIN.NUFIN DESC]]></expression>
+          <metadata>
+            <field name="RECDESP" label="Receita/Despesa" type="S" visible="true" useFooter="false"/>
+            <field name="NUFIN" label="Nro Único" type="I" visible="true" useFooter="false"/>
+            <field name="SEQUENCIA" label="Sequência" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNOTA" label="Nro Nota" type="I" visible="true" useFooter="false"/>
+            <field name="SERIENOTA" label="Série da Nota" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false" mask="#.##0"/>
+            <field name="VLRDESDOB" label="Vlr do Desdobramento" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="DTENTSAI" label="Dt. Entrada e Saída" type="D" visible="true" useFooter="false"/>
+            <field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"/>
+            <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+            <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+            <field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="TIPICMS" label="Tipo de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="Base ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="ALIQICMS" label="% ICMS" type="F" visible="true" useFooter="false"/>
+            <field name="DHBAIXA" label="Data Baixa" type="D" visible="true" useFooter="false"/>
+            <field name="VLRBAIXA" label="Vlr Baixa" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="DTEXCLIV" label="Dt. Exclusão do Livro" type="T" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.fin.cad.movimentacaoFinanceira">
+            <NUFIN>$NUFIN</NUFIN>
+          </on-click-launcher>
+          <refresh-details ui-list="grd_4pqq3y">
+            <param id="A_NUFIN">$NUFIN</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="141">
+        <grid id="grd_4pqq3y" useNewGrid="S">
+          <args>
+            <arg id="A_NUFIN" type="integer"/>
+          </args>
+          <title><![CDATA[<b>Detalhes sobre o tipo de operação histórico do documento selecionado: :A_NUFIN</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFTOP'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO
+))	
+SELECT
+	 TPO.CODTIPOPER,
+	 TPO.DESCROPER,
+	 TPO.DHALTER,
+	 TPO.GRUPO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CLASSIFICMS' AND V.VALOR = TPO.CLASSIFICMS) CLASSIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMICMS' AND V.VALOR = TPO.TEMICMS) TEMICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMASUBST' AND V.VALOR = TPO.SOMASUBST) SOMASUBST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCDIFICMS' AND V.VALOR = TPO.CALCDIFICMS) CALCDIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCFCPINT' AND V.VALOR = TPO.CALCFCPINT) CALCFCPINT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALFIN' AND V.VALOR = TPO.ATUALFIN) ATUALFIN,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALEST' AND V.VALOR = TPO.ATUALEST) ATUALEST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVISS) ATUALLIVISS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPIPI' AND V.VALOR = TPO.TIPIPI) TIPIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMIPI' AND V.VALOR = TPO.TEMIPI) TEMIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMARIPI' AND V.VALOR = TPO.SOMARIPI) SOMARIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIEMBUT' AND V.VALOR = TPO.IPIEMBUT) IPIEMBUT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPICMS' AND V.VALOR = TPO.TIPICMS) TIPICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIINCICMS' AND V.VALOR = TPO.IPIINCICMS) IPIINCICMS,
+	 TPO.CODCFPS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'GERAR1400SPED' AND V.VALOR = TPO.GERAR1400SPED) GERAR1400SPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'VALTOTNOTAGERLIV' AND V.VALOR = TPO.VALTOTNOTAGERLIV) VALTOTNOTAGERLIV,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CAT1799SPCCO' AND V.VALOR = TPO.CAT1799SPCCO) CAT1799SPCCO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SEMCREDIPIST' AND V.VALOR = TPO.SEMCREDIPIST) SEMCREDIPIST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'DESCONSLCDPR' AND V.VALOR = TPO.DESCONSLCDPR) DESCONSLCDPR,
+ 	 TPO.CODCTACTBEFD,  
+	 TPO.NATOPERSPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPMOVBEMSPED' AND V.VALOR = TPO.TIPMOVBEMSPED) TIPMOVBEMSPED
+FROM TGFTOP TPO
+WHERE TPO.CODTIPOPER = (SELECT FIN.CODTIPOPER FROM TGFFIN FIN WHERE FIN.NUFIN = :A_NUFIN)
+  AND TPO.DHALTER = (SELECT FIN.DHTIPOPER FROM TGFFIN FIN WHERE FIN.NUFIN = :A_NUFIN)]]></expression>
+          <metadata>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="DHALTER" label="Data e hora alteração" type="T" visible="true" useFooter="false"/>
+            <field name="GRUPO" label="Grupo" type="S" visible="true" useFooter="false"/>
+            <field name="CLASSIFICMS" label="Classificação ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="TEMICMS" label="Tem ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="SOMASUBST" label="Soma ST no total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="CALCDIFICMS" label="Calcular diferença de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CALCFCPINT" label="Calcular FCP (ICMS/ST) Interno?" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALFIN" label="Financeiro" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALEST" label="Estoque" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVISS" label="Atualização de Livro ISS" type="S" visible="true" useFooter="false"/>
+            <field name="TIPIPI" label="Tipo de IPI" type="S" visible="true" useFooter="false"/>
+            <field name="TEMIPI" label="Tem IPI" type="S" visible="true" useFooter="false"/>
+            <field name="SOMARIPI" label="Somar IPI ao total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="IPIEMBUT" label="IPI Embutido" type="S" visible="true" useFooter="false"/>
+            <field name="TIPICMS" label="Tipo de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="IPIINCICMS" label="IPI Incide na base de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFPS" label="Código. CFPS" type="I" visible="true" useFooter="false"/>
+            <field name="GERAR1400SPED" label="Gerar Registro 1400 no SPED Fiscal ?" type="S" visible="true" useFooter="false"/>
+            <field name="VALTOTNOTAGERLIV" label="Validar Totais da Nota na Geração do Livro?" type="S" visible="true" useFooter="false"/>
+            <field name="CAT1799SPCCO" label="Cód.Complem.Oper. (CAT-17/99)" type="S" visible="true" useFooter="false"/>
+            <field name="SEMCREDIPIST" label="Operação sem direito a crédito IPI/ST" type="S" visible="true" useFooter="false"/>
+            <field name="DESCONSLCDPR" label="Desconsiderar Top na Geração do Livro Caixa Digital do Produtor Rural" type="S" visible="true" useFooter="false"/>
+            <field name="CODCTACTBEFD" label="Conta Contábil para EFD" type="I" visible="true" useFooter="false"/>
+            <field name="NATOPERSPED" label="Natureza da Operação (SPED)" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMOVBEMSPED" label="Tipo de Mov. do  Bem (SPED)" type="S" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_egfhsk" description="Escrituração Incorreta | Notas">
+    <args>
+      <arg id="A_NUNOTA" type="text"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="314">
+        <grid id="grd_egfhsm" useNewGrid="S">
+          <title><![CDATA[<b>Relação de Itens com Configuração Potencialmente Incorreta</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFCAB (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFCAB'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO)
+),
+VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFTOP'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO)
+)
+SELECT 
+	R.*
+FROM
+(SELECT
+	(SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'TIPMOV' AND V.VALOR = TPO.TIPMOV) TIPMOV,
+	ITE.NUNOTA,
+	ITE.SEQUENCIA,
+	CAB.NUMNOTA,
+	CAB.DTNEG,
+	CAB.DTENTSAI,
+	ITE.VLRTOT,
+	ITE.CODPROD,
+	(SELECT PRO.DESCRPROD FROM TGFPRO PRO WHERE PRO.CODPROD = ITE.CODPROD) DESCRPROD,
+	ITE.CODCFO,
+	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,
+	CAB.CODTIPOPER,
+	TPO.DESCROPER,
+	CAB.CODEMP,
+	(SELECT EMP.RAZAOSOCIAL FROM TSIEMP EMP WHERE EMP.CODEMP =  CAB.CODEMP) RAZAOSOCIAL,
+	CAB.CODPARC,
+    (SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = (SELECT NUCAMPO FROM TDDCAM WHERE NOMETAB = 'TGFITE' AND NOMECAMPO = 'CODTRIB') AND VALOR = ITE.CODTRIB) CODTRIB,	
+	ITE.BASEICMS,
+	ITE.ALIQICMS,
+	ITE.VLRICMS,
+	ITE.BASEIPI,
+    (SELECT OPCAO FROM TDDOPC WHERE NUCAMPO = (SELECT NUCAMPO FROM TDDCAM WHERE NOMETAB = 'TGFITE' AND NOMECAMPO = 'CSTIPI') AND VALOR = COALESCE(ITE.CSTIPI,-1)) CSTIPI,	
+     ITE.VLRIPI,
+	ITE.ALIQIPI, 
+	(SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'STATUSNFE' AND V.VALOR = COALESCE(CAB.STATUSNFE,'M')) STATUSNFE, 
+	 COALESCE((SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'STATUSNFSE' AND V.VALOR = CAB.STATUSNFSE),'Não é NFS-e') STATUSNFSE, 
+	(SELECT V.OPCAO FROM VALOROPCTGFCAB V WHERE V.NOMECAMPO = 'STATUSCTE' AND V.VALOR = COALESCE(CAB.STATUSCTE,'M')) STATUSCTE,	
+	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'NFE' AND V.VALOR = COALESCE(TPO.NFE,'M')) TPONFE,
+	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CTE' AND V.VALOR = COALESCE(TPO.CTE,'M')) TPOCTE,
+	(SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'NFSE' AND V.VALOR = COALESCE(TPO.NFSE,'M')) TPONFSE,
+	(SELECT 
+		E.DTEXCLUSAO
+     FROM TGFLIV_EXC E
+     WHERE E.NUNOTA = CAB.NUNOTA
+       AND E.SEQUENCIA = ITE.SEQUENCIA
+       AND E.DTEXCLUSAO =
+                       (SELECT MAX(EE.DTEXCLUSAO)
+                          FROM TGFLIV_EXC EE
+                         WHERE EE.NUNOTA = E.NUNOTA
+                           AND EE.SEQUENCIA = E.SEQUENCIA
+                           AND EE.ORIGEM = E.ORIGEM)) AS DTEXCLIV
+FROM TGFITE ITE
+INNER JOIN TGFCAB CAB ON(ITE.NUNOTA = CAB.NUNOTA)
+INNER JOIN TSIEMP EMP ON(EMP.CODEMP = CAB.CODEMP)
+INNER JOIN TGFTOP TPO ON(TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER)
+WHERE TPO.ATUALLIVFIS = 'N'            
+  AND COALESCE(CAB.STATUSNFE, 'X') <> 'D'
+  AND ((COALESCE(TPO.NFE, 'M') NOT IN ('M', 'T') AND CAB.STATUSNFE = 'A')
+	   OR
+       (COALESCE(TPO.CTE, 'M') NOT IN ('M', 'T') AND CAB.STATUSCTE = 'A')
+	   OR 
+	   (COALESCE(TPO.NFE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L')
+	   OR 
+	   (COALESCE(TPO.CTE, 'M') IN ('M', 'T') AND CAB.STATUSNOTA = 'L'))
+  AND (CAB.DTNEG BETWEEN :P_DTNEG.INI AND :P_DTNEG.FIN)
+  AND (EMP.CODEMPMATRIZ = :P_CODEMPMATRIZ OR :P_CODEMPMATRIZ = 9999)
+  AND (CAB.CODEMP = :P_CODEMP OR :P_CODEMP IS NULL)
+  AND (CAB.NUNOTA = :P_NUNOTA OR :P_NUNOTA IS NULL)
+  AND NOT EXISTS (SELECT 1 FROM TGFLIV LIV WHERE LIV.NUNOTA = ITE.NUNOTA AND LIV.ORIGEM IN ('E', 'A'))
+  AND CAB.TIPMOV IN ('C','E','V','D','T','M')
+  AND ITE.SEQUENCIA > 0
+)R
+WHERE ((CASE WHEN R.DTEXCLIV IS NULL THEN 'N' ELSE 'S' END) = :P_MOSTRAEXCLIV OR :P_MOSTRAEXCLIV = 'T')
+ORDER BY 
+	   R.CODCFO, 
+	   R.TIPMOV]]></expression>
+          <metadata>
+            <field name="TIPMOV" label="Tipo de Movimento" type="S" visible="true" useFooter="false"/>
+            <field name="NUNOTA" label="Nro. Único" type="I" visible="true" useFooter="false"/>
+            <field name="SEQUENCIA" label="Sequência" type="I" visible="true" useFooter="false"/>
+            <field name="NUMNOTA" label="Nro. Nota" type="I" visible="true" useFooter="false"/>
+            <field name="DTNEG" label="Dt. Negociação" type="D" visible="true" useFooter="false"/>
+            <field name="DTENTSAI" label="Dt. Entrada/Saída" type="D" visible="true" useFooter="false"/>
+            <field name="VLRTOT" label="Vlr. total" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Descrição Produto" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFO" label="CFOP" type="I" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Tipo Operação" type="S" visible="true" useFooter="false"/>
+            <field name="CODEMP" label="Cód. Empresa" type="I" visible="true" useFooter="false"/>
+            <field name="RAZAOSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false"/>
+            <field name="CODPARC" label="Cód. Parceiro" type="I" visible="true" useFooter="false"/>
+            <field name="CODTRIB" label="CST ICMS" type="I" visible="true" useFooter="false"/>
+            <field name="BASEICMS" label="Base ICMS" type="F" visible="true" useFooter="false" mask="#.##0,00"/>
+            <field name="ALIQICMS" label="Alíq. ICMS" type="F" visible="true" useFooter="false"/>
+            <field name="VLRICMS" label="Vlr. ICMS" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="BASEIPI" label="Base do IPI" type="F" visible="true" useFooter="false"/>
+            <field name="CSTIPI" label="CST IPI" type="I" visible="true" useFooter="false"/>
+            <field name="VLRIPI" label="Vlr. IPI" type="F" visible="true" useFooter="SUM" mask="#.##0,00"/>
+            <field name="ALIQIPI" label="Alíq. IPI" type="F" visible="true" useFooter="false"/>
+            <field name="STATUSNFE" label="Status NF-e" type="S" visible="true" useFooter="false"/>
+            <field name="STATUSNFSE" label="Status NFS-e" type="S" visible="true" useFooter="false"/>
+            <field name="STATUSCTE" label="Status CT-e" type="S" visible="true" useFooter="false"/>
+            <field name="TPONFE" label="NF-e" type="S" visible="true" useFooter="false"/>
+            <field name="TPOCTE" label="CT-e" type="S" visible="true" useFooter="false"/>
+            <field name="TPONFSE" label="NFS-e" type="S" visible="true" useFooter="false"/>
+            <field name="DTEXCLIV" label="Dt. Exclusão do Livro" type="T" visible="true" useFooter="false"/>
+          </metadata>
+          <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+            <NUNOTA>$NUNOTA</NUNOTA>
+          </on-click-launcher>
+          <refresh-details ui-list="grd_egfhv7">
+            <param id="A_NUNOTA">$NUNOTA</param>
+          </refresh-details>
+        </grid>
+      </container>
+      <container orientacao="V" tamanhoRelativo="100">
+        <grid id="grd_egfhv7" useNewGrid="S">
+          <args>
+            <arg id="A_NUNOTA" type="text"/>
+          </args>
+          <title><![CDATA[<b>Detalhes sobre o tipo de operação histórico do documento selecionado: :A_NUNOTA</b>]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[WITH VALOROPCTGFTOP (NUCAMPO,NOMECAMPO,VALOR,OPCAO) AS (	
+	SELECT 
+		CAM.NUCAMPO,
+		CAM.NOMECAMPO,
+		OPC.VALOR,
+		OPC.OPCAO 
+	FROM TDDCAM CAM
+	INNER JOIN TDDOPC OPC ON(OPC.NUCAMPO = CAM.NUCAMPO)
+	WHERE CAM.NOMETAB = 'TGFTOP'
+	AND CAM.NUCAMPO IN (SELECT OPC.NUCAMPO FROM TDDOPC OPC WHERE OPC.NUCAMPO = CAM.NUCAMPO
+))	
+SELECT
+	 TPO.CODTIPOPER,
+	 TPO.DESCROPER,
+	 TPO.DHALTER,
+	 TPO.GRUPO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CLASSIFICMS' AND V.VALOR = TPO.CLASSIFICMS) CLASSIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMICMS' AND V.VALOR = TPO.TEMICMS) TEMICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMASUBST' AND V.VALOR = TPO.SOMASUBST) SOMASUBST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCDIFICMS' AND V.VALOR = TPO.CALCDIFICMS) CALCDIFICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CALCFCPINT' AND V.VALOR = TPO.CALCFCPINT) CALCFCPINT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALFIN' AND V.VALOR = TPO.ATUALFIN) ATUALFIN,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALEST' AND V.VALOR = TPO.ATUALEST) ATUALEST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVFIS) ATUALLIVFIS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'ATUALLIVFIS' AND V.VALOR = TPO.ATUALLIVISS) ATUALLIVISS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPIPI' AND V.VALOR = TPO.TIPIPI) TIPIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TEMIPI' AND V.VALOR = TPO.TEMIPI) TEMIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SOMARIPI' AND V.VALOR = TPO.SOMARIPI) SOMARIPI,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIEMBUT' AND V.VALOR = TPO.IPIEMBUT) IPIEMBUT,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPICMS' AND V.VALOR = TPO.TIPICMS) TIPICMS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'IPIINCICMS' AND V.VALOR = TPO.IPIINCICMS) IPIINCICMS,
+	 TPO.CODCFPS,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'GERAR1400SPED' AND V.VALOR = TPO.GERAR1400SPED) GERAR1400SPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'VALTOTNOTAGERLIV' AND V.VALOR = TPO.VALTOTNOTAGERLIV) VALTOTNOTAGERLIV,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'CAT1799SPCCO' AND V.VALOR = TPO.CAT1799SPCCO) CAT1799SPCCO,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'SEMCREDIPIST' AND V.VALOR = TPO.SEMCREDIPIST) SEMCREDIPIST,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'DESCONSLCDPR' AND V.VALOR = TPO.DESCONSLCDPR) DESCONSLCDPR,
+ 	 TPO.CODCTACTBEFD,  
+	 TPO.NATOPERSPED,
+	 (SELECT V.OPCAO FROM VALOROPCTGFTOP V WHERE V.NOMECAMPO = 'TIPMOVBEMSPED' AND V.VALOR = TPO.TIPMOVBEMSPED) TIPMOVBEMSPED
+FROM TGFTOP TPO
+WHERE TPO.CODTIPOPER = (SELECT CAB.CODTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)
+  AND TPO.DHALTER = (SELECT CAB.DHTIPOPER FROM TGFCAB CAB WHERE CAB.NUNOTA = :A_NUNOTA)]]></expression>
+          <metadata>
+            <field name="CODTIPOPER" label="Cód.Tipo Operação" type="I" visible="true" useFooter="false"/>
+            <field name="DESCROPER" label="Descrição" type="S" visible="true" useFooter="false"/>
+            <field name="DHALTER" label="Data e hora alteração" type="T" visible="true" useFooter="false"/>
+            <field name="GRUPO" label="Grupo" type="S" visible="true" useFooter="false"/>
+            <field name="CLASSIFICMS" label="Classificação ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="TEMICMS" label="Tem ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="SOMASUBST" label="Soma ST no total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="CALCDIFICMS" label="Calcular diferença de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CALCFCPINT" label="Calcular FCP (ICMS/ST) Interno?" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALFIN" label="Financeiro" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALEST" label="Estoque" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVFIS" label="Atualização de Livro ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="ATUALLIVISS" label="Atualização de Livro ISS" type="S" visible="true" useFooter="false"/>
+            <field name="TIPIPI" label="Tipo de IPI" type="S" visible="true" useFooter="false"/>
+            <field name="TEMIPI" label="Tem IPI" type="S" visible="true" useFooter="false"/>
+            <field name="SOMARIPI" label="Somar IPI ao total da nota" type="S" visible="true" useFooter="false"/>
+            <field name="IPIEMBUT" label="IPI Embutido" type="S" visible="true" useFooter="false"/>
+            <field name="TIPICMS" label="Tipo de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="IPIINCICMS" label="IPI Incide na base de ICMS" type="S" visible="true" useFooter="false"/>
+            <field name="CODCFPS" label="Código. CFPS" type="I" visible="true" useFooter="false"/>
+            <field name="GERAR1400SPED" label="Gerar Registro 1400 no SPED Fiscal ?" type="S" visible="true" useFooter="false"/>
+            <field name="VALTOTNOTAGERLIV" label="Validar Totais da Nota na Geração do Livro?" type="S" visible="true" useFooter="false"/>
+            <field name="CAT1799SPCCO" label="Cód.Complem.Oper. (CAT-17/99)" type="S" visible="true" useFooter="false"/>
+            <field name="SEMCREDIPIST" label="Operação sem direito a crédito IPI/ST" type="S" visible="true" useFooter="false"/>
+            <field name="DESCONSLCDPR" label="Desconsiderar Top na Geração do Livro Caixa Digital do Produtor Rural" type="S" visible="true" useFooter="false"/>
+            <field name="CODCTACTBEFD" label="Conta Contábil para EFD" type="I" visible="true" useFooter="false"/>
+            <field name="NATOPERSPED" label="Natureza da Operação (SPED)" type="S" visible="true" useFooter="false"/>
+            <field name="TIPMOVBEMSPED" label="Tipo de Mov. do  Bem (SPED)" type="S" visible="true" useFooter="false"/>
+          </metadata>
+        </grid>
+      </container>
+    </container>
+  </level>
+</gadget>

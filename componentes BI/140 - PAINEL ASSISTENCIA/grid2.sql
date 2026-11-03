@@ -1,0 +1,33 @@
+SELECT *
+FROM (
+	SELECT 
+		F.NOMEFUNC,
+		COUNT(ASS.NUMOS) AS QTD,
+		CASE 
+			WHEN ASS.DEFEITO = 'ATT' THEN 'Necessidade de Atualização'
+			WHEN ASS.DEFEITO = 'MU'  THEN 'Mau Uso'
+			WHEN ASS.DEFEITO = 'DC'  THEN 'Desgaste (Cronológico)'
+			WHEN ASS.DEFEITO = 'FAB' THEN 'Montagem (Fábrica)'
+			WHEN ASS.DEFEITO = 'SD'  THEN 'Sem Defeito' 
+			ELSE 'Não identificado ainda'
+		END AS DEFEITO
+	FROM AD_TGFASS ASS
+	INNER JOIN TFPFUN F ON ASS.FUNCSOLDA = F.CODFUNC
+	WHERE 
+		ASS.DTRECEB BETWEEN :P_DTENTSAI.INI AND :P_DTENTSAI.FIN
+		AND ASS.T_DTFABRICACAO BETWEEN :P_DTFAB.INI AND :P_DTFAB.FIN
+	GROUP BY 
+		F.NOMEFUNC,
+		ASS.DEFEITO
+) V
+PIVOT (
+	SUM(QTD) FOR DEFEITO IN (
+		'Necessidade de Atualização' AS ATUALIZACAO,
+		'Mau Uso' AS MAUUSO,
+		'Desgaste (Cronológico)' AS CRONO,
+		'Montagem (Fábrica)' AS FABR,
+		'Sem Defeito' AS SEMDEF,
+		'Não identificado ainda' AS NDA
+	)
+)
+ORDER BY NOMEFUNC

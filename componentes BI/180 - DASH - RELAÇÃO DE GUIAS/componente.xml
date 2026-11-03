@@ -1,0 +1,26 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="0"/>
+    <parameter id="P_CODEMP" description="Empresa" metadata="multiList:Text" listType="sql" required="false" keep-last="false" keep-date="false" order="1">
+      <expression type="SQL"><![CDATA[SELECT    CODEMP AS VALUE   ,CODEMP || '  - '  ||NOMEFANTASIA AS LABEL FROM TSIEMP WHERE CODEMP IN (1,2)]]></expression>
+    </parameter>
+  </prompt-parameters>
+  <level id="lvl_atfpv79" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_atfpv8a" entityName="AD_TGSFINGUI" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT      G.CODEMP AS CODEMP    ,G.DTREF  AS DTREF    ,OPTION_LABEL('TGFOIR','TIPAPURACAO',G.TIPAPURACAO) AS TIPO    ,G.CODREC      AS CODREC    ,UFS.DESCRICAO AS DESCRICAO    ,G.DTVCTO AS DTVCTO	,G.CODUF  AS CODUF    ,G.VALOR  AS VALOR	,(SELECT  GUI.DESCRGUIA		FROM AD_TGSFINDET D			    INNER JOIN AD_TGSFINGUI GUI			ON GUI.ID = D.ID				  WHERE D.CODREC = G.CODREC) AS DESCRICAO_GUIA   FROM TGFOIR GINNER JOIN TSIUFS UFS     ON UFS.CODUF = G.CODUFWHERE G.DTREF >= :P_PERIODO.INI  AND G.DTREF <= :P_PERIODO.FIN  AND G.CODEMP IN :P_CODEMPUNION ALL SELECT      CAB.CODEMP AS CODEMP     ,TRUNC(CAB.DTENTSAI, 'MM') AS DTREF     ,'Retenção Federal' AS TIPO     ,IMC.CODREC AS CODREC     ,'MG' AS DESCRICAO     ,ADD_MONTHS(TRUNC(CAB.DTENTSAI, 'MM'), 1) + 19 AS DTVCTO     ,49 AS CODUF     ,SUM(IMN.VALOR) AS VALOR	,(SELECT  GUI.DESCRGUIA		FROM AD_TGSFINDET D			    INNER JOIN AD_TGSFINGUI GUI			ON GUI.ID = D.ID				  WHERE D.CODREC = IMC.CODREC) AS DESCRICAO_GUIA	  FROM TGFCAB CABINNER JOIN TGFIMN IMN     ON IMN.NUNOTA = CAB.NUNOTAINNER JOIN TGFIMC IMC     ON IMC.CODIMP = IMN.CODIMPWHERE CAB.DTENTSAI >= :P_PERIODO.INI  AND CAB.DTENTSAI <= :P_PERIODO.FIN  AND CAB.CODEMP IN :P_CODEMPGROUP BY      CAB.CODEMP,     TRUNC(CAB.DTENTSAI, 'MM'),     IMC.CODRECORDER BY CODEMP,DTREF]]></expression>
+        <metadata>
+          <field name="CODEMP" label="Cód. Empresa " type="I" visible="true" useFooter="false"/>
+          <field name="DTREF" label="Referência " type="D" visible="true" useFooter="false"/>
+          <field name="TIPO" label="Apuração " type="S" visible="true" useFooter="false"/>
+          <field name="CODREC" label="Código Receita " type="S" visible="true" useFooter="false"/>
+          <field name="DESCRICAO" label="Estado " type="S" visible="true" useFooter="false"/>
+          <field name="DTVCTO" label="Dt. Vencimento " type="D" visible="true" useFooter="false"/>
+          <field name="CODUF" label="CODUF" type="I" visible="false" useFooter="false"/>
+          <field name="VALOR" label="Valor " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="DESCRICAO_GUIA" label="Descrição do tributo" type="S" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

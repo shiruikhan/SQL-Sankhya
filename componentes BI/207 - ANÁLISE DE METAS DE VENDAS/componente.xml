@@ -1,0 +1,355 @@
+<gadget >
+  <prompt-parameters>
+    <parameter  id="P_ANO" description="Ano" metadata="singleList:Text" listType="sql" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_ANO : singleList:Text" order="0">
+      <expression type="SQL">
+        <![CDATA[SELECT 
+    2021 + LEVEL - 1 AS value,
+    2021 + LEVEL - 1 AS label
+FROM DUAL
+CONNECT BY LEVEL <= (EXTRACT(YEAR FROM SYSDATE) - 2021 + 1)
+ORDER BY value DESC]]>
+      </expression>
+    </parameter>
+    <parameter  id="P_MES" description="Mês" metadata="singleList:Text" listType="sql" required="true" keep-last="true" keep-date="false" show-inactives="false" label="P_MES : singleList:Text" order="1">
+      <expression type="SQL">
+        <![CDATA[SELECT 
+    LPAD(LEVEL, 2, '0') AS value, -- Transforma 1 em '01', 2 em '02', etc.
+    INITCAP(TRIM(TO_CHAR(TO_DATE(LEVEL, 'MM'), 'Month', 'NLS_DATE_LANGUAGE = PORTUGUESE'))) AS label
+FROM DUAL
+CONNECT BY LEVEL <= 12
+ORDER BY LEVEL]]>
+      </expression>
+    </parameter>
+  </prompt-parameters>
+  <level id="0AT" description="Principal">
+    <args>
+      <arg  id="A_GRUPO" type="integer" label="A_GRUPO : Número Inteiro"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="36.827289286305685">
+        <container orientacao="V" tamanhoRelativo="50.08771929824562">
+          <grid id="grd_0AU" multiplaSelecao="S" useNewGrid="S">
+            <title>
+              <![CDATA[Resumo das Metas]]>
+            </title>
+            <expression type="sql" data-source="MGEDS">
+              <![CDATA[SELECT 
+    M.APELIDO AS GRUPO,
+    NVL(V.VENDAS, 0) AS VENDAS,
+    NVL(D.DEVOLUCOES, 0) AS DEVOLUCOES,
+    M.VLRMET AS META,
+    (NVL(V.VENDAS, 0) - NVL(D.DEVOLUCOES, 0) - M.VLRMET) AS SALDO,
+    CASE
+        WHEN (NVL(V.VENDAS, 0) - NVL(D.DEVOLUCOES, 0) - M.VLRMET) >= 0 THEN '#b4f7b4ff'
+        ELSE '#f38484'
+    END AS BKCOLOR
+FROM AD_TGSSGM M
+LEFT JOIN (
+    -- Subquery VENDAS
+    SELECT 
+        COMP.CODSGRU,
+        SUM(I.QTDNEG) AS VENDAS
+    FROM TGFCAB C
+    INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+    INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+    INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+    )
+    WHERE C.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+        AND C.TIPMOV = 'V'
+        AND P.USOPROD = 'V'
+        -- Filtra a data da venda pelo parâmetro do Dashboard
+        AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+        AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+        -- Filtra a composição para o Ano e Mês do parâmetro
+        AND COMP.ANO = :P_ANO
+        AND COMP.MES = :P_MES
+    GROUP BY 
+        COMP.CODSGRU
+) V ON M.CODSGRU = V.CODSGRU
+LEFT JOIN (
+    -- Subquery DEVOLUÇÕES
+    SELECT 
+        COMP.CODSGRU,
+        SUM(I.QTDNEG) AS DEVOLUCOES
+    FROM TGFCAB C
+    INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+    INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+    INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+    )
+    WHERE C.CODTIPOPER IN (1200,1201,1206,1216,1217,1272)
+        AND C.TIPMOV = 'D'
+        AND P.USOPROD = 'V'
+        AND (C.CODEMP = 501 OR C.STATUSNFE <> 'D')
+        -- Filtra a data da devolução pelo parâmetro do Dashboard
+        AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+        AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+        -- Filtra a composição para o Ano e Mês do parâmetro
+        AND COMP.ANO = :P_ANO
+        AND COMP.MES = :P_MES
+    GROUP BY 
+        COMP.CODSGRU
+) D ON M.CODSGRU = D.CODSGRU
+-- Filtra a tabela de metas principal pelos parâmetros
+WHERE M.ANO = :P_ANO
+  AND M.MES = :P_MES
+ORDER BY M.APELIDO]]>
+            </expression>
+            <metadata>
+              <field name="GRUPO" label="Grupo" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="VENDAS" label="Vendas" type="I" visible="true" useFooter="SUM">
+              </field>
+              <field name="DEVOLUCOES" label="Devoluções" type="I" visible="true" useFooter="SUM">
+              </field>
+              <field name="META" label="Meta" type="I" visible="true" useFooter="SUM">
+              </field>
+              <field name="SALDO" label="Saldo" type="I" visible="true" useFooter="SUM">
+              </field>
+              <field name="BKCOLOR" label="BKCOLOR" type="S" visible="true" useFooter="false">
+              </field>
+            </metadata>
+            <refresh-details  ui-list="grd_0BS,grd_0D8">
+              <param id="A_GRUPO">$GRUPO</param>
+            </refresh-details>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_0EH" type="gauge">
+            <expression type="sql" data-source="MGEDS">
+              <![CDATA[SELECT 
+    -- 1º Coluna: O Valor Atual (Onde o ponteiro vai ficar) = Vendas - Devoluções
+    (SUM(NVL(V.VENDAS, 0)) - SUM(NVL(D.DEVOLUCOES, 0))) AS VENDAS_LIQUIDAS,
+    
+    -- 2º Coluna: A Meta (O final/alvo do velocímetro)
+    SUM(M.VLRMET) AS META_TOTAL,
+    
+    -- Colunas extras de apoio (caso queira exibir no tooltip do gráfico)
+    SUM(NVL(V.VENDAS, 0)) AS VENDAS_BRUTAS,
+    SUM(NVL(D.DEVOLUCOES, 0)) AS TOTAL_DEVOLUCOES,
+    
+    -- Percentual de atingimento global
+    CASE 
+        WHEN SUM(M.VLRMET) = 0 THEN 0 
+        ELSE ROUND(((SUM(NVL(V.VENDAS, 0)) - SUM(NVL(D.DEVOLUCOES, 0))) / SUM(M.VLRMET)) * 100, 2) 
+    END AS PERC_ATINGIMENTO
+
+FROM AD_TGSSGM M
+LEFT JOIN (
+    SELECT 
+        COMP.CODSGRU,
+        SUM(I.QTDNEG) AS VENDAS
+    FROM TGFCAB C
+    INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+    INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+    INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+    )
+    WHERE C.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+        AND C.TIPMOV = 'V'
+        AND P.USOPROD = 'V'
+        AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+        AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+        AND COMP.ANO = :P_ANO
+        AND COMP.MES = :P_MES
+    GROUP BY COMP.CODSGRU
+) V ON M.CODSGRU = V.CODSGRU
+LEFT JOIN (
+    SELECT 
+        COMP.CODSGRU,
+        SUM(I.QTDNEG) AS DEVOLUCOES
+    FROM TGFCAB C
+    INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+    INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+    INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+    INNER JOIN AD_TGSISGM COMP ON (
+        (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+        (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+    )
+    WHERE C.CODTIPOPER IN (1200,1201,1206,1216,1217,1272)
+        AND C.TIPMOV = 'D'
+        AND P.USOPROD = 'V'
+        AND (C.CODEMP = 501 OR C.STATUSNFE <> 'D')
+        AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+        AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+        AND COMP.ANO = :P_ANO
+        AND COMP.MES = :P_MES
+    GROUP BY COMP.CODSGRU
+) D ON M.CODSGRU = D.CODSGRU
+WHERE M.ANO = :P_ANO
+  AND M.MES = :P_MES]]>
+            </expression>
+            <metadata>
+              <field name="VENDAS_LIQUIDAS" label="VENDAS_LIQUIDAS" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="META_TOTAL" label="META_TOTAL" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="VENDAS_BRUTAS" label="VENDAS_BRUTAS" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="TOTAL_DEVOLUCOES" label="TOTAL_DEVOLUCOES" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="PERC_ATINGIMENTO" label="PERC_ATINGIMENTO" type="F" visible="true" useFooter="false">
+              </field>
+            </metadata>
+            <show-ticks>true</show-ticks>
+            <min-value>0</min-value>
+            <max-value>100</max-value>
+            <value-field>$PERC_ATINGIMENTO</value-field>
+            <alert-colors values="0,50,80,100" colors="0xF38484,0xFFCC33,0xB4F7B4">
+            </alert-colors>
+          </chart>
+        </container>
+      </container>
+      <container orientacao="V" tamanhoRelativo="64.18281172379533">
+        <container orientacao="V" tamanhoRelativo="50.08771929824562">
+          <grid id="grd_0BS" multiplaSelecao="S" useNewGrid="S">
+            <args>
+              <arg id="A_GRUPO" type="integer">
+              </arg>
+            </args>
+            <title>
+              <![CDATA[Relação de Vendas Selecionada]]>
+            </title>
+            <expression type="sql" data-source="MGEDS">
+              <![CDATA[SELECT 
+    C.NUNOTA AS NRO_NOTA,
+    C.DTNEG AS DATA_VENDA,
+    PAR.RAZAOSOCIAL AS CLIENTE,
+    P.CODPROD AS COD_PRODUTO,
+    P.DESCRPROD AS PRODUTO,
+    I.QTDNEG AS QUANTIDADE,
+    I.VLRTOT AS VALOR_TOTAL
+FROM TGFCAB C
+INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+INNER JOIN TGFPAR PAR ON C.CODPARC = PAR.CODPARC
+INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+-- Join com a tabela de Composição do Grupo
+INNER JOIN AD_TGSISGM COMP ON (
+    (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+    (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+)
+-- Join com o Cabeçalho da Meta para conseguir filtrar pelo Nome do Grupo clicado
+INNER JOIN AD_TGSSGM M ON COMP.CODSGRU = M.CODSGRU 
+                       AND COMP.ANO = M.ANO 
+                       AND COMP.MES = M.MES
+WHERE C.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+    AND C.TIPMOV = 'V'
+    AND P.USOPROD = 'V'
+    
+    -- Filtra a data da venda pelos parâmetros globais do painel
+    AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+    AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+    
+    -- Filtra a composição também pelos parâmetros
+    AND COMP.ANO = :P_ANO
+    AND COMP.MES = :P_MES
+    
+   
+    AND M.APELIDO = :A_GRUPO
+    
+ORDER BY C.DTNEG DESC, I.QTDNEG DESC]]>
+            </expression>
+            <metadata>
+              <field name="NRO_NOTA" label="Nr. Único" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="DATA_VENDA" label="Dt. Venda" type="D" visible="true" useFooter="false">
+              </field>
+              <field name="CLIENTE" label="Cliente" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="COD_PRODUTO" label="Cód. Produto" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="PRODUTO" label="Produto" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="QUANTIDADE" label="Quantidade" type="I" visible="true" useFooter="SUM">
+              </field>
+              <field name="VALOR_TOTAL" label="Vlr. Total" type="F" visible="true" useFooter="SUM">
+              </field>
+            </metadata>
+            <on-click-launcher  resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA>$NRO_NOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <grid id="grd_0D8" multiplaSelecao="S" useNewGrid="S">
+            <args>
+              <arg id="A_GRUPO" type="integer">
+              </arg>
+            </args>
+            <title>
+              <![CDATA[Relação de Devoluções Selecionada]]>
+            </title>
+            <expression type="sql" data-source="MGEDS">
+              <![CDATA[SELECT 
+    C.NUNOTA AS NRO_NOTA,
+    C.DTNEG AS DATA_DEVOLUCAO,
+    PAR.RAZAOSOCIAL AS CLIENTE,
+    P.CODPROD AS COD_PRODUTO,
+    P.DESCRPROD AS PRODUTO,
+    I.QTDNEG AS QUANTIDADE,
+    I.VLRTOT AS VALOR_TOTAL
+FROM TGFCAB C
+INNER JOIN TGFITE I ON C.NUNOTA = I.NUNOTA
+INNER JOIN TGFPRO P ON I.CODPROD = P.CODPROD
+INNER JOIN TGFPAR PAR ON C.CODPARC = PAR.CODPARC
+INNER JOIN TGFGRU G ON P.CODGRUPOPROD = G.CODGRUPOPROD
+-- Join com a tabela de Composição do Grupo
+INNER JOIN AD_TGSISGM COMP ON (
+    (COMP.TIPO = 'G' AND G.CODGRUPOPROD = COMP.CODGRUPOPROD) OR
+    (COMP.TIPO = 'P' AND G.CODGRUPAI = COMP.CODGRUPOPROD)
+)
+-- Join com o Cabeçalho da Meta para filtrar pelo Nome do Grupo clicado
+INNER JOIN AD_TGSSGM M ON COMP.CODSGRU = M.CODSGRU 
+                       AND COMP.ANO = M.ANO 
+                       AND COMP.MES = M.MES
+WHERE C.CODTIPOPER IN (1200,1201,1206,1216,1217,1272)
+    AND C.TIPMOV = 'D'
+    AND P.USOPROD = 'V'
+    AND (C.CODEMP = 501 OR C.STATUSNFE <> 'D')
+    
+    -- Filtra a data da devolução pelos parâmetros globais do painel
+    AND TO_CHAR(C.DTNEG, 'YYYY') = TO_CHAR(:P_ANO)
+    AND TO_CHAR(C.DTNEG, 'MM') = :P_MES
+    
+    -- Filtra a composição também pelos parâmetros
+    AND COMP.ANO = :P_ANO
+    AND COMP.MES = :P_MES
+    
+    -- Argumento da linha clicada na grade mestre
+    AND M.APELIDO = :A_GRUPO
+    
+ORDER BY C.DTNEG DESC, I.QTDNEG DESC]]>
+            </expression>
+            <metadata>
+              <field name="NRO_NOTA" label="Nr. Único" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="DATA_DEVOLUCAO" label="Dt. Devolução" type="D" visible="true" useFooter="false">
+              </field>
+              <field name="CLIENTE" label="Cliente" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="COD_PRODUTO" label="Cód. Produto" type="I" visible="true" useFooter="false">
+              </field>
+              <field name="PRODUTO" label="Produto" type="S" visible="true" useFooter="false">
+              </field>
+              <field name="QUANTIDADE" label="Quantidade" type="I" visible="true" useFooter="SUM">
+              </field>
+              <field name="VALOR_TOTAL" label="Vlr. Total" type="F" visible="true" useFooter="false">
+              </field>
+            </metadata>
+            <on-click-launcher resource-id="br.com.sankhya.com.mov.CentralNotas">
+              <NUNOTA >$NRO_NOTA</NUNOTA>
+            </on-click-launcher>
+          </grid>
+        </container>
+      </container>
+    </container>
+  </level>
+</gadget>

@@ -1,0 +1,88 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="CODPARC" description="CODPARC" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="0" label="CODPARC : Entidade/Tabela"/>
+    <parameter id="CODPARCMATRIZ" description="CODPARCMATRIZ" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" order="1" label="CODPARCMATRIZ : Entidade/Tabela"/>
+  </prompt-parameters>
+  <level id="lvl_aywkx8p" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <chart id="cht_025" type="column" nroColuna="6">
+        <title><![CDATA[Valores do Cheque]]></title>
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT 	 SUM(CASE 			WHEN TAB.STATUS = 'CHEQUE RECEBIDO E DESCONTADO'				THEN TAB.VLRDESDOB			ELSE 0			END) AS CHEQUE_R_E_DESCONTADO	,SUM(CASE 			WHEN TAB.STATUS = 'CHEQUE RECEBIDO E NÃO DESCONTADO'				THEN TAB.VLRDESDOB			ELSE 0			END) AS CHEQUE_R_NAO_DESCONTADO	,SUM(CASE 			WHEN TAB.STATUS = 'CHEQUE NÃO RECEBIDO'				THEN TAB.VLRDESDOB			ELSE 0			END) AS CHEQUE_N_RECEBIDOFROM (	SELECT CAB.NUNOTA		,FIN.NUFIN		,NVL(CAB.CODPARC, FIN.CODPARC) AS CODPARC		,PAR.NOMEPARC		,NVL(CAB.CODVEND, FIN.CODVEND) AS CODVEND		,VEN.APELIDO		,NVL(CAB.DTNEG, FIN.DTNEG) AS DTNEG		,NVL(CAB.NUMNOTA, FIN.NUMNOTA) AS NUMNOTA		,FIN.DESDOBRAMENTO		,FIN.VLRDESDOB		,(			SELECT CHQ.NUMCHEQUE			FROM TGFCHQ CHQ			WHERE CHQ.NUFIN = FIN.NUFIN			) AS NR_CHEQUE		,'CHEQUE RECEBIDO E DESCONTADO' AS STATUS	FROM TGFFIN FIN	LEFT JOIN TGFCAB CAB ON FIN.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC	LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND		OR VEN.CODVEND = FIN.CODVEND	WHERE FIN.CODEMP = 501		AND FIN.RECDESP = 1		AND FIN.PROVISAO = 'N'		AND EXISTS (			SELECT 1			FROM TGFMBC MBC			WHERE MBC.NUBCO = FIN.NUBCO				AND MBC.CONCILIADO = 'S'				AND MBC.CODCTABCOINT = 502			)		AND (			PAR.CODPARC = :CODPARC			OR PAR.CODPARCMATRIZ = :CODPARCMATRIZ			)		UNION ALL		SELECT CAB.NUNOTA		,FIN.NUFIN		,NVL(CAB.CODPARC, FIN.CODPARC) AS CODPARC		,PAR.NOMEPARC		,NVL(CAB.CODVEND, FIN.CODVEND) AS CODVEND		,VEN.APELIDO		,NVL(CAB.DTNEG, FIN.DTNEG) AS DTNEG		,NVL(CAB.NUMNOTA, FIN.NUMNOTA) AS NUMNOTA		,FIN.DESDOBRAMENTO		,FIN.VLRDESDOB		,(			SELECT CHQ.NUMCHEQUE			FROM TGFCHQ CHQ			WHERE CHQ.NUFIN = FIN.NUFIN			) AS NR_CHEQUE		,'CHEQUE RECEBIDO E NÃO DESCONTADO' AS STATUS	FROM TGFFIN FIN	LEFT JOIN TGFCAB CAB ON FIN.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARC	LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND		OR VEN.CODVEND = FIN.CODVEND	WHERE FIN.CODEMP = 501		AND FIN.RECDESP = 1		AND FIN.PROVISAO = 'N'		AND EXISTS (			SELECT 1			FROM TGFMBC MBC			WHERE MBC.NUBCO = FIN.NUBCO				AND MBC.CONCILIADO = 'N'				AND MBC.CODCTABCOINT = 502			)		AND (			PAR.CODPARC = :CODPARC			OR PAR.CODPARCMATRIZ = :CODPARCMATRIZ			)		UNION ALL		SELECT CAB.NUNOTA		,FIN.NUFIN		,CAB.CODPARC		,PAR.NOMEPARC		,CAB.CODVEND		,VEN.APELIDO		,CAB.DTNEG		,CAB.NUMNOTA		,FIN.DESDOBRAMENTO		,FIN.VLRDESDOB		,(			SELECT CHQ.NUMCHEQUE			FROM TGFCHQ CHQ			WHERE CHQ.NUFIN = FIN.NUFIN			) AS NR_CHEQUE		,'CHEQUE NÃO RECEBIDO' AS STATUS	FROM TGFCAB CAB	INNER JOIN TGFFIN FIN ON FIN.NUNOTA = CAB.NUNOTA	INNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC	INNER JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND	WHERE CAB.CODEMP = 501		AND CAB.CODTIPVENDA = 139		AND FIN.RECDESP = 1		AND FIN.NUBCO IS NULL		AND FIN.PROVISAO = 'N'		AND (			PAR.CODPARC = :CODPARC			OR PAR.CODPARCMATRIZ = :CODPARCMATRIZ			)	) TAB]]></expression>
+        <metadata>
+          <field name="CHEQUE_R_E_DESCONTADO" label="Cheque Recebido e Descontado" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          <field name="CHEQUE_R_NAO_DESCONTADO" label="Cheque Recebido e Não descontado " type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+          <field name="CHEQUE_N_RECEBIDO" label="Cheque não Recebido" type="F" visible="true" useFooter="false" mask="R$ #.##0,00"/>
+        </metadata>
+        <horizontal-axis>
+          <category field="" rotation="-48" dropLabel="true">
+            <initView value="disabled"/>
+            <title>Relação de Cheques</title>
+          </category>
+        </horizontal-axis>
+        <vertical-axis>
+          <linear resultRotation="0" vResizing="false">
+            <mask>R$ #.##0,00</mask>
+            <title>Valores</title>
+          </linear>
+        </vertical-axis>
+        <series>
+          <serie type="column">
+            <xField>$CHEQUE_N_RECEBIDO</xField>
+            <yField>$CHEQUE_N_RECEBIDO</yField>
+            <display><![CDATA[Cheque a Receber]]></display>
+            <color>0xff0000</color>
+            <on-click navigate-to="035">
+              <param id="A_STATUS">CHEQUE NÃO RECEBIDO</param>
+            </on-click>
+          </serie>
+          <serie type="column">
+            <xField>$CHEQUE_R_E_DESCONTADO</xField>
+            <yField>$CHEQUE_R_E_DESCONTADO</yField>
+            <display><![CDATA[Cheque Recebido e Compensado]]></display>
+            <color>0x9900</color>
+            <on-click navigate-to="035">
+              <param id="A_STATUS">CHEQUE RECEBIDO E DESCONTADO</param>
+            </on-click>
+          </serie>
+          <serie type="column">
+            <xField>$CHEQUE_R_NAO_DESCONTADO</xField>
+            <yField>$CHEQUE_R_NAO_DESCONTADO</yField>
+            <display><![CDATA[Cheque Recebido e Não compensado]]></display>
+            <color>0xff9900</color>
+            <on-click navigate-to="035">
+              <param id="A_STATUS">CHEQUE RECEBIDO E NÃO DESCONTADO</param>
+            </on-click>
+          </serie>
+        </series>
+      </chart>
+    </container>
+  </level>
+  <level id="035" description="Detalhes">
+    <args>
+      <arg id="A_STATUS" type="text" label="A_STATUS : Texto"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_037" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT CAB.NUNOTA	,FIN.NUFIN	,NVL(CAB.CODPARC, FIN.CODPARC) AS CODPARC	,PAR.NOMEPARC	,NVL(CAB.CODVEND, FIN.CODVEND) AS CODVEND	,VEN.APELIDO	,NVL(CAB.DTNEG, FIN.DTNEG) AS DTNEG	,NVL(CAB.NUMNOTA, FIN.NUMNOTA) AS NUMNOTA	,FIN.DESDOBRAMENTO	,FIN.VLRDESDOB	,(		SELECT CHQ.NUMCHEQUE		FROM TGFCHQ CHQ		WHERE CHQ.NUFIN = FIN.NUFIN		) AS NR_CHEQUE	,'CHEQUE RECEBIDO E DESCONTADO' AS STATUS	,NVL(FIN.AD_CHEQUECLI, 'N') AS CHEQUE_CLI	,NVL(FIN.AD_CHEQUECOM, 'N') AS CHEQUE_COM	,NVL(FIN.AD_CHEQUEFIN, 'N') AS CHEQUE_FIN	,FIN.HISTORICOFROM TGFFIN FINLEFT JOIN TGFCAB CAB ON FIN.NUNOTA = CAB.NUNOTAINNER JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARCLEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND	OR VEN.CODVEND = FIN.CODVENDWHERE FIN.CODEMP = 501	AND FIN.RECDESP = 1	AND FIN.PROVISAO = 'N'	AND EXISTS (		SELECT 1		FROM TGFMBC MBC		WHERE MBC.NUBCO = FIN.NUBCO			AND MBC.CONCILIADO = 'S'			AND MBC.CODCTABCOINT = 502		)	AND :A_STATUS = 'CHEQUE RECEBIDO E DESCONTADO'    AND (PAR.CODPARC = :CODPARC OR PAR.CODPARCMATRIZ = :CODPARCMATRIZ)UNION ALLSELECT CAB.NUNOTA	,FIN.NUFIN	,NVL(CAB.CODPARC, FIN.CODPARC) AS CODPARC	,PAR.NOMEPARC	,NVL(CAB.CODVEND, FIN.CODVEND) AS CODVEND	,VEN.APELIDO	,NVL(CAB.DTNEG, FIN.DTNEG) AS DTNEG	,NVL(CAB.NUMNOTA, FIN.NUMNOTA) AS NUMNOTA	,FIN.DESDOBRAMENTO	,FIN.VLRDESDOB	,(		SELECT CHQ.NUMCHEQUE		FROM TGFCHQ CHQ		WHERE CHQ.NUFIN = FIN.NUFIN		) AS NR_CHEQUE	,'CHEQUE RECEBIDO E NÃO DESCONTADO' AS STATUS	,NVL(FIN.AD_CHEQUECLI, 'N') AS CHEQUE_CLI	,NVL(FIN.AD_CHEQUECOM, 'N') AS CHEQUE_COM	,NVL(FIN.AD_CHEQUEFIN, 'N') AS CHEQUE_FIN	,FIN.HISTORICOFROM TGFFIN FINLEFT JOIN TGFCAB CAB ON FIN.NUNOTA = CAB.NUNOTAINNER JOIN TGFPAR PAR ON PAR.CODPARC = FIN.CODPARCLEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND	OR VEN.CODVEND = FIN.CODVENDWHERE FIN.CODEMP = 501	AND FIN.RECDESP = 1	AND FIN.PROVISAO = 'N'	AND EXISTS (		SELECT 1		FROM TGFMBC MBC		WHERE MBC.NUBCO = FIN.NUBCO			AND MBC.CONCILIADO = 'N'			AND MBC.CODCTABCOINT = 502		)	AND :A_STATUS = 'CHEQUE RECEBIDO E NÃO DESCONTADO'    AND (PAR.CODPARC = :CODPARC OR PAR.CODPARCMATRIZ = :CODPARCMATRIZ)UNION ALLSELECT CAB.NUNOTA	,FIN.NUFIN	,CAB.CODPARC	,PAR.NOMEPARC	,CAB.CODVEND	,VEN.APELIDO	,CAB.DTNEG	,CAB.NUMNOTA	,FIN.DESDOBRAMENTO	,FIN.VLRDESDOB	,(		SELECT CHQ.NUMCHEQUE		FROM TGFCHQ CHQ		WHERE CHQ.NUFIN = FIN.NUFIN		) AS NR_CHEQUE	,'CHEQUE NÃO RECEBIDO' AS STATUS	,NVL(FIN.AD_CHEQUECLI, 'N') AS CHEQUE_CLI	,NVL(FIN.AD_CHEQUECOM, 'N') AS CHEQUE_COM	,NVL(FIN.AD_CHEQUEFIN, 'N') AS CHEQUE_FIN	,FIN.HISTORICOFROM TGFCAB CABINNER JOIN TGFFIN FIN ON FIN.NUNOTA = CAB.NUNOTAINNER JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARCINNER JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVENDWHERE CAB.CODEMP = 501	AND CAB.CODTIPVENDA = 139	AND FIN.RECDESP = 1	AND FIN.NUBCO IS NULL	AND FIN.PROVISAO = 'N'	AND :A_STATUS = 'CHEQUE NÃO RECEBIDO'    AND (PAR.CODPARC = :CODPARC OR PAR.CODPARCMATRIZ = :CODPARCMATRIZ)]]></expression>
+        <metadata>
+          <field name="NUNOTA" label="Nr. Unico " type="I" visible="true" useFooter="false"/>
+          <field name="NUFIN" label="Nr. Unico Financeiro" type="I" visible="true" useFooter="false"/>
+          <field name="CODPARC" label="Cód. Parceio" type="I" visible="true" useFooter="false"/>
+          <field name="NOMEPARC" label="Nome Parceiro" type="S" visible="true" useFooter="false"/>
+          <field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"/>
+          <field name="APELIDO" label="Nome " type="S" visible="true" useFooter="false"/>
+          <field name="DTNEG" label="Dt. negociação " type="D" visible="true" useFooter="false"/>
+          <field name="NUMNOTA" label="Nr. Nota " type="I" visible="true" useFooter="false"/>
+          <field name="DESDOBRAMENTO" label="Parcela " type="S" visible="true" useFooter="false"/>
+          <field name="VLRDESDOB" label="Vlr. Desdobramento " type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"/>
+          <field name="NR_CHEQUE" label="Nr. Cheque " type="S" visible="true" useFooter="false"/>
+          <field name="STATUS" label="Status" type="S" visible="false" useFooter="false"/>
+          <field name="CHEQUE_CLI" label="CHEQUE_CLI" type="S" visible="false" useFooter="false"/>
+          <field name="CHEQUE_COM" label="CHEQUE_COM" type="S" visible="false" useFooter="false"/>
+          <field name="CHEQUE_FIN" label="CHEQUE_FIN" type="S" visible="false" useFooter="false"/>
+          <field name="HISTORICO" label="HISTORICO" type="S" visible="false" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>

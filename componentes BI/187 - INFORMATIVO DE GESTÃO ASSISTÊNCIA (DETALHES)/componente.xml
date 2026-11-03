@@ -1,0 +1,270 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_PERIODO" description="Período de Trabalho" metadata="datePeriod" required="true" keep-last="true" keep-date="false" order="0"/>
+    <parameter id="P_DTFAB" description="Período de Fabricação" metadata="datePeriod" required="false" keep-last="false" keep-date="false" order="1"/>
+    <parameter id="P_CODGRUPOPROD" description="Grupo PA" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="true" keep-date="false" order="2"/>
+    <parameter id="P_CODGRUPOMAPROD" description="Grupo MP" metadata="entity:GrupoProduto@CODGRUPOPROD" required="false" keep-last="true" keep-date="false" order="3"/>
+  </prompt-parameters>
+  <level id="lvl_asui51x" description="Seletor">
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="100">
+        <simple-value id="svl_asz65it">
+          <value-expression><![CDATA[<div style="width: 2500px; height: 300px; background: linear-gradient(135deg, #e6f0fa, #ffffff); border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: Segoe UI, sans-serif; padding: 20px;">  <div style="font-size: 50px; font-weight: 600; color: #2c3e50; margin-bottom: 10px;">    Painel de Informações da Assistência  </div>  <div style="font-size: 20px; color: #5d6d7e;">Selecione um painel abaixo para visualizar os dados detalhados</div></div>]]></value-expression>
+        </simple-value>
+      </container>
+      <container orientacao="H" tamanhoRelativo="169">
+        <container orientacao="H" tamanhoRelativo="33">
+          <container orientacao="V" tamanhoRelativo="33">
+            <simple-value id="svl_asz65g8">
+              <value-expression><![CDATA[<div style="width: 828px; height: 400px; background-color: #ffffff; border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; font-family: Segoe UI, sans-serif; transition: transform 0.2s;">  <div style="font-size: 38px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"> Componentes</div>  <div style="font-size: 18px; color: #7f8c8d; text-align: center;">Informativo Relacionado à Composição dos Produtos</div></div>]]></value-expression>
+              <on-click navigate-to="lvl_asui5rd"/>
+            </simple-value>
+          </container>
+        </container>
+        <container orientacao="V" tamanhoRelativo="33">
+          <simple-value id="svl_cjmpnx">
+            <value-expression><![CDATA[<div style="width: 828px; height: 400px; background-color: #ffffff; border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; font-family: Segoe UI, sans-serif; transition: transform 0.2s;">  <div style="font-size: 38px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"> Produto Acabado</div>  <div style="font-size: 18px; color: #7f8c8d; text-align: center;">Informativo Relacionado aos Produtos Acabados</div></div>]]></value-expression>
+            <on-click navigate-to="lvl_cjmpoi"/>
+          </simple-value>
+        </container>
+        <container orientacao="V" tamanhoRelativo="33">
+          <simple-value id="svl_asz65hw">
+            <value-expression><![CDATA[<div style="width: 828px; height: 400px; background-color: #ffffff; border: 2px solid #4a90e2; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; font-family: Segoe UI, sans-serif; transition: transform 0.2s;">  <div style="font-size: 38px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"> Parceiros</div>  <div style="font-size: 18px; color: #7f8c8d; text-align: center;">Informativo Relacionado aos Parceiros</div></div>]]></value-expression>
+            <on-click navigate-to="lvl_asui5re"/>
+          </simple-value>
+        </container>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_asui5re" description="Parceiro">
+    <args>
+      <arg id="A_UFS" type="integer"/>
+      <arg id="A_CODPARC" type="integer"/>
+    </args>
+    <container orientacao="H" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_asui5xa" type="column" nroColuna="10">
+            <args>
+              <arg id="A_UFS" type="integer"/>
+            </args>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(ASS.NUMOS) AS QTD,    ASS.CODPARC,    SUBSTR(PAR.RAZAOSOCIAL, 1,         CASE             WHEN INSTR(SUBSTR(PAR.RAZAOSOCIAL, INSTR(PAR.RAZAOSOCIAL, ' ') + 1), ' ') > 0            THEN INSTR(PAR.RAZAOSOCIAL, ' ', 1, 2)            ELSE LENGTH(PAR.RAZAOSOCIAL)        END    ) AS RAZAOSOCIALFROM AD_TGFASS ASS    INNER JOIN TGFPAR PAR ON ASS.CODPARC = PAR.CODPARC    LEFT JOIN TSICID CID ON PAR.CODCID = CID.CODCIDWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)    AND (:A_UFS IS NULL OR CID.UF = :A_UFS)GROUP BY ASS.CODPARC,    PAR.RAZAOSOCIALORDER BY COUNT(ASS.NUMOS) DESC]]></expression>
+            <metadata>
+              <field name="QTD" label="QTD" type="I" visible="true" useFooter="false"/>
+              <field name="CODPARC" label="CODPARC" type="I" visible="true" useFooter="false"/>
+              <field name="RAZAOSOCIAL" label="RAZAOSOCIAL" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <horizontal-axis>
+              <category field="" rotation="-90" dropLabel="false">
+                <initView value="first"/>
+              </category>
+            </horizontal-axis>
+            <series>
+              <serie type="column">
+                <xField>$RAZAOSOCIAL</xField>
+                <yField>$QTD</yField>
+                <refresh-details ui-list="cht_asui50k">
+                  <param id="A_CODPARC">$CODPARC</param>
+                </refresh-details>
+              </serie>
+            </series>
+          </chart>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_asui50k" type="bar" nroColuna="6">
+            <args>
+              <arg id="A_CODPARC" type="integer"/>
+            </args>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(ASS.NUMOS) AS QTD,    ASS.CODPARC,    PRO.DESCRPRODFROM AD_TGFASS ASS    LEFT JOIN TGFPAR PAR ON ASS.CODPARC = PAR.CODPARC    LEFT JOIN TGFPRO PRO ON ASS.T_CODPROD = PRO.CODPRODWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)    AND :A_CODPARC = ASS.CODPARCGROUP BY ASS.CODPARC,    PRO.DESCRPRODORDER BY COUNT(ASS.NUMOS) DESC]]></expression>
+            <metadata>
+              <field name="QTD" label="Quantidade" type="I" visible="true" useFooter="false"/>
+              <field name="CODPARC" label="CODPARC" type="I" visible="true" useFooter="false"/>
+              <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+            </metadata>
+            <vertical-axis>
+              <category field="DESCRPROD" rotation="0" dropLabel="false">
+                <initView value="first"/>
+              </category>
+            </vertical-axis>
+            <series>
+              <serie type="bar">
+                <xField>$QTD</xField>
+                <yField>$DESCRPROD</yField>
+                <color>0x6666ff</color>
+              </serie>
+            </series>
+          </chart>
+        </container>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <geochart id="gch_asui5xw">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(ASS.NUMOS) AS QTD,    CID.UF AS CODUF,    UFS.UF AS UFFROM AD_TGFASS ASS    INNER JOIN TGFPAR PAR ON ASS.CODPARC = PAR.CODPARC    LEFT JOIN TSICID CID ON PAR.CODCID = CID.CODCID    LEFT JOIN TSIUFS UFS ON CID.UF = UFS.CODUFWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)GROUP BY UFS.UF,    CID.UFORDER BY COUNT(ASS.NUMOS) DESC]]></expression>
+          <metadata>
+            <field name="QTD" label="QTD" type="I" visible="true" useFooter="false"/>
+            <field name="CODUF" label="CODUF" type="I" visible="true" useFooter="false"/>
+            <field name="UF" label="UF" type="S" visible="true" useFooter="false"/>
+          </metadata>
+          <country>BR</country>
+          <legend show="true" colors="#FF0000,#33CC00"/>
+          <region-marker>
+            <name>$UF</name>
+            <value>$QTD</value>
+            <refresh-details ui-list="cht_asui5xa">
+              <param id="A_UFS">$CODUF</param>
+            </refresh-details>
+          </region-marker>
+        </geochart>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_asui5rd" description="Componentes">
+    <args>
+      <arg id="A_CODGRUPOPROD" type="integer"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="H" tamanhoRelativo="186">
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_asui5sl" type="column" nroColuna="10">
+            <title><![CDATA[Total de Componentes x Grupo de Material]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT GRU.DESCRGRUPOPROD,    GRU.CODGRUPOPROD,    SUM(IAS.QTDMOV) AS QTDMOVFROM AD_TGFIASS IAS    INNER JOIN AD_TGFASS ASS ON IAS.NUMOS = ASS.NUMOS    LEFT JOIN TGFPRO PRO ON IAS.CODPROD = PRO.CODPROD    LEFT JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD    LEFT JOIN TGFPRO PROPA ON ASS.T_CODPROD = PROPA.CODPROD    LEFT JOIN TGFGRU GRUPA ON PROPA.CODGRUPOPROD = GRUPA.CODGRUPOPRODWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)    AND (:P_CODGRUPOMAPROD IS NULL OR PRO.CODGRUPOPROD = :P_CODGRUPOMAPROD)    AND (:P_CODGRUPOPROD IS NULL OR PROPA.CODGRUPOPROD = :P_CODGRUPOPROD)GROUP BY GRU.DESCRGRUPOPROD,    GRU.CODGRUPOPRODORDER BY SUM(IAS.QTDMOV) DESC]]></expression>
+            <metadata>
+              <field name="DESCRGRUPOPROD" label="Grupo" type="S" visible="true" useFooter="false"/>
+              <field name="CODGRUPOPROD" label="CODGRUPOPROD" type="I" visible="true" useFooter="false"/>
+              <field name="QTDMOV" label="Quantidade" type="I" visible="true" useFooter="false"/>
+            </metadata>
+            <horizontal-axis>
+              <category field="DESCRGRUPOPROD" rotation="-90" dropLabel="false">
+                <initView value="first"/>
+              </category>
+            </horizontal-axis>
+            <vertical-axis>
+              <linear resultRotation="-45" vResizing="true">
+                <mask/>
+                <useNullValues/>
+                <showStackLabels/>
+              </linear>
+            </vertical-axis>
+            <series>
+              <serie type="column">
+                <xField>$DESCRGRUPOPROD</xField>
+                <yField>$QTDMOV</yField>
+                <display><![CDATA[Grupos de Material]]></display>
+                <color>0x99ff</color>
+                <refresh-details ui-list="cht_asui5uh">
+                  <param id="A_CODGRUPOPROD">$CODGRUPOPROD</param>
+                </refresh-details>
+              </serie>
+            </series>
+          </chart>
+        </container>
+        <container orientacao="V" tamanhoRelativo="50">
+          <chart id="cht_asui5sy" type="pizza" nroColuna="10">
+            <title><![CDATA[Total de Componentes x Material]]></title>
+            <expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.DESCRPROD,    PRO.CODPROD,    SUM(IAS.QTDMOV) AS QTDMOVFROM AD_TGFIASS IAS    INNER JOIN AD_TGFASS ASS ON IAS.NUMOS = ASS.NUMOS    LEFT JOIN TGFPRO PRO ON IAS.CODPROD = PRO.CODPROD    LEFT JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD    LEFT JOIN TGFPRO PROPA ON ASS.T_CODPROD = PROPA.CODPROD    LEFT JOIN TGFGRU GRUPA ON PROPA.CODGRUPOPROD = GRUPA.CODGRUPOPRODWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN        AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)    AND (:P_CODGRUPOMAPROD IS NULL OR PRO.CODGRUPOPROD = :P_CODGRUPOMAPROD)    AND (:P_CODGRUPOPROD IS NULL OR PROPA.CODGRUPOPROD = :P_CODGRUPOPROD)GROUP BY PRO.DESCRPROD, PRO.CODPRODORDER BY SUM(IAS.QTDMOV) DESC]]></expression>
+            <metadata>
+              <field name="DESCRPROD" label="Protudo" type="S" visible="true" useFooter="false"/>
+              <field name="CODPROD" label="CODPROD" type="I" visible="true" useFooter="false"/>
+              <field name="QTDMOV" label="Quantidade" type="I" visible="true" useFooter="false"/>
+            </metadata>
+            <series>
+              <serie type="pizza">
+                <field>QTDMOV</field>
+                <nameField>DESCRPROD</nameField>
+                <refresh-details ui-list="cht_asui5uh">
+                  <param id="A_CODGRUPOPROD">$CODPROD</param>
+                </refresh-details>
+              </serie>
+            </series>
+          </chart>
+        </container>
+      </container>
+      <container orientacao="V" tamanhoRelativo="100">
+        <chart id="cht_asui5uh" type="column" nroColuna="6">
+          <args>
+            <arg id="A_CODGRUPOPROD" type="integer"/>
+          </args>
+          <title><![CDATA[Evolução de consumo mensal]]></title>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT     TO_CHAR(ASS.DTRECEB, 'Month', 'NLS_DATE_LANGUAGE=PORTUGUESE') AS NOME_MES,    SUM(IAS.QTDMOV) AS QTDMOVFROM AD_TGFIASS IAS    INNER JOIN AD_TGFASS ASS ON IAS.NUMOS = ASS.NUMOS    LEFT JOIN TGFPRO PRO ON IAS.CODPROD = PRO.CODPROD    LEFT JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPRODWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)    AND ((GRU.CODGRUPOPROD = :A_CODGRUPOPROD) OR (PRO.CODPROD = :A_CODGRUPOPROD))GROUP BY     EXTRACT(MONTH FROM ASS.DTRECEB),    TO_CHAR(ASS.DTRECEB, 'Month', 'NLS_DATE_LANGUAGE=PORTUGUESE')ORDER BY     EXTRACT(MONTH FROM ASS.DTRECEB),    SUM(IAS.QTDMOV) DESC]]></expression>
+          <metadata>
+            <field name="NOME_MES" label="Mês" type="S" visible="true" useFooter="false"/>
+            <field name="QTDMOV" label="Quantidade" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <horizontal-axis>
+            <category field="" rotation="0" dropLabel="false">
+              <initView value="disabled"/>
+            </category>
+          </horizontal-axis>
+          <vertical-axis>
+            <linear resultRotation="-90" vResizing="true">
+              <mask/>
+              <useNullValues/>
+            </linear>
+          </vertical-axis>
+          <series>
+            <serie type="column">
+              <xField>$NOME_MES</xField>
+              <yField>$QTDMOV</yField>
+              <color>0x9999</color>
+            </serie>
+          </series>
+        </chart>
+      </container>
+    </container>
+  </level>
+  <level id="lvl_cjmpoi" description="ProdAcabado">
+    <args>
+      <arg id="A_AGRUPADOR" type="text"/>
+    </args>
+    <container orientacao="V" tamanhoRelativo="100">
+      <container orientacao="V" tamanhoRelativo="50">
+        <chart id="cht_cjmpot" type="column" nroColuna="10">
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT COUNT(ASS.NUMOS) AS QTD,    PRO.AD_AGRUPADOR AS DESCRPRODFROM AD_TGFASS ASS    LEFT JOIN TGFPRO PRO ON ASS.T_CODPROD = PRO.CODPRODWHERE ASS.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(ASS.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(ASS.T_DTFABRICACAO) <= :P_DTFAB.FIN)GROUP BY PRO.AD_AGRUPADORORDER BY COUNT(ASS.NUMOS) DESC]]></expression>
+          <metadata>
+            <field name="QTD" label="Qtd. Produtos" type="I" visible="true" useFooter="false"/>
+            <field name="DESCRPROD" label="Produtos" type="S" visible="true" useFooter="false"/>
+          </metadata>
+          <horizontal-axis>
+            <category field="DESCRPROD" rotation="45" dropLabel="false">
+              <initView value="first"/>
+            </category>
+          </horizontal-axis>
+          <vertical-axis>
+            <linear resultRotation="-90" vResizing="true">
+              <mask/>
+              <showStackLabels/>
+              <title>Quantidade</title>
+            </linear>
+          </vertical-axis>
+          <series>
+            <serie type="column">
+              <xField>$DESCRPROD</xField>
+              <yField>$QTD</yField>
+              <refresh-details ui-list="cht_cjmptw">
+                <param id="A_AGRUPADOR">$DESCRPROD</param>
+              </refresh-details>
+            </serie>
+          </series>
+        </chart>
+      </container>
+      <container orientacao="V" tamanhoRelativo="50">
+        <chart id="cht_cjmptw" type="donut">
+          <args>
+            <arg id="A_AGRUPADOR" type="text"/>
+          </args>
+          <expression type="sql" data-source="MGEDS"><![CDATA[SELECT    L.LABEL AS LABEL,    SUM(CASE WHEN NVL(A.DEFEITO, 'SD') = L.CODE THEN 1 ELSE 0 END) AS VALUEFROM AD_TGFASS A    LEFT JOIN TGFPRO P ON A.T_CODPROD = P.CODPROD    CROSS JOIN (        SELECT 'ATT' AS CODE, 'Necessidade de Atualização' AS LABEL FROM DUAL        UNION ALL SELECT 'MU' AS CODE, 'Mau Uso' AS LABEL FROM DUAL        UNION ALL SELECT 'DC' AS CODE, 'Desgaste (Cronológico)' AS LABEL FROM DUAL        UNION ALL SELECT 'FAB' AS CODE, 'Montagem (Fábrica)' AS LABEL FROM DUAL        UNION ALL SELECT 'SD' AS CODE, 'Sem Defeito' AS LABEL FROM DUAL    ) LWHERE A.DTRECEB BETWEEN :P_PERIODO.INI AND :P_PERIODO.FIN    AND (:P_DTFAB.INI IS NULL OR TRUNC(A.T_DTFABRICACAO) >= :P_DTFAB.INI)    AND (:P_DTFAB.FIN IS NULL OR TRUNC(A.T_DTFABRICACAO) <= :P_DTFAB.FIN)    AND (:A_AGRUPADOR IS NULL OR P.AD_AGRUPADOR = :A_AGRUPADOR)    AND (:P_CODGRUPOPROD IS NULL OR P.CODGRUPOPROD = :P_CODGRUPOPROD)GROUP BY L.LABEL, L.CODEORDER BY CASE L.CODE WHEN 'ATT' THEN 1 WHEN 'MU' THEN 2 WHEN 'DC' THEN 3 WHEN 'FAB' THEN 4 WHEN 'SD' THEN 5 END]]></expression>
+          <metadata>
+            <field name="LABEL" label="LABEL" type="S" visible="true" useFooter="false"/>
+            <field name="VALUE" label="VALUE" type="I" visible="true" useFooter="false"/>
+          </metadata>
+          <series>
+            <serie type="donut">
+              <field>VALUE</field>
+              <nameField>LABEL</nameField>
+              <tipoDonut>completo</tipoDonut>
+            </serie>
+          </series>
+        </chart>
+      </container>
+    </container>
+  </level>
+</gadget>

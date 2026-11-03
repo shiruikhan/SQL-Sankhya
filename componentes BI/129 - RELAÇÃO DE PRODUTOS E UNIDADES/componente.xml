@@ -1,0 +1,21 @@
+<gadget>
+  <prompt-parameters>
+    <parameter id="P_CODPROD" description="PRODUTO" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" order="0"/>
+  </prompt-parameters>
+  <level id="lvl_hksv1" description="Principal">
+    <container orientacao="V" tamanhoRelativo="100">
+      <grid id="grd_hksv2" multiplaSelecao="S" useNewGrid="S">
+        <expression type="sql" data-source="MGEDS"><![CDATA[SELECT PRO.CODPROD,	PRO.DESCRPROD,	PRO.CODVOL,	PRO.CODVOLCOMPRA,	VOA.CODVOL AS ALTERNATIVA,	VOA.QUANTIDADE,	(CASE WHEN VOA.DIVIDEMULTIPLICA = 'M' THEN 'MULTIPLICA' ELSE 'DIVIDE' END) AS DIVIDEMULTIPLICAFROM TGFPRO PRO	LEFT JOIN TGFVOA VOA ON PRO.CODPROD = VOA.CODPRODWHERE (:P_CODPROD IS NULL OR :P_CODPROD = PRO.CODPROD)]]></expression>
+        <metadata>
+          <field name="CODPROD" label="Cód. Produto" type="I" visible="true" useFooter="false"/>
+          <field name="DESCRPROD" label="Produto" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOL" label="Unidade Padrão" type="S" visible="true" useFooter="false"/>
+          <field name="CODVOLCOMPRA" label="Unidade de Compra" type="S" visible="true" useFooter="false"/>
+          <field name="ALTERNATIVA" label="Unidade Alternativa" type="S" visible="true" useFooter="false"/>
+          <field name="QUANTIDADE" label="Quantidade" type="F" visible="true" useFooter="false"/>
+          <field name="DIVIDEMULTIPLICA" label="Operador" type="S" visible="true" useFooter="false"/>
+        </metadata>
+      </grid>
+    </container>
+  </level>
+</gadget>
