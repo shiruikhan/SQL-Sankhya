@@ -78,7 +78,7 @@ SELECT  SUM(CASE WHEN CAB.TIPMOV = 'D' THEN -ITE.QTDNEG ELSE ITE.QTDNEG END) AS 
            )
         OR (    CAB.TIPMOV = 'D'
             AND CAB.CODTIPOPER IN (1200,1201,1216,1217,1272)
-            AND (CAB.CODEMP = 501 OR CAB.STATUSNFE <> 'D')
+            AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
            )
        )
    AND PRO.USOPROD = 'V'

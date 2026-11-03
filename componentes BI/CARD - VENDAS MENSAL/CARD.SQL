@@ -49,7 +49,7 @@ LEFT JOIN (
     WHERE C.CODTIPOPER IN (1200,1201,1206,1216,1217,1272)
         AND C.TIPMOV = 'D'
         AND P.USOPROD = 'V'
-        AND (C.CODEMP = 501 OR C.STATUSNFE <> 'D') -- Regra inserida aqui
+        AND (C.CODEMP = 501 OR NVL(C.STATUSNFE, 'X') <> 'D') -- Regra inserida aqui
         AND TRUNC(C.DTNEG, 'MM') = TRUNC(SYSDATE, 'MM')
         AND TRUNC(C.DTNEG, 'YYYY') = TRUNC(SYSDATE, 'YYYY')
         AND COMP.ANO = TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY'))
