@@ -8,6 +8,8 @@
                    soma as vendas de todos os vendedores subordinados àquele
                    gerente. Vendedores sem gerente cadastrado são agrupados
                    na linha "SEM GERENTE".
+                   Traz também as devoluções do período (peças e valor) e o
+                   saldo financeiro (faturamento - devoluções).
                    É o nível mais alto do painel; drill para P2 (resumo por
                    vendedor) pelo clique sobre o gerente (:A_CODGER).
 
@@ -28,6 +30,8 @@
   Cargo          : Analista de Sistemas Sênior
   Empresa        : Spark Eletrônica
   Data de Criação: 14/09/2026
+  Última Revisão : Novembro/2026 ? Adicionadas QTDDEVOLVIDA, VLRDEVOLVIDO e
+                   SALDOFINANCEIRO (TOTALFATURAMENTO - VLRDEVOLVIDO).
 
   Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' seguem o mesmo
                      critério usado nos demais componentes de faturamento do
@@ -42,13 +46,29 @@
                      gerente".
                    - TOTALVENDEDORES conta vendedores distintos com venda no
                      período dentro do grupo, não o quadro total do gerente.
+                   - TOTALVENDEDORES, TOTALNOTAS, TOTALPRODUTOS e
+                     TOTALFATURAMENTO consideram só as vendas (valores
+                     brutos); as devoluções ficam em colunas próprias e são
+                     abatidas apenas em SALDOFINANCEIRO.
+                   - Devoluções (TIPMOV 'D', CODTIPOPER 1200,1201,1216,1217,
+                     1272; 1206 fora de propósito) seguem o mesmo critério do
+                     componente 228: entram pelo DTNEG da nota de devolução,
+                     pelo vendedor da nota de devolução (CAB.CODVEND), com o
+                     mesmo valor de item das vendas e com a regra
+                     (CODEMP = 501 OR NVL(STATUSNFE, 'X') <> 'D'). O NVL é
+                     obrigatório: STATUSNFE <> 'D' sem ele descarta as
+                     devoluções com STATUSNFE nulo (falha corrigida em
+                     Novembro/2026 nos demais componentes).
+                   - Gerente com devolução e sem venda no período aparece
+                     com faturamento zero e saldo negativo.
                    - Lista ordenada por faturamento decrescente.
 ==============================================================================*/
 
-WITH VENDAS AS (
+WITH MOVIMENTO AS (
     SELECT
          CAB.NUNOTA
         ,CAB.CODVEND
+        ,CAB.TIPMOV
         ,ITE.QTDNEG
         ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRITEM
     FROM TGFCAB CAB
@@ -56,25 +76,46 @@ WITH VENDAS AS (
     INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
     WHERE CAB.DTNEG >= :P_PERIODO.INI
       AND CAB.DTNEG <= :P_PERIODO.FIN
-      AND CAB.TIPMOV = 'V'
-      AND CAB.STATUSNOTA = 'L'
-      AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+      AND (
+              (    CAB.TIPMOV = 'V'
+               AND CAB.STATUSNOTA = 'L'
+               AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+              )
+           OR (    CAB.TIPMOV = 'D'
+               AND CAB.CODTIPOPER IN (1200,1201,1216,1217,1272)
+               AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
+              )
+          )
       AND PRO.USOPROD = 'V'
 )
 SELECT
-     NVL(GER.CODVEND, -1)        AS CODGER
-    ,NVL(GER.APELIDO, 'SEM GERENTE') AS GERENTE
-    ,COUNT(DISTINCT VND.CODVEND) AS TOTALVENDEDORES
-    ,COUNT(DISTINCT VND.NUNOTA)  AS TOTALNOTAS
-    ,SUM(VND.QTDNEG)             AS TOTALPRODUTOS
-    ,SUM(VND.VLRITEM)            AS TOTALFATURAMENTO
-FROM VENDAS VND
-INNER JOIN TGFVEN VEN ON VEN.CODVEND = VND.CODVEND
-LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
-GROUP BY
-     NVL(GER.CODVEND, -1)
-    ,NVL(GER.APELIDO, 'SEM GERENTE')
-ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODGER" label="Cód. Gerente" type="I" visible="true" useFooter="false"></field><field name="GERENTE" label="Gerente" type="S" visible="true" useFooter="false"></field><field name="TOTALVENDEDORES" label="Total de Vendedores" type="I" visible="true" useFooter="SUM"></field><field name="TOTALNOTAS" label="Total de Notas" type="I" visible="true" useFooter="SUM"></field><field name="TOTALPRODUTOS" label="Total de Produtos" type="I" visible="true" useFooter="SUM"></field><field name="TOTALFATURAMENTO" label="Total de Faturamento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><refresh-details  ui-list="grd_01Y"><param id="A_CODGER">$CODGER</param></refresh-details></grid></container><container orientacao="H" tamanhoRelativo="72.9517396184063"><container orientacao="H" tamanhoRelativo="587"><grid id="grd_01Y" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODGER" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+     CODGER
+    ,GERENTE
+    ,TOTALVENDEDORES
+    ,TOTALNOTAS
+    ,TOTALPRODUTOS
+    ,TOTALFATURAMENTO
+    ,QTDDEVOLVIDA
+    ,VLRDEVOLVIDO
+    ,TOTALFATURAMENTO - VLRDEVOLVIDO AS SALDOFINANCEIRO
+FROM (
+    SELECT
+         NVL(GER.CODVEND, -1)        AS CODGER
+        ,NVL(GER.APELIDO, 'SEM GERENTE') AS GERENTE
+        ,COUNT(DISTINCT CASE WHEN MOV.TIPMOV = 'V' THEN MOV.CODVEND END) AS TOTALVENDEDORES
+        ,COUNT(DISTINCT CASE WHEN MOV.TIPMOV = 'V' THEN MOV.NUNOTA END)  AS TOTALNOTAS
+        ,SUM(CASE WHEN MOV.TIPMOV = 'V' THEN MOV.QTDNEG  ELSE 0 END)     AS TOTALPRODUTOS
+        ,SUM(CASE WHEN MOV.TIPMOV = 'V' THEN MOV.VLRITEM ELSE 0 END)     AS TOTALFATURAMENTO
+        ,SUM(CASE WHEN MOV.TIPMOV = 'D' THEN MOV.QTDNEG  ELSE 0 END)     AS QTDDEVOLVIDA
+        ,SUM(CASE WHEN MOV.TIPMOV = 'D' THEN MOV.VLRITEM ELSE 0 END)     AS VLRDEVOLVIDO
+    FROM MOVIMENTO MOV
+    INNER JOIN TGFVEN VEN ON VEN.CODVEND = MOV.CODVEND
+    LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
+    GROUP BY
+         NVL(GER.CODVEND, -1)
+        ,NVL(GER.APELIDO, 'SEM GERENTE')
+)
+ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODGER" label="Cód. Gerente" type="I" visible="true" useFooter="false"></field><field name="GERENTE" label="Gerente" type="S" visible="true" useFooter="false"></field><field name="TOTALVENDEDORES" label="Total de Vendedores" type="I" visible="true" useFooter="SUM"></field><field name="TOTALNOTAS" label="Total de Notas" type="I" visible="true" useFooter="SUM"></field><field name="TOTALPRODUTOS" label="Total de Produtos" type="I" visible="true" useFooter="SUM"></field><field name="TOTALFATURAMENTO" label="Total de Faturamento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="QTDDEVOLVIDA" label="Qtd. Devolvida" type="I" visible="true" useFooter="SUM"></field><field name="VLRDEVOLVIDO" label="Vlr. Devolvido" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="SALDOFINANCEIRO" label="Saldo Financeiro" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><refresh-details  ui-list="grd_01Y"><param id="A_CODGER">$CODGER</param></refresh-details></grid></container><container orientacao="H" tamanhoRelativo="72.9517396184063"><container orientacao="H" tamanhoRelativo="587"><grid id="grd_01Y" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODGER" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
   Nome do Script : RESUMO DE VENDAS POR VENDEDOR ? P2 (Resumo por Vendedor)
   Tipo           : Componente BI ? Tabela
   Dashboard      : Resumo de Vendas por Vendedor
@@ -117,6 +158,8 @@ ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODGER" lab
                    Setembro/2026 ? Renumerado de P1 para P2 e adicionado
                    :A_CODGER para servir de drill-down do novo painel de
                    resumo por gerente (P1).
+                   Novembro/2026 ? Adicionadas QTDDEVOLVIDA, VLRDEVOLVIDO e
+                   SALDOFINANCEIRO (TOTALFATURAMENTO - VLRDEVOLVIDO).
 
   Observações    : - CODTIPOPER de venda e STATUSNOTA = 'L' seguem o mesmo
                      critério usado nos demais componentes de faturamento do
@@ -125,6 +168,21 @@ ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODGER" lab
                    - TOTALFATURAMENTO soma valor líquido do item (VLRTOT -
                      VLRDESC) mais outros valores (AD_VLROUTROS), mesma regra
                      usada em Faturamento por período Gestão/p2.sql.
+                   - TOTALNOTAS, TOTALPRODUTOS e TOTALFATURAMENTO consideram
+                     só as vendas (valores brutos); as devoluções ficam em
+                     colunas próprias e são abatidas apenas em
+                     SALDOFINANCEIRO.
+                   - Devoluções seguem o mesmo critério de P1 (e do
+                     componente 228): TIPMOV 'D', CODTIPOPER 1200,1201,1216,
+                     1217,1272 (1206 fora de propósito), DTNEG e vendedor da
+                     nota de devolução, e a regra (CODEMP = 501 OR
+                     NVL(STATUSNFE, 'X') <> 'D'). O NVL é obrigatório: sem
+                     ele as devoluções com STATUSNFE nulo são descartadas.
+                     Os filtros :P_VENDEDOR, :P_GERENTE e :A_CODGER valem
+                     também para as devoluções. Vendedor com devolução e sem
+                     venda no período aparece com saldo negativo.
+                   - Manter o critério de venda/devolução sincronizado com
+                     P1, para que o drill feche com a linha do gerente.
                    - Lista ordenada por faturamento decrescente para
                      facilitar o ranking de vendedores.
                    - GER é o próprio TGFVEN relacionado por CODGER = CODVEND
@@ -141,10 +199,11 @@ ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODGER" lab
                      direto) significa "sem filtro", nunca "sem gerente".
 ==============================================================================*/
 
-WITH VENDAS AS (
+WITH MOVIMENTO AS (
     SELECT
          CAB.NUNOTA
         ,CAB.CODVEND
+        ,CAB.TIPMOV
         ,ITE.QTDNEG
         ,(ITE.VLRTOT - ITE.VLRDESC) + NVL(ITE.AD_VLROUTROS,0) AS VLRITEM
     FROM TGFCAB CAB
@@ -152,35 +211,57 @@ WITH VENDAS AS (
     INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD
     WHERE CAB.DTNEG >= :P_PERIODO.INI
       AND CAB.DTNEG <= :P_PERIODO.FIN
-      AND CAB.TIPMOV = 'V'
-      AND CAB.STATUSNOTA = 'L'
-      AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+      AND (
+              (    CAB.TIPMOV = 'V'
+               AND CAB.STATUSNOTA = 'L'
+               AND CAB.CODTIPOPER IN (1100,2200,1111,1190,1124,2202)
+              )
+           OR (    CAB.TIPMOV = 'D'
+               AND CAB.CODTIPOPER IN (1200,1201,1216,1217,1272)
+               AND (CAB.CODEMP = 501 OR NVL(CAB.STATUSNFE, 'X') <> 'D')
+              )
+          )
       AND PRO.USOPROD = 'V'
       AND (CAB.CODVEND = :P_VENDEDOR OR :P_VENDEDOR IS NULL)
 )
 SELECT
-     VEN.CODVEND
-    ,VEN.APELIDO
-    ,GER.CODVEND AS CODGER
-    ,GER.APELIDO AS GERENTE
-    ,COUNT(DISTINCT VND.NUNOTA) AS TOTALNOTAS
-    ,SUM(VND.QTDNEG)            AS TOTALPRODUTOS
-    ,SUM(VND.VLRITEM)           AS TOTALFATURAMENTO
-FROM VENDAS VND
-INNER JOIN TGFVEN VEN ON VEN.CODVEND = VND.CODVEND
-LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
-WHERE (VEN.CODGER = :P_GERENTE OR :P_GERENTE IS NULL)
-  AND (
-        (:A_CODGER = -1 AND VEN.CODGER IS NULL)
-     OR VEN.CODGER = :A_CODGER
-     OR :A_CODGER IS NULL
-      )
-GROUP BY
-     VEN.CODVEND
-    ,VEN.APELIDO
-    ,GER.CODVEND
-    ,GER.APELIDO
-ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="CODGER" label="CODGER" type="I" visible="true" useFooter="false"></field><field name="GERENTE" label="GERENTE" type="S" visible="true" useFooter="false"></field><field name="TOTALNOTAS" label="Total de Notas" type="I" visible="true" useFooter="SUM"></field><field name="TOTALPRODUTOS" label="Total de Produtos" type="I" visible="true" useFooter="SUM"></field><field name="TOTALFATURAMENTO" label="Total de Faturamento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><refresh-details  ui-list="grd_028"><param id="A_CODVEND">$CODVEND</param></refresh-details></grid></container><container orientacao="H" tamanhoRelativo="924"><grid id="grd_028" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODVEND" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
+     CODVEND
+    ,APELIDO
+    ,CODGER
+    ,GERENTE
+    ,TOTALNOTAS
+    ,TOTALPRODUTOS
+    ,TOTALFATURAMENTO
+    ,QTDDEVOLVIDA
+    ,VLRDEVOLVIDO
+    ,TOTALFATURAMENTO - VLRDEVOLVIDO AS SALDOFINANCEIRO
+FROM (
+    SELECT
+         VEN.CODVEND
+        ,VEN.APELIDO
+        ,GER.CODVEND AS CODGER
+        ,GER.APELIDO AS GERENTE
+        ,COUNT(DISTINCT CASE WHEN MOV.TIPMOV = 'V' THEN MOV.NUNOTA END) AS TOTALNOTAS
+        ,SUM(CASE WHEN MOV.TIPMOV = 'V' THEN MOV.QTDNEG  ELSE 0 END)    AS TOTALPRODUTOS
+        ,SUM(CASE WHEN MOV.TIPMOV = 'V' THEN MOV.VLRITEM ELSE 0 END)    AS TOTALFATURAMENTO
+        ,SUM(CASE WHEN MOV.TIPMOV = 'D' THEN MOV.QTDNEG  ELSE 0 END)    AS QTDDEVOLVIDA
+        ,SUM(CASE WHEN MOV.TIPMOV = 'D' THEN MOV.VLRITEM ELSE 0 END)    AS VLRDEVOLVIDO
+    FROM MOVIMENTO MOV
+    INNER JOIN TGFVEN VEN ON VEN.CODVEND = MOV.CODVEND
+    LEFT JOIN TGFVEN GER ON GER.CODVEND = VEN.CODGER
+    WHERE (VEN.CODGER = :P_GERENTE OR :P_GERENTE IS NULL)
+      AND (
+            (:A_CODGER = -1 AND VEN.CODGER IS NULL)
+         OR VEN.CODGER = :A_CODGER
+         OR :A_CODGER IS NULL
+          )
+    GROUP BY
+         VEN.CODVEND
+        ,VEN.APELIDO
+        ,GER.CODVEND
+        ,GER.APELIDO
+)
+ORDER BY TOTALFATURAMENTO DESC]]></expression><metadata><field name="CODVEND" label="Cód. Vendedor" type="I" visible="true" useFooter="false"></field><field name="APELIDO" label="Vendedor" type="S" visible="true" useFooter="false"></field><field name="CODGER" label="CODGER" type="I" visible="true" useFooter="false"></field><field name="GERENTE" label="GERENTE" type="S" visible="true" useFooter="false"></field><field name="TOTALNOTAS" label="Total de Notas" type="I" visible="true" useFooter="SUM"></field><field name="TOTALPRODUTOS" label="Total de Produtos" type="I" visible="true" useFooter="SUM"></field><field name="TOTALFATURAMENTO" label="Total de Faturamento" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="QTDDEVOLVIDA" label="Qtd. Devolvida" type="I" visible="true" useFooter="SUM"></field><field name="VLRDEVOLVIDO" label="Vlr. Devolvido" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field><field name="SALDOFINANCEIRO" label="Saldo Financeiro" type="F" visible="true" useFooter="SUM" mask="R$ #.##0,00"></field></metadata><refresh-details  ui-list="grd_028"><param id="A_CODVEND">$CODVEND</param></refresh-details></grid></container><container orientacao="H" tamanhoRelativo="924"><grid id="grd_028" multiplaSelecao="S" useNewGrid="S"><args><arg id="A_CODVEND" type="integer"></arg></args><expression type="sql" data-source="MGEDS"><![CDATA[/*==============================================================================
   Nome do Script : RESUMO DE VENDAS POR VENDEDOR ? P3 (Detalhe)
   Tipo           : Componente BI ? Tabela
   Dashboard      : Resumo de Vendas por Vendedor
