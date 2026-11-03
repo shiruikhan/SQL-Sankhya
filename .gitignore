@@ -9,6 +9,7 @@
 
 # ── Scripts de apoio (captura de DDL, diagnóstico, backfills pontuais) ───────
 /scripts/
+/componentes BI/HTML5 - Sankhya
 
 # ── Código local não versionado ──────────────────────────────────────────────
 java/precos/recalcpreco.java
