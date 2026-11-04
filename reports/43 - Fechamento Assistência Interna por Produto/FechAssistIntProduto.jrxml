@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : FechAssistIntProduto
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 43 - Fechamento Assistência Interna por Produto
+  Descrição      : Fechamento resumido das O.S. de assistência técnica
+                   (AD_TGFASS) em uma tabela única: PRODUTO | STATUS |
+                   QTD. O.S. | VLR. CONSERTO, ordenada por produto e status.
+                   O produto é exibido só na primeira linha de cada produto
+                   (as demais ficam em branco, mantendo a grade). Total
+                   geral no final. Cabeçalho da empresa 1 com logo, como o
+                   relatório 35.
+                   STATUS é exibido pelo texto da opção (TDDCAM/TDDOPC).
+
+  Parâmetros     : P_DTINI — data de conclusão inicial (opcional)
+                   P_DTFIN — data de conclusão final (opcional)
+
+  Tabelas        : AD_TGFASS : O.S. de assistência (leitura)
+                   TGFPRO    : descrição do produto
+                   TSIEMP / TSIEND / TSIBAI / TSICID / TSIUFS : dados da empresa 1
+                   TDDCAM / TDDOPC : opções do campo de lista STATUS
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Data de Criação: 04/11/2026
+  Última Revisão : Novembro/2026 — Layout em tabela única (sem quebra/
+                   subtotal por produto)
+
+  Observações    : - Só entram O.S. concluídas (DTCONCLUSAO preenchida). O
+                     filtro de período usa DTCONCLUSAO; sem P_DTINI/P_DTFIN,
+                     vale qualquer data.
+                   - O.S. sem produto (T_CODPROD nulo) aparecem como
+                     "SEM PRODUTO".
+                   - Código de STATUS sem opção cadastrada é exibido como
+                     está; vazio vira "NÃO INFORMADO".
+                   - A empresa do cabeçalho é fixa (CODEMP = 1).
+  ==============================================================================
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FechAssistIntProduto" language="groovy" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" whenNoDataType="NoDataSection">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="P_DTINI" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data de conclusão inicial (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTFIN" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data de conclusão final (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT X.CODPROD,
+    CASE WHEN X.LINHA = 1
+         THEN CASE WHEN X.CODPROD = 0 THEN X.DESCRPROD ELSE X.CODPROD || ' - ' || X.DESCRPROD END
+    END AS PRODUTO_EXIBE,
+    X.STATUS,
+    X.QTDOS,
+    X.VLRCONSERTO,
+    EMP.RAZAOSOCIAL AS EMP_RAZAO,
+    EMPEDN.NOMEEND || ', ' || EMP.NUMEND
+        || CASE WHEN EMP.COMPLEMENTO IS NOT NULL THEN ' - ' || EMP.COMPLEMENTO END
+        || CASE WHEN EMPBAI.NOMEBAI IS NOT NULL THEN ' - ' || EMPBAI.NOMEBAI END AS EMP_ENDERECO,
+    EMPCID.NOMECID || '/' || EMPUFS.UF || ' - CEP ' || EMP.CEP AS EMP_CIDADE,
+    'CNPJ: ' ||
+    CASE
+        WHEN LENGTH(REGEXP_REPLACE(EMP.CGC, '[^0-9]', '')) = 14 THEN
+            REGEXP_REPLACE(REGEXP_REPLACE(EMP.CGC, '[^0-9]', ''),
+                '^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$', '\1.\2.\3/\4-\5')
+        ELSE EMP.CGC
+    END
+    || '   IE: ' || EMP.INSCESTAD
+    || '   Fone: ' || EMP.TELEFONE AS EMP_DOC
+FROM (
+    SELECT G.CODPROD,
+        G.DESCRPROD,
+        G.STATUS,
+        G.QTDOS,
+        G.VLRCONSERTO,
+        ROW_NUMBER() OVER (PARTITION BY G.CODPROD, G.DESCRPROD ORDER BY G.STATUS) AS LINHA
+    FROM (
+        SELECT NVL(ASS.T_CODPROD, 0) AS CODPROD,
+            NVL(PRO.DESCRPROD, NVL(ASS.T_DESCRPROD, 'SEM PRODUTO')) AS DESCRPROD,
+            NVL((SELECT MAX(OPC.OPCAO)
+                   FROM TDDOPC OPC
+                  INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
+                  WHERE CAM.NOMETAB   = 'AD_TGFASS'
+                    AND CAM.NOMECAMPO = 'STATUS'
+                    AND OPC.VALOR     = ASS.STATUS), NVL(ASS.STATUS, 'NÃO INFORMADO')) AS STATUS,
+            COUNT(*) AS QTDOS,
+            SUM(NVL(ASS.VLRCONSERTO, 0)) AS VLRCONSERTO
+        FROM AD_TGFASS ASS
+            LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ASS.T_CODPROD
+        WHERE ASS.DTCONCLUSAO IS NOT NULL
+          AND ASS.DTCONCLUSAO >= NVL($P{P_DTINI}, ASS.DTCONCLUSAO)
+          AND ASS.DTCONCLUSAO < NVL($P{P_DTFIN}, ASS.DTCONCLUSAO) + 1
+        GROUP BY NVL(ASS.T_CODPROD, 0),
+            NVL(PRO.DESCRPROD, NVL(ASS.T_DESCRPROD, 'SEM PRODUTO')),
+            ASS.STATUS
+    ) G
+) X
+    INNER JOIN TSIEMP EMP ON EMP.CODEMP = 1
+    LEFT JOIN TSIEND EMPEDN ON EMPEDN.CODEND = EMP.CODEND
+    LEFT JOIN TSIBAI EMPBAI ON EMPBAI.CODBAI = EMP.CODBAI
+    LEFT JOIN TSICID EMPCID ON EMPCID.CODCID = EMP.CODCID
+    LEFT JOIN TSIUFS EMPUFS ON EMPUFS.CODUF = EMPCID.UF
+ORDER BY X.DESCRPROD, X.CODPROD, X.LINHA]]>
+	</queryString>
+	<field name="CODPROD" class="java.math.BigDecimal"/>
+	<field name="PRODUTO_EXIBE" class="java.lang.String"/>
+	<field name="STATUS" class="java.lang.String"/>
+	<field name="QTDOS" class="java.math.BigDecimal"/>
+	<field name="VLRCONSERTO" class="java.lang.Double"/>
+	<field name="EMP_RAZAO" class="java.lang.String"/>
+	<field name="EMP_ENDERECO" class="java.lang.String"/>
+	<field name="EMP_CIDADE" class="java.lang.String"/>
+	<field name="EMP_DOC" class="java.lang.String"/>
+	<variable name="TOTAL_QTD_OS" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{QTDOS}]]></variableExpression>
+	</variable>
+	<variable name="TOTAL_CONSERTO" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[$F{VLRCONSERTO}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="88" splitType="Stretch">
+			<image scaleImage="RetainShape" hAlign="Left" vAlign="Middle">
+				<reportElement x="0" y="0" width="110" height="50"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO} + "logo_spark.png"]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="0" width="415" height="16"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_RAZAO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="16" width="415" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_ENDERECO}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="28" width="415" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_CIDADE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="120" y="40" width="415" height="12"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EMP_DOC}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="56" width="535" height="1"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="62" width="535" height="22"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="13" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FECHAMENTO DE ASSISTÊNCIA INTERNA POR PRODUTO]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="22" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="2" width="255" height="18" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PRODUTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="255" y="2" width="130" height="18" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[STATUS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="385" y="2" width="60" height="18" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[QTD. O.S.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="445" y="2" width="90" height="18" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[VLR. CONSERTO]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="0" y="0" width="255" height="16"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{PRODUTO_EXIBE}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="255" y="0" width="130" height="16"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{STATUS}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0" isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="385" y="0" width="60" height="16"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{QTDOS}]]></textFieldExpression>
+			</textField>
+			<textField pattern="R$ #,##0.00" isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="445" y="0" width="90" height="16"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.Double"><![CDATA[$F{VLRCONSERTO}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="18" splitType="Stretch">
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement x="0" y="2" width="200" height="14"/>
+				<textElement textAlignment="Left">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="385" y="2" width="100" height="14"/>
+				<textElement textAlignment="Right">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Página " + $V{PAGE_NUMBER} + " de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="487" y="2" width="48" height="14"/>
+				<textElement textAlignment="Left">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="22" splitType="Prevent">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="385" height="20" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="6">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TOTAL GERAL]]></text>
+			</staticText>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="385" y="0" width="60" height="20" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{TOTAL_QTD_OS}]]></textFieldExpression>
+			</textField>
+			<textField pattern="R$ #,##0.00" isBlankWhenNull="true">
+				<reportElement mode="Opaque" x="445" y="0" width="90" height="20" backcolor="#E0E0E0"/>
+				<box leftPadding="4" rightPadding="4">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.Double"><![CDATA[$V{TOTAL_CONSERTO}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+	<noData>
+		<band height="40" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="10" width="535" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nenhuma O.S. concluída encontrada para os parâmetros informados.]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>
