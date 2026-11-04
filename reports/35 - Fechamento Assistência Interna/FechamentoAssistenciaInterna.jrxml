@@ -18,10 +18,9 @@
                    STATUS e DEFEITO são campos de lista e são exibidos pelo
                    texto da opção (TDDCAM/TDDOPC), não pelo código.
 
-  Parâmetros     : P_CODPARCASS — assistência responsável (AD_TGFASS.CODPARCASS)
-                                  (opcional). Em branco, lista todas.
-                   P_DTINI      — data de conclusão inicial (opcional)
-                   P_DTFIN      — data de conclusão final (opcional)
+  Parâmetros     : P_DTINI — data de conclusão inicial (opcional)
+                   P_DTFIN — data de conclusão final (opcional)
+                   Sempre lista todas as assistências responsáveis.
 
   Tabelas        : AD_TGFASS : O.S. de assistência (leitura)
                    TGFPAR    : nome da assistência responsável
@@ -36,6 +35,8 @@
                    (sem listagem de O.S./SN), seleção por assistência/período
                    Novembro/2026 — Removido o parâmetro P_STATUS; O.S. sem
                    DTCONCLUSAO excluídas de forma explícita
+                   Novembro/2026 — Removido o parâmetro P_CODPARCASS; seleção
+                   apenas por período
 
   Observações    : - Só entram O.S. concluídas (DTCONCLUSAO preenchida), com
                      ou sem período informado. O filtro de período usa
@@ -53,11 +54,6 @@
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<property name="ireport.definition"/>
-	<parameter name="P_CODPARCASS" class="java.math.BigDecimal">
-		<property name="NOMETABELA" value="TGFPAR"/>
-		<parameterDescription><![CDATA[Assistência responsável (opcional; em branco lista todas)]]></parameterDescription>
-		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
-	</parameter>
 	<parameter name="P_DTINI" class="java.sql.Timestamp">
 		<parameterDescription><![CDATA[Data de conclusão inicial (opcional)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
@@ -109,8 +105,7 @@ FROM (
         SUM(NVL(ASS.VLRCONSERTO, 0)) AS VLRCONSERTO
     FROM AD_TGFASS ASS
         LEFT JOIN TGFPAR PAR ON PAR.CODPARC = ASS.CODPARCASS
-    WHERE DECODE(ASS.CODPARCASS, NVL($P{P_CODPARCASS}, ASS.CODPARCASS), 1, 0) = 1
-      AND ASS.DTCONCLUSAO IS NOT NULL
+    WHERE ASS.DTCONCLUSAO IS NOT NULL
       AND ASS.DTCONCLUSAO >= NVL($P{P_DTINI}, ASS.DTCONCLUSAO)
       AND ASS.DTCONCLUSAO < NVL($P{P_DTFIN}, ASS.DTCONCLUSAO) + 1
     GROUP BY NVL(ASS.CODPARCASS, 0),

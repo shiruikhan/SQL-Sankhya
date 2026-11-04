@@ -4,23 +4,30 @@
   Nome do Script : OS_Assistencia
   Tipo           : Relatório Jasper (.jrxml)
   Grupo          : 39 - O.S. Assistência
-  Descrição      : O.S. de assistência técnica (AD_TGFASS) por faixa de NUMOS,
-                   com funcionários, defeito, checklist e sub-relatório de
+  Descrição      : O.S. de assistência técnica (AD_TGFASS) impressa a partir
+                   da seleção na tela de O.S. (como o pedido de compra), com
+                   funcionários, defeito, checklist e sub-relatório de
                    componentes (OS_Assistencia_Componentes / AD_TGFIASS).
 
-  Parâmetros     : NUMOSINI / NUMOSFIN — faixa de O.S.
+  Parâmetros     : PK_NUMOS — NUMOS da O.S. selecionada na tela. Injetado
+                              pelo Sankhya (não é digitado). Com várias O.S.
+                              selecionadas, o Sankhya executa o relatório uma
+                              vez por registro (uma O.S. por impressão).
 
   Empresa        : Spark Eletrônica
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Última Revisão : Novembro/2026 — STATUS traduzido via TDDCAM/TDDOPC (antes
                    CASE fixo); só imprime O.S. com DTCONCLUSAO preenchida
+                   Novembro/2026 — Impressão pela seleção da tela (PK_NUMOS)
+                   no lugar da faixa digitada NUMOSINI/NUMOSFIN; mensagem
+                   para O.S. não concluída
 
   Observações    : - STATUS e DEFEITO exibem o texto da opção cadastrada no
                      dicionário; código sem opção é exibido como está.
   ==============================================================================
 -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OS_Assistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OS_Assistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" whenNoDataType="NoDataSection">
 	<property name="ireport.zoom" value="3.138428376721117"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="1674"/>
@@ -32,11 +39,8 @@
 	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["./"]]></defaultValueExpression>
 	</parameter>
-	<parameter name="NUMOSINI" class="java.math.BigDecimal">
-		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
-	</parameter>
-	<parameter name="NUMOSFIN" class="java.math.BigDecimal">
-		<parameterDescription><![CDATA[Nr. OS Final]]></parameterDescription>
+	<parameter name="PK_NUMOS" class="java.math.BigDecimal" isForPrompting="false">
+		<parameterDescription><![CDATA[Nr. OS]]></parameterDescription>
 	</parameter>
 	<queryString>
 		<![CDATA[SELECT ASS.CODPARCASS || ' - ' || (SELECT P.NOMEPARC FROM TGFPAR P WHERE P.CODPARC = ASS.CODPARCASS) AS "ASSISTENCIA RESPONSAVEL",
@@ -95,8 +99,7 @@ FROM AD_TGFASS ASS
 	LEFT JOIN AD_CADFUNC SOL2 ON SOL2.IDFUNC = ASS.FUNCSOLDA2
 	LEFT JOIN AD_CADFUNC TES  ON TES.IDFUNC  = ASS.FUNCTESTE
 	LEFT JOIN AD_CADFUNC INS  ON INS.IDFUNC  = ASS.FUNCINSERCAO
-WHERE ASS.NUMOS >= $P{NUMOSINI}
-	AND ASS.NUMOS <= $P{NUMOSFIN}
+WHERE ASS.NUMOS = $P{PK_NUMOS}
 	AND ASS.DTCONCLUSAO IS NOT NULL]]>
 	</queryString>
 	<field name="ASSISTENCIA RESPONSAVEL" class="java.lang.String"/>
@@ -1058,4 +1061,15 @@ WHERE ASS.NUMOS >= $P{NUMOSINI}
 			</textField>
 		</band>
 	</pageFooter>
+	<noData>
+		<band height="40" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="10" width="555" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["O.S. " + ($P{PK_NUMOS} == null ? "" : $P{PK_NUMOS}) + " não impressa: só são impressas O.S. concluídas (Dt. de Conclusão preenchida)."]]></textFieldExpression>
+			</textField>
+		</band>
+	</noData>
 </jasperReport>
