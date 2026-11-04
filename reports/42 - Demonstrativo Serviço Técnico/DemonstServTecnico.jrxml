@@ -39,9 +39,28 @@
                    redistribuídas (fonte 7) para Produto/Série; rótulo
                    "TOTAL"; novo texto de declaração; removido o descritivo
                    sob a linha de assinatura
+                   Novembro/2026 — Larguras ajustadas para os rótulos
+                   CONCLUSÃO/MÊS FOLHA e o status não quebrarem linha;
+                   cabeçalho da tabela sem margem interna (rótulos
+                   centralizados) e sem espaço antes da 1ª linha
+                   Novembro/2026 — Rodapé dividido: TOTAL/quantidade em
+                   grupo interno (TOTAIS, 36px) e declaração/assinatura no
+                   rodapé do técnico (144px), para o total não pular sozinho
+                   para a página seguinte
+                   Novembro/2026 — Bloco declaração/data/assinatura
+                   compactado de 144px para 100px
+                   Novembro/2026 — Ignora lançamentos com VLRSERVTECNICO
+                   zerado/nulo (negativos, como o RTC, continuam)
+                   Novembro/2026 — Linha de detalhe com splitType="Prevent"
+                   (O.S. não se divide entre páginas); SÉRIE de 66 para 76px
+                   (PRODUTO 169, VALOR 58): no preenchimento a fonte do
+                   servidor é mais larga que a Helvetica do PDF, o nº de
+                   série quebrava o último dígito e dobrava a altura da linha
 
   Observações    : - Só entram O.S. concluídas (DTCONCLUSAO preenchida) e com
-                     técnico informado.
+                     técnico informado; O.S. com VLRSERVTECNICO zerado ou
+                     nulo ficam de fora (não entram na quantidade nem no
+                     total).
                    - Valores formatados em pt-BR (R$ 1.234,56); negativos
                      (ex.: Retorno Técnico, -20) saem como -R$ 20,00 e abatem
                      o total.
@@ -114,6 +133,7 @@ FROM AD_TGFASS ASS
     CROSS JOIN FILTRO FIL
     INNER JOIN AD_CADFUNC FUN ON FUN.IDFUNC = ASS.TECNICO
 WHERE ASS.DTCONCLUSAO IS NOT NULL
+  AND NVL(ASS.VLRSERVTECNICO, 0) <> 0
   AND ($P{P_TECNICO} IS NULL OR ASS.TECNICO = $P{P_TECNICO})
   AND (FIL.MESFOLHA IS NULL OR ASS.MESFOLHA = FIL.MESFOLHA)
   AND ($P{P_DTINI} IS NULL OR ASS.DTCONCLUSAO >= TRUNC($P{P_DTINI}))
@@ -139,7 +159,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 	<group name="TECNICO" isStartNewPage="true" isResetPageNumber="true" isReprintHeaderOnEachPage="true">
 		<groupExpression><![CDATA[$F{TECNICO}]]></groupExpression>
 		<groupHeader>
-			<band height="64" splitType="Prevent">
+			<band height="62" splitType="Prevent">
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
 					<reportElement x="0" y="0" width="535" height="18" mode="Opaque" backcolor="#F2F2F2"/>
 					<textElement textAlignment="Left" verticalAlignment="Middle">
@@ -155,8 +175,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{REFERENCIA}]]></textFieldExpression>
 				</textField>
 				<staticText>
-					<reportElement mode="Opaque" x="0" y="44" width="36" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="0" y="44" width="38" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -169,8 +189,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[Nº O.S.]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="36" y="44" width="48" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="38" y="44" width="58" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -183,8 +203,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[CONCLUSÃO]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="84" y="44" width="62" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="96" y="44" width="84" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -197,8 +217,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[STATUS]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="146" y="44" width="194" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="180" y="44" width="169" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -211,8 +231,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[PRODUTO]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="340" y="44" width="84" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="349" y="44" width="76" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -225,8 +245,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[SÉRIE]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="424" y="44" width="43" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="425" y="44" width="52" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -239,8 +259,8 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[MÊS FOLHA]]></text>
 				</staticText>
 				<staticText>
-					<reportElement mode="Opaque" x="467" y="44" width="68" height="18" backcolor="#E0E0E0"/>
-					<box leftPadding="3" rightPadding="3">
+					<reportElement mode="Opaque" x="477" y="44" width="58" height="18" backcolor="#E0E0E0"/>
+					<box>
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
 						<leftPen lineWidth="0.5"/>
@@ -255,9 +275,40 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 			</band>
 		</groupHeader>
 		<groupFooter>
-			<band height="180" splitType="Prevent">
+			<band height="100" splitType="Prevent">
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Group" evaluationGroup="TECNICO">
+					<reportElement x="0" y="4" width="535" height="40"/>
+					<textElement textAlignment="Justified" verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Declaro, para os devidos fins, que conferi e validei todas as Ordens de Serviço relacionadas neste documento, confirmando que os serviços técnicos descritos foram efetivamente executados por mim, estando de acordo com as informações, quantidades e valores apresentados, totalizando " + $V{QTD_TECNICO} + " Ordens de Serviço, no valor de " + java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR")).format($V{VLR_TECNICO} == null ? 0d : $V{VLR_TECNICO}.doubleValue()) + "."]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="0" y="46" width="535" height="14"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Data: _____ / _____ / ________"]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="117" y="84" width="300" height="1"/>
+				</line>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="117" y="86" width="300" height="14"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{NOMETECNICO}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<group name="TOTAIS">
+		<groupExpression><![CDATA[$F{TECNICO}]]></groupExpression>
+		<groupFooter>
+			<band height="36" splitType="Prevent">
 				<staticText>
-					<reportElement mode="Opaque" x="0" y="0" width="467" height="18" backcolor="#E0E0E0"/>
+					<reportElement mode="Opaque" x="0" y="0" width="477" height="18" backcolor="#E0E0E0"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -271,7 +322,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<text><![CDATA[TOTAL]]></text>
 				</staticText>
 				<textField isBlankWhenNull="true">
-					<reportElement mode="Opaque" x="467" y="0" width="68" height="18" backcolor="#E0E0E0"/>
+					<reportElement mode="Opaque" x="477" y="0" width="58" height="18" backcolor="#E0E0E0"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -290,30 +341,6 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 						<font size="8"/>
 					</textElement>
 					<textFieldExpression class="java.lang.String"><![CDATA["Quantidade de O.S.: " + $V{QTD_TECNICO}]]></textFieldExpression>
-				</textField>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Group" evaluationGroup="TECNICO">
-					<reportElement x="0" y="46" width="535" height="56"/>
-					<textElement textAlignment="Justified" verticalAlignment="Middle">
-						<font size="9"/>
-					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA["Declaro, para os devidos fins, que conferi e validei todas as Ordens de Serviço relacionadas neste documento, confirmando que os serviços técnicos descritos foram efetivamente executados por mim, estando de acordo com as informações, quantidades e valores apresentados, totalizando " + $V{QTD_TECNICO} + " Ordens de Serviço, no valor de " + java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR")).format($V{VLR_TECNICO} == null ? 0d : $V{VLR_TECNICO}.doubleValue()) + "."]]></textFieldExpression>
-				</textField>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement x="0" y="112" width="535" height="16"/>
-					<textElement textAlignment="Left" verticalAlignment="Middle">
-						<font size="9"/>
-					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA["Data: _____ / _____ / ________"]]></textFieldExpression>
-				</textField>
-				<line>
-					<reportElement x="117" y="160" width="300" height="1"/>
-				</line>
-				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement x="117" y="162" width="300" height="14"/>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
-						<font size="9" isBold="true"/>
-					</textElement>
-					<textFieldExpression class="java.lang.String"><![CDATA[$F{NOMETECNICO}]]></textFieldExpression>
 				</textField>
 			</band>
 		</groupFooter>
@@ -336,9 +363,9 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 		</band>
 	</pageHeader>
 	<detail>
-		<band height="14" splitType="Stretch">
+		<band height="14" splitType="Prevent">
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="0" y="0" width="36" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="0" y="0" width="38" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -352,7 +379,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUMOS}]]></textFieldExpression>
 				</textField>
 				<textField pattern="dd/MM/yyyy" isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="36" y="0" width="48" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="38" y="0" width="58" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -366,7 +393,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.util.Date"><![CDATA[$F{DTCONCLUSAO}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="84" y="0" width="62" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="96" y="0" width="84" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -380,7 +407,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{STATUS}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="146" y="0" width="194" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="180" y="0" width="169" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -394,7 +421,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{PRODUTO}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="340" y="0" width="84" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="349" y="0" width="76" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -408,7 +435,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{SNENTRADA}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="424" y="0" width="43" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="425" y="0" width="52" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>
@@ -422,7 +449,7 @@ ORDER BY FUN.NOME, ASS.TECNICO, ASS.DTCONCLUSAO, ASS.NUMOS]]>
 					<textFieldExpression class="java.lang.String"><![CDATA[$F{MESFOLHA}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-					<reportElement stretchType="RelativeToTallestObject" x="467" y="0" width="68" height="14"/>
+					<reportElement stretchType="RelativeToTallestObject" x="477" y="0" width="58" height="14"/>
 					<box leftPadding="3" rightPadding="3">
 						<pen lineWidth="0.5"/>
 						<topPen lineWidth="0.5"/>

@@ -7,8 +7,7 @@
   Descrição      : Fechamento resumido das O.S. de assistência técnica
                    (AD_TGFASS) em uma tabela única: PRODUTO | STATUS |
                    QTD. O.S. | VLR. CONSERTO, ordenada por produto e status.
-                   O produto é exibido só na primeira linha de cada produto
-                   (as demais ficam em branco, mantendo a grade). Total
+                   O produto é repetido em todas as linhas. Total
                    geral no final. Cabeçalho da empresa 1 com logo, como o
                    relatório 35.
                    STATUS é exibido pelo texto da opção (TDDCAM/TDDOPC).
@@ -27,6 +26,11 @@
   Data de Criação: 04/11/2026
   Última Revisão : Novembro/2026 — Layout em tabela única (sem quebra/
                    subtotal por produto)
+                   Novembro/2026 — Nome do produto repetido em todas as
+                   linhas (não omite mais nas linhas seguintes do produto)
+                   Novembro/2026 — TOTAL GERAL fixo no rodapé da última
+                   página (lastPageFooter); rodapé de 40px reservado em
+                   todas as páginas, o total nunca cai em página própria
 
   Observações    : - Só entram O.S. concluídas (DTCONCLUSAO preenchida). O
                      filtro de período usa DTCONCLUSAO; sem P_DTINI/P_DTFIN,
@@ -55,9 +59,7 @@
 	</parameter>
 	<queryString>
 		<![CDATA[SELECT X.CODPROD,
-    CASE WHEN X.LINHA = 1
-         THEN CASE WHEN X.CODPROD = 0 THEN X.DESCRPROD ELSE X.CODPROD || ' - ' || X.DESCRPROD END
-    END AS PRODUTO_EXIBE,
+    CASE WHEN X.CODPROD = 0 THEN X.DESCRPROD ELSE X.CODPROD || ' - ' || X.DESCRPROD END AS PRODUTO_EXIBE,
     X.STATUS,
     X.QTDOS,
     X.VLRCONSERTO,
@@ -295,23 +297,23 @@ ORDER BY X.DESCRPROD, X.CODPROD, X.LINHA]]>
 		</band>
 	</detail>
 	<pageFooter>
-		<band height="18" splitType="Stretch">
+		<band height="40" splitType="Stretch">
 			<textField pattern="dd/MM/yyyy HH:mm">
-				<reportElement x="0" y="2" width="200" height="14"/>
+				<reportElement x="0" y="24" width="200" height="14"/>
 				<textElement textAlignment="Left">
 					<font size="8"/>
 				</textElement>
 				<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="385" y="2" width="100" height="14"/>
+				<reportElement x="385" y="24" width="100" height="14"/>
 				<textElement textAlignment="Right">
 					<font size="8"/>
 				</textElement>
 				<textFieldExpression class="java.lang.String"><![CDATA["Página " + $V{PAGE_NUMBER} + " de"]]></textFieldExpression>
 			</textField>
 			<textField evaluationTime="Report">
-				<reportElement x="487" y="2" width="48" height="14"/>
+				<reportElement x="487" y="24" width="48" height="14"/>
 				<textElement textAlignment="Left">
 					<font size="8"/>
 				</textElement>
@@ -319,8 +321,8 @@ ORDER BY X.DESCRPROD, X.CODPROD, X.LINHA]]>
 			</textField>
 		</band>
 	</pageFooter>
-	<summary>
-		<band height="22" splitType="Prevent">
+	<lastPageFooter>
+		<band height="40" splitType="Stretch">
 			<staticText>
 				<reportElement mode="Opaque" x="0" y="0" width="385" height="20" backcolor="#E0E0E0"/>
 				<box leftPadding="4" rightPadding="6">
@@ -363,8 +365,29 @@ ORDER BY X.DESCRPROD, X.CODPROD, X.LINHA]]>
 				</textElement>
 				<textFieldExpression class="java.lang.Double"><![CDATA[$V{TOTAL_CONSERTO}]]></textFieldExpression>
 			</textField>
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement x="0" y="24" width="200" height="14"/>
+				<textElement textAlignment="Left">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.util.Date"><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="385" y="24" width="100" height="14"/>
+				<textElement textAlignment="Right">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Página " + $V{PAGE_NUMBER} + " de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="487" y="24" width="48" height="14"/>
+				<textElement textAlignment="Left">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
 		</band>
-	</summary>
+	</lastPageFooter>
 	<noData>
 		<band height="40" splitType="Stretch">
 			<staticText>
