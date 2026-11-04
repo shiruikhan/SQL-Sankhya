@@ -2,7 +2,10 @@ CREATE OR REPLACE TRIGGER TRG_TGFASS_VLRCONSERTO_SPARK
 BEFORE INSERT OR UPDATE ON AD_TGFASS
 FOR EACH ROW
 FOLLOWS TRG_TGFASS_INC_SPARK
-WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 'X') NOT IN ('T', 'RT', 'D'))
+WHEN (NEW.DTCONCLUSAO IS NOT NULL
+      AND NEW.TECNICO   IS NOT NULL
+      AND NEW.T_CODPROD IS NOT NULL
+      AND NVL(NEW.STATUS, 'X') NOT IN ('TR', 'RT', 'D'))
 /*==============================================================================
   Nome do Script : TRG_TGFASS_VLRCONSERTO_SPARK
   Tipo           : Trigger
@@ -15,6 +18,10 @@ WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 
                        de preços específica de AD_TGFASS.
                    A function já resolve o NUTAB vigente (DTVIGOR <= SYSDATE)
                    e obtém o preço através de STP_OBTEM_PRECO2.
+                   Em O.S. de Retorno Técnico (STATUS 'RTC') os valores são
+                   fixos: VLRCONSERTO = 0 e VLRSERVTECNICO = -20.
+                   Só preenche com a O.S. concluída (DTCONCLUSAO), técnico
+                   (TECNICO) e produto (T_CODPROD) informados.
   Tabela         : AD_TGFASS
   Evento         : BEFORE INSERT OR UPDATE
   Escopo         : FOR EACH ROW
@@ -37,14 +44,24 @@ WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 
                    idêntica ao único IF do corpo, para não disparar em
                    nenhum INSERT/UPDATE de AD_TGFASS fora do filtro.
                    Comportamento observável inalterado.
+                   Novembro/2026 — Remapeamento de STATUS no dicionário:
+                   'T' (agora Perda/Troca) passa a calcular normalmente e
+                   'TR' (Troca) assume seu lugar na lista sem cálculo.
+                   Novo tratamento para 'RTC' (Retorno Técnico) com valores
+                   fixos. Passa a exigir DTCONCLUSAO preenchida (além de
+                   TECNICO e T_CODPROD) para qualquer preenchimento.
 
-  Observações    : - Cada campo só é preenchido se estiver nulo ou zerado
-                     (não sobrescreve valor já preenchido/ajustado); os dois
-                     são avaliados de forma independente.
-                   - Exige T_CODPROD e TECNICO preenchidos; sem produto ou sem
-                     técnico atribuído, os campos permanecem inalterados.
-                   - Não calcula quando STATUS estiver em ('T', 'RT', 'D')
-                     (O.S. Terminada, Retornada ou Deletada/Descartada).
+  Observações    : - Pré-requisito para qualquer preenchimento: DTCONCLUSAO,
+                     TECNICO e T_CODPROD preenchidos; faltando qualquer um,
+                     os campos permanecem inalterados.
+                   - STATUS 'RTC': VLRCONSERTO = 0 e VLRSERVTECNICO = -20,
+                     sempre sobrescritos (independe de valor já informado).
+                   - Demais STATUS: cada campo só é preenchido se estiver
+                     nulo ou zerado (não sobrescreve valor já
+                     preenchido/ajustado); os dois são avaliados de forma
+                     independente.
+                   - Não calcula quando STATUS estiver em ('TR', 'RT', 'D')
+                     (Troca, Retorno/Troca ou Devolução).
                    - Tabelas de preços são fixas: CODTAB = 14 (VLRCONSERTO) e
                      CODTAB = 15 (VLRSERVTECNICO).
                    - Se SNK_PRECO retornar 0 (sem NUTAB vigente ou sem preço
@@ -52,25 +69,44 @@ WHEN (NEW.T_CODPROD IS NOT NULL AND NEW.TECNICO IS NOT NULL AND NVL(NEW.STATUS, 
                      inalterado.
 ==============================================================================*/
 DECLARE
-    V_PRECO AD_TGFASS.VLRCONSERTO%TYPE;
+    V_PRECO               AD_TGFASS.VLRCONSERTO%TYPE;
+    V_VLRCONSERTO_RTC     CONSTANT AD_TGFASS.VLRCONSERTO%TYPE    := 0;
+    V_VLRSERVTECNICO_RTC  CONSTANT AD_TGFASS.VLRSERVTECNICO%TYPE := -20;
 BEGIN
-    IF :NEW.T_CODPROD  IS NOT NULL
-       AND :NEW.TECNICO IS NOT NULL
-       AND NVL(:NEW.STATUS, 'X') NOT IN ('T', 'RT', 'D') THEN
+    ---------------------------------------------------------------------------
+    -- 1. Pré-requisitos: O.S. concluída, com técnico e produto, e STATUS
+    --    que gera valor
+    ---------------------------------------------------------------------------
+    IF :NEW.DTCONCLUSAO IS NOT NULL
+       AND :NEW.TECNICO   IS NOT NULL
+       AND :NEW.T_CODPROD IS NOT NULL
+       AND NVL(:NEW.STATUS, 'X') NOT IN ('TR', 'RT', 'D') THEN
 
-        IF NVL(:NEW.VLRCONSERTO, 0) = 0 THEN
-            V_PRECO := SNK_PRECO(14, :NEW.T_CODPROD);
+        -----------------------------------------------------------------------
+        -- 2. Retorno Técnico: valores fixos
+        -----------------------------------------------------------------------
+        IF :NEW.STATUS = 'RTC' THEN
+            :NEW.VLRCONSERTO    := V_VLRCONSERTO_RTC;
+            :NEW.VLRSERVTECNICO := V_VLRSERVTECNICO_RTC;
 
-            IF NVL(V_PRECO, 0) > 0 THEN
-                :NEW.VLRCONSERTO := V_PRECO;
+        -----------------------------------------------------------------------
+        -- 3. Demais STATUS: preço vigente do produto
+        -----------------------------------------------------------------------
+        ELSE
+            IF NVL(:NEW.VLRCONSERTO, 0) = 0 THEN
+                V_PRECO := SNK_PRECO(14, :NEW.T_CODPROD);
+
+                IF NVL(V_PRECO, 0) > 0 THEN
+                    :NEW.VLRCONSERTO := V_PRECO;
+                END IF;
             END IF;
-        END IF;
 
-        IF NVL(:NEW.VLRSERVTECNICO, 0) = 0 THEN
-            V_PRECO := SNK_PRECO(15, :NEW.T_CODPROD);
+            IF NVL(:NEW.VLRSERVTECNICO, 0) = 0 THEN
+                V_PRECO := SNK_PRECO(15, :NEW.T_CODPROD);
 
-            IF NVL(V_PRECO, 0) > 0 THEN
-                :NEW.VLRSERVTECNICO := V_PRECO;
+                IF NVL(V_PRECO, 0) > 0 THEN
+                    :NEW.VLRSERVTECNICO := V_PRECO;
+                END IF;
             END IF;
         END IF;
 

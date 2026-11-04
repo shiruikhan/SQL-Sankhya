@@ -146,8 +146,12 @@ inspeção da placa (campos `S/N`: `DISJUNTOR`, `COOLER`, `DISPLAY`, `SOLDA`,
 Set/2026, ambas preenchidas automaticamente por
 `TRG_TGFASS_VLRCONSERTO_SPARK` via `SNK_PRECO`, com `CODTAB` 14 e 15
 respectivamente), `NUNOTA` (Nro. Único Nota de Serviço — FK para `TGFCAB`,
-adicionada em Set/2026), `MESFOLHA` (Id. Pagamento Técnico — texto, adicionada
-em Set/2026; tamanho `VARCHAR2(100)` é estimativa até recapturar o DDL real).
+adicionada em Set/2026), `MESFOLHA` (Id. Pagamento Técnico — `VARCHAR2(100)`,
+adicionada em Set/2026), `DHALTER` (data/hora da última alteração — `DATE`,
+adicionada em Nov/2026 via Dicionário de Dados). DDL recapturado do banco em
+04/11/2026 (`scripts/CAPTURA_DICIONARIO_AD_TGFASS.SQL`). Descrições e opções de
+campos (STATUS, DEFEITO, TIPOENTREGA, checklist) em `AD_TGFASS_DICIONARIO.md` —
+`DTVENDA` é campo calculado do dicionário, sem coluna física.
 Colunas `FOTO` e `COMPROVANTE` são BLOB (SecureFile). FKs
 para `TGFPAR` (cliente e parceiro assistência) e `AD_CADFUNC` (`TECNICO` — FK
 recriada em Set/2026, coluna foi dropada/readicionada e por isso hoje aparece
