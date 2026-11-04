@@ -11,6 +11,8 @@
   Cargo          : Analista de Sistemas Sênior
   Data de Criação: A DEFINIR
   Última Revisão : Abril/2026 — Padronização de cabeçalho e comentários
+                   Novembro/2026 — STATUS traduzido via TDDCAM/TDDOPC (antes
+                   CASE fixo); só imprime O.S. com DTCONCLUSAO preenchida
   ==============================================================================
 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OS_Assistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
@@ -42,20 +44,20 @@
 	(SELECT DISTINCT RFINTERNA FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND MOVIMENTO = 'ENTRADA') AS "REFERENCIA INTERNA",
 	(SELECT DISTINCT DESCRPARVENDA FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND VGFSERIES.MOVIMENTO = 'SAÍDA' AND VGFSERIES.DTVENDA = (SELECT MAX(DTVENDA) FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND VGFSERIES.MOVIMENTO = 'SAÍDA')) AS REVENDEDOR,
 	ASS.NUMNOTAENT AS "NOTA DE ENTRADA",
-	(CASE WHEN ASS.STATUS = 'G' THEN 'GARANTIA'
-		WHEN ASS.STATUS = 'RN' THEN 'RENOVAÇÃO'
-		WHEN ASS.STATUS = 'D' THEN 'DEVOLUÇÃO'
-		WHEN ASS.STATUS = 'T' THEN 'TROCA'
-		WHEN ASS.STATUS = 'RT' THEN 'RETORNO/TROCA'
-		WHEN ASS.STATUS = 'R' THEN 'RETORNO'
-		WHEN ASS.STATUS = 'TG' THEN 'TROCA DE GERAÇÃO' END) AS STATUS
+	UPPER(NVL((SELECT MAX(OPC.OPCAO)
+	       FROM TDDOPC OPC
+	      INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
+	      WHERE CAM.NOMETAB   = 'AD_TGFASS'
+	        AND CAM.NOMECAMPO = 'STATUS'
+	        AND OPC.VALOR     = ASS.STATUS), ASS.STATUS)) AS STATUS
 FROM AD_TGFASS ASS
 	LEFT JOIN TGFPAR PAR ON ASS.CODPARC = PAR.CODPARC
 	LEFT JOIN TSIEND EN  ON PAR.CODEND = EN.CODEND
 	LEFT JOIN TSICID CID ON PAR.CODCID = CID.CODCID
 	LEFT JOIN TSIUFS UFS ON CID.UF = UFS.CODUF
 WHERE ASS.NUMOS >= $P{NUMOSINI}
-	AND ASS.NUMOS <= $P{NUMOSFIN}]]>
+	AND ASS.NUMOS <= $P{NUMOSFIN}
+	AND ASS.DTCONCLUSAO IS NOT NULL]]>
 	</queryString>
 	<field name="ASSISTENCIA RESPONSAVEL" class="java.lang.String"/>
 	<field name="DATA DE RECEBIMENTO" class="java.sql.Timestamp"/>

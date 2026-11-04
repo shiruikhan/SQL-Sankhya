@@ -22,7 +22,6 @@
                                   (opcional). Em branco, lista todas.
                    P_DTINI      — data de conclusão inicial (opcional)
                    P_DTFIN      — data de conclusão final (opcional)
-                   P_STATUS     — código do STATUS da O.S. (opcional)
 
   Tabelas        : AD_TGFASS : O.S. de assistência (leitura)
                    TGFPAR    : nome da assistência responsável
@@ -35,10 +34,12 @@
   Data de Criação: 29/09/2026
   Última Revisão : Setembro/2026 — Refatoração: resumo por STATUS/DEFEITO
                    (sem listagem de O.S./SN), seleção por assistência/período
+                   Novembro/2026 — Removido o parâmetro P_STATUS; O.S. sem
+                   DTCONCLUSAO excluídas de forma explícita
 
-  Observações    : - O filtro de período usa DTCONCLUSAO; O.S. sem data de
-                     conclusão não entram (fechamento considera só concluídas).
-                     Sem P_DTINI/P_DTFIN, o filtro de datas é ignorado.
+  Observações    : - Só entram O.S. concluídas (DTCONCLUSAO preenchida), com
+                     ou sem período informado. O filtro de período usa
+                     DTCONCLUSAO; sem P_DTINI/P_DTFIN, vale qualquer data.
                    - A tradução de STATUS/DEFEITO localiza o NUCAMPO em TDDCAM
                      (NOMETAB = 'AD_TGFASS' e NOMECAMPO), então acompanha o
                      cadastro do campo. Código sem opção cadastrada é exibido
@@ -63,10 +64,6 @@
 	</parameter>
 	<parameter name="P_DTFIN" class="java.sql.Timestamp">
 		<parameterDescription><![CDATA[Data de conclusão final (opcional)]]></parameterDescription>
-		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
-	</parameter>
-	<parameter name="P_STATUS" class="java.lang.String">
-		<parameterDescription><![CDATA[Status da O.S. (opcional; em branco lista todos os status)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
@@ -113,7 +110,7 @@ FROM (
     FROM AD_TGFASS ASS
         LEFT JOIN TGFPAR PAR ON PAR.CODPARC = ASS.CODPARCASS
     WHERE DECODE(ASS.CODPARCASS, NVL($P{P_CODPARCASS}, ASS.CODPARCASS), 1, 0) = 1
-      AND DECODE(ASS.STATUS, NVL($P{P_STATUS}, ASS.STATUS), 1, 0) = 1
+      AND ASS.DTCONCLUSAO IS NOT NULL
       AND ASS.DTCONCLUSAO >= NVL($P{P_DTINI}, ASS.DTCONCLUSAO)
       AND ASS.DTCONCLUSAO < NVL($P{P_DTFIN}, ASS.DTCONCLUSAO) + 1
     GROUP BY NVL(ASS.CODPARCASS, 0),

@@ -21,19 +21,17 @@
                    P_DTINI    — (opcional) data de conclusão inicial (DTCONCLUSAO).
                    P_DTFIN    — (opcional) data de conclusão final, inclusiva
                                 (o dia inteiro conta).
-                   P_STATUS   — (opcional) código do STATUS; em branco lista todos
-                                os status (uma linha por status).
                    P_MESFOLHA em branco assume o MESFOLHA do lançamento de
                    PK_NUMOS — exceto quando houver período (P_DTINI/P_DTFIN):
                    aí o filtro de mês da folha é ignorado e vale só o período.
-                   Com período informado, O.S. sem DTCONCLUSAO ficam de fora.
+                   O.S. sem DTCONCLUSAO nunca entram (com ou sem período).
                    O relatório lista TODOS os técnicos das O.S. com
                    esse MESFOLHA, em uma tabela única, sem quebra por técnico.
                    O Sankhya não repassa a seleção múltipla: com vários
                    lançamentos selecionados executa o relatório uma vez por
                    registro (uma folha por registro). Para sair uma folha só,
                    imprimir com UM lançamento selecionado ou informar
-                   P_MESFOLHA/P_STATUS.
+                   P_MESFOLHA.
 
   Tabelas        : AD_TGFASS  : O.S. de assistência (leitura)
                    AD_CADFUNC : cadastro de funcionários — nome do técnico
@@ -45,6 +43,8 @@
   Data de Criação: 30/09/2026
   Última Revisão : Novembro/2026 — Parâmetros opcionais de período por
                    DTCONCLUSAO (P_DTINI/P_DTFIN)
+                   Novembro/2026 — Removido o parâmetro P_STATUS; O.S. sem
+                   DTCONCLUSAO sempre excluídas
 
   Observações    : - O.S. sem técnico aparece como "SEM TÉCNICO" (comparação de
                      MESFOLHA é null-safe via DECODE).
@@ -72,10 +72,6 @@
 	</parameter>
 	<parameter name="P_DTFIN" class="java.sql.Timestamp">
 		<parameterDescription><![CDATA[Data de conclusão final (opcional)]]></parameterDescription>
-		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
-	</parameter>
-	<parameter name="P_STATUS" class="java.lang.String">
-		<parameterDescription><![CDATA[Status da O.S. (opcional; em branco lista todos os status)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false">
@@ -122,7 +118,7 @@ WHERE DECODE(ASS.MESFOLHA,
                       ELSE ASS.MESFOLHA
                   END),
               1, 0) = 1
-  AND DECODE(ASS.STATUS, NVL($P{P_STATUS}, ASS.STATUS), 1, 0) = 1
+  AND ASS.DTCONCLUSAO IS NOT NULL
   AND ($P{P_DTINI} IS NULL OR ASS.DTCONCLUSAO >= TRUNC($P{P_DTINI}))
   AND ($P{P_DTFIN} IS NULL OR ASS.DTCONCLUSAO <  TRUNC($P{P_DTFIN}) + 1)
 GROUP BY ASS.TECNICO,

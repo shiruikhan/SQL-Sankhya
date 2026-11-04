@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ==============================================================================
+  Nome do Script : OS_Assistencia
+  Tipo           : Relatório Jasper (.jrxml)
+  Grupo          : 39 - O.S. Assistência
+  Descrição      : O.S. de assistência técnica (AD_TGFASS) por faixa de NUMOS,
+                   com funcionários, defeito, checklist e sub-relatório de
+                   componentes (OS_Assistencia_Componentes / AD_TGFIASS).
+
+  Parâmetros     : NUMOSINI / NUMOSFIN — faixa de O.S.
+
+  Empresa        : Spark Eletrônica
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Última Revisão : Novembro/2026 — STATUS traduzido via TDDCAM/TDDOPC (antes
+                   CASE fixo); só imprime O.S. com DTCONCLUSAO preenchida
+
+  Observações    : - STATUS e DEFEITO exibem o texto da opção cadastrada no
+                     dicionário; código sem opção é exibido como está.
+  ==============================================================================
+-->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OS_Assistencia" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
 	<property name="ireport.zoom" value="3.138428376721117"/>
 	<property name="ireport.x" value="0"/>
@@ -31,13 +52,12 @@
 	(SELECT DISTINCT RFINTERNA FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND MOVIMENTO = 'ENTRADA') AS "REFERENCIA INTERNA",
 	(SELECT DISTINCT DESCRPARVENDA FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND VGFSERIES.MOVIMENTO = 'SAÍDA' AND VGFSERIES.DTVENDA = (SELECT MAX(DTVENDA) FROM VGFSERIES WHERE VGFSERIES.SERIE = ASS.SNENTRADA AND VGFSERIES.MOVIMENTO = 'SAÍDA')) AS REVENDEDOR,
 	ASS.NUMNOTAENT AS "NOTA DE ENTRADA",
-	(CASE WHEN ASS.STATUS = 'G' THEN 'GARANTIA'
-		WHEN ASS.STATUS = 'RN' THEN 'RENOVAÇÃO'
-		WHEN ASS.STATUS = 'D' THEN 'DEVOLUÇÃO'
-		WHEN ASS.STATUS = 'T' THEN 'TROCA'
-		WHEN ASS.STATUS = 'RT' THEN 'RETORNO/TROCA'
-		WHEN ASS.STATUS = 'R' THEN 'RETORNO'
-		WHEN ASS.STATUS = 'TG' THEN 'TROCA DE GERAÇÃO' END) AS STATUS,
+	UPPER(NVL((SELECT MAX(OPC.OPCAO)
+	       FROM TDDOPC OPC
+	      INNER JOIN TDDCAM CAM ON CAM.NUCAMPO = OPC.NUCAMPO
+	      WHERE CAM.NOMETAB   = 'AD_TGFASS'
+	        AND CAM.NOMECAMPO = 'STATUS'
+	        AND OPC.VALOR     = ASS.STATUS), ASS.STATUS)) AS STATUS,
 	ASS.T_DTVENDA AS "DATA DE COMPRA",
 	ASS.DTENVIO AS "DATA DE ENTREGA",
 	NVL((SELECT MAX(OPC.OPCAO)
@@ -76,7 +96,8 @@ FROM AD_TGFASS ASS
 	LEFT JOIN AD_CADFUNC TES  ON TES.IDFUNC  = ASS.FUNCTESTE
 	LEFT JOIN AD_CADFUNC INS  ON INS.IDFUNC  = ASS.FUNCINSERCAO
 WHERE ASS.NUMOS >= $P{NUMOSINI}
-	AND ASS.NUMOS <= $P{NUMOSFIN}]]>
+	AND ASS.NUMOS <= $P{NUMOSFIN}
+	AND ASS.DTCONCLUSAO IS NOT NULL]]>
 	</queryString>
 	<field name="ASSISTENCIA RESPONSAVEL" class="java.lang.String"/>
 	<field name="DATA DE RECEBIMENTO" class="java.sql.Timestamp"/>
