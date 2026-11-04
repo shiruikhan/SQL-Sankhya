@@ -18,10 +18,16 @@
   Parâmetros     : PK_NUMOS   — NUMOS (chave de AD_TGFASS) do lançamento
                                 selecionado na tela. Injetado pelo Sankhya.
                    P_MESFOLHA — (opcional) mês da folha a listar.
+                   P_DTINI    — (opcional) data de conclusão inicial (DTCONCLUSAO).
+                   P_DTFIN    — (opcional) data de conclusão final, inclusiva
+                                (o dia inteiro conta).
                    P_STATUS   — (opcional) código do STATUS; em branco lista todos
                                 os status (uma linha por status).
                    P_MESFOLHA em branco assume o MESFOLHA do lançamento de
-                   PK_NUMOS. O relatório lista TODOS os técnicos das O.S. com
+                   PK_NUMOS — exceto quando houver período (P_DTINI/P_DTFIN):
+                   aí o filtro de mês da folha é ignorado e vale só o período.
+                   Com período informado, O.S. sem DTCONCLUSAO ficam de fora.
+                   O relatório lista TODOS os técnicos das O.S. com
                    esse MESFOLHA, em uma tabela única, sem quebra por técnico.
                    O Sankhya não repassa a seleção múltipla: com vários
                    lançamentos selecionados executa o relatório uma vez por
@@ -37,7 +43,8 @@
   Autor          : Silvio Vieira
   Cargo          : Analista de Sistemas Sênior
   Data de Criação: 30/09/2026
-  Última Revisão : Setembro/2026 — Criação
+  Última Revisão : Novembro/2026 — Parâmetros opcionais de período por
+                   DTCONCLUSAO (P_DTINI/P_DTFIN)
 
   Observações    : - O.S. sem técnico aparece como "SEM TÉCNICO" (comparação de
                      MESFOLHA é null-safe via DECODE).
@@ -57,6 +64,14 @@
 	</parameter>
 	<parameter name="P_MESFOLHA" class="java.lang.String">
 		<parameterDescription><![CDATA[Mês da folha (opcional; em branco usa o do lançamento selecionado)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTINI" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data de conclusão inicial (opcional)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="P_DTFIN" class="java.sql.Timestamp">
+		<parameterDescription><![CDATA[Data de conclusão final (opcional)]]></parameterDescription>
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<parameter name="P_STATUS" class="java.lang.String">
@@ -100,9 +115,16 @@ FROM AD_TGFASS ASS
     LEFT JOIN TSICID EMPCID ON EMPCID.CODCID = EMP.CODCID
     LEFT JOIN TSIUFS EMPUFS ON EMPUFS.CODUF = EMPCID.UF
 WHERE DECODE(ASS.MESFOLHA,
-              NVL($P{P_MESFOLHA}, (SELECT REF.MESFOLHA FROM AD_TGFASS REF WHERE REF.NUMOS = $P{PK_NUMOS})),
+              NVL($P{P_MESFOLHA},
+                  CASE
+                      WHEN $P{P_DTINI} IS NULL AND $P{P_DTFIN} IS NULL
+                          THEN (SELECT REF.MESFOLHA FROM AD_TGFASS REF WHERE REF.NUMOS = $P{PK_NUMOS})
+                      ELSE ASS.MESFOLHA
+                  END),
               1, 0) = 1
   AND DECODE(ASS.STATUS, NVL($P{P_STATUS}, ASS.STATUS), 1, 0) = 1
+  AND ($P{P_DTINI} IS NULL OR ASS.DTCONCLUSAO >= TRUNC($P{P_DTINI}))
+  AND ($P{P_DTFIN} IS NULL OR ASS.DTCONCLUSAO <  TRUNC($P{P_DTFIN}) + 1)
 GROUP BY ASS.TECNICO,
     ASS.STATUS,
     NVL(FUN.NOME, 'SEM TÉCNICO'),
