@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de tabelas:** 39  
+**Total de tabelas:** 40  
 **Prefixo padrão:** `AD_` (customização Spark sobre o Sankhya)  
 
 > As duas primeiras tabelas abaixo têm dicionário de campos completo. As demais
@@ -118,6 +118,17 @@ mesma OP. Conciliação por conferência (`NUCONF`). Valores de `TIPOCORR`:
 `NOTA_CRIADA`, `QTD_AJUSTADA`, `SERIE_INCLUIDA`, `DIVERG_NEGATIVA` (legado).
 Índices por `IDIPROC` e `NUCONF`. O arquivo traz um bloco `ALTER` comentado para
 bases anteriores a Jul/2026 (quando `NUCONF` foi adicionada).
+
+### `AD_HISTPISCOFINS`
+
+**Arquivo:** `AD_HISTPISCOFINS.SQL` | **PK:** `NUHIST` | **Criação:** 06/11/2026
+
+Histórico das correções de PIS (`CODIMP` 6) e COFINS (`CODIMP` 7) em `TGFDIN` feitas
+por `STP_CORPISCOFINSIMP_SPARK`. Para cada linha de imposto corrigida grava uma foto
+antes (`MOMENTO = 'A'`) e outra depois (`'D'`), ligadas pelo `IDSESSAO` da execução,
+com `CODUSU` e `DHALTER`. Gravada na mesma transação da correção (se a execução
+falhar, o histórico some junto). Índice por `NUNOTA` + `SEQUENCIA`. Precisa existir
+antes de compilar a procedure.
 
 ### `AD_CORRAPONTAMENTO`
 
