@@ -1,9 +1,9 @@
 CREATE OR REPLACE TRIGGER TRG_VAL_SETOR_CODFUNC_TPRAPA
 BEFORE INSERT OR UPDATE ON TPRAPA
 FOR EACH ROW
-DECLARE
 /*==============================================================================
   Nome do Script : TRG_VAL_SETOR_CODFUNC_TPRAPA
+  Tipo           : Trigger
   Descrição      : Valida se o colaborador apontado (AD_CODFUNC) pertence ao
                    setor correspondente à etapa do apontamento (TPREFX).
                    O mapeamento entre departamento (TFPDEP.DESCRDEP) e etapa
@@ -12,14 +12,35 @@ DECLARE
                    Se a etapa não possui mapeamento, a validação é ignorada.
                    Colaboradores com CODDEP = 0 ou sem departamento cadastrado
                    são considerados polivalentes e podem apontar em qualquer setor.
-  Revisor        : Silvio Vieira | Analista de Sistemas Sênior | Spark Eletrônica
-  Data Criação   : 31/03/2026
+  Tabela         : TPRAPA
+  Evento         : BEFORE INSERT OR UPDATE (FOR EACH ROW)
+  Tabelas        : TPRAPO, TPRIATV, TPREFX, AD_MAP_SETOR_FUNC, TFPFUN, TFPDEP
+                   -- somente leitura
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 31/03/2026
   Última Revisão : 02/04/2026
                    Setembro/2026 — Performance: as duas checagens de
                    existência (SELECT COUNT(1)) ganharam ROWNUM = 1, já que o
                    resultado só é comparado a 0. Comportamento observável
                    inalterado.
+                   Novembro/2026 — Colaborador buscado em TFPFUN com
+                   CODEMP = 1 (funcionário de apontamento é sempre da empresa
+                   1). Antes a busca era só por CODFUNC; como a PK de TFPFUN é
+                   (CODEMP, CODFUNC), um código repetido em outra empresa dava
+                   TOO_MANY_ROWS, que o WHEN OTHERS engolia — a validação de
+                   setor era pulada sem aviso. Cabeçalho padronizado.
+
+  Observações    : - Código inexistente na empresa 1 passa a ser barrado com
+                     ORA-20110 (só em etapa com mapeamento em AD_MAP_SETOR_FUNC).
+                   - Erros que não sejam de aplicação (-20000 a -20999) são
+                     ignorados para não travar o apontamento.
 ==============================================================================*/
+DECLARE
+    V_CODEMP_FUNC CONSTANT TFPFUN.CODEMP%TYPE := 1;
+
     P_SETOR_APO   TPREFX.DESCRICAO%TYPE;
     P_SETOR_FUNC  TFPDEP.DESCRDEP%TYPE;
     P_NOMEFUNC    TFPFUN.NOMEFUNC%TYPE;
@@ -56,17 +77,20 @@ BEGIN
         RETURN;
     END IF;
 
-    -- Busca o departamento do colaborador e seu nome (LEFT JOIN: CODDEP = 0 ou ausente retorna NULL em DEP)
+    -- Busca o departamento do colaborador e seu nome na empresa 1
+    -- (LEFT JOIN: CODDEP = 0 ou ausente retorna NULL em DEP)
     BEGIN
         SELECT FUN.CODDEP, DEP.DESCRDEP, FUN.NOMEFUNC
           INTO P_CODDEP, P_SETOR_FUNC, P_NOMEFUNC
           FROM TFPFUN FUN
           LEFT JOIN TFPDEP DEP ON FUN.CODDEP = DEP.CODDEP
-         WHERE FUN.CODFUNC = :NEW.AD_CODFUNC;
+         WHERE FUN.CODEMP  = V_CODEMP_FUNC
+           AND FUN.CODFUNC = :NEW.AD_CODFUNC;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR(-20110,
-                'Colaborador ' || :NEW.AD_CODFUNC || ' não encontrado.');
+                'Colaborador ' || :NEW.AD_CODFUNC || ' não encontrado na empresa '
+                || V_CODEMP_FUNC || '.');
     END;
 
     -- Colaborador sem departamento (CODDEP = 0 ou sem mapeamento de departamento) é polivalente

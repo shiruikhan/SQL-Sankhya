@@ -94,6 +94,7 @@ As procedures de botão de ação recebem parâmetros via `ACT_TXT_PARAM` / `ACT
 | `STP_PREENCHEVLRUNIT_SPARK.SQL` | `STP_PREENCHEVLRUNIT_SPARK` | Preenche o valor unitário em movimentações internas a partir da função `OBTEMCUSTO_SPARK` |
 | `STP_ALT_CFOP_TGFITE.sql` | `STP_ALT_CFOP_TGFITE` | Botão de ação que altera o CFOP (`TGFITE.CODCFO`) dos itens selecionados para o novo CFOP informado no formulário; localiza cada item por `NUNOTA` + `SEQUENCIA` e valida o CFOP (máx. 4 dígitos) |
 | `STP_CALCULAPROPORCAO_SPARK.SQL` | `STP_CALCULAPROPORCAO_SPARK` | Calcula a proporcionalidade do ICMS com base nas notas dos últimos 12 meses (excluindo o mês atual), por CFOP, e grava o índice em `AD_TGFPIM` |
+| `STP_VLROUTROSIMP_SPARK.sql` | `STP_VLROUTROSIMP_SPARK` | Botão de ação (autor Lucas Gabriel, nov/2026): grava em `TGFCAB.VLROUTROS` o valor dos gastos extras de exportação (parâmetro `P_VLROUTROS`, Decimal) em cada nota selecionada, sem rateio. Recusa nota confirmada. As regras `STP_ALTCAMOUTROS_SPARK`/`_COMP` também gravam `VLROUTROS` e podem sobrescrever o valor |
 
 ---
 

@@ -4,9 +4,25 @@ FOR EACH ROW
 DECLARE
 /*==============================================================================
   Nome do Script : TRG_UPD_OSINTERNA
-  Descrição      : Envia e-mail ao criador da O.S. quando há mudança de status.
-  Revisor        : Silvio Vieira | Analista de Sistemas Sênior | Spark Eletrônica
-  Data Criação   : 13/03/2025
+  Tipo           : Trigger
+  Descrição      : Envia e-mail ao criador da O.S. interna quando o status é
+                   alterado por outro usuário: Em andamento (A, vindo de I),
+                   Cancelada (C, com motivo em OBSERVACAO), Programada (P, com
+                   DTPROGRAMADA) e Finalizada (F, com a observação do
+                   executante quando preenchida).
+  Tabela         : AD_OSINTERNA
+  Evento         : BEFORE UPDATE
+  Escopo         : FOR EACH ROW
+
+  Tabelas        : AD_OSINTERNA -- O.S. interna (leitura via :OLD/:NEW)
+                   TSIUSU       -- e-mail do criador (leitura)
+                   TMDFMG       -- fila de e-mail (próximo CODFILA)
+  Dependencias   : STP_GRAVA_FILA_BI2
+
+  Autor          : Silvio Vieira
+  Cargo          : Analista de Sistemas Sênior
+  Empresa        : Spark Eletrônica
+  Data de Criação: 13/03/2025
   Última Revisão : 30/04/2025
                    Setembro/2026 — Performance: as consultas a TMDFMG
                    (MAX(CODFILA), tabela inteira) e TSIUSU (e-mail) só eram
@@ -16,6 +32,14 @@ DECLARE
                    toda alteração de AD_OSINTERNA que não representa essa
                    troca de status por outro usuário. Comportamento
                    observável inalterado.
+                   Novembro/2026 — E-mail de finalização (F) passa a incluir
+                   a observação do executante (OBSERVACAO), só quando
+                   preenchida, com quebras de linha convertidas em <br>.
+
+  Observações    : - OBSERVACAO é o campo rotulado "Observações do executante"
+                     no relatório 25 (O.S. Interna); no cancelamento o mesmo
+                     campo é usado como motivo.
+                   - Nenhum e-mail sai quando o próprio criador altera o status.
 ==============================================================================*/
     P_CODUSUCRI     AD_OSINTERNA.CODUSUCRI%TYPE := :OLD.CODUSUCRI;
     P_CODUSUALT     AD_OSINTERNA.CODUSUALT%TYPE := :NEW.CODUSUALT;
@@ -83,12 +107,19 @@ BEGIN
                 END IF;
 
             WHEN 'F' THEN
+                -- Observação do executante só entra no corpo quando preenchida;
+                -- quebras de linha viram <br> para não colapsarem no HTML
                 STP_GRAVA_FILA_BI2(P_MAXFILA,
                     'Finalização da sua O.S. nº ' || P_NUMOS,
                     '<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; line-height: 1.5;">
                         <h2 style="color: #0056b3;">Ordem de Serviço Finalizada</h2>
-                        <p>A O.S. ' || P_NUMOS || ' foi <strong>Finalizada</strong>.</p>
-                    </div>',
+                        <p>A O.S. ' || P_NUMOS || ' foi <strong>Finalizada</strong>.</p>'
+                    || CASE
+                           WHEN P_OBSERVACAO IS NOT NULL THEN
+                               '<h3 style="margin-top:20px;">Observações do executante</h3>
+                        <p style="background:#f9f9f9; padding:10px;">' || REPLACE(P_OBSERVACAO, CHR(10), '<br>') || '</p>'
+                       END
+                    || '</div>',
                     P_EMAIL, NULL);
         END CASE;
     END IF;
