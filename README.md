@@ -139,7 +139,7 @@ SQL Sankhya/
 ## 7. Inventário de Objetos
 
 ### 7.1 Triggers (pasta `triggers/`)
-> 88 triggers (4 com o corpo todo comentado — *INATIVADA*). Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
+> 89 triggers (4 com o corpo todo comentado — *INATIVADA*). Ver [`triggers/README.md`](triggers/README.md) para catálogo completo.
 
 Agrupadas por domínio:
 
@@ -153,7 +153,7 @@ Agrupadas por domínio:
 | Itens de Nota | 6 | `TRG_INC_UPD_TGFITE_SPARK`, `SPK_UPD_INS_TGFITE_CONSUMOPRD`, `TRG_UPT_TGFITE`, `TRG_INS_UPD_CODLOCALDEST` |
 | Validação / Controle | 2 | `TRG_VAL_CSTIPI_SPARK` (inativada), `SPK_TGFCAB_TSIBLOCK` (inativada) |
 | Financeiro | 4 | `TRG_REFORCA_NAT_FIN`, `TRG_TGFFIN_LOG_SPARK`, `TRG_INCDEVCH_SPARK`, `TRG_INC_AD_TGFFTA_SPARK` |
-| Parceiro / Cadastro | 6 | `TRG_UPD_TGFPAR_UF_SPARK`, `TRG_INC_TSICID_SPARK`, `TRG_INC_TGFPAR_SPARK`, `TRG_INC_UPD_CMF_SPARK` |
+| Parceiro / Cadastro | 7 | `TRG_UPD_TGFPAR_UF_SPARK`, `TRG_INC_TSICID_SPARK`, `TRG_INC_TGFPAR_SPARK`, `TRG_INC_UPD_TGFPAR_UPPER_SPARK`, `TRG_INC_UPD_CMF_SPARK` |
 | Séries / Conferência | 4 | `TRG_INC_TGFSER_SPARK`, `TRG_DLT_TGFSER_SPARK`, `TRG_TGFCON2_SPARK`, `TRG_TGFCOI2_SPARK` |
 | Notificações / Avisos | 4 | `TRG_NOTIF_PARCERIA_SPARK`, `TRG_UPD_AVISOSPARK`, `TRG_INC_CORRAPONTAMENTO_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK` (inativada) |
 | Conferência de XML (`AD_TGSIXN`) | 3 | `TRG_INC_AD_TGSIXN_SPARK`, `TRG_INC_UPD_AD_TGSIXN_SPARK`, `TRG_UPD_AD_TGSIXN_SPARK` |

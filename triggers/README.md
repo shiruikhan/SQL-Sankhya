@@ -2,7 +2,7 @@
 
 **Empresa:** Spark Eletrônica  
 **Responsável:** Silvio Vieira — Analista de Sistemas Sênior  
-**Total de triggers:** 88 arquivos `.SQL` em `triggers/` — 84 com código ativo + 4 *(INATIVADAS)*, com o corpo inteiramente comentado (`SPK_TGFCAB_TSIBLOCK`, `TRG_VAL_CSTIPI_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_UPD_TGSLOGLIB_SPARK`). Não inclui as nativas do §14 nem os arquivos de `inativos/`  
+**Total de triggers:** 89 arquivos `.SQL` em `triggers/` — 85 com código ativo + 4 *(INATIVADAS)*, com o corpo inteiramente comentado (`SPK_TGFCAB_TSIBLOCK`, `TRG_VAL_CSTIPI_SPARK`, `TRG_INC_TGFIXN_EMAIL_SPARK`, `TRG_UPD_TGSLOGLIB_SPARK`). Não inclui as nativas do §14 nem os arquivos de `inativos/`  
 **Banco:** Oracle PL/SQL  
 
 ---
@@ -146,6 +146,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 | `TRG_UPD_TGFPAR_UF_SPARK.SQL` | `TRG_UPD_TGFPAR_UF_SPARK` | `TGFPAR` | BEFORE UPDATE | Quando `CODCID` muda para uma cidade de outra UF, bloqueia a alteração (`-20001`: "Não é possível alterar UF de Parceiro - Favor criar um novo cadastro") |
 | `TRG_INC_TSICID_SPARK.SQL` | `TRG_INC_TSICID_SPARK` | `TSICID` | BEFORE INSERT | Valida município fiscal obrigatório (`CODMUNFIS`) e normaliza `NOMECID` para o valor canônico já cadastrado (case-insensitive), forçando a AK para que o Sankhya reutilize o registro existente em vez de criar duplicata |
 | `TRG_INC_TGFPAR_SPARK.SQL` | `TRG_INC_TGFPAR_SPARK` | `TGFPAR` | BEFORE INSERT | Em Pessoa Física sem vendedor associado (`TIPPESSOA = 'F'`, `CODVEND = 0`), força `APLICLEITRANSP = 'S'` e `IPIINCICMS = 'S'` e replica o e-mail principal em `EMAILNFE` |
+| `TRG_INC_UPD_TGFPAR_UPPER_SPARK.SQL` | `TRG_INC_UPD_TGFPAR_UPPER_SPARK` | `TGFPAR` | BEFORE INSERT, UPDATE OF *(campos de texto livre)* | Força MAIÚSCULO nos campos de texto livre do parceiro (`NOMEPARC`, `RAZAOSOCIAL`, endereço, inscrições, `OBSERVACOES`, `MOTBLOQ` etc.). Na alteração converte só os campos presentes no `SET` (`UPDATING('<campo>')`), sem reescrever dados antigos de carona. Não mexe em e-mails nem em campos sensíveis a caixa (URL, chave PIX, senhas, `GRUPOAUTOR`, `REDE`) — lista completa no cabeçalho |
 | `TRG_INC_UPD_CMF_SPARK.SQL` | `TRG_INC_UPD_CMF_SPARK` | `TSICID` | BEFORE INSERT, UPDATE OF `NOMECID` | Preenche `CODMUNFIS` buscando o município em `AD_TGSMDF` (comparação sem acento/caixa) sempre que `NOMECID` é informado/alterado; erros não bloqueiam e vão para `AD_LOG_ERROS` |
 | `SPK_INS_UPD_TGFCAB_AVISOPARC.SQL` | `SPK_INS_UPD_TGFCAB_AVISOPARC` | `TGFCAB` | BEFORE INSERT, UPDATE | Copia as observações do parceiro (`TGFPAR`) para `AD_AVISOPARC` do cabeçalho da nota |
 | `TRG_UPD_TGSLOGLIB_SPARK.SQL` | *(INATIVADA)* | `TSILIB` | BEFORE UPDATE | Gravava em `TGSLOGLIB` o log de liberação de crédito ao autorizar nota de venda — estava desativada em produção; reativada acidentalmente por `CREATE OR REPLACE` durante refatoração de performance de Set/2026 (ver §15) |
