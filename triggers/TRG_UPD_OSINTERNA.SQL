@@ -6,10 +6,11 @@ DECLARE
   Nome do Script : TRG_UPD_OSINTERNA
   Tipo           : Trigger
   Descrição      : Envia e-mail ao criador da O.S. interna quando o status é
-                   alterado por outro usuário: Em andamento (A, vindo de I),
-                   Cancelada (C, com motivo em OBSERVACAO), Programada (P, com
-                   DTPROGRAMADA) e Finalizada (F, com a observação do
-                   executante quando preenchida).
+                   alterado por outro usuário: Cancelada (C, só com motivo em
+                   OBSERVACAO), Programada (P, com DTPROGRAMADA) e Finalizada
+                   (F, com o pedido original do usuário e a observação do
+                   executante quando preenchida). Em andamento (A) e demais
+                   status não geram e-mail.
   Tabela         : AD_OSINTERNA
   Evento         : BEFORE UPDATE
   Escopo         : FOR EACH ROW
@@ -35,10 +36,18 @@ DECLARE
                    Novembro/2026 — E-mail de finalização (F) passa a incluir
                    a observação do executante (OBSERVACAO), só quando
                    preenchida, com quebras de linha convertidas em <br>.
+                   Novembro/2026 — Deixa de enviar e-mail para Em andamento
+                   (A): status fora de C/P/F sai antes das consultas.
+                   Finalização passa a incluir o pedido original
+                   (PROBAPONTADO), porque o usuário esquece o que pediu.
+                   OBSERVACAO só conta como preenchida com tamanho > 0
+                   (DBMS_LOB.GETLENGTH), para CLOB vazio não disparar o
+                   e-mail de cancelamento sem motivo.
 
   Observações    : - OBSERVACAO é o campo rotulado "Observações do executante"
                      no relatório 25 (O.S. Interna); no cancelamento o mesmo
                      campo é usado como motivo.
+                   - PROBAPONTADO é o problema/pedido informado na abertura.
                    - Nenhum e-mail sai quando o próprio criador altera o status.
 ==============================================================================*/
     P_CODUSUCRI     AD_OSINTERNA.CODUSUCRI%TYPE := :OLD.CODUSUCRI;
@@ -52,8 +61,12 @@ DECLARE
     P_MAXFILA       NUMBER;
     P_EMAIL         VARCHAR2(60);
 BEGIN
-    -- Envia e-mail se o status foi alterado por outro usuário e existe e-mail válido
-    IF P_CODUSUCRI <> P_CODUSUALT AND P_STATUSOLD <> P_STATUSNEW THEN
+    -- Envia e-mail se o status foi alterado por outro usuário para um dos
+    -- status notificados (C, P, F); qualquer outra troca, inclusive para
+    -- Em andamento (A), sai sem consultar TSIUSU/TMDFMG
+    IF P_CODUSUCRI <> P_CODUSUALT
+       AND P_STATUSOLD <> P_STATUSNEW
+       AND P_STATUSNEW IN ('C', 'P', 'F') THEN
 
     -- Geração de código de fila e recuperação do e-mail
     BEGIN
@@ -71,19 +84,9 @@ BEGIN
         SELECT MAX(CODFILA) + 1 INTO P_MAXFILA FROM TMDFMG;
 
         CASE P_STATUSNEW
-            WHEN 'A' THEN
-                IF P_STATUSOLD = 'I' THEN
-                    STP_GRAVA_FILA_BI2(P_MAXFILA,
-                        'Atualização da sua O.S. nº ' || P_NUMOS,
-                        '<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; line-height: 1.5;">
-                            <h2 style="color: #0056b3;">Nova atualização na Ordem de Serviço</h2>
-                            <p>A O.S. ' || P_NUMOS || ' foi alterada para <strong>Em andamento</strong>.</p>
-                        </div>',
-                        P_EMAIL, NULL);
-                END IF;
-
             WHEN 'C' THEN
-                IF P_OBSERVACAO IS NOT NULL THEN
+                -- Só notifica com motivo; GETLENGTH > 0 trata NULL e CLOB vazio
+                IF DBMS_LOB.GETLENGTH(P_OBSERVACAO) > 0 THEN
                     STP_GRAVA_FILA_BI2(P_MAXFILA,
                         'Cancelamento da sua O.S. nº ' || P_NUMOS,
                         '<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; line-height: 1.5;">
@@ -107,20 +110,30 @@ BEGIN
                 END IF;
 
             WHEN 'F' THEN
-                -- Observação do executante só entra no corpo quando preenchida;
-                -- quebras de linha viram <br> para não colapsarem no HTML
+                -- Pedido original (PROBAPONTADO) entra para o usuário lembrar
+                -- o que solicitou; observação do executante só quando
+                -- preenchida. Quebras de linha viram <br> para não colapsarem
+                -- no HTML
                 STP_GRAVA_FILA_BI2(P_MAXFILA,
                     'Finalização da sua O.S. nº ' || P_NUMOS,
                     '<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; line-height: 1.5;">
                         <h2 style="color: #0056b3;">Ordem de Serviço Finalizada</h2>
                         <p>A O.S. ' || P_NUMOS || ' foi <strong>Finalizada</strong>.</p>'
                     || CASE
-                           WHEN P_OBSERVACAO IS NOT NULL THEN
+                           WHEN DBMS_LOB.GETLENGTH(P_PROBAPONTADO) > 0 THEN
+                               '<h3 style="margin-top:20px;">Seu pedido</h3>
+                        <p style="background:#f9f9f9; padding:10px;">' || REPLACE(P_PROBAPONTADO, CHR(10), '<br>') || '</p>'
+                       END
+                    || CASE
+                           WHEN DBMS_LOB.GETLENGTH(P_OBSERVACAO) > 0 THEN
                                '<h3 style="margin-top:20px;">Observações do executante</h3>
                         <p style="background:#f9f9f9; padding:10px;">' || REPLACE(P_OBSERVACAO, CHR(10), '<br>') || '</p>'
                        END
                     || '</div>',
                     P_EMAIL, NULL);
+
+            ELSE
+                NULL;
         END CASE;
     END IF;
 

@@ -106,7 +106,7 @@ Nomenclatura de tabelas-alvo mais comuns: `TGFCAB` (cabeçalho de nota), `TGFITE
 
 | Arquivo | Trigger | Tabela | Evento | Descrição |
 |---|---|---|---|---|
-| `TRG_UPD_OSINTERNA.SQL` | `TRG_UPD_OSINTERNA` | `AD_OSINTERNA` | BEFORE UPDATE | Envia e-mail ao criador da O.S. quando há mudança de status |
+| `TRG_UPD_OSINTERNA.SQL` | `TRG_UPD_OSINTERNA` | `AD_OSINTERNA` | BEFORE UPDATE | Envia e-mail ao criador da O.S. quando outro usuário muda o status para Cancelada (com motivo), Programada ou Finalizada (com pedido original e observação do executante) |
 | `TRG_UPD_OSINTERNA_DHFIM.SQL` | `TRG_UPD_OSINTERNA_DHFIM` | `AD_OSINTERNA` | BEFORE UPDATE | Grava data e hora de finalização (`DHFIM`) quando o status muda para `'F'` |
 | `TRG_INS_OSSTATUS_SPARK.SQL` | `TRG_INS_OSSTATUS_SPARK` | `AD_OSINTERNA` | BEFORE INSERT | Define status inicial `'I'` (Em aberto) da O.S. interna |
 | `TRG_TGFASS_INC_SPARK.SQL` | `TRG_TGFASS_INC_SPARK` | `AD_TGFASS` | BEFORE INSERT, UPDATE OF `SNENTRADA` | Preenche os campos `T_*` (produto, lote, venda, fabricação) a partir da série `SNENTRADA` na `VGFSERIES`; no UPDATE só dispara quando a série muda |
